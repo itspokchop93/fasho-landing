@@ -23,6 +23,7 @@ export default function SelectedTrackCard({ track, onRemove }: Props) {
         width={180}
         height={180}
         className="rounded-lg mx-auto"
+        unoptimized
       />
       <h3 className="mt-3 font-semibold text-white truncate" title={track.title}>
         {track.title}

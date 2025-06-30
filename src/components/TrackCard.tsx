@@ -16,6 +16,7 @@ export default function TrackCard({ track, onConfirm }: Props) {
           width={80}
           height={80}
           className="rounded-md"
+          unoptimized
         />
         <div>
           <h3 className="font-semibold text-lg">{track.title}</h3>
