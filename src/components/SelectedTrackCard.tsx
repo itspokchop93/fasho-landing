@@ -8,7 +8,7 @@ interface Props {
 
 export default function SelectedTrackCard({ track, onRemove }: Props) {
   return (
-    <div className="relative bg-white/5 rounded-xl p-4 w-60 flex-shrink-0 text-center">
+    <div className="relative bg-white/5 rounded-xl p-4 w-60 flex-shrink-0 text-center border border-white/20">
       {onRemove && (
         <button
           onClick={onRemove}

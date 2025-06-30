@@ -6,6 +6,7 @@ import EmptySlotCard from "../components/EmptySlotCard";
 import TrackCard from "../components/TrackCard";
 import { Track } from "../types/track";
 import React from "react";
+import GradientTestCard from "../components/GradientTestCard";
 
 export default function AddSongsPage() {
   const router = useRouter();
@@ -149,6 +150,9 @@ export default function AddSongsPage() {
         >
           Promote selected songs →
         </button>
+
+        {/* temporary test container for animated border */}
+        <GradientTestCard />
       </main>
     </>
   );
