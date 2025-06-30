@@ -127,7 +127,7 @@ export default function AddSongsPage() {
           />
           {previewTrack && !error && (
             <div className="absolute left-0 right-0 mt-2 z-10">
-              <TrackCard track={previewTrack} onConfirm={confirmPreview} />
+              <TrackCard track={previewTrack} onConfirm={confirmPreview} dark />
             </div>
           )}
         </div>
