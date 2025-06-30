@@ -31,6 +31,14 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         title = parts[0];
         artist = parts[1];
       }
+      // fallback: if title contains parenthetical with "with" or "feat" treat that as artist
+      if (!artist && title.includes("(") && title.includes(")")) {
+        const paren = title.substring(title.indexOf("(")+1, title.lastIndexOf(")"));
+        if (paren) {
+          artist = paren.replace(/^with\s+/i, "").replace(/^feat\.\s+/i, "");
+          title = title.replace(/\s*\([^)]*\)/, "").trim();
+        }
+      }
     }
 
     // Extract ID from URL (after last slash)
