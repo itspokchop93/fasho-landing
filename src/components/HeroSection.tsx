@@ -80,7 +80,7 @@ export default function HeroSection() {
 
         {/* dropdown result */}
         {track && !error && (
-          <div className="absolute left-0 right-0 mt-2 z-10">
+          <div className="absolute left-0 right-0 mt-2 z-10 w-full border border-gray-300/50 rounded-lg bg-white">
             <TrackCard track={track} onConfirm={handleConfirm} />
           </div>
         )}

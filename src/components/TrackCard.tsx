@@ -30,7 +30,7 @@ export default function TrackCard({ track, onConfirm, dark = false }: Props) {
       </div>
       <button
         onClick={onConfirm}
-        className="mt-6 w-full bg-indigo-600 text-white py-3 rounded-md font-medium hover:bg-indigo-700 transition"
+        className="mt-6 w-full bg-gradient-to-r from-amber-400 to-pink-500 text-black py-3 rounded-md font-semibold hover:opacity-90 transition"
       >
         Yes, promote this track
       </button>

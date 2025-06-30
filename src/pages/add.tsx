@@ -126,7 +126,7 @@ export default function AddSongsPage() {
             className="w-full rounded-md px-4 py-3 text-gray-900 focus:outline-none"
           />
           {previewTrack && !error && (
-            <div className="absolute left-0 right-0 mt-2 z-10">
+            <div className="absolute left-0 right-0 mt-2 z-10 w-full border border-white/20 rounded-lg bg-gray-900">
               <TrackCard track={previewTrack} onConfirm={confirmPreview} dark />
             </div>
           )}
