@@ -22,8 +22,16 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     const data = await oEmbedRes.json();
 
-    // oEmbed returns title formatted as "Track – Artist"
-    const [title, artist] = data.title.split(" – ");
+    // oEmbed includes author_name; fallback to splitting title if needed
+    let title = data.title as string;
+    let artist = (data as any).author_name || "";
+    if (!artist) {
+      const parts = title.split(" – ");
+      if (parts.length === 2) {
+        title = parts[0];
+        artist = parts[1];
+      }
+    }
 
     // Extract ID from URL (after last slash)
     const idMatch = url.match(/spotify\.com\/track\/([a-zA-Z0-9]+)/);
@@ -32,8 +40,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       success: true,
       track: {
         id: idMatch ? idMatch[1] : url,
-        title: title || data.title,
-        artist: artist || "",
+        title,
+        artist,
         imageUrl: data.thumbnail_url,
         url,
       },

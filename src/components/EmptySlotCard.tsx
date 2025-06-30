@@ -6,10 +6,7 @@ export default function EmptySlotCard({ onClick }: EmptySlotCardProps) {
   return (
     <div onClick={onClick} className="relative w-60 h-[262px] flex-shrink-0 cursor-pointer">
       {/* animated gradient border */}
-      <div
-        className="absolute inset-0 rounded-xl p-[2px] animate-spin-slow [background:conic-gradient(var(--tw-gradient-stops))] from-amber-400 via-pink-500 to-amber-400"
-        style={{ animationDuration: "6s" }}
-      >
+      <div className="relative w-full h-full rounded-xl p-[2px] before:content-[''] before:absolute before:inset-0 before:rounded-xl before:bg-[conic-gradient(var(--tw-gradient-stops))] before:from-amber-400 before:via-pink-500 before:to-amber-400 before:animate-spin-slow before:z-[-1]">
         <div className="relative w-full h-full rounded-[calc(theme(borderRadius.xl)-2px)] bg-black/90 border-2 border-dashed border-white/20 flex items-center justify-center">
           {/* 20% flag */}
           <div className="absolute -top-3 -right-3 bg-gradient-to-r from-amber-400 to-pink-500 text-black text-xs font-semibold px-2 py-1 rounded-md">
