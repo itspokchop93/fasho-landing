@@ -8,7 +8,7 @@ interface Props {
 
 export default function SelectedTrackCard({ track, onRemove }: Props) {
   return (
-    <div className="relative bg-white/5 border border-white/10 rounded-xl p-4 w-60 flex-shrink-0 text-center">
+    <div className="relative bg-white/5 rounded-xl p-4 w-60 flex-shrink-0 text-center">
       {onRemove && (
         <button
           onClick={onRemove}
@@ -17,16 +17,14 @@ export default function SelectedTrackCard({ track, onRemove }: Props) {
           ✕
         </button>
       )}
-      <div className="p-1 bg-white rounded-lg">
-        <Image
-          src={track.imageUrl}
-          alt={track.title}
-          width={180}
-          height={180}
-          className="rounded-lg mx-auto"
-          unoptimized
-        />
-      </div>
+      <Image
+        src={track.imageUrl}
+        alt={track.title}
+        width={180}
+        height={180}
+        className="rounded-lg mx-auto"
+        unoptimized
+      />
       <h3 className="mt-3 font-semibold text-white truncate" title={track.title}>
         {track.title}
       </h3>

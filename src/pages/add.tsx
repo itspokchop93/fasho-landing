@@ -5,6 +5,7 @@ import SelectedTrackCard from "../components/SelectedTrackCard";
 import EmptySlotCard from "../components/EmptySlotCard";
 import TrackCard from "../components/TrackCard";
 import { Track } from "../types/track";
+import React from "react";
 
 export default function AddSongsPage() {
   const router = useRouter();
@@ -110,12 +111,12 @@ export default function AddSongsPage() {
         </h1>
 
         {/* cards */}
-        <div className="flex gap-6 mb-10 flex-wrap justify-center">
+        <div className="flex gap-6 mb-10 flex-wrap justify-center items-center">
           {tracks.map((t, idx) => (
-            <>
-              <SelectedTrackCard key={idx} track={t} />
-              <span className="text-5xl text-white/50 mx-4">+</span>
-            </>
+            <React.Fragment key={idx}>
+              <SelectedTrackCard track={t} />
+              <span className="text-5xl text-white/50 mx-4 flex items-center">+</span>
+            </React.Fragment>
           ))}
           {/* empty slot at end */}
           <EmptySlotCard onClick={() => inputRef.current?.focus()} />

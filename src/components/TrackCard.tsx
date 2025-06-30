@@ -9,7 +9,7 @@ interface Props {
 
 export default function TrackCard({ track, onConfirm, dark = false }: Props) {
   const container = dark
-    ? "bg-gray-800 text-white"
+    ? "bg-gray-900 text-white"
     : "bg-white text-gray-900";
   const artistColor = dark ? "text-gray-300" : "text-gray-600";
   return (
