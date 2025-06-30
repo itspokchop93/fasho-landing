@@ -17,6 +17,8 @@ export default function AddSongsPage() {
   const [previewTrack, setPreviewTrack] = useState<Track | null>(null);
   const debounceRef = useRef<NodeJS.Timeout | null>(null);
 
+  const inputRef = useRef<HTMLInputElement>(null);
+
   // init first track from query (once router is ready)
   useEffect(() => {
     if (!router.isReady) return;
@@ -110,15 +112,19 @@ export default function AddSongsPage() {
         {/* cards */}
         <div className="flex gap-6 mb-10 flex-wrap justify-center">
           {tracks.map((t, idx) => (
-            <SelectedTrackCard key={idx} track={t} />
+            <>
+              <SelectedTrackCard key={idx} track={t} />
+              <span className="text-5xl text-white/50 mx-4">+</span>
+            </>
           ))}
-          {/* always show one empty slot */}
-          <EmptySlotCard />
+          {/* empty slot at end */}
+          <EmptySlotCard onClick={() => inputRef.current?.focus()} />
         </div>
 
         {/* search input */}
         <div className="w-full max-w-xl relative mb-8">
           <input
+            ref={inputRef}
             type="url"
             placeholder="Paste another Spotify link..."
             value={input}

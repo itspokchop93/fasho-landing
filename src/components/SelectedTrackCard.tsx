@@ -17,14 +17,16 @@ export default function SelectedTrackCard({ track, onRemove }: Props) {
           ✕
         </button>
       )}
-      <Image
-        src={track.imageUrl}
-        alt={track.title}
-        width={180}
-        height={180}
-        className="rounded-lg mx-auto"
-        unoptimized
-      />
+      <div className="p-1 bg-white rounded-lg">
+        <Image
+          src={track.imageUrl}
+          alt={track.title}
+          width={180}
+          height={180}
+          className="rounded-lg mx-auto"
+          unoptimized
+        />
+      </div>
       <h3 className="mt-3 font-semibold text-white truncate" title={track.title}>
         {track.title}
       </h3>
