@@ -22,24 +22,12 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     const data = await oEmbedRes.json();
 
-    // oEmbed includes author_name; fallback to splitting title if needed
-    let title = data.title as string;
-    let artist = (data as any).author_name || "";
-    if (!artist) {
-      const parts = title.split(" – ");
-      if (parts.length === 2) {
-        title = parts[0];
-        artist = parts[1];
-      }
-      // fallback: if title contains parenthetical with "with" or "feat" treat that as artist
-      if (!artist && title.includes("(") && title.includes(")")) {
-        const paren = title.substring(title.indexOf("(")+1, title.lastIndexOf(")"));
-        if (paren) {
-          artist = paren.replace(/^with\s+/i, "").replace(/^feat\.\s+/i, "");
-          title = title.replace(/\s*\([^)]*\)/, "").trim();
-        }
-      }
-    }
+    // Previous simple logic: oEmbed title is usually "Song Name – Artist Name". We only need the song name for now.
+    const rawTitle = (data.title as string) || "";
+    // Split on en dash or hyphen + spaces variants, take the first part as the song title.
+    const splitRegex = /\s*[–-]\s*/;
+    const [title] = rawTitle.split(splitRegex);
+    const artist = ""; // We'll handle artist later.
 
     // Extract ID from URL (after last slash)
     const idMatch = url.match(/spotify\.com\/track\/([a-zA-Z0-9]+)/);
