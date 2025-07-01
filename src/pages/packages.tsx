@@ -239,12 +239,12 @@ export default function PackagesPage() {
                     
                     {/* Most Popular flag for Advanced package */}
                     {pkg.id === 'advanced' && (
-                      <div className="absolute -top-3 -left-3 bg-gradient-to-r from-[#14c0ff] to-[#59e3a5] text-white text-xs font-semibold px-3 py-1 rounded-md shadow-lg z-20">
+                      <div className="absolute -top-3 -left-3 bg-gradient-to-r from-[#14c0ff] to-[#59e3a5] text-white text-xs font-semibold px-3 py-1 rounded-md shadow-lg z-30">
                         Most Popular
                       </div>
                     )}
                     {selectedPackage === pkg.id && (
-                      <div className="absolute -top-2 -right-2 w-6 h-6 bg-[#59e3a5] rounded-full flex items-center justify-center z-20">
+                      <div className="absolute -top-2 -right-2 w-6 h-6 bg-[#59e3a5] rounded-full flex items-center justify-center z-30">
                         <span className="text-black text-sm font-bold">✓</span>
                       </div>
                     )}
