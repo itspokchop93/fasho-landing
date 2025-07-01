@@ -169,9 +169,65 @@ export default function AddSongsPage() {
           <ShapeDivider />
         </div>
 
+        {/* YouTube Marketing container with animated gradient border */}
+        <div className="relative w-full max-w-md mb-16">
+          {/* Outer glow layer (lower z-index) */}
+          <div className="absolute -inset-1 bg-gradient-to-r from-green-400 via-emerald-500 to-green-600 rounded-2xl blur-lg opacity-50 animate-pulse"></div>
+          
+          {/* Animated border layer */}
+          <div className="absolute -inset-0.5 rounded-2xl overflow-hidden">
+            <div className="absolute inset-0 bg-gradient-to-r from-green-400 via-emerald-500 via-green-600 via-lime-400 to-green-400 animate-spin-slow"></div>
+          </div>
+          
+          {/* Content container */}
+          <div className="relative bg-gray-900 rounded-2xl p-6 border border-gray-700/50">
+            <h3 className="text-xl font-bold text-white mb-4">Add-On YouTube Marketing</h3>
+            
+            <div className="space-y-2 mb-4">
+              <div className="flex items-center gap-2 text-green-400">
+                <span className="text-lg">✓</span>
+                <span className="text-sm">YouTube Shorts promotion</span>
+              </div>
+              <div className="flex items-center gap-2 text-green-400">
+                <span className="text-lg">✓</span>
+                <span className="text-sm">Algorithm optimization</span>
+              </div>
+              <div className="flex items-center gap-2 text-green-400">
+                <span className="text-lg">✓</span>
+                <span className="text-sm">Viral content strategy</span>
+              </div>
+            </div>
+            
+            <div className="flex items-center justify-between">
+              <div>
+                <span className="text-gray-400 line-through text-sm">$199</span>
+                <span className="text-white font-bold text-lg ml-2">$89</span>
+              </div>
+              <button className="bg-white text-gray-900 px-4 py-2 rounded-lg font-semibold text-sm hover:bg-gray-100 transition-colors">
+                +
+              </button>
+            </div>
+          </div>
+        </div>
+
         {/* temporary test container for animated border */}
         <GradientTestCard />
       </main>
+
+      <style jsx>{`
+        @keyframes spin-slow {
+          from {
+            transform: rotate(0deg);
+          }
+          to {
+            transform: rotate(360deg);
+          }
+        }
+        
+        .animate-spin-slow {
+          animation: spin-slow 4s linear infinite;
+        }
+      `}</style>
     </>
   );
 } 

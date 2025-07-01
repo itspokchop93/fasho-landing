@@ -2,11 +2,11 @@ import React from "react";
 
 export default function ShapeDivider() {
   return (
-    <div className="relative w-full h-40 overflow-hidden">
+    <div className="relative w-full h-60 overflow-hidden">
       {/* Base layer - darkest */}
       <svg
         className="absolute inset-0 w-full h-full"
-        viewBox="0 0 1440 400"
+        viewBox="0 0 1440 600"
         preserveAspectRatio="none"
         style={{ width: '100%', height: '100%' }}
       >
@@ -17,7 +17,7 @@ export default function ShapeDivider() {
           </linearGradient>
         </defs>
         <path
-          d="M-100,50 C120,200 360,20 600,150 C840,280 1080,60 1320,180 C1440,220 1540,100 1540,100 L1540,300 C1440,350 1320,250 1080,320 C840,250 600,380 360,300 C120,220 -100,350 -100,350 Z"
+          d="M-200,80 C100,350 300,10 500,280 C700,550 900,50 1100,320 C1300,590 1500,30 1640,200 L1640,500 C1500,400 1300,550 1100,450 C900,350 700,600 500,500 C300,400 100,650 -200,550 Z"
           fill="url(#shapeGradient1)"
         />
       </svg>
@@ -25,7 +25,7 @@ export default function ShapeDivider() {
       {/* Middle layer */}
       <svg
         className="absolute inset-0 w-full h-full"
-        viewBox="0 0 1440 400"
+        viewBox="0 0 1440 600"
         preserveAspectRatio="none"
         style={{ width: '100%', height: '100%' }}
       >
@@ -36,7 +36,7 @@ export default function ShapeDivider() {
           </linearGradient>
         </defs>
         <path
-          d="M-100,80 C200,250 480,40 720,200 C960,360 1200,80 1440,220 C1540,280 1540,280 1540,280 L1540,320 C1440,260 1200,380 960,280 C720,180 480,340 200,240 C-100,140 -100,380 -100,380 Z"
+          d="M-200,120 C150,450 400,20 650,350 C900,680 1150,70 1400,400 C1550,530 1640,150 1640,150 L1640,450 C1550,350 1400,600 1150,400 C900,200 650,650 400,450 C150,250 -200,700 -200,700 Z"
           fill="url(#shapeGradient2)"
         />
       </svg>
@@ -44,7 +44,7 @@ export default function ShapeDivider() {
       {/* Top layer - brightest */}
       <svg
         className="absolute inset-0 w-full h-full"
-        viewBox="0 0 1440 400"
+        viewBox="0 0 1440 600"
         preserveAspectRatio="none"
         style={{ width: '100%', height: '100%' }}
       >
@@ -55,7 +55,7 @@ export default function ShapeDivider() {
           </linearGradient>
         </defs>
         <path
-          d="M-100,120 C240,300 480,60 720,240 C960,420 1200,100 1440,260 C1540,320 1540,320 1540,320 L1540,280 C1440,220 1200,380 960,280 C720,180 480,340 240,240 C-100,140 -100,140 -100,140 Z"
+          d="M-200,180 C200,520 450,30 700,380 C950,730 1200,80 1450,430 C1600,580 1640,200 1640,200 L1640,380 C1600,280 1450,630 1200,380 C950,130 700,680 450,430 C200,180 -200,180 -200,180 Z"
           fill="url(#shapeGradient3)"
         />
       </svg>
@@ -63,7 +63,7 @@ export default function ShapeDivider() {
       {/* Additional accent layer */}
       <svg
         className="absolute inset-0 w-full h-full"
-        viewBox="0 0 1440 400"
+        viewBox="0 0 1440 600"
         preserveAspectRatio="none"
         style={{ width: '100%', height: '100%' }}
       >
@@ -74,7 +74,7 @@ export default function ShapeDivider() {
           </linearGradient>
         </defs>
         <path
-          d="M-100,100 C180,10 360,280 540,120 C720,20 900,300 1080,140 C1260,40 1380,200 1540,160 L1540,360 C1380,320 1260,380 1080,320 C900,260 720,400 540,340 C360,280 180,410 -100,360 Z"
+          d="M-200,150 C120,5 280,500 440,180 C600,10 760,550 920,220 C1080,20 1240,480 1400,250 C1520,150 1640,350 1640,350 L1640,550 C1520,450 1400,650 1240,550 C1080,450 920,750 760,650 C600,550 440,800 280,700 C120,600 -200,850 -200,850 Z"
           fill="url(#shapeGradient4)"
         />
       </svg>
