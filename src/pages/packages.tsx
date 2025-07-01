@@ -250,7 +250,7 @@ export default function PackagesPage() {
                     )}
                     
                     {/* Content container - same structure for all packages */}
-                    <div className={`${pkg.id === 'advanced' ? `relative z-10 bg-white/5 rounded-xl p-6 border ${selectedPackage === pkg.id ? 'border-[#59e3a5]' : 'border-white/20'}` : ''}`}>
+                    <div className={`${pkg.id === 'advanced' ? `relative z-20 bg-gray-900 rounded-xl p-6 border ${selectedPackage === pkg.id ? 'border-[#59e3a5]' : 'border-white/20'}` : ''}`}>
                       <div className="flex items-center justify-center mb-4">
                         <div className="w-16 h-16 bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] rounded-full flex items-center justify-center">
                           <span className="text-2xl">🎧</span>
