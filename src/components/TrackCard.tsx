@@ -24,7 +24,12 @@ export default function TrackCard({ track, onConfirm, dark = false }: Props) {
           unoptimized
         />
         <div>
-          <h3 className="font-semibold text-lg">{track.title}</h3>
+          <h3
+            className="font-semibold text-lg cursor-pointer hover:underline"
+            onClick={onConfirm}
+          >
+            {track.title}
+          </h3>
           <p className={`${artistColor}`}>{track.artist}</p>
         </div>
       </div>

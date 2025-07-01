@@ -18,6 +18,7 @@ export default function AddSongsPage() {
   const [error, setError] = useState<string | null>(null);
   const [previewTrack, setPreviewTrack] = useState<Track | null>(null);
   const debounceRef = useRef<NodeJS.Timeout | null>(null);
+  const [focused, setFocused] = useState(false);
 
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -130,12 +131,23 @@ export default function AddSongsPage() {
             type="url"
             placeholder="Paste another Spotify link..."
             value={input}
+            onFocus={() => setFocused(true)}
+            onBlur={() => setFocused(false)}
             onChange={(e) => setInput(e.target.value)}
             className="w-full rounded-md px-4 py-3 text-gray-900 focus:outline-none"
           />
-          {previewTrack && !error && (
-            <div className="absolute left-0 right-0 mt-2 z-10 w-full border border-white/20 rounded-lg bg-gray-900">
-              <TrackCard track={previewTrack} onConfirm={confirmPreview} dark />
+          {(focused || previewTrack) && (
+            <div className="absolute left-0 right-0 mt-2 z-50 w-full border border-white/20 rounded-lg bg-gray-900">
+              {previewTrack && !error ? (
+                <TrackCard track={previewTrack} onConfirm={confirmPreview} dark />
+              ) : (
+                <div className="flex items-center justify-center py-6">
+                  <svg className="animate-spin h-6 w-6 text-white/70" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path>
+                  </svg>
+                </div>
+              )}
             </div>
           )}
         </div>
