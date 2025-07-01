@@ -4,11 +4,17 @@ import { Track } from "../types/track";
 interface Props {
   track: Track;
   onRemove?: () => void;
+  showDiscount?: boolean;
 }
 
-export default function SelectedTrackCard({ track, onRemove }: Props) {
+export default function SelectedTrackCard({ track, onRemove, showDiscount = false }: Props) {
   return (
     <div className="relative bg-white/5 rounded-xl p-4 w-60 flex-shrink-0 text-center border border-white/20">
+      {showDiscount && (
+        <div className="absolute -top-3 -right-3 bg-gradient-to-r from-amber-400 to-pink-500 text-black text-xs font-semibold px-2 py-1 rounded-md">
+          +20% OFF
+        </div>
+      )}
       {onRemove && (
         <button
           onClick={onRemove}

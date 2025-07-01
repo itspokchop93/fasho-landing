@@ -116,8 +116,8 @@ export default function AddSongsPage() {
         <div className="flex gap-6 mb-10 flex-wrap justify-center items-center">
           {tracks.map((t, idx) => (
             <React.Fragment key={idx}>
-              <SelectedTrackCard track={t} />
-              <span className="text-5xl text-white/50 mx-4 flex items-center">+</span>
+              <SelectedTrackCard track={t} showDiscount={idx > 0} />
+              <span className="text-5xl text-white/50 mx-4 flex items-center w-full sm:w-auto justify-center basis-full sm:basis-auto">+</span>
             </React.Fragment>
           ))}
           {/* empty slot at end */}
