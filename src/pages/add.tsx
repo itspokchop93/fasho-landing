@@ -236,13 +236,19 @@ export default function AddSongsPage() {
         }
         
         .border-highlight {
-          background: linear-gradient(
-            0deg,
-            transparent 0%,
-            transparent 70%,
-            #22c55e 80%,
-            #84cc16 90%,
-            #22c55e 100%
+          background: conic-gradient(
+            from 0deg,
+            transparent 0deg,
+            #22c55e 30deg,
+            #84cc16 45deg,
+            #22c55e 60deg,
+            transparent 90deg,
+            transparent 180deg,
+            #22c55e 210deg,
+            #84cc16 225deg,
+            #22c55e 240deg,
+            transparent 270deg,
+            transparent 360deg
           );
           border-radius: 1rem;
         }
