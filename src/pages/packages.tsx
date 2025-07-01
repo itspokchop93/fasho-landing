@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/router";
 import Head from "next/head";
 import Image from "next/image";
@@ -62,6 +62,9 @@ export default function PackagesPage() {
   const [animatedPlacements, setAnimatedPlacements] = useState<number>(0);
   const [previousPackage, setPreviousPackage] = useState<string>("");
   const [currentScale, setCurrentScale] = useState<number>(0);
+  const [canScrollLeft, setCanScrollLeft] = useState(false);
+  const [canScrollRight, setCanScrollRight] = useState(true);
+  const carouselRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (!router.isReady) return;
@@ -260,6 +263,43 @@ export default function PackagesPage() {
     }
   };
 
+  const checkScrollArrows = () => {
+    if (!carouselRef.current) return;
+    
+    const { scrollLeft, scrollWidth, clientWidth } = carouselRef.current;
+    
+    setCanScrollLeft(scrollLeft > 0);
+    setCanScrollRight(scrollLeft < scrollWidth - clientWidth - 1);
+  };
+
+  const scrollCarousel = (direction: 'left' | 'right') => {
+    if (!carouselRef.current) return;
+    
+    const scrollAmount = carouselRef.current.clientWidth * 0.5;
+    const newScrollLeft = direction === 'left' 
+      ? carouselRef.current.scrollLeft - scrollAmount
+      : carouselRef.current.scrollLeft + scrollAmount;
+      
+    carouselRef.current.scrollTo({
+      left: newScrollLeft,
+      behavior: 'smooth'
+    });
+  };
+
+  useEffect(() => {
+    const carousel = carouselRef.current;
+    if (!carousel) return;
+
+    carousel.addEventListener('scroll', checkScrollArrows);
+    
+    // Initial check
+    setTimeout(checkScrollArrows, 100);
+
+    return () => {
+      carousel.removeEventListener('scroll', checkScrollArrows);
+    };
+  }, []);
+
   const getChartData = () => {
     const selected = packages.find(p => p.id === selectedPackage);
     
@@ -347,12 +387,12 @@ export default function PackagesPage() {
       </Head>
       <main className="min-h-screen relative text-white py-12 px-4">
         {/* Background layers */}
-        <div className="fixed inset-0 bg-black"></div>
+        <div className="fixed inset-0 bg-black z-0"></div>
         <div 
-          className="fixed inset-0 bg-cover bg-center bg-no-repeat opacity-70"
+          className="fixed inset-0 bg-cover bg-center bg-no-repeat opacity-90 z-10"
           style={{ backgroundImage: 'url(/marble-bg.jpg)' }}
         ></div>
-        <div className="relative z-10">
+        <div className="relative z-20">
         <div className="max-w-7xl mx-auto">
           <h1 className="text-4xl md:text-5xl font-extrabold text-center mb-12">
             Step 2: Choose your campaign for <span className="text-[#59e3a5]">60% OFF</span>
@@ -383,15 +423,43 @@ export default function PackagesPage() {
               </div>
               
               <div className="mt-6 mb-8">
-                <h2 className="text-2xl font-bold mb-2">{currentTrack.title}</h2>
-                <p className="text-xl text-white/70">{currentTrack.artist}</p>
+                <h2 className="text-xl font-bold mb-2">{currentTrack.title}</h2>
+                <p className="text-lg text-white/70">{currentTrack.artist}</p>
               </div>
             </div>
 
             {/* Mobile: Package carousel */}
-            <div className="mb-8">
-              <div className="overflow-x-auto scrollbar-hide">
-                <div className="flex gap-4 px-4" style={{ width: 'max-content' }}>
+            <div className="mb-8 relative">
+              {/* Left arrow */}
+              {canScrollLeft && (
+                <button
+                  onClick={() => scrollCarousel('left')}
+                  className="absolute left-2 top-1/2 -translate-y-1/2 z-20 bg-black/70 backdrop-blur-sm rounded-full p-2 border border-white/20"
+                >
+                  <svg className="w-4 h-4 text-white animate-bounce-left" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                  </svg>
+                </button>
+              )}
+              
+              {/* Right arrow */}
+              {canScrollRight && (
+                <button
+                  onClick={() => scrollCarousel('right')}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 z-20 bg-black/70 backdrop-blur-sm rounded-full p-2 border border-white/20"
+                >
+                  <svg className="w-4 h-4 text-white animate-bounce-right" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                  </svg>
+                </button>
+              )}
+              
+              <div 
+                ref={carouselRef}
+                className="overflow-x-auto scrollbar-hide cursor-grab active:cursor-grabbing"
+                style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+              >
+                <div className="flex gap-4 px-4 py-2" style={{ width: 'max-content' }}>
                   {packages.map((pkg) => (
                     <div
                       key={pkg.id}
@@ -405,7 +473,7 @@ export default function PackagesPage() {
                           ? 'border-white/20 bg-white/5 hover:border-white/40'
                           : ''
                       }`}
-                      style={{ width: 'calc(50vw - 2rem)' }}
+                      style={{ width: 'calc(50vw - 1rem)' }}
                     >
                       {/* Lens flare animation for Advanced package */}
                       {pkg.id === 'advanced' && (
@@ -597,7 +665,7 @@ export default function PackagesPage() {
                   <div
                     key={pkg.id}
                     onClick={() => handlePackageSelect(pkg.id)}
-                    className={`relative cursor-pointer rounded-xl transition-all duration-300 ${
+                    className={`relative cursor-pointer rounded-xl transition-all duration-300 hover:-translate-y-2 ${
                       pkg.id === 'advanced' ? '' : 'p-6 border-2'
                     } ${
                       selectedPackage === pkg.id && pkg.id !== 'advanced'
@@ -836,6 +904,38 @@ export default function PackagesPage() {
         
         .scrollbar-hide::-webkit-scrollbar { 
           display: none;  /* Safari and Chrome */
+        }
+
+        @keyframes bounce-left {
+          0%, 20%, 50%, 80%, 100% {
+            transform: translateX(0);
+          }
+          40% {
+            transform: translateX(-3px);
+          }
+          60% {
+            transform: translateX(-1px);
+          }
+        }
+
+        @keyframes bounce-right {
+          0%, 20%, 50%, 80%, 100% {
+            transform: translateX(0);
+          }
+          40% {
+            transform: translateX(3px);
+          }
+          60% {
+            transform: translateX(1px);
+          }
+        }
+
+        .animate-bounce-left {
+          animation: bounce-left 2s infinite;
+        }
+
+        .animate-bounce-right {
+          animation: bounce-right 2s infinite;
         }
 
         .animate-spin-slow {
