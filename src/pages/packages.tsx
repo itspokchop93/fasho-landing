@@ -61,6 +61,7 @@ export default function PackagesPage() {
   const [animatedPlays, setAnimatedPlays] = useState<string>("");
   const [animatedPlacements, setAnimatedPlacements] = useState<number>(0);
   const [previousPackage, setPreviousPackage] = useState<string>("");
+  const [currentScale, setCurrentScale] = useState<number>(0);
 
   useEffect(() => {
     if (!router.isReady) return;
@@ -94,7 +95,7 @@ export default function PackagesPage() {
     }));
   };
 
-    // Animate chart data when package changes
+  // Animate chart data when package changes
   useEffect(() => {
     const selected = packages.find(p => p.id === selectedPackage);
     const hadPreviousSelection = previousPackage !== "";
@@ -123,10 +124,19 @@ export default function PackagesPage() {
 
     setGraphAnimating(true);
     
-    // Capture starting values for downward animation
+    // Capture starting values and scale for downward animation
     const startingData = [...animatedData];
     const startingPlacements = animatedPlacements;
     const startingPlays = animatedPlays;
+    const previousSelected = packages.find(p => p.id === previousPackage);
+    const previousMaxPlays = previousSelected ? 
+      Math.floor(parseInt(previousSelected.plays.replace(/[^0-9]/g, '')) * 1000 * 1.1) : 
+      maxPlays;
+    
+    // Set initial scale
+    if (!hadPreviousSelection) {
+      setCurrentScale(maxPlays);
+    }
     
     let startTime: number;
     let animationId: number;
@@ -138,37 +148,41 @@ export default function PackagesPage() {
       if (!phaseStartTime) phaseStartTime = timestamp;
       
       const elapsed = timestamp - phaseStartTime;
-      const phaseDuration = hadPreviousSelection ? 750 : 1500; // Faster if going down first
+      const phaseDuration = hadPreviousSelection ? 350 : 750; // Much faster - 200% speed increase
       const progress = Math.min(elapsed / phaseDuration, 1);
 
       // Easing function (ease-out-cubic)
       const easeOutCubic = 1 - Math.pow(1 - progress, 3);
 
-             if (phase === 'down') {
-         // Animate down from starting values to zero (right to left)
-         const newAnimatedData = startingData.map((startValue, index) => {
-           const pointDelay = ((29 - index) / 29) * 0.3; // Right to left for downward
-           const pointProgress = Math.max(0, Math.min(1, (easeOutCubic - pointDelay) / (1 - pointDelay)));
-           return startValue * (1 - pointProgress);
-         });
-         
-         setAnimatedData(newAnimatedData);
-         
-         // Animate numbers down from starting values
-         setAnimatedPlacements(Math.floor(startingPlacements * (1 - easeOutCubic)));
-         
-         // Clear plays text gradually
-         if (easeOutCubic > 0.5) {
-           setAnimatedPlays("");
-         }
-         
-         if (progress >= 1) {
-           // Switch to up phase
-           phase = 'up';
-           phaseStartTime = timestamp;
-           setAnimatedData(new Array(30).fill(0)); // Reset to zeros for upward animation
-         }
-       } else {
+      if (phase === 'down') {
+        // Keep using the previous package's scale during downward animation
+        setCurrentScale(previousMaxPlays);
+        
+        // Animate down from starting values to zero (right to left)
+        const newAnimatedData = startingData.map((startValue, index) => {
+          const pointDelay = ((29 - index) / 29) * 0.3; // Right to left for downward
+          const pointProgress = Math.max(0, Math.min(1, (easeOutCubic - pointDelay) / (1 - pointDelay)));
+          return startValue * (1 - pointProgress);
+        });
+        
+        setAnimatedData(newAnimatedData);
+        
+        // Animate numbers down from starting values
+        setAnimatedPlacements(Math.floor(startingPlacements * (1 - easeOutCubic)));
+        
+        // Clear plays text gradually
+        if (easeOutCubic > 0.5) {
+          setAnimatedPlays("");
+        }
+        
+        if (progress >= 1) {
+          // Switch to up phase and change scale
+          phase = 'up';
+          phaseStartTime = timestamp;
+          setCurrentScale(maxPlays); // Switch to new package's scale
+          setAnimatedData(new Array(30).fill(0)); // Reset to zeros for upward animation
+        }
+      } else {
         // Animate up to target values (left to right)
         const newAnimatedData = dailyData.map((targetPlays, index) => {
           const pointDelay = (index / 29) * 0.3; // Left to right for upward
@@ -454,7 +468,8 @@ export default function PackagesPage() {
                          <path
                            d={`M 0 100 ${displayData.map((plays, index) => {
                              const x = (index / (displayData.length - 1)) * 300;
-                             const y = chartData.maxPlays > 0 ? 100 - (plays / chartData.maxPlays) * 80 : 100;
+                             const scale = currentScale > 0 ? currentScale : chartData.maxPlays;
+                             const y = scale > 0 ? 100 - (plays / scale) * 80 : 100;
                              return `L ${x} ${y}`;
                            }).join(' ')} L 300 100 Z`}
                            fill="url(#areaGradient)"
@@ -463,7 +478,8 @@ export default function PackagesPage() {
                          {/* Data points */}
                          {displayData.map((plays, index) => {
                            const x = (index / (displayData.length - 1)) * 300;
-                           const y = chartData.maxPlays > 0 ? 100 - (plays / chartData.maxPlays) * 80 : 100;
+                           const scale = currentScale > 0 ? currentScale : chartData.maxPlays;
+                           const y = scale > 0 ? 100 - (plays / scale) * 80 : 100;
                            
                            return (
                              <circle
@@ -481,7 +497,8 @@ export default function PackagesPage() {
                          <path
                            d={`M ${displayData.map((plays, index) => {
                              const x = (index / (displayData.length - 1)) * 300;
-                             const y = chartData.maxPlays > 0 ? 100 - (plays / chartData.maxPlays) * 80 : 100;
+                             const scale = currentScale > 0 ? currentScale : chartData.maxPlays;
+                             const y = scale > 0 ? 100 - (plays / scale) * 80 : 100;
                              return `${x} ${y}`;
                            }).join(' L ')}`}
                            fill="none"
