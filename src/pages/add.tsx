@@ -176,7 +176,7 @@ export default function AddSongsPage() {
           
           {/* Animated border layer */}
           <div className="absolute -inset-1 rounded-2xl overflow-hidden">
-            <div className="absolute -inset-[100px] animate-spin-slow border-gradient-large"></div>
+            <div className="absolute -inset-[50px] animate-spin-slow border-gradient-chase"></div>
           </div>
           
           {/* Content container */}
@@ -228,20 +228,20 @@ export default function AddSongsPage() {
           animation: spin-slow 6s linear infinite;
         }
         
-        .border-gradient-large {
-          background: linear-gradient(
-            45deg,
-            #22c55e 0%, 
-            #10b981 12.5%, 
-            #84cc16 25%, 
-            #22c55e 37.5%, 
-            #059669 50%, 
-            #16a34a 62.5%, 
-            #84cc16 75%, 
-            #10b981 87.5%, 
-            #22c55e 100%
+        .border-gradient-chase {
+          background: conic-gradient(
+            from 0deg,
+            transparent 0deg,
+            transparent 60deg,
+            #22c55e 80deg,
+            #10b981 120deg,
+            #84cc16 160deg,
+            #22c55e 200deg,
+            #059669 240deg,
+            #16a34a 280deg,
+            #22c55e 320deg,
+            #10b981 360deg
           );
-          border-radius: 1rem;
         }
       `}</style>
     </>
