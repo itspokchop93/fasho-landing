@@ -56,6 +56,7 @@ export default function PackagesPage() {
   const [currentSongIndex, setCurrentSongIndex] = useState(0);
   const [selectedPackages, setSelectedPackages] = useState<{[key: number]: string}>({});
   const [selectedPackage, setSelectedPackage] = useState<string>("");
+  const [graphAnimating, setGraphAnimating] = useState(false);
 
   useEffect(() => {
     if (!router.isReady) return;
@@ -78,11 +79,19 @@ export default function PackagesPage() {
   const isOnlySong = tracks.length === 1;
 
   const handlePackageSelect = (packageId: string) => {
-    setSelectedPackage(packageId);
-    setSelectedPackages(prev => ({
-      ...prev,
-      [currentSongIndex]: packageId
-    }));
+    // Toggle functionality - if clicking the same package, unselect it
+    const newPackageId = selectedPackage === packageId ? "" : packageId;
+    
+    // Trigger graph animation
+    setGraphAnimating(true);
+    setTimeout(() => {
+      setSelectedPackage(newPackageId);
+      setSelectedPackages(prev => ({
+        ...prev,
+        [currentSongIndex]: newPackageId
+      }));
+      setTimeout(() => setGraphAnimating(false), 100);
+    }, 300); // Fall duration
   };
 
   const handleNext = () => {
@@ -128,7 +137,24 @@ export default function PackagesPage() {
 
   const getChartData = () => {
     const selected = packages.find(p => p.id === selectedPackage);
-    if (!selected) return { plays: 0, placements: 0, dailyData: [], playsRange: "", maxPlays: 0 };
+    
+    // If no package selected or currently animating (falling), return zero data
+    if (!selected || graphAnimating) {
+      const emptyDailyData = [];
+      for (let i = 0; i < 30; i++) {
+        emptyDailyData.push({
+          day: i + 1,
+          plays: 0
+        });
+      }
+      return { 
+        plays: 0, 
+        placements: 0, 
+        dailyData: emptyDailyData, 
+        playsRange: "", 
+        maxPlays: 0 
+      };
+    }
     
     const basePlay = parseInt(selected.plays.replace(/[^0-9]/g, '')) * 1000;
     const basePlacements = parseInt(selected.placements.replace(/[^0-9]/g, ''));
@@ -221,7 +247,7 @@ export default function PackagesPage() {
                       </div>
                     )}
                     
-                    <div className={`${pkg.id === 'advanced' ? 'relative z-10' : ''}`}>
+                    <div className={`${pkg.id === 'advanced' ? 'relative z-10 bg-white/5 rounded-xl p-6' : ''}`}>
                       <div className="flex items-center justify-center mb-4">
                         <div className="w-16 h-16 bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] rounded-full flex items-center justify-center">
                           <span className="text-2xl">🎧</span>
@@ -248,91 +274,90 @@ export default function PackagesPage() {
                <div className="bg-white/5 rounded-xl p-6 border border-white/20">
                  <h3 className="text-lg font-semibold mb-4">Based on past campaigns</h3>
                  
-                 {selectedPackage ? (
-                   <div className="space-y-6">
-                     <div className="flex justify-between items-center">
-                       <div>
-                         <div className="text-sm text-white/70">Expected Total Plays</div>
-                         <div className="text-2xl font-bold text-[#59e3a5]">{chartData.playsRange}</div>
-                       </div>
-                       <div>
-                         <div className="text-sm text-white/70">Playlist Placements</div>
-                         <div className="text-2xl font-bold text-[#14c0ff]">{chartData.placements}</div>
+                 <div className="space-y-6">
+                   <div className="flex justify-between items-center">
+                     <div>
+                       <div className="text-sm text-white/70">Expected Total Plays</div>
+                       <div className={`text-2xl font-bold text-[#59e3a5] transition-all duration-500 ${graphAnimating ? 'scale-y-0' : 'scale-y-100'}`}>
+                         {chartData.playsRange || "Select a package"}
                        </div>
                      </div>
-                     
-                                            <div className="relative">
-                         <div className="text-sm text-white/70 mb-3">30-Day Growth Projection</div>
-                         <div className="relative h-32 bg-black/20 rounded-lg p-4 ml-8">
-                         <svg className="w-full h-full" viewBox="0 0 300 100" preserveAspectRatio="none">
-                           <defs>
-                             <linearGradient id="lineGradient" x1="0%" y1="0%" x2="100%" y2="0%">
-                               <stop offset="0%" stopColor="#59e3a5" />
-                               <stop offset="100%" stopColor="#14c0ff" />
-                             </linearGradient>
-                             <linearGradient id="areaGradient" x1="0%" y1="0%" x2="0%" y2="100%">
-                               <stop offset="0%" stopColor="#59e3a5" stopOpacity="0.3" />
-                               <stop offset="100%" stopColor="#14c0ff" stopOpacity="0.1" />
-                             </linearGradient>
-                           </defs>
-                           
-                           {/* Grid lines */}
-                           <defs>
-                             <pattern id="grid" width="60" height="25" patternUnits="userSpaceOnUse">
-                               <path d="M 60 0 L 0 0 0 25" fill="none" stroke="rgba(255,255,255,0.1)" strokeWidth="0.5"/>
-                             </pattern>
-                           </defs>
-                           <rect width="100%" height="100%" fill="url(#grid)" />
-                           
-                           {/* Area under the curve */}
-                           {chartData.dailyData.length > 0 && (
-                             <path
-                               d={`M 0 100 ${chartData.dailyData.map((point, index) => {
-                                 const x = (index / (chartData.dailyData.length - 1)) * 300;
-                                 const y = 100 - (point.plays / chartData.plays) * 80;
-                                 return `L ${x} ${y}`;
-                               }).join(' ')} L 300 100 Z`}
-                               fill="url(#areaGradient)"
-                             />
-                           )}
-                           
-                           {/* Main line */}
-                           {chartData.dailyData.length > 0 && (
-                             <path
-                               d={`M ${chartData.dailyData.map((point, index) => {
-                                 const x = (index / (chartData.dailyData.length - 1)) * 300;
-                                 const y = 100 - (point.plays / chartData.plays) * 80;
-                                 return `${x} ${y}`;
-                               }).join(' L ')}`}
-                               fill="none"
-                               stroke="url(#lineGradient)"
-                               strokeWidth="2"
-                               className="drop-shadow-sm"
-                             />
-                           )}
-                         </svg>
-                         
-                         {/* Y-axis labels */}
-                         <div className="absolute left-0 top-0 h-full flex flex-col justify-between text-xs text-white/50 -ml-12 w-10 text-right">
-                           <span>{Math.ceil(chartData.maxPlays / 1000)}k</span>
-                           <span>{Math.ceil(chartData.maxPlays / 2000)}k</span>
-                           <span>0</span>
-                         </div>
-                         
-                         {/* X-axis labels */}
-                         <div className="absolute bottom-0 left-0 w-full flex justify-between text-xs text-white/50 -mb-6">
-                           <span>Day 1</span>
-                           <span>Day 15</span>
-                           <span>Day 30</span>
-                         </div>
+                     <div>
+                       <div className="text-sm text-white/70">Playlist Placements</div>
+                       <div className={`text-2xl font-bold text-[#14c0ff] transition-all duration-500 ${graphAnimating ? 'scale-y-0' : 'scale-y-100'}`}>
+                         {chartData.placements || "—"}
                        </div>
                      </div>
                    </div>
-                 ) : (
-                   <div className="text-center py-8 text-white/50">
-                     Select a package to see performance projections
+                   
+                   <div className="relative">
+                     <div className="text-sm text-white/70 mb-3">30-Day Growth Projection</div>
+                     <div className="relative h-32 bg-black/20 rounded-lg p-4 ml-8">
+                       <svg className="w-full h-full" viewBox="0 0 300 100" preserveAspectRatio="none">
+                         <defs>
+                           <linearGradient id="lineGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                             <stop offset="0%" stopColor="#59e3a5" />
+                             <stop offset="100%" stopColor="#14c0ff" />
+                           </linearGradient>
+                           <linearGradient id="areaGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+                             <stop offset="0%" stopColor="#59e3a5" stopOpacity="0.3" />
+                             <stop offset="100%" stopColor="#14c0ff" stopOpacity="0.1" />
+                           </linearGradient>
+                         </defs>
+                         
+                         {/* Grid lines */}
+                         <defs>
+                           <pattern id="grid" width="60" height="25" patternUnits="userSpaceOnUse">
+                             <path d="M 60 0 L 0 0 0 25" fill="none" stroke="rgba(255,255,255,0.1)" strokeWidth="0.5"/>
+                           </pattern>
+                         </defs>
+                         <rect width="100%" height="100%" fill="url(#grid)" />
+                         
+                         {/* Area under the curve */}
+                         <path
+                           d={`M 0 100 ${chartData.dailyData.map((point, index) => {
+                             const x = (index / (chartData.dailyData.length - 1)) * 300;
+                             const y = chartData.maxPlays > 0 ? 100 - (point.plays / chartData.maxPlays) * 80 : 100;
+                             return `L ${x} ${y}`;
+                           }).join(' ')} L 300 100 Z`}
+                           fill="url(#areaGradient)"
+                           className={`transition-all duration-700 ${graphAnimating ? 'scale-y-0 origin-bottom' : 'scale-y-100'}`}
+                         />
+                         
+                         {/* Main line */}
+                         <path
+                           d={`M ${chartData.dailyData.map((point, index) => {
+                             const x = (index / (chartData.dailyData.length - 1)) * 300;
+                             const y = chartData.maxPlays > 0 ? 100 - (point.plays / chartData.maxPlays) * 80 : 100;
+                             return `${x} ${y}`;
+                           }).join(' L ')}`}
+                           fill="none"
+                           stroke="url(#lineGradient)"
+                           strokeWidth="2"
+                           className={`drop-shadow-sm transition-all duration-700 ${graphAnimating ? 'scale-y-0 origin-bottom' : 'scale-y-100'}`}
+                         />
+                       </svg>
+                       
+                       {/* Y-axis labels */}
+                       <div className="absolute left-0 top-0 h-full flex flex-col justify-between text-xs text-white/50 -ml-12 w-10 text-right">
+                         <span className={`transition-opacity duration-500 ${chartData.maxPlays > 0 ? 'opacity-100' : 'opacity-30'}`}>
+                           {chartData.maxPlays > 0 ? Math.ceil(chartData.maxPlays / 1000) + 'k' : '10k'}
+                         </span>
+                         <span className={`transition-opacity duration-500 ${chartData.maxPlays > 0 ? 'opacity-100' : 'opacity-30'}`}>
+                           {chartData.maxPlays > 0 ? Math.ceil(chartData.maxPlays / 2000) + 'k' : '5k'}
+                         </span>
+                         <span>0</span>
+                       </div>
+                       
+                       {/* X-axis labels */}
+                       <div className="absolute bottom-0 left-0 w-full flex justify-between text-xs text-white/50 -mb-6">
+                         <span>Day 1</span>
+                         <span>Day 15</span>
+                         <span>Day 30</span>
+                       </div>
+                     </div>
                    </div>
-                 )}
+                 </div>
                </div>
 
               
