@@ -128,21 +128,23 @@ export default function PackagesPage() {
 
   const getChartData = () => {
     const selected = packages.find(p => p.id === selectedPackage);
-    if (!selected) return { plays: 0, placements: 0, dailyData: [] };
+    if (!selected) return { plays: 0, placements: 0, dailyData: [], playsRange: "", maxPlays: 0 };
     
     const basePlay = parseInt(selected.plays.replace(/[^0-9]/g, '')) * 1000;
     const basePlacements = parseInt(selected.placements.replace(/[^0-9]/g, ''));
     
-    // Add 10-20% more than advertised for realistic expectations
-    const actualPlays = Math.floor(basePlay * (1.1 + Math.random() * 0.1));
-    const actualPlacements = Math.floor(basePlacements * (1.05 + Math.random() * 0.1));
+    // Create range: base to 10% higher
+    const minPlays = basePlay;
+    const maxPlays = Math.floor(basePlay * 1.1);
+    const playsRange = `${(minPlays / 1000).toFixed(0)}k - ${(maxPlays / 1000).toFixed(1)}k plays`;
+    const actualPlacements = Math.floor(basePlacements * (1.05 + Math.random() * 0.05));
     
-    // Generate 30-day growth data
+    // Generate 30-day growth data using the max value for scaling
     const dailyData = [];
     for (let i = 0; i < 30; i++) {
       const progress = i / 29;
       const randomVariation = 0.8 + Math.random() * 0.4; // 80-120% of expected
-      const dailyPlays = Math.floor(actualPlays * progress * randomVariation);
+      const dailyPlays = Math.floor(maxPlays * progress * randomVariation);
       dailyData.push({
         day: i + 1,
         plays: Math.max(0, dailyPlays)
@@ -150,9 +152,11 @@ export default function PackagesPage() {
     }
     
     return {
-      plays: actualPlays,
+      plays: maxPlays,
       placements: actualPlacements,
-      dailyData
+      dailyData,
+      playsRange,
+      maxPlays
     };
   };
 
@@ -185,31 +189,56 @@ export default function PackagesPage() {
                     className={`relative cursor-pointer rounded-xl p-6 border-2 transition-all duration-300 ${
                       selectedPackage === pkg.id
                         ? 'border-[#59e3a5] bg-[#59e3a5]/5'
+                        : pkg.id === 'advanced'
+                        ? 'border-[#14c0ff] bg-[#14c0ff]/5'
                         : 'border-white/20 bg-white/5 hover:border-white/40'
                     }`}
                   >
+                    {/* Lens flare animation for Advanced package */}
+                    {pkg.id === 'advanced' && (
+                      <>
+                        {/* Outer glow layer */}
+                        <div className="absolute -inset-1 bg-gradient-to-r from-blue-400 via-cyan-500 to-blue-600 rounded-2xl blur-lg opacity-50 animate-pulse"></div>
+                        
+                        {/* Animated border layer */}
+                        <div className="absolute -inset-0.5 rounded-xl overflow-hidden">
+                          <div className="absolute inset-0 border-container-blue">
+                            <div className="absolute -inset-[100px] animate-spin-slow border-highlight-blue"></div>
+                          </div>
+                        </div>
+                      </>
+                    )}
+                    
+                    {/* Most Popular flag for Advanced package */}
+                    {pkg.id === 'advanced' && (
+                      <div className="absolute -top-3 -left-3 bg-gradient-to-r from-[#14c0ff] to-[#59e3a5] text-white text-xs font-semibold px-3 py-1 rounded-md shadow-lg z-10">
+                        Most Popular
+                      </div>
+                    )}
                     {selectedPackage === pkg.id && (
                       <div className="absolute -top-2 -right-2 w-6 h-6 bg-[#59e3a5] rounded-full flex items-center justify-center">
                         <span className="text-black text-sm font-bold">✓</span>
                       </div>
                     )}
                     
-                    <div className="flex items-center justify-center mb-4">
-                      <div className="w-16 h-16 bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] rounded-full flex items-center justify-center">
-                        <span className="text-2xl">🎧</span>
+                    <div className={`${pkg.id === 'advanced' ? 'relative z-10' : ''}`}>
+                      <div className="flex items-center justify-center mb-4">
+                        <div className="w-16 h-16 bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] rounded-full flex items-center justify-center">
+                          <span className="text-2xl">🎧</span>
+                        </div>
                       </div>
-                    </div>
-                    
-                    <h3 className="text-xl font-bold text-center mb-2">{pkg.name}</h3>
-                    <p className="text-sm text-white/70 text-center mb-4">{pkg.description}</p>
-                    
-                    <div className="space-y-2 mb-4">
-                      <div className="text-sm text-white/80">{pkg.plays}</div>
-                      <div className="text-sm text-white/80">{pkg.placements}</div>
-                    </div>
-                    
-                    <div className="text-center">
-                      <span className="text-2xl font-bold">${pkg.price}</span>
+                      
+                      <h3 className="text-xl font-bold text-center mb-2">{pkg.name}</h3>
+                      <p className="text-sm text-white/70 text-center mb-4">{pkg.description}</p>
+                      
+                      <div className="space-y-2 mb-4">
+                        <div className="text-sm text-white/80">{pkg.plays}</div>
+                        <div className="text-sm text-white/80">{pkg.placements}</div>
+                      </div>
+                      
+                      <div className="text-center">
+                        <span className="text-2xl font-bold">${pkg.price}</span>
+                      </div>
                     </div>
                   </div>
                 ))}
@@ -224,7 +253,7 @@ export default function PackagesPage() {
                      <div className="flex justify-between items-center">
                        <div>
                          <div className="text-sm text-white/70">Expected Total Plays</div>
-                         <div className="text-2xl font-bold text-[#59e3a5]">{chartData.plays.toLocaleString()}</div>
+                         <div className="text-2xl font-bold text-[#59e3a5]">{chartData.playsRange}</div>
                        </div>
                        <div>
                          <div className="text-sm text-white/70">Playlist Placements</div>
@@ -232,9 +261,9 @@ export default function PackagesPage() {
                        </div>
                      </div>
                      
-                     <div className="relative">
-                       <div className="text-sm text-white/70 mb-3">30-Day Growth Projection</div>
-                       <div className="relative h-32 bg-black/20 rounded-lg p-4">
+                                            <div className="relative">
+                         <div className="text-sm text-white/70 mb-3">30-Day Growth Projection</div>
+                         <div className="relative h-32 bg-black/20 rounded-lg p-4 ml-8">
                          <svg className="w-full h-full" viewBox="0 0 300 100" preserveAspectRatio="none">
                            <defs>
                              <linearGradient id="lineGradient" x1="0%" y1="0%" x2="100%" y2="0%">
@@ -284,9 +313,9 @@ export default function PackagesPage() {
                          </svg>
                          
                          {/* Y-axis labels */}
-                         <div className="absolute left-0 top-0 h-full flex flex-col justify-between text-xs text-white/50 -ml-8">
-                           <span>{chartData.plays.toLocaleString()}</span>
-                           <span>{Math.floor(chartData.plays * 0.5).toLocaleString()}</span>
+                         <div className="absolute left-0 top-0 h-full flex flex-col justify-between text-xs text-white/50 -ml-12 w-10 text-right">
+                           <span>{Math.ceil(chartData.maxPlays / 1000)}k</span>
+                           <span>{Math.ceil(chartData.maxPlays / 2000)}k</span>
                            <span>0</span>
                          </div>
                          
@@ -354,6 +383,44 @@ export default function PackagesPage() {
           </div>
         </div>
       </main>
+
+      <style jsx>{`
+        @keyframes spin-slow {
+          from {
+            transform: rotate(0deg);
+          }
+          to {
+            transform: rotate(360deg);
+          }
+        }
+        
+        .animate-spin-slow {
+          animation: spin-slow 4s linear infinite;
+        }
+        
+        .border-container-blue {
+          background: rgba(20, 192, 255, 0.45);
+          border-radius: 0.75rem;
+        }
+        
+        .border-highlight-blue {
+          background: conic-gradient(
+            from 0deg,
+            transparent 0deg,
+            #14c0ff 30deg,
+            #0ea5e9 45deg,
+            #14c0ff 60deg,
+            transparent 90deg,
+            transparent 180deg,
+            #14c0ff 210deg,
+            #0ea5e9 225deg,
+            #14c0ff 240deg,
+            transparent 270deg,
+            transparent 360deg
+          );
+          border-radius: 0.75rem;
+        }
+      `}</style>
     </>
   );
 } 
