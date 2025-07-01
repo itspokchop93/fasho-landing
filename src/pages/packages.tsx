@@ -453,7 +453,7 @@ export default function PackagesPage() {
               {canScrollLeft && (
                 <button
                   onClick={() => scrollCarousel('left')}
-                  className="absolute left-2 top-1/2 -translate-y-1/2 z-20 bg-black/70 backdrop-blur-sm rounded-full p-2 border border-white/20"
+                  className="absolute left-2 top-1/2 -translate-y-1/2 z-50 bg-black/70 backdrop-blur-sm rounded-full p-2 border border-white/20 shadow-lg"
                 >
                   <svg className="w-4 h-4 text-white animate-bounce-left" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
@@ -465,7 +465,7 @@ export default function PackagesPage() {
               {canScrollRight && (
                 <button
                   onClick={() => scrollCarousel('right')}
-                  className="absolute right-2 top-1/2 -translate-y-1/2 z-20 bg-black/70 backdrop-blur-sm rounded-full p-2 border border-white/20"
+                  className="absolute right-2 top-1/2 -translate-y-1/2 z-50 bg-black/70 backdrop-blur-sm rounded-full p-2 border border-white/20 shadow-lg"
                 >
                   <svg className="w-4 h-4 text-white animate-bounce-right" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
