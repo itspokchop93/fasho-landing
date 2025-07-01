@@ -57,6 +57,7 @@ export default function PackagesPage() {
   const [selectedPackages, setSelectedPackages] = useState<{[key: number]: string}>({});
   const [selectedPackage, setSelectedPackage] = useState<string>("");
   const [graphAnimating, setGraphAnimating] = useState(false);
+  const [animatedData, setAnimatedData] = useState<number[]>([]);
 
   useEffect(() => {
     if (!router.isReady) return;
@@ -82,17 +83,74 @@ export default function PackagesPage() {
     // Toggle functionality - if clicking the same package, unselect it
     const newPackageId = selectedPackage === packageId ? "" : packageId;
     
-    // Trigger graph animation
-    setGraphAnimating(true);
-    setTimeout(() => {
-      setSelectedPackage(newPackageId);
-      setSelectedPackages(prev => ({
-        ...prev,
-        [currentSongIndex]: newPackageId
-      }));
-      setTimeout(() => setGraphAnimating(false), 100);
-    }, 800); // Longer duration for more realistic animation
+    setSelectedPackage(newPackageId);
+    setSelectedPackages(prev => ({
+      ...prev,
+      [currentSongIndex]: newPackageId
+    }));
   };
+
+  // Animate chart data when package changes
+  useEffect(() => {
+    const selected = packages.find(p => p.id === selectedPackage);
+    
+    if (!selected) {
+      setAnimatedData([]);
+      return;
+    }
+    
+    const basePlay = parseInt(selected.plays.replace(/[^0-9]/g, '')) * 1000;
+    const maxPlays = Math.floor(basePlay * 1.1);
+    
+         // Generate 30-day growth data
+     const dailyData: number[] = [];
+     for (let i = 0; i < 30; i++) {
+       const progress = i / 29;
+       const randomVariation = 0.8 + Math.random() * 0.4;
+       const dailyPlays = Math.floor(maxPlays * progress * randomVariation);
+       dailyData.push(Math.max(0, dailyPlays));
+     }
+
+     setGraphAnimating(true);
+     setAnimatedData(new Array(30).fill(0)); // Start with zeros
+
+     // Progressive animation
+     let startTime: number;
+     let animationId: number;
+
+     const animate = (timestamp: number) => {
+       if (!startTime) startTime = timestamp;
+       const elapsed = timestamp - startTime;
+       const duration = 1500; // 1.5 seconds
+       const progress = Math.min(elapsed / duration, 1);
+
+       // Easing function (ease-out-cubic)
+       const easeOutCubic = 1 - Math.pow(1 - progress, 3);
+
+       const newAnimatedData = dailyData.map((targetPlays, index) => {
+         // Stagger the animation for each point (left to right)
+         const pointDelay = (index / 29) * 0.3; // 30% of total duration for stagger
+         const pointProgress = Math.max(0, Math.min(1, (easeOutCubic - pointDelay) / (1 - pointDelay)));
+         return targetPlays * pointProgress;
+       });
+
+       setAnimatedData(newAnimatedData);
+
+       if (progress < 1) {
+         animationId = requestAnimationFrame(animate);
+       } else {
+         setGraphAnimating(false);
+       }
+     };
+
+     animationId = requestAnimationFrame(animate);
+
+     return () => {
+       if (animationId) {
+         cancelAnimationFrame(animationId);
+       }
+     };
+   }, [selectedPackage]);
 
   const handleNext = () => {
     if (!selectedPackage) {
@@ -138,8 +196,7 @@ export default function PackagesPage() {
   const getChartData = () => {
     const selected = packages.find(p => p.id === selectedPackage);
     
-    // If no package selected or currently animating (falling), return zero data
-    if (!selected || graphAnimating) {
+    if (!selected) {
       const emptyDailyData = [];
       for (let i = 0; i < 30; i++) {
         emptyDailyData.push({
@@ -186,7 +243,31 @@ export default function PackagesPage() {
     };
   };
 
+  const getYAxisLabels = (maxValue: number) => {
+    if (maxValue === 0) return ['10,000', '5,000', '0'];
+    
+    // Determine appropriate step size
+    let step: number;
+    if (maxValue >= 50000) {
+      step = 10000;
+    } else if (maxValue >= 20000) {
+      step = 5000;
+    } else if (maxValue >= 5000) {
+      step = 1000;
+    } else {
+      step = 500;
+    }
+    
+    const topValue = Math.ceil(maxValue / step) * step;
+    const midValue = Math.floor(topValue / 2 / step) * step;
+    
+    return [topValue.toLocaleString(), midValue.toLocaleString(), '0'];
+  };
+
   const chartData = getChartData();
+  const displayData = animatedData.length > 0 ? animatedData : chartData.dailyData.map(d => d.plays);
+  const currentMaxPlays = Math.max(...displayData, chartData.maxPlays);
+  const yAxisLabels = getYAxisLabels(chartData.maxPlays);
 
   if (!currentTrack) {
     return <div className="min-h-screen bg-black text-white flex items-center justify-center">Loading...</div>;
@@ -281,13 +362,13 @@ export default function PackagesPage() {
                    <div className="flex justify-between items-center">
                      <div>
                        <div className="text-sm text-white/70">Expected Total Plays</div>
-                       <div className={`text-2xl font-bold text-[#59e3a5] transition-all duration-500 ${graphAnimating ? 'scale-y-0' : 'scale-y-100'}`}>
+                       <div className="text-2xl font-bold text-[#59e3a5] transition-all duration-500">
                          {chartData.playsRange || "Select a package"}
                        </div>
                      </div>
                      <div>
                        <div className="text-sm text-white/70">Playlist Placements</div>
-                       <div className={`text-2xl font-bold text-[#14c0ff] transition-all duration-500 ${graphAnimating ? 'scale-y-0' : 'scale-y-100'}`}>
+                       <div className="text-2xl font-bold text-[#14c0ff] transition-all duration-500">
                          {chartData.placements || "—"}
                        </div>
                      </div>
@@ -318,23 +399,18 @@ export default function PackagesPage() {
                          
                          {/* Area under the curve */}
                          <path
-                           d={`M 0 100 ${chartData.dailyData.map((point, index) => {
-                             const x = (index / (chartData.dailyData.length - 1)) * 300;
-                             const y = chartData.maxPlays > 0 ? 100 - (point.plays / chartData.maxPlays) * 80 : 100;
+                           d={`M 0 100 ${displayData.map((plays, index) => {
+                             const x = (index / (displayData.length - 1)) * 300;
+                             const y = chartData.maxPlays > 0 ? 100 - (plays / chartData.maxPlays) * 80 : 100;
                              return `L ${x} ${y}`;
                            }).join(' ')} L 300 100 Z`}
                            fill="url(#areaGradient)"
-                           style={{
-                             animation: graphAnimating ? 'chartFallRise 800ms ease-in-out' : 'none'
-                           }}
                          />
                          
-                         {/* Animated data points */}
-                         {chartData.dailyData.map((point, index) => {
-                           const x = (index / (chartData.dailyData.length - 1)) * 300;
-                           const y = chartData.maxPlays > 0 ? 100 - (point.plays / chartData.maxPlays) * 80 : 100;
-                           const fallDelay = (chartData.dailyData.length - 1 - index) * 20; // Right to left
-                           const riseDelay = 400 + (index * 20); // Left to right after fall
+                         {/* Data points */}
+                         {displayData.map((plays, index) => {
+                           const x = (index / (displayData.length - 1)) * 300;
+                           const y = chartData.maxPlays > 0 ? 100 - (plays / chartData.maxPlays) * 80 : 100;
                            
                            return (
                              <circle
@@ -343,44 +419,34 @@ export default function PackagesPage() {
                                cy={y}
                                r="2"
                                fill="url(#lineGradient)"
-                               style={{
-                                 animation: graphAnimating ? `pointFallRise 800ms ease-in-out` : 'none',
-                                 animationDelay: graphAnimating ? `${fallDelay}ms` : '0ms'
-                               }}
+                               className="drop-shadow-sm"
                              />
                            );
                          })}
                          
                          {/* Main line */}
                          <path
-                           d={`M ${chartData.dailyData.map((point, index) => {
-                             const x = (index / (chartData.dailyData.length - 1)) * 300;
-                             const y = chartData.maxPlays > 0 ? 100 - (point.plays / chartData.maxPlays) * 80 : 100;
+                           d={`M ${displayData.map((plays, index) => {
+                             const x = (index / (displayData.length - 1)) * 300;
+                             const y = chartData.maxPlays > 0 ? 100 - (plays / chartData.maxPlays) * 80 : 100;
                              return `${x} ${y}`;
                            }).join(' L ')}`}
                            fill="none"
                            stroke="url(#lineGradient)"
                            strokeWidth="2"
                            className="drop-shadow-sm"
-                           style={{
-                             animation: graphAnimating ? 'chartFallRise 800ms ease-in-out' : 'none'
-                           }}
                          />
                        </svg>
                        
                                                 {/* Y-axis labels */}
                          <div className="absolute left-0 top-0 h-full flex flex-col justify-between text-xs text-white/50 -ml-16 w-14 text-right">
                            <span className={`transition-opacity duration-500 ${chartData.maxPlays > 0 ? 'opacity-100' : 'opacity-30'}`}>
-                             {chartData.maxPlays > 0 ? 
-                               chartData.maxPlays.toLocaleString() 
-                               : '10,000'}
+                             {yAxisLabels[0]}
                            </span>
                            <span className={`transition-opacity duration-500 ${chartData.maxPlays > 0 ? 'opacity-100' : 'opacity-30'}`}>
-                             {chartData.maxPlays > 0 ? 
-                               Math.round(chartData.maxPlays / 2).toLocaleString() 
-                               : '5,000'}
+                             {yAxisLabels[1]}
                            </span>
-                           <span>0</span>
+                           <span>{yAxisLabels[2]}</span>
                          </div>
                        
                        {/* X-axis labels */}
@@ -453,39 +519,7 @@ export default function PackagesPage() {
           }
         }
         
-        @keyframes chartFallRise {
-          0% {
-            transform: scaleY(1);
-            transform-origin: bottom;
-          }
-          50% {
-            transform: scaleY(0);
-            transform-origin: bottom;
-          }
-          100% {
-            transform: scaleY(1);
-            transform-origin: bottom;
-          }
-        }
-        
-        @keyframes pointFallRise {
-          0% {
-            transform: translateY(0);
-            opacity: 1;
-          }
-          25% {
-            transform: translateY(80px);
-            opacity: 0.3;
-          }
-          50% {
-            transform: translateY(80px);
-            opacity: 0.3;
-          }
-          100% {
-            transform: translateY(0);
-            opacity: 1;
-          }
-        }
+
         
         .animate-spin-slow {
           animation: spin-slow 2s linear infinite;
