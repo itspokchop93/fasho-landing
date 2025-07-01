@@ -58,6 +58,9 @@ export default function PackagesPage() {
   const [selectedPackage, setSelectedPackage] = useState<string>("");
   const [graphAnimating, setGraphAnimating] = useState(false);
   const [animatedData, setAnimatedData] = useState<number[]>([]);
+  const [animatedPlays, setAnimatedPlays] = useState<string>("");
+  const [animatedPlacements, setAnimatedPlacements] = useState<number>(0);
+  const [previousPackage, setPreviousPackage] = useState<string>("");
 
   useEffect(() => {
     if (!router.isReady) return;
@@ -83,6 +86,7 @@ export default function PackagesPage() {
     // Toggle functionality - if clicking the same package, unselect it
     const newPackageId = selectedPackage === packageId ? "" : packageId;
     
+    setPreviousPackage(selectedPackage);
     setSelectedPackage(newPackageId);
     setSelectedPackages(prev => ({
       ...prev,
@@ -90,67 +94,116 @@ export default function PackagesPage() {
     }));
   };
 
-  // Animate chart data when package changes
+    // Animate chart data when package changes
   useEffect(() => {
     const selected = packages.find(p => p.id === selectedPackage);
+    const hadPreviousSelection = previousPackage !== "";
     
     if (!selected) {
       setAnimatedData([]);
+      setAnimatedPlays("");
+      setAnimatedPlacements(0);
       return;
     }
     
     const basePlay = parseInt(selected.plays.replace(/[^0-9]/g, '')) * 1000;
     const maxPlays = Math.floor(basePlay * 1.1);
+    const basePlacements = parseInt(selected.placements.replace(/[^0-9]/g, ''));
+    const actualPlacements = Math.floor(basePlacements * (1.05 + Math.random() * 0.05));
+    const playsRange = `${(basePlay / 1000).toFixed(0)}k - ${(maxPlays / 1000).toFixed(1)}k plays`;
     
-         // Generate 30-day growth data
-     const dailyData: number[] = [];
-     for (let i = 0; i < 30; i++) {
-       const progress = i / 29;
-       const randomVariation = 0.8 + Math.random() * 0.4;
-       const dailyPlays = Math.floor(maxPlays * progress * randomVariation);
-       dailyData.push(Math.max(0, dailyPlays));
-     }
+    // Generate 30-day growth data
+    const dailyData: number[] = [];
+    for (let i = 0; i < 30; i++) {
+      const progress = i / 29;
+      const randomVariation = 0.8 + Math.random() * 0.4;
+      const dailyPlays = Math.floor(maxPlays * progress * randomVariation);
+      dailyData.push(Math.max(0, dailyPlays));
+    }
 
-     setGraphAnimating(true);
-     setAnimatedData(new Array(30).fill(0)); // Start with zeros
+    setGraphAnimating(true);
+    
+    // Capture starting values for downward animation
+    const startingData = [...animatedData];
+    const startingPlacements = animatedPlacements;
+    const startingPlays = animatedPlays;
+    
+    let startTime: number;
+    let animationId: number;
+    let phase: 'down' | 'up' = hadPreviousSelection ? 'down' : 'up';
+    let phaseStartTime: number;
 
-     // Progressive animation
-     let startTime: number;
-     let animationId: number;
+    const animate = (timestamp: number) => {
+      if (!startTime) startTime = timestamp;
+      if (!phaseStartTime) phaseStartTime = timestamp;
+      
+      const elapsed = timestamp - phaseStartTime;
+      const phaseDuration = hadPreviousSelection ? 750 : 1500; // Faster if going down first
+      const progress = Math.min(elapsed / phaseDuration, 1);
 
-     const animate = (timestamp: number) => {
-       if (!startTime) startTime = timestamp;
-       const elapsed = timestamp - startTime;
-       const duration = 1500; // 1.5 seconds
-       const progress = Math.min(elapsed / duration, 1);
+      // Easing function (ease-out-cubic)
+      const easeOutCubic = 1 - Math.pow(1 - progress, 3);
 
-       // Easing function (ease-out-cubic)
-       const easeOutCubic = 1 - Math.pow(1 - progress, 3);
-
-       const newAnimatedData = dailyData.map((targetPlays, index) => {
-         // Stagger the animation for each point (left to right)
-         const pointDelay = (index / 29) * 0.3; // 30% of total duration for stagger
-         const pointProgress = Math.max(0, Math.min(1, (easeOutCubic - pointDelay) / (1 - pointDelay)));
-         return targetPlays * pointProgress;
-       });
-
-       setAnimatedData(newAnimatedData);
-
-       if (progress < 1) {
-         animationId = requestAnimationFrame(animate);
+             if (phase === 'down') {
+         // Animate down from starting values to zero (right to left)
+         const newAnimatedData = startingData.map((startValue, index) => {
+           const pointDelay = ((29 - index) / 29) * 0.3; // Right to left for downward
+           const pointProgress = Math.max(0, Math.min(1, (easeOutCubic - pointDelay) / (1 - pointDelay)));
+           return startValue * (1 - pointProgress);
+         });
+         
+         setAnimatedData(newAnimatedData);
+         
+         // Animate numbers down from starting values
+         setAnimatedPlacements(Math.floor(startingPlacements * (1 - easeOutCubic)));
+         
+         // Clear plays text gradually
+         if (easeOutCubic > 0.5) {
+           setAnimatedPlays("");
+         }
+         
+         if (progress >= 1) {
+           // Switch to up phase
+           phase = 'up';
+           phaseStartTime = timestamp;
+           setAnimatedData(new Array(30).fill(0)); // Reset to zeros for upward animation
+         }
        } else {
-         setGraphAnimating(false);
-       }
-     };
+        // Animate up to target values (left to right)
+        const newAnimatedData = dailyData.map((targetPlays, index) => {
+          const pointDelay = (index / 29) * 0.3; // Left to right for upward
+          const pointProgress = Math.max(0, Math.min(1, (easeOutCubic - pointDelay) / (1 - pointDelay)));
+          return targetPlays * pointProgress;
+        });
 
-     animationId = requestAnimationFrame(animate);
+        setAnimatedData(newAnimatedData);
+        
+        // Animate numbers up
+        setAnimatedPlacements(Math.floor(actualPlacements * easeOutCubic));
+        setAnimatedPlays(easeOutCubic > 0.1 ? playsRange : "");
+        
+        if (progress >= 1) {
+          setGraphAnimating(false);
+          return;
+        }
+      }
 
-     return () => {
-       if (animationId) {
-         cancelAnimationFrame(animationId);
-       }
-     };
-   }, [selectedPackage]);
+      animationId = requestAnimationFrame(animate);
+    };
+
+    // Initial setup
+    if (!hadPreviousSelection) {
+      setAnimatedData(new Array(30).fill(0));
+    }
+
+    animationId = requestAnimationFrame(animate);
+
+    return () => {
+      if (animationId) {
+        cancelAnimationFrame(animationId);
+      }
+    };
+  }, [selectedPackage]);
 
   const handleNext = () => {
     if (!selectedPackage) {
@@ -363,13 +416,13 @@ export default function PackagesPage() {
                      <div>
                        <div className="text-sm text-white/70">Expected Total Plays</div>
                        <div className="text-2xl font-bold text-[#59e3a5] transition-all duration-500">
-                         {chartData.playsRange || "Select a package"}
+                         {animatedPlays || chartData.playsRange || "Select a package"}
                        </div>
                      </div>
                      <div>
                        <div className="text-sm text-white/70">Playlist Placements</div>
                        <div className="text-2xl font-bold text-[#14c0ff] transition-all duration-500">
-                         {chartData.placements || "—"}
+                         {animatedPlacements > 0 ? animatedPlacements.toLocaleString() : (chartData.placements || "—")}
                        </div>
                      </div>
                    </div>
@@ -472,13 +525,15 @@ export default function PackagesPage() {
                 <div className="w-2 h-2 bg-[#59e3a5] rounded-full mx-auto"></div>
               </div>
               
-              <div className="relative inline-block">
+              <div className="relative inline-block group">
+                {/* Gradient outline */}
+                <div className="absolute -inset-1 bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] rounded-2xl blur-sm opacity-75"></div>
                 <Image
                   src={currentTrack.imageUrl}
                   alt={currentTrack.title}
                   width={400}
                   height={400}
-                  className="rounded-2xl shadow-2xl mx-auto"
+                  className="relative rounded-2xl shadow-2xl mx-auto transition-transform duration-300 group-hover:-translate-y-2"
                   unoptimized
                 />
               </div>
@@ -493,13 +548,13 @@ export default function PackagesPage() {
                  <button
                    onClick={handleNext}
                    disabled={!selectedPackage}
-                   className="w-full bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] text-black font-semibold px-8 py-4 rounded-md disabled:opacity-50 hover:opacity-90 transition-opacity text-lg"
+                   className="w-full bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] text-black font-semibold px-8 py-4 rounded-md disabled:opacity-50 hover:opacity-90 hover:-translate-y-1 transition-all duration-300 text-lg"
                  >
                    {isLastSong || isOnlySong ? 'Next Step' : 'Next Song'} →
                  </button>
                  <button
                    onClick={handleChangeSong}
-                   className="w-full bg-white/10 border border-white/20 text-white font-semibold px-8 py-4 rounded-md hover:bg-white/20 transition-colors text-lg"
+                   className="w-full bg-white/10 border border-white/20 text-white font-semibold px-8 py-4 rounded-md hover:bg-white/20 hover:-translate-y-1 transition-all duration-300 text-lg"
                  >
                    Change Songs
                  </button>
