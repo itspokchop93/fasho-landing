@@ -177,7 +177,7 @@ export default function AddSongsPage() {
           {/* Animated border layer */}
           <div className="absolute -inset-0.5 rounded-2xl overflow-hidden">
             <div className="absolute inset-0 border-container">
-              <div className="absolute inset-0 animate-spin-slow border-highlight"></div>
+              <div className="absolute -inset-[100px] animate-spin-slow border-highlight"></div>
             </div>
           </div>
           
@@ -236,13 +236,13 @@ export default function AddSongsPage() {
         }
         
         .border-highlight {
-          background: conic-gradient(
-            from 0deg,
-            transparent 0deg,
-            transparent 300deg,
-            #22c55e 320deg,
-            #84cc16 340deg,
-            #22c55e 360deg
+          background: linear-gradient(
+            0deg,
+            transparent 0%,
+            transparent 70%,
+            #22c55e 80%,
+            #84cc16 90%,
+            #22c55e 100%
           );
           border-radius: 1rem;
         }
