@@ -63,7 +63,7 @@ export default function PackagesPage() {
   const [previousPackage, setPreviousPackage] = useState<string>("");
   const [currentScale, setCurrentScale] = useState<number>(0);
   const [canScrollLeft, setCanScrollLeft] = useState(false);
-  const [canScrollRight, setCanScrollRight] = useState(true);
+  const [canScrollRight, setCanScrollRight] = useState(true); // Start with right arrow showing
   const carouselRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -268,11 +268,15 @@ export default function PackagesPage() {
     
     const { scrollLeft, scrollWidth, clientWidth } = carouselRef.current;
     
-    // Can scroll left if we're not at the beginning
-    setCanScrollLeft(scrollLeft > 5); // Small threshold to account for rounding
+    // Simple and reliable logic:
+    // Left arrow shows when scrolled away from start
+    const showLeftArrow = scrollLeft > 10;
     
-    // Can scroll right if we're not at the end
-    setCanScrollRight(scrollLeft < scrollWidth - clientWidth - 5); // Small threshold
+    // Right arrow shows when there's more content to scroll to
+    const showRightArrow = scrollLeft < (scrollWidth - clientWidth - 10);
+    
+    setCanScrollLeft(showLeftArrow);
+    setCanScrollRight(showRightArrow);
   };
 
   const scrollCarousel = (direction: 'left' | 'right') => {
@@ -296,15 +300,24 @@ export default function PackagesPage() {
     const handleScroll = () => checkScrollArrows();
     carousel.addEventListener('scroll', handleScroll);
     
-    // Multiple initial checks to ensure proper detection
-    checkScrollArrows(); // Immediate check
-    setTimeout(checkScrollArrows, 50); // Quick follow-up
-    setTimeout(checkScrollArrows, 200); // Final check after render
+    // Check arrows after component mounts and content is rendered
+    const checkTimer = setTimeout(() => {
+      checkScrollArrows();
+    }, 100);
 
     return () => {
       carousel.removeEventListener('scroll', handleScroll);
+      clearTimeout(checkTimer);
     };
-  }, [packages]); // Re-run when packages change
+  }, [packages]);
+
+  // Ensure right arrow shows initially when we have scrollable content
+  useEffect(() => {
+    if (packages.length > 2) {
+      setCanScrollRight(true);
+      setCanScrollLeft(false);
+    }
+  }, [packages.length]);
 
   const getChartData = () => {
     const selected = packages.find(p => p.id === selectedPackage);
