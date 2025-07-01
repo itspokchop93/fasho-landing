@@ -11,7 +11,7 @@ export default function EmptySlotCard({ onClick }: EmptySlotCardProps) {
       {/* simple inner card */}
       <div className="absolute inset-0 rounded-xl bg-gray-800 border-2 border-dashed border-white/20 flex items-center justify-center">
         {/* 20% flag */}
-        <div className="absolute -top-3 -right-3 bg-gradient-to-r from-amber-400 to-pink-500 text-black text-xs font-semibold px-2 py-1 rounded-md shadow-lg">
+        <div className="absolute -top-3 -right-3 bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] text-black text-xs font-semibold px-2 py-1 rounded-md shadow-lg">
           +20% OFF
         </div>
         <p className="text-center text-sm text-white/60 leading-tight px-3">

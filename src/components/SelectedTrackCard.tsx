@@ -11,7 +11,7 @@ export default function SelectedTrackCard({ track, onRemove, showDiscount = fals
   return (
     <div className="relative bg-white/5 rounded-xl p-4 w-60 flex-shrink-0 text-center border border-white/20">
       {showDiscount && (
-        <div className="absolute -top-3 -right-3 bg-gradient-to-r from-amber-400 to-pink-500 text-black text-xs font-semibold px-2 py-1 rounded-md">
+        <div className="absolute -top-3 -right-3 bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] text-black text-xs font-semibold px-2 py-1 rounded-md">
           +20% OFF
         </div>
       )}

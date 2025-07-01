@@ -12,8 +12,8 @@ export default function ShapeDivider() {
       >
         <defs>
           <linearGradient id="shapeGradient1" x1="0%" y1="0%" x2="100%" y2="0%">
-            <stop offset="0%" stopColor="#fbbf24" stopOpacity="0.4" />
-            <stop offset="100%" stopColor="#ec4899" stopOpacity="0.4" />
+            <stop offset="0%" stopColor="#59e3a5" stopOpacity="0.4" />
+            <stop offset="100%" stopColor="#14c0ff" stopOpacity="0.4" />
           </linearGradient>
         </defs>
         <path
@@ -31,8 +31,8 @@ export default function ShapeDivider() {
       >
         <defs>
           <linearGradient id="shapeGradient2" x1="0%" y1="0%" x2="100%" y2="0%">
-            <stop offset="0%" stopColor="#fbbf24" stopOpacity="0.6" />
-            <stop offset="100%" stopColor="#ec4899" stopOpacity="0.6" />
+            <stop offset="0%" stopColor="#59e3a5" stopOpacity="0.6" />
+            <stop offset="100%" stopColor="#14c0ff" stopOpacity="0.6" />
           </linearGradient>
         </defs>
         <path
@@ -50,8 +50,8 @@ export default function ShapeDivider() {
       >
         <defs>
           <linearGradient id="shapeGradient3" x1="0%" y1="0%" x2="100%" y2="0%">
-            <stop offset="0%" stopColor="#fbbf24" stopOpacity="0.9" />
-            <stop offset="100%" stopColor="#ec4899" stopOpacity="0.9" />
+            <stop offset="0%" stopColor="#59e3a5" stopOpacity="0.9" />
+            <stop offset="100%" stopColor="#14c0ff" stopOpacity="0.9" />
           </linearGradient>
         </defs>
         <path
@@ -69,8 +69,8 @@ export default function ShapeDivider() {
       >
         <defs>
           <linearGradient id="shapeGradient4" x1="0%" y1="0%" x2="100%" y2="0%">
-            <stop offset="0%" stopColor="#fbbf24" stopOpacity="0.7" />
-            <stop offset="100%" stopColor="#ec4899" stopOpacity="0.7" />
+            <stop offset="0%" stopColor="#59e3a5" stopOpacity="0.7" />
+            <stop offset="100%" stopColor="#14c0ff" stopOpacity="0.7" />
           </linearGradient>
         </defs>
         <path

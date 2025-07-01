@@ -110,7 +110,7 @@ export default function AddSongsPage() {
       </Head>
       <main className="min-h-screen bg-black text-white py-24 px-4 flex flex-col items-center">
         <h1 className="text-3xl md:text-5xl font-extrabold text-center mb-12">
-          Add another song now for <span className="text-amber-400">20% OFF!</span>
+          Add another song now for <span className="text-[#59e3a5]">20% OFF!</span>
         </h1>
 
         {/* cards */}
@@ -159,7 +159,7 @@ export default function AddSongsPage() {
         <button
           disabled={tracks.length === 0}
           onClick={promote}
-          className="bg-gradient-to-r from-amber-400 to-pink-500 text-black font-semibold px-8 py-4 rounded-md disabled:opacity-50 mb-20"
+          className="bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] text-black font-semibold px-8 py-4 rounded-md disabled:opacity-50 mb-20"
         >
           Promote selected songs →
         </button>
@@ -175,7 +175,7 @@ export default function AddSongsPage() {
           <div className="absolute -inset-1 bg-gradient-to-r from-green-400 via-emerald-500 to-green-600 rounded-2xl blur-lg opacity-50 animate-pulse"></div>
           
           {/* Animated border layer */}
-          <div className="absolute -inset-1 rounded-2xl overflow-hidden">
+          <div className="absolute -inset-0.5 rounded-2xl overflow-hidden">
             <div className="absolute inset-0 border-container">
               <div className="absolute inset-0 animate-spin-slow border-highlight"></div>
             </div>
@@ -227,7 +227,7 @@ export default function AddSongsPage() {
         }
         
         .animate-spin-slow {
-          animation: spin-slow 6s linear infinite;
+          animation: spin-slow 2s linear infinite;
         }
         
         .border-container {
