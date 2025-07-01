@@ -212,12 +212,14 @@ export default function PackagesPage() {
                   <div
                     key={pkg.id}
                     onClick={() => handlePackageSelect(pkg.id)}
-                    className={`relative cursor-pointer rounded-xl p-6 border-2 transition-all duration-300 ${
-                      selectedPackage === pkg.id
+                    className={`relative cursor-pointer rounded-xl transition-all duration-300 ${
+                      pkg.id === 'advanced' ? '' : 'p-6 border-2'
+                    } ${
+                      selectedPackage === pkg.id && pkg.id !== 'advanced'
                         ? 'border-[#59e3a5] bg-[#59e3a5]/5'
-                        : pkg.id === 'advanced'
-                        ? 'border-[#14c0ff] bg-[#14c0ff]/5'
-                        : 'border-white/20 bg-white/5 hover:border-white/40'
+                        : pkg.id !== 'advanced'
+                        ? 'border-white/20 bg-white/5 hover:border-white/40'
+                        : ''
                     }`}
                   >
                     {/* Lens flare animation for Advanced package */}
@@ -237,17 +239,18 @@ export default function PackagesPage() {
                     
                     {/* Most Popular flag for Advanced package */}
                     {pkg.id === 'advanced' && (
-                      <div className="absolute -top-3 -left-3 bg-gradient-to-r from-[#14c0ff] to-[#59e3a5] text-white text-xs font-semibold px-3 py-1 rounded-md shadow-lg z-10">
+                      <div className="absolute -top-3 -left-3 bg-gradient-to-r from-[#14c0ff] to-[#59e3a5] text-white text-xs font-semibold px-3 py-1 rounded-md shadow-lg z-20">
                         Most Popular
                       </div>
                     )}
                     {selectedPackage === pkg.id && (
-                      <div className="absolute -top-2 -right-2 w-6 h-6 bg-[#59e3a5] rounded-full flex items-center justify-center">
+                      <div className="absolute -top-2 -right-2 w-6 h-6 bg-[#59e3a5] rounded-full flex items-center justify-center z-20">
                         <span className="text-black text-sm font-bold">✓</span>
                       </div>
                     )}
                     
-                    <div className={`${pkg.id === 'advanced' ? 'relative z-10 bg-white/5 rounded-xl p-6' : ''}`}>
+                    {/* Content container - same structure for all packages */}
+                    <div className={`${pkg.id === 'advanced' ? `relative z-10 bg-white/5 rounded-xl p-6 border ${selectedPackage === pkg.id ? 'border-[#59e3a5]' : 'border-white/20'}` : ''}`}>
                       <div className="flex items-center justify-center mb-4">
                         <div className="w-16 h-16 bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] rounded-full flex items-center justify-center">
                           <span className="text-2xl">🎧</span>
@@ -420,7 +423,7 @@ export default function PackagesPage() {
         }
         
         .animate-spin-slow {
-          animation: spin-slow 4s linear infinite;
+          animation: spin-slow 2s linear infinite;
         }
         
         .border-container-blue {
