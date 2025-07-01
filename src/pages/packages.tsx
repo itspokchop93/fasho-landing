@@ -91,7 +91,7 @@ export default function PackagesPage() {
         [currentSongIndex]: newPackageId
       }));
       setTimeout(() => setGraphAnimating(false), 100);
-    }, 300); // Fall duration
+    }, 800); // Longer duration for more realistic animation
   };
 
   const handleNext = () => {
@@ -239,12 +239,12 @@ export default function PackagesPage() {
                     
                     {/* Most Popular flag for Advanced package */}
                     {pkg.id === 'advanced' && (
-                      <div className="absolute -top-3 -left-3 bg-gradient-to-r from-[#14c0ff] to-[#59e3a5] text-white text-xs font-semibold px-3 py-1 rounded-md shadow-lg z-30">
+                      <div className="absolute -top-3 -right-3 bg-gradient-to-r from-[#14c0ff] to-[#59e3a5] text-white text-xs font-semibold px-3 py-1 rounded-md shadow-lg z-30">
                         Most Popular
                       </div>
                     )}
                     {selectedPackage === pkg.id && (
-                      <div className="absolute -top-2 -right-2 w-6 h-6 bg-[#59e3a5] rounded-full flex items-center justify-center z-30">
+                      <div className="absolute -top-2 -left-2 w-6 h-6 bg-[#59e3a5] rounded-full flex items-center justify-center z-30">
                         <span className="text-black text-sm font-bold">✓</span>
                       </div>
                     )}
@@ -324,8 +324,32 @@ export default function PackagesPage() {
                              return `L ${x} ${y}`;
                            }).join(' ')} L 300 100 Z`}
                            fill="url(#areaGradient)"
-                           className={`transition-all duration-700 ${graphAnimating ? 'scale-y-0 origin-bottom' : 'scale-y-100'}`}
+                           style={{
+                             animation: graphAnimating ? 'chartFallRise 800ms ease-in-out' : 'none'
+                           }}
                          />
+                         
+                         {/* Animated data points */}
+                         {chartData.dailyData.map((point, index) => {
+                           const x = (index / (chartData.dailyData.length - 1)) * 300;
+                           const y = chartData.maxPlays > 0 ? 100 - (point.plays / chartData.maxPlays) * 80 : 100;
+                           const fallDelay = (chartData.dailyData.length - 1 - index) * 20; // Right to left
+                           const riseDelay = 400 + (index * 20); // Left to right after fall
+                           
+                           return (
+                             <circle
+                               key={index}
+                               cx={x}
+                               cy={y}
+                               r="2"
+                               fill="url(#lineGradient)"
+                               style={{
+                                 animation: graphAnimating ? `pointFallRise 800ms ease-in-out` : 'none',
+                                 animationDelay: graphAnimating ? `${fallDelay}ms` : '0ms'
+                               }}
+                             />
+                           );
+                         })}
                          
                          {/* Main line */}
                          <path
@@ -337,20 +361,27 @@ export default function PackagesPage() {
                            fill="none"
                            stroke="url(#lineGradient)"
                            strokeWidth="2"
-                           className={`drop-shadow-sm transition-all duration-700 ${graphAnimating ? 'scale-y-0 origin-bottom' : 'scale-y-100'}`}
+                           className="drop-shadow-sm"
+                           style={{
+                             animation: graphAnimating ? 'chartFallRise 800ms ease-in-out' : 'none'
+                           }}
                          />
                        </svg>
                        
-                       {/* Y-axis labels */}
-                       <div className="absolute left-0 top-0 h-full flex flex-col justify-between text-xs text-white/50 -ml-12 w-10 text-right">
-                         <span className={`transition-opacity duration-500 ${chartData.maxPlays > 0 ? 'opacity-100' : 'opacity-30'}`}>
-                           {chartData.maxPlays > 0 ? Math.ceil(chartData.maxPlays / 1000) + 'k' : '10k'}
-                         </span>
-                         <span className={`transition-opacity duration-500 ${chartData.maxPlays > 0 ? 'opacity-100' : 'opacity-30'}`}>
-                           {chartData.maxPlays > 0 ? Math.ceil(chartData.maxPlays / 2000) + 'k' : '5k'}
-                         </span>
-                         <span>0</span>
-                       </div>
+                                                {/* Y-axis labels */}
+                         <div className="absolute left-0 top-0 h-full flex flex-col justify-between text-xs text-white/50 -ml-16 w-14 text-right">
+                           <span className={`transition-opacity duration-500 ${chartData.maxPlays > 0 ? 'opacity-100' : 'opacity-30'}`}>
+                             {chartData.maxPlays > 0 ? 
+                               chartData.maxPlays.toLocaleString() 
+                               : '10,000'}
+                           </span>
+                           <span className={`transition-opacity duration-500 ${chartData.maxPlays > 0 ? 'opacity-100' : 'opacity-30'}`}>
+                             {chartData.maxPlays > 0 ? 
+                               Math.round(chartData.maxPlays / 2).toLocaleString() 
+                               : '5,000'}
+                           </span>
+                           <span>0</span>
+                         </div>
                        
                        {/* X-axis labels */}
                        <div className="absolute bottom-0 left-0 w-full flex justify-between text-xs text-white/50 -mb-6">
@@ -419,6 +450,40 @@ export default function PackagesPage() {
           }
           to {
             transform: rotate(360deg);
+          }
+        }
+        
+        @keyframes chartFallRise {
+          0% {
+            transform: scaleY(1);
+            transform-origin: bottom;
+          }
+          50% {
+            transform: scaleY(0);
+            transform-origin: bottom;
+          }
+          100% {
+            transform: scaleY(1);
+            transform-origin: bottom;
+          }
+        }
+        
+        @keyframes pointFallRise {
+          0% {
+            transform: translateY(0);
+            opacity: 1;
+          }
+          25% {
+            transform: translateY(80px);
+            opacity: 0.3;
+          }
+          50% {
+            transform: translateY(80px);
+            opacity: 0.3;
+          }
+          100% {
+            transform: translateY(0);
+            opacity: 1;
           }
         }
         
