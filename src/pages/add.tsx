@@ -7,6 +7,7 @@ import TrackCard from "../components/TrackCard";
 import { Track } from "../types/track";
 import React from "react";
 import GradientTestCard from "../components/GradientTestCard";
+import ShapeDivider from "../components/ShapeDivider";
 
 export default function AddSongsPage() {
   const router = useRouter();
@@ -158,10 +159,15 @@ export default function AddSongsPage() {
         <button
           disabled={tracks.length === 0}
           onClick={promote}
-          className="bg-gradient-to-r from-amber-400 to-pink-500 text-black font-semibold px-8 py-4 rounded-md disabled:opacity-50"
+          className="bg-gradient-to-r from-amber-400 to-pink-500 text-black font-semibold px-8 py-4 rounded-md disabled:opacity-50 mb-20"
         >
           Promote selected songs →
         </button>
+
+        {/* shape divider */}
+        <div className="w-full mb-20">
+          <ShapeDivider />
+        </div>
 
         {/* temporary test container for animated border */}
         <GradientTestCard />
