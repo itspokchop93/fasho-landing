@@ -345,13 +345,250 @@ export default function PackagesPage() {
       <Head>
         <title>Choose Campaign Package – Fasho.co</title>
       </Head>
-      <main className="min-h-screen bg-black text-white py-12 px-4">
+      <main className="min-h-screen relative text-white py-12 px-4">
+        {/* Background layers */}
+        <div className="fixed inset-0 bg-black"></div>
+        <div 
+          className="fixed inset-0 bg-cover bg-center bg-no-repeat opacity-70"
+          style={{ backgroundImage: 'url(/marble-bg.jpg)' }}
+        ></div>
+        <div className="relative z-10">
         <div className="max-w-7xl mx-auto">
           <h1 className="text-4xl md:text-5xl font-extrabold text-center mb-12">
             Step 2: Choose your campaign for <span className="text-[#59e3a5]">60% OFF</span>
           </h1>
 
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-start">
+          {/* Mobile Layout */}
+          <div className="block md:hidden">
+            {/* Mobile: Album art and track info at top */}
+            <div className="text-center mb-8">
+              <div className="mb-6">
+                <p className="text-white/70 mb-2">
+                  Song {currentSongIndex + 1} of {tracks.length}
+                </p>
+                <div className="w-2 h-2 bg-[#59e3a5] rounded-full mx-auto"></div>
+              </div>
+              
+              <div className="relative inline-block group">
+                {/* Gradient outline */}
+                <div className="absolute -inset-1 bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] rounded-2xl blur-sm opacity-75"></div>
+                <Image
+                  src={currentTrack.imageUrl}
+                  alt={currentTrack.title}
+                  width={300}
+                  height={300}
+                  className="relative rounded-2xl shadow-2xl mx-auto transition-transform duration-300 group-hover:-translate-y-2"
+                  unoptimized
+                />
+              </div>
+              
+              <div className="mt-6 mb-8">
+                <h2 className="text-2xl font-bold mb-2">{currentTrack.title}</h2>
+                <p className="text-xl text-white/70">{currentTrack.artist}</p>
+              </div>
+            </div>
+
+            {/* Mobile: Package carousel */}
+            <div className="mb-8">
+              <div className="overflow-x-auto scrollbar-hide">
+                <div className="flex gap-4 px-4" style={{ width: 'max-content' }}>
+                  {packages.map((pkg) => (
+                    <div
+                      key={pkg.id}
+                      onClick={() => handlePackageSelect(pkg.id)}
+                      className={`relative cursor-pointer rounded-xl transition-all duration-300 flex-shrink-0 ${
+                        pkg.id === 'advanced' ? '' : 'p-6 border-2'
+                      } ${
+                        selectedPackage === pkg.id && pkg.id !== 'advanced'
+                          ? 'border-[#59e3a5] bg-[#59e3a5]/5'
+                          : pkg.id !== 'advanced'
+                          ? 'border-white/20 bg-white/5 hover:border-white/40'
+                          : ''
+                      }`}
+                      style={{ width: 'calc(50vw - 2rem)' }}
+                    >
+                      {/* Lens flare animation for Advanced package */}
+                      {pkg.id === 'advanced' && (
+                        <>
+                          {/* Outer glow layer */}
+                          <div className="absolute -inset-1 bg-gradient-to-r from-blue-400 via-cyan-500 to-blue-600 rounded-2xl blur-lg opacity-50 animate-pulse"></div>
+                          
+                          {/* Animated border layer */}
+                          <div className="absolute -inset-0.5 rounded-xl overflow-hidden">
+                            <div className="absolute inset-0 border-container-blue">
+                              <div className="absolute -inset-[100px] animate-spin-slow border-highlight-blue"></div>
+                            </div>
+                          </div>
+                        </>
+                      )}
+                      
+                      {/* Most Popular flag for Advanced package */}
+                      {pkg.id === 'advanced' && (
+                        <div className="absolute -top-3 -right-3 bg-gradient-to-r from-[#14c0ff] to-[#59e3a5] text-white text-xs font-semibold px-3 py-1 rounded-md shadow-lg z-30">
+                          Most Popular
+                        </div>
+                      )}
+                      {selectedPackage === pkg.id && (
+                        <div className="absolute -top-2 -left-2 w-6 h-6 bg-[#59e3a5] rounded-full flex items-center justify-center z-30">
+                          <span className="text-black text-sm font-bold">✓</span>
+                        </div>
+                      )}
+                      
+                      {/* Content container - same structure for all packages */}
+                      <div className={`${pkg.id === 'advanced' ? `relative z-20 bg-gray-900 rounded-xl p-6 border ${selectedPackage === pkg.id ? 'border-[#59e3a5]' : 'border-white/20'}` : ''}`}>
+                        <div className="flex items-center justify-center mb-4">
+                          <div className="w-12 h-12 bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] rounded-full flex items-center justify-center">
+                            <span className="text-lg">🎧</span>
+                          </div>
+                        </div>
+                        
+                        <h3 className="text-lg font-bold text-center mb-2">{pkg.name}</h3>
+                        <p className="text-xs text-white/70 text-center mb-4">{pkg.description}</p>
+                        
+                        <div className="space-y-2 mb-4">
+                          <div className="text-xs text-white/80">{pkg.plays}</div>
+                          <div className="text-xs text-white/80">{pkg.placements}</div>
+                        </div>
+                        
+                        <div className="text-center">
+                          <span className="text-xl font-bold">${pkg.price}</span>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            {/* Mobile: Chart section */}
+            <div className="bg-white/5 rounded-xl p-6 border border-white/20 mb-8">
+              <h3 className="text-lg font-semibold mb-4">Based on past campaigns</h3>
+              
+              <div className="space-y-6">
+                <div className="flex justify-between items-center">
+                  <div>
+                    <div className="text-sm text-white/70">Expected Total Plays</div>
+                    <div className="text-xl font-bold text-[#59e3a5] transition-all duration-500">
+                      {animatedPlays || chartData.playsRange || "Select a package"}
+                    </div>
+                  </div>
+                  <div>
+                    <div className="text-sm text-white/70">Playlist Placements</div>
+                    <div className="text-xl font-bold text-[#14c0ff] transition-all duration-500">
+                      {animatedPlacements > 0 ? animatedPlacements.toLocaleString() : (chartData.placements || "—")}
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="relative">
+                  <div className="text-sm text-white/70 mb-3">30-Day Growth Projection</div>
+                  <div className="relative h-32 bg-black/20 rounded-lg p-4 ml-8">
+                    <svg className="w-full h-full" viewBox="0 0 300 100" preserveAspectRatio="none">
+                      <defs>
+                        <linearGradient id="lineGradientMobile" x1="0%" y1="0%" x2="100%" y2="0%">
+                          <stop offset="0%" stopColor="#59e3a5" />
+                          <stop offset="100%" stopColor="#14c0ff" />
+                        </linearGradient>
+                        <linearGradient id="areaGradientMobile" x1="0%" y1="0%" x2="0%" y2="100%">
+                          <stop offset="0%" stopColor="#59e3a5" stopOpacity="0.3" />
+                          <stop offset="100%" stopColor="#14c0ff" stopOpacity="0.1" />
+                        </linearGradient>
+                      </defs>
+                      
+                      {/* Grid lines */}
+                      <defs>
+                        <pattern id="gridMobile" width="60" height="25" patternUnits="userSpaceOnUse">
+                          <path d="M 60 0 L 0 0 0 25" fill="none" stroke="rgba(255,255,255,0.1)" strokeWidth="0.5"/>
+                        </pattern>
+                      </defs>
+                      <rect width="100%" height="100%" fill="url(#gridMobile)" />
+                      
+                      {/* Area under the curve */}
+                      <path
+                        d={`M 0 100 ${displayData.map((plays, index) => {
+                          const x = (index / (displayData.length - 1)) * 300;
+                          const scale = currentScale > 0 ? currentScale : chartData.maxPlays;
+                          const y = scale > 0 ? 100 - (plays / scale) * 80 : 100;
+                          return `L ${x} ${y}`;
+                        }).join(' ')} L 300 100 Z`}
+                        fill="url(#areaGradientMobile)"
+                      />
+                      
+                      {/* Data points */}
+                      {displayData.map((plays, index) => {
+                        const x = (index / (displayData.length - 1)) * 300;
+                        const scale = currentScale > 0 ? currentScale : chartData.maxPlays;
+                        const y = scale > 0 ? 100 - (plays / scale) * 80 : 100;
+                        
+                        return (
+                          <circle
+                            key={index}
+                            cx={x}
+                            cy={y}
+                            r="2"
+                            fill="url(#lineGradientMobile)"
+                            className="drop-shadow-sm"
+                          />
+                        );
+                      })}
+                      
+                      {/* Main line */}
+                      <path
+                        d={`M ${displayData.map((plays, index) => {
+                          const x = (index / (displayData.length - 1)) * 300;
+                          const scale = currentScale > 0 ? currentScale : chartData.maxPlays;
+                          const y = scale > 0 ? 100 - (plays / scale) * 80 : 100;
+                          return `${x} ${y}`;
+                        }).join(' L ')}`}
+                        fill="none"
+                        stroke="url(#lineGradientMobile)"
+                        strokeWidth="2"
+                        className="drop-shadow-sm"
+                      />
+                    </svg>
+                    
+                    {/* Y-axis labels */}
+                    <div className="absolute left-0 top-0 h-full flex flex-col justify-between text-xs text-white/50 -ml-16 w-14 text-right">
+                      <span className={`transition-opacity duration-500 ${chartData.maxPlays > 0 ? 'opacity-100' : 'opacity-30'}`}>
+                        {yAxisLabels[0]}
+                      </span>
+                      <span className={`transition-opacity duration-500 ${chartData.maxPlays > 0 ? 'opacity-100' : 'opacity-30'}`}>
+                        {yAxisLabels[1]}
+                      </span>
+                      <span>{yAxisLabels[2]}</span>
+                    </div>
+                  
+                    {/* X-axis labels */}
+                    <div className="absolute bottom-0 left-0 w-full flex justify-between text-xs text-white/50 -mb-6">
+                      <span>Day 1</span>
+                      <span>Day 15</span>
+                      <span>Day 30</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Mobile: Action buttons */}
+            <div className="space-y-4">
+              <button
+                onClick={handleNext}
+                disabled={!selectedPackage}
+                className="w-full bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] text-black font-semibold px-8 py-4 rounded-md disabled:opacity-50 hover:opacity-90 hover:-translate-y-1 transition-all duration-300 text-lg"
+              >
+                {isLastSong || isOnlySong ? 'Next Step' : 'Next Song'} →
+              </button>
+              <button
+                onClick={handleChangeSong}
+                className="w-full bg-white/10 border border-white/20 text-white font-semibold px-8 py-4 rounded-md hover:bg-white/20 hover:-translate-y-1 transition-all duration-300 text-lg"
+              >
+                Change Songs
+              </button>
+            </div>
+          </div>
+
+          {/* Desktop Layout */}
+          <div className="hidden md:grid grid-cols-1 lg:grid-cols-2 gap-12 items-start">
             {/* Left side - Package selection */}
             <div className="space-y-8">
               {/* Package cards */}
@@ -579,6 +816,7 @@ export default function PackagesPage() {
             </div>
           </div>
         </div>
+        </div>
       </main>
 
       <style jsx>{`
@@ -591,8 +829,15 @@ export default function PackagesPage() {
           }
         }
         
-
+        .scrollbar-hide {
+          -ms-overflow-style: none;  /* Internet Explorer 10+ */
+          scrollbar-width: none;  /* Firefox */
+        }
         
+        .scrollbar-hide::-webkit-scrollbar { 
+          display: none;  /* Safari and Chrome */
+        }
+
         .animate-spin-slow {
           animation: spin-slow 2s linear infinite;
         }
