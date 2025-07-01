@@ -9,7 +9,7 @@ export default function GradientTestCard() {
         style={{ animationDuration: "5s" }}
       />
       {/* inner container (offset by 2px to reveal border) */}
-      <div className="relative z-10 m-[4px] rounded-[calc(theme(borderRadius.xl)-4px)] flex items-center justify-between bg-gray-900 text-white px-6 py-4">
+      <div className="relative z-10 m-[4px] rounded-[calc(theme(borderRadius.xl)-4px)] flex items-center justify-between bg-gray-900 text-white px-6 py-4 border border-gray-700">
         <span className="font-semibold">Add-on Apple Music Marketing</span>
         <button className="w-9 h-9 rounded-md bg-white text-black text-2xl leading-none flex items-center justify-center">
           +
