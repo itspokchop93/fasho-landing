@@ -227,7 +227,7 @@ export default function AddSongsPage() {
         }
         
         .animate-spin-slow {
-          animation: spin-slow 2s linear infinite;
+          animation: spin-slow 4s linear infinite;
         }
         
         .border-container {
