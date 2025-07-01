@@ -268,8 +268,11 @@ export default function PackagesPage() {
     
     const { scrollLeft, scrollWidth, clientWidth } = carouselRef.current;
     
-    setCanScrollLeft(scrollLeft > 0);
-    setCanScrollRight(scrollLeft < scrollWidth - clientWidth - 1);
+    // Can scroll left if we're not at the beginning
+    setCanScrollLeft(scrollLeft > 5); // Small threshold to account for rounding
+    
+    // Can scroll right if we're not at the end
+    setCanScrollRight(scrollLeft < scrollWidth - clientWidth - 5); // Small threshold
   };
 
   const scrollCarousel = (direction: 'left' | 'right') => {
@@ -290,15 +293,18 @@ export default function PackagesPage() {
     const carousel = carouselRef.current;
     if (!carousel) return;
 
-    carousel.addEventListener('scroll', checkScrollArrows);
+    const handleScroll = () => checkScrollArrows();
+    carousel.addEventListener('scroll', handleScroll);
     
-    // Initial check
-    setTimeout(checkScrollArrows, 100);
+    // Multiple initial checks to ensure proper detection
+    checkScrollArrows(); // Immediate check
+    setTimeout(checkScrollArrows, 50); // Quick follow-up
+    setTimeout(checkScrollArrows, 200); // Final check after render
 
     return () => {
-      carousel.removeEventListener('scroll', checkScrollArrows);
+      carousel.removeEventListener('scroll', handleScroll);
     };
-  }, []);
+  }, [packages]); // Re-run when packages change
 
   const getChartData = () => {
     const selected = packages.find(p => p.id === selectedPackage);
@@ -389,7 +395,7 @@ export default function PackagesPage() {
         {/* Background layers */}
         <div className="fixed inset-0 bg-black z-0"></div>
         <div 
-          className="fixed inset-0 bg-cover bg-center bg-no-repeat opacity-90 z-10"
+          className="fixed inset-0 bg-cover bg-center bg-no-repeat opacity-35 z-10"
           style={{ backgroundImage: 'url(/marble-bg.jpg)' }}
         ></div>
         <div className="relative z-20">
@@ -459,7 +465,7 @@ export default function PackagesPage() {
                 className="overflow-x-auto scrollbar-hide cursor-grab active:cursor-grabbing"
                 style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
               >
-                <div className="flex gap-4 px-4 py-2" style={{ width: 'max-content' }}>
+                <div className="flex gap-4 px-4 pt-6 pb-2" style={{ width: 'max-content' }}>
                   {packages.map((pkg) => (
                     <div
                       key={pkg.id}
