@@ -30,6 +30,20 @@ export default function AddSongsPage() {
     // If tracks already initialized, skip
     if (tracks.length > 0) return;
 
+    // Check if we're coming back from "Change Songs" with remaining tracks
+    if (typeof window !== "undefined") {
+      const remainingTracks = sessionStorage.getItem("remainingTracks");
+      if (remainingTracks) {
+        try {
+          const parsedTracks = JSON.parse(remainingTracks) as Track[];
+          setTracks(parsedTracks);
+          sessionStorage.removeItem("remainingTracks");
+          sessionStorage.removeItem("replacingSongIndex");
+          return;
+        } catch {}
+      }
+    }
+
     if (title && artist && imageUrl && id && url) {
       const first: Track = {
         title: title as string,
@@ -89,14 +103,33 @@ export default function AddSongsPage() {
 
   const confirmPreview = () => {
     if (!previewTrack) return;
-    setTracks((prev) => [...prev, previewTrack]);
+    
+    const newTracks = [...tracks, previewTrack];
+    setTracks(newTracks);
     setPreviewTrack(null);
     setInput("");
+
+    // Check if we were replacing a song and should return to packages
+    if (typeof window !== "undefined") {
+      const wasReplacing = sessionStorage.getItem("replacingSongIndex");
+      if (wasReplacing) {
+        sessionStorage.removeItem("replacingSongIndex");
+        // Go back to packages page with updated tracks
+        setTimeout(() => {
+          router.push({
+            pathname: "/packages",
+            query: {
+              tracks: JSON.stringify(newTracks),
+            },
+          });
+        }, 100);
+      }
+    }
   };
 
   const promote = () => {
     router.push({
-      pathname: "/checkout",
+      pathname: "/packages",
       query: {
         tracks: JSON.stringify(tracks),
       },
