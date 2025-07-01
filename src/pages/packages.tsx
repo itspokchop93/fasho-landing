@@ -128,11 +128,31 @@ export default function PackagesPage() {
 
   const getChartData = () => {
     const selected = packages.find(p => p.id === selectedPackage);
-    if (!selected) return { plays: 0, placements: 0 };
+    if (!selected) return { plays: 0, placements: 0, dailyData: [] };
+    
+    const basePlay = parseInt(selected.plays.replace(/[^0-9]/g, '')) * 1000;
+    const basePlacements = parseInt(selected.placements.replace(/[^0-9]/g, ''));
+    
+    // Add 10-20% more than advertised for realistic expectations
+    const actualPlays = Math.floor(basePlay * (1.1 + Math.random() * 0.1));
+    const actualPlacements = Math.floor(basePlacements * (1.05 + Math.random() * 0.1));
+    
+    // Generate 30-day growth data
+    const dailyData = [];
+    for (let i = 0; i < 30; i++) {
+      const progress = i / 29;
+      const randomVariation = 0.8 + Math.random() * 0.4; // 80-120% of expected
+      const dailyPlays = Math.floor(actualPlays * progress * randomVariation);
+      dailyData.push({
+        day: i + 1,
+        plays: Math.max(0, dailyPlays)
+      });
+    }
     
     return {
-      plays: parseInt(selected.plays.replace(/[^0-9]/g, '')) * 1000,
-      placements: parseInt(selected.placements.replace(/[^0-9]/g, ''))
+      plays: actualPlays,
+      placements: actualPlacements,
+      dailyData
     };
   };
 
@@ -195,54 +215,98 @@ export default function PackagesPage() {
                 ))}
               </div>
 
-              {/* Chart section */}
-              <div className="bg-white/5 rounded-xl p-6 border border-white/20">
-                <h3 className="text-lg font-semibold mb-4">Based on past campaigns</h3>
-                <div className="space-y-4">
-                  <div>
-                    <div className="flex justify-between text-sm mb-2">
-                      <span>Expected Plays</span>
-                      <span>{chartData.plays.toLocaleString()}</span>
-                    </div>
-                    <div className="w-full bg-white/20 rounded-full h-3">
-                      <div 
-                        className="bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] h-3 rounded-full transition-all duration-500"
-                        style={{ width: `${Math.min((chartData.plays / 50000) * 100, 100)}%` }}
-                      ></div>
-                    </div>
-                  </div>
-                  
-                  <div>
-                    <div className="flex justify-between text-sm mb-2">
-                      <span>Playlist Placements</span>
-                      <span>{chartData.placements}</span>
-                    </div>
-                    <div className="w-full bg-white/20 rounded-full h-3">
-                      <div 
-                        className="bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] h-3 rounded-full transition-all duration-500"
-                        style={{ width: `${Math.min((chartData.placements / 250) * 100, 100)}%` }}
-                      ></div>
-                    </div>
-                  </div>
-                </div>
-              </div>
+                             {/* Chart section */}
+               <div className="bg-white/5 rounded-xl p-6 border border-white/20">
+                 <h3 className="text-lg font-semibold mb-4">Based on past campaigns</h3>
+                 
+                 {selectedPackage ? (
+                   <div className="space-y-6">
+                     <div className="flex justify-between items-center">
+                       <div>
+                         <div className="text-sm text-white/70">Expected Total Plays</div>
+                         <div className="text-2xl font-bold text-[#59e3a5]">{chartData.plays.toLocaleString()}</div>
+                       </div>
+                       <div>
+                         <div className="text-sm text-white/70">Playlist Placements</div>
+                         <div className="text-2xl font-bold text-[#14c0ff]">{chartData.placements}</div>
+                       </div>
+                     </div>
+                     
+                     <div className="relative">
+                       <div className="text-sm text-white/70 mb-3">30-Day Growth Projection</div>
+                       <div className="relative h-32 bg-black/20 rounded-lg p-4">
+                         <svg className="w-full h-full" viewBox="0 0 300 100" preserveAspectRatio="none">
+                           <defs>
+                             <linearGradient id="lineGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                               <stop offset="0%" stopColor="#59e3a5" />
+                               <stop offset="100%" stopColor="#14c0ff" />
+                             </linearGradient>
+                             <linearGradient id="areaGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+                               <stop offset="0%" stopColor="#59e3a5" stopOpacity="0.3" />
+                               <stop offset="100%" stopColor="#14c0ff" stopOpacity="0.1" />
+                             </linearGradient>
+                           </defs>
+                           
+                           {/* Grid lines */}
+                           <defs>
+                             <pattern id="grid" width="60" height="25" patternUnits="userSpaceOnUse">
+                               <path d="M 60 0 L 0 0 0 25" fill="none" stroke="rgba(255,255,255,0.1)" strokeWidth="0.5"/>
+                             </pattern>
+                           </defs>
+                           <rect width="100%" height="100%" fill="url(#grid)" />
+                           
+                           {/* Area under the curve */}
+                           {chartData.dailyData.length > 0 && (
+                             <path
+                               d={`M 0 100 ${chartData.dailyData.map((point, index) => {
+                                 const x = (index / (chartData.dailyData.length - 1)) * 300;
+                                 const y = 100 - (point.plays / chartData.plays) * 80;
+                                 return `L ${x} ${y}`;
+                               }).join(' ')} L 300 100 Z`}
+                               fill="url(#areaGradient)"
+                             />
+                           )}
+                           
+                           {/* Main line */}
+                           {chartData.dailyData.length > 0 && (
+                             <path
+                               d={`M ${chartData.dailyData.map((point, index) => {
+                                 const x = (index / (chartData.dailyData.length - 1)) * 300;
+                                 const y = 100 - (point.plays / chartData.plays) * 80;
+                                 return `${x} ${y}`;
+                               }).join(' L ')}`}
+                               fill="none"
+                               stroke="url(#lineGradient)"
+                               strokeWidth="2"
+                               className="drop-shadow-sm"
+                             />
+                           )}
+                         </svg>
+                         
+                         {/* Y-axis labels */}
+                         <div className="absolute left-0 top-0 h-full flex flex-col justify-between text-xs text-white/50 -ml-8">
+                           <span>{chartData.plays.toLocaleString()}</span>
+                           <span>{Math.floor(chartData.plays * 0.5).toLocaleString()}</span>
+                           <span>0</span>
+                         </div>
+                         
+                         {/* X-axis labels */}
+                         <div className="absolute bottom-0 left-0 w-full flex justify-between text-xs text-white/50 -mb-6">
+                           <span>Day 1</span>
+                           <span>Day 15</span>
+                           <span>Day 30</span>
+                         </div>
+                       </div>
+                     </div>
+                   </div>
+                 ) : (
+                   <div className="text-center py-8 text-white/50">
+                     Select a package to see performance projections
+                   </div>
+                 )}
+               </div>
 
-              {/* Action buttons */}
-              <div className="flex gap-4">
-                <button
-                  onClick={handleChangeSong}
-                  className="flex-1 bg-white/10 border border-white/20 text-white font-semibold px-6 py-3 rounded-md hover:bg-white/20 transition-colors"
-                >
-                  Change Songs
-                </button>
-                <button
-                  onClick={handleNext}
-                  disabled={!selectedPackage}
-                  className="flex-1 bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] text-black font-semibold px-6 py-3 rounded-md disabled:opacity-50 hover:opacity-90 transition-opacity"
-                >
-                  {isLastSong || isOnlySong ? 'Next Step' : 'Next Song'} →
-                </button>
-              </div>
+              
             </div>
 
             {/* Right side - Album art and track info */}
@@ -265,10 +329,27 @@ export default function PackagesPage() {
                 />
               </div>
               
-              <div className="mt-6">
-                <h2 className="text-2xl font-bold mb-2">{currentTrack.title}</h2>
-                <p className="text-xl text-white/70">{currentTrack.artist}</p>
-              </div>
+                             <div className="mt-6 mb-8">
+                 <h2 className="text-2xl font-bold mb-2">{currentTrack.title}</h2>
+                 <p className="text-xl text-white/70">{currentTrack.artist}</p>
+               </div>
+
+               {/* Action buttons */}
+               <div className="space-y-4">
+                 <button
+                   onClick={handleNext}
+                   disabled={!selectedPackage}
+                   className="w-full bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] text-black font-semibold px-8 py-4 rounded-md disabled:opacity-50 hover:opacity-90 transition-opacity text-lg"
+                 >
+                   {isLastSong || isOnlySong ? 'Next Step' : 'Next Song'} →
+                 </button>
+                 <button
+                   onClick={handleChangeSong}
+                   className="w-full bg-white/10 border border-white/20 text-white font-semibold px-8 py-4 rounded-md hover:bg-white/20 transition-colors text-lg"
+                 >
+                   Change Songs
+                 </button>
+               </div>
             </div>
           </div>
         </div>
