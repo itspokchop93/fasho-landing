@@ -2,18 +2,25 @@ import { useState, useEffect } from 'react';
 import Head from 'next/head';
 import Image from 'next/image';
 import Link from 'next/link';
+import { useRouter } from 'next/router';
+import { createClient } from '../utils/supabase/client';
 import Header from '../components/Header';
 import VerticalShapeDivider from '../components/VerticalShapeDivider';
 
 export default function SignUpPage() {
   const [isLogin, setIsLogin] = useState(false);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  const [isLoading, setIsLoading] = useState(false);
+  const [message, setMessage] = useState('');
   const [formData, setFormData] = useState({
     fullName: '',
     email: '',
     password: '',
     confirmPassword: ''
   });
+
+  const router = useRouter();
+  const supabase = createClient();
 
   const images = [
     '/auto1.jpg',
@@ -30,6 +37,17 @@ export default function SignUpPage() {
     return () => clearInterval(interval);
   }, [images.length]);
 
+  // Check if user is already logged in
+  useEffect(() => {
+    const checkUser = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        router.push('/dashboard');
+      }
+    };
+    checkUser();
+  }, [router, supabase.auth]);
+
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData({
       ...formData,
@@ -37,14 +55,66 @@ export default function SignUpPage() {
     });
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // TODO: Implement auth logic with Supabase
-    console.log('Form submitted:', formData);
+    setIsLoading(true);
+    setMessage('');
+
+    try {
+      if (isLogin) {
+        // Handle login
+        const { data, error } = await supabase.auth.signInWithPassword({
+          email: formData.email,
+          password: formData.password,
+        });
+
+        if (error) {
+          setMessage(`Login failed: ${error.message}`);
+        } else {
+          setMessage('Login successful! Redirecting...');
+          router.push('/dashboard');
+        }
+      } else {
+        // Handle signup
+        if (formData.password !== formData.confirmPassword) {
+          setMessage('Passwords do not match');
+          setIsLoading(false);
+          return;
+        }
+
+        if (formData.password.length < 6) {
+          setMessage('Password must be at least 6 characters long');
+          setIsLoading(false);
+          return;
+        }
+
+        const { data, error } = await supabase.auth.signUp({
+          email: formData.email,
+          password: formData.password,
+          options: {
+            data: {
+              full_name: formData.fullName,
+            },
+          },
+        });
+
+        if (error) {
+          setMessage(`Signup failed: ${error.message}`);
+        } else {
+          setMessage('Please check your email for a verification link before signing in.');
+        }
+      }
+    } catch (error) {
+      setMessage('An unexpected error occurred. Please try again.');
+      console.error('Auth error:', error);
+    }
+
+    setIsLoading(false);
   };
 
   const toggleForm = () => {
     setIsLogin(!isLogin);
+    setMessage('');
     setFormData({
       fullName: '',
       email: '',
@@ -81,6 +151,17 @@ export default function SignUpPage() {
                   fasho.co
                 </h2>
               </div>
+
+              {/* Message display */}
+              {message && (
+                <div className={`mb-6 p-4 rounded-md ${
+                  message.includes('successful') || message.includes('check your email') 
+                    ? 'bg-green-900/50 border border-green-500 text-green-200'
+                    : 'bg-red-900/50 border border-red-500 text-red-200'
+                }`}>
+                  {message}
+                </div>
+              )}
 
               <form onSubmit={handleSubmit} className="space-y-6">
                 {!isLogin && (
@@ -137,9 +218,10 @@ export default function SignUpPage() {
 
                 <button
                   type="submit"
-                  className="w-full bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] text-black font-bold py-4 px-6 rounded-md hover:opacity-90 transition-opacity text-lg mt-8"
+                  disabled={isLoading}
+                  className="w-full bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] text-black font-bold py-4 px-6 rounded-md hover:opacity-90 transition-opacity text-lg mt-8 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  {isLogin ? 'log in' : 'sign up'}
+                  {isLoading ? (isLogin ? 'logging in...' : 'signing up...') : (isLogin ? 'log in' : 'sign up')}
                 </button>
               </form>
 
@@ -221,6 +303,17 @@ export default function SignUpPage() {
                 </h2>
               </div>
 
+              {/* Message display for mobile */}
+              {message && (
+                <div className={`mb-6 p-4 rounded-md text-sm ${
+                  message.includes('successful') || message.includes('check your email') 
+                    ? 'bg-green-900/50 border border-green-500 text-green-200'
+                    : 'bg-red-900/50 border border-red-500 text-red-200'
+                }`}>
+                  {message}
+                </div>
+              )}
+
               <form onSubmit={handleSubmit} className="space-y-6">
                 {!isLogin && (
                   <div>
@@ -276,9 +369,10 @@ export default function SignUpPage() {
 
                 <button
                   type="submit"
-                  className="w-full bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] text-black font-bold py-4 px-6 rounded-md hover:opacity-90 transition-opacity mt-8"
+                  disabled={isLoading}
+                  className="w-full bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] text-black font-bold py-4 px-6 rounded-md hover:opacity-90 transition-opacity mt-8 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  {isLogin ? 'log in' : 'sign up'}
+                  {isLoading ? (isLogin ? 'logging in...' : 'signing up...') : (isLogin ? 'log in' : 'sign up')}
                 </button>
               </form>
 
@@ -295,8 +389,6 @@ export default function SignUpPage() {
               </div>
             </div>
           </div>
-
-
         </div>
       </main>
     </>
