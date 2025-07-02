@@ -255,17 +255,21 @@ export default function PackagesPage() {
       });
     } else {
       // Go to next song
-      setCurrentSongIndex(prev => prev + 1);
-      setSelectedPackage(selectedPackages[currentSongIndex + 1] || "");
+      const newIndex = currentSongIndex + 1;
+      setCurrentSongIndex(newIndex);
+      setSelectedPackage(selectedPackages[newIndex] || "");
       
-      // Scroll to top for visual cue that song changed (all devices)
+      // Force scroll to top for visual cue that song changed (all devices)
       if (typeof window !== 'undefined') {
-        try {
-          window.scrollTo({ top: 0, behavior: 'smooth' });
-        } catch (error) {
-          // Fallback for browsers that don't support smooth behavior
-          window.scrollTo(0, 0);
-        }
+        // Use requestAnimationFrame to ensure DOM has updated
+        requestAnimationFrame(() => {
+          try {
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+          } catch (error) {
+            // Fallback for browsers that don't support smooth behavior
+            window.scrollTo(0, 0);
+          }
+        });
       }
       
       // Delay animation to allow scroll to complete
@@ -291,17 +295,21 @@ export default function PackagesPage() {
 
   const handlePreviousSong = () => {
     if (currentSongIndex > 0) {
-      setCurrentSongIndex(prev => prev - 1);
-      setSelectedPackage(selectedPackages[currentSongIndex - 1] || "");
+      const newIndex = currentSongIndex - 1;
+      setCurrentSongIndex(newIndex);
+      setSelectedPackage(selectedPackages[newIndex] || "");
       
-      // Scroll to top for visual cue that song changed (all devices)
+      // Force scroll to top for visual cue that song changed (all devices)
       if (typeof window !== 'undefined') {
-        try {
-          window.scrollTo({ top: 0, behavior: 'smooth' });
-        } catch (error) {
-          // Fallback for browsers that don't support smooth behavior
-          window.scrollTo(0, 0);
-        }
+        // Use requestAnimationFrame to ensure DOM has updated
+        requestAnimationFrame(() => {
+          try {
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+          } catch (error) {
+            // Fallback for browsers that don't support smooth behavior
+            window.scrollTo(0, 0);
+          }
+        });
       }
       
       // Delay animation to allow scroll to complete
