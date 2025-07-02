@@ -22,8 +22,8 @@ export default function ConfirmPage() {
             // Redirect to signup with error message
             router.push('/signup?message=confirmation_failed')
           } else {
-            // Successful confirmation - redirect to home with success message
-            router.push('/?confirmed=true')
+            // Successful confirmation - redirect to dashboard
+            router.push('/dashboard')
           }
         } catch (error) {
           console.error('Unexpected error during confirmation:', error)

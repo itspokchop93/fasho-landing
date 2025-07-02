@@ -12,6 +12,7 @@ export default function SignUpPage() {
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
   const [message, setMessage] = useState('');
+  const [showResendLink, setShowResendLink] = useState(false);
   const [formData, setFormData] = useState({
     fullName: '',
     email: '',
@@ -57,6 +58,39 @@ export default function SignUpPage() {
     }
   }, [router]);
 
+  // Password validation function
+  const validatePassword = (password: string) => {
+    const hasUpperCase = /[A-Z]/.test(password);
+    const hasNumber = /\d/.test(password);
+    return hasUpperCase && hasNumber;
+  };
+
+  // Resend verification email function
+  const handleResendVerification = async () => {
+    if (!formData.email) {
+      setMessage('Please enter your email address to resend verification.');
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      const { error } = await supabase.auth.resend({
+        type: 'signup',
+        email: formData.email,
+      });
+
+      if (error) {
+        setMessage(`Failed to resend verification: ${error.message}`);
+      } else {
+        setMessage('Verification email resent! Please check your inbox.');
+        setShowResendLink(false);
+      }
+    } catch (error) {
+      setMessage('Failed to resend verification. Please try again.');
+    }
+    setIsLoading(false);
+  };
+
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData({
       ...formData,
@@ -68,6 +102,7 @@ export default function SignUpPage() {
     e.preventDefault();
     setIsLoading(true);
     setMessage('');
+    setShowResendLink(false);
 
     try {
       if (isLogin) {
@@ -78,7 +113,13 @@ export default function SignUpPage() {
         });
 
         if (error) {
-          setMessage(`Login failed: ${error.message}`);
+          // Check if it's an unconfirmed email error
+          if (error.message.includes('Email not confirmed') || error.message.includes('not confirmed')) {
+            setMessage('Uh-Oh! You need to confirm your email. Please check your inbox for our verification email!');
+            setShowResendLink(true);
+          } else {
+            setMessage(`Login failed: ${error.message}`);
+          }
         } else {
           setMessage('Login successful! Redirecting...');
           router.push('/dashboard');
@@ -93,6 +134,12 @@ export default function SignUpPage() {
 
         if (formData.password.length < 6) {
           setMessage('Password must be at least 6 characters long');
+          setIsLoading(false);
+          return;
+        }
+
+        if (!validatePassword(formData.password)) {
+          setMessage('Passwords require 1 Uppercase Letter and 1 Number');
           setIsLoading(false);
           return;
         }
@@ -124,6 +171,7 @@ export default function SignUpPage() {
   const toggleForm = () => {
     setIsLogin(!isLogin);
     setMessage('');
+    setShowResendLink(false);
     setFormData({
       fullName: '',
       email: '',
@@ -164,11 +212,23 @@ export default function SignUpPage() {
               {/* Message display */}
               {message && (
                 <div className={`mb-6 p-4 rounded-md ${
-                  message.includes('successful') || message.includes('check your email') 
+                  message.includes('successful') || message.includes('check your email') || message.includes('resent')
                     ? 'bg-green-900/50 border border-green-500 text-green-200'
                     : 'bg-red-900/50 border border-red-500 text-red-200'
                 }`}>
                   {message}
+                  {showResendLink && (
+                    <span>
+                      {' '}
+                      <button
+                        onClick={handleResendVerification}
+                        disabled={isLoading}
+                        className="underline text-[#59e3a5] hover:text-[#14c0ff] transition-colors font-semibold disabled:opacity-50"
+                      >
+                        Resend Verification
+                      </button>
+                    </span>
+                  )}
                 </div>
               )}
 
@@ -315,11 +375,23 @@ export default function SignUpPage() {
               {/* Message display for mobile */}
               {message && (
                 <div className={`mb-6 p-4 rounded-md text-sm ${
-                  message.includes('successful') || message.includes('check your email') 
+                  message.includes('successful') || message.includes('check your email') || message.includes('resent')
                     ? 'bg-green-900/50 border border-green-500 text-green-200'
                     : 'bg-red-900/50 border border-red-500 text-red-200'
                 }`}>
                   {message}
+                  {showResendLink && (
+                    <span>
+                      {' '}
+                      <button
+                        onClick={handleResendVerification}
+                        disabled={isLoading}
+                        className="underline text-[#59e3a5] hover:text-[#14c0ff] transition-colors font-semibold disabled:opacity-50"
+                      >
+                        Resend Verification
+                      </button>
+                    </span>
+                  )}
                 </div>
               )}
 
