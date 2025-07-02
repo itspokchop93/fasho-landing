@@ -1,7 +1,7 @@
 import { GetServerSideProps } from 'next'
-import { createClientSSR } from '@/utils/supabase/server'
+import { createClientSSR } from '../utils/supabase/server'
 import { useState } from 'react'
-import { createClient } from '@/utils/supabase/client'
+import { createClient } from '../utils/supabase/client'
 import { useRouter } from 'next/router'
 
 interface DashboardProps {
