@@ -257,12 +257,14 @@ export default function PackagesPage() {
       // Go to next song
       setCurrentSongIndex(prev => prev + 1);
       setSelectedPackage(selectedPackages[currentSongIndex + 1] || "");
-      setSongIndicatorKey(prev => prev + 1); // Trigger animation
       
-      // Scroll to top on mobile for visual cue that song changed
-      if (window.innerWidth < 768) { // Mobile breakpoint
-        window.scrollTo({ top: 0, behavior: 'smooth' });
-      }
+      // Scroll to top for visual cue that song changed (all devices)
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      
+      // Delay animation to allow scroll to complete
+      setTimeout(() => {
+        setSongIndicatorKey(prev => prev + 1); // Trigger animation
+      }, 350);
     }
   };
 
@@ -284,12 +286,14 @@ export default function PackagesPage() {
     if (currentSongIndex > 0) {
       setCurrentSongIndex(prev => prev - 1);
       setSelectedPackage(selectedPackages[currentSongIndex - 1] || "");
-      setSongIndicatorKey(prev => prev + 1); // Trigger animation
       
-      // Scroll to top on mobile for visual cue that song changed
-      if (window.innerWidth < 768) { // Mobile breakpoint
-        window.scrollTo({ top: 0, behavior: 'smooth' });
-      }
+      // Scroll to top for visual cue that song changed (all devices)
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      
+      // Delay animation to allow scroll to complete
+      setTimeout(() => {
+        setSongIndicatorKey(prev => prev + 1); // Trigger animation
+      }, 350);
     }
   };
 
@@ -450,7 +454,7 @@ export default function PackagesPage() {
         ></div>
         <div className="relative z-20">
         <div className="max-w-7xl mx-auto">
-          <h1 className="text-4xl md:text-5xl font-extrabold text-center mb-12">
+          <h1 className={`${isDiscountedSong ? 'text-3xl' : 'text-4xl'} md:text-5xl font-extrabold text-center mb-12`}>
             Step 2: Choose your campaign{isDiscountedSong && <> for <span className="text-[#59e3a5]">25% OFF</span></>}
           </h1>
 
