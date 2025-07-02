@@ -2,11 +2,29 @@ import { createServerClient } from '@supabase/ssr'
 import { NextApiRequest, NextApiResponse } from 'next'
 import { GetServerSidePropsContext } from 'next'
 
+function validateEnvironmentVariables() {
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+  const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+
+  if (!supabaseUrl || !supabaseKey) {
+    throw new Error(
+      'Missing Supabase environment variables. Please check your environment configuration.\n' +
+      'Required variables:\n' +
+      '- NEXT_PUBLIC_SUPABASE_URL\n' +
+      '- NEXT_PUBLIC_SUPABASE_ANON_KEY'
+    )
+  }
+
+  return { supabaseUrl, supabaseKey }
+}
+
 // For API routes
 export function createClient(req: NextApiRequest, res: NextApiResponse) {
+  const { supabaseUrl, supabaseKey } = validateEnvironmentVariables()
+  
   return createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    supabaseUrl,
+    supabaseKey,
     {
       cookies: {
         get(name: string) {
@@ -25,9 +43,11 @@ export function createClient(req: NextApiRequest, res: NextApiResponse) {
 
 // For getServerSideProps
 export function createClientSSR(context: GetServerSidePropsContext) {
+  const { supabaseUrl, supabaseKey } = validateEnvironmentVariables()
+  
   return createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    supabaseUrl,
+    supabaseKey,
     {
       cookies: {
         get(name: string) {
