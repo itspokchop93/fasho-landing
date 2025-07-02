@@ -268,15 +268,19 @@ export default function PackagesPage() {
     
     const { scrollLeft, scrollWidth, clientWidth } = carouselRef.current;
     
-    // Simple and reliable logic:
-    // Left arrow shows when scrolled away from start
-    const showLeftArrow = scrollLeft > 10;
+    // More sensitive detection:
+    // Left arrow shows when scrolled away from start (lower threshold)
+    const showLeftArrow = scrollLeft > 5;
     
     // Right arrow shows when there's more content to scroll to
-    const showRightArrow = scrollLeft < (scrollWidth - clientWidth - 10);
+    const showRightArrow = scrollLeft < (scrollWidth - clientWidth - 5);
+    
+    // Ensure we always show right arrow initially if there's scrollable content
+    const hasScrollableContent = scrollWidth > clientWidth;
+    const finalShowRightArrow = showRightArrow || (hasScrollableContent && scrollLeft < 5);
     
     setCanScrollLeft(showLeftArrow);
-    setCanScrollRight(showRightArrow);
+    setCanScrollRight(finalShowRightArrow);
   };
 
   const scrollCarousel = (direction: 'left' | 'right') => {
@@ -318,6 +322,8 @@ export default function PackagesPage() {
       setCanScrollLeft(false);
     }
   }, [packages.length]);
+
+
 
   const getChartData = () => {
     const selected = packages.find(p => p.id === selectedPackage);
@@ -453,9 +459,9 @@ export default function PackagesPage() {
               {canScrollLeft && (
                 <button
                   onClick={() => scrollCarousel('left')}
-                  className="absolute left-2 top-1/2 -translate-y-1/2 z-50 bg-black/70 backdrop-blur-sm rounded-full p-2 border border-white/20 shadow-lg"
+                  className="absolute left-4 top-1/2 -translate-y-1/2 z-50 bg-black/70 backdrop-blur-sm rounded-full p-2 border border-white/20 shadow-lg animate-bounce-left"
                 >
-                  <svg className="w-4 h-4 text-white animate-bounce-left" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <svg className="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
                   </svg>
                 </button>
@@ -465,9 +471,9 @@ export default function PackagesPage() {
               {canScrollRight && (
                 <button
                   onClick={() => scrollCarousel('right')}
-                  className="absolute right-2 top-1/2 -translate-y-1/2 z-50 bg-black/70 backdrop-blur-sm rounded-full p-2 border border-white/20 shadow-lg"
+                  className="absolute right-4 top-1/2 -translate-y-1/2 z-50 bg-black/70 backdrop-blur-sm rounded-full p-2 border border-white/20 shadow-lg animate-bounce-right"
                 >
-                  <svg className="w-4 h-4 text-white animate-bounce-right" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <svg className="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                   </svg>
                 </button>
@@ -511,7 +517,7 @@ export default function PackagesPage() {
                       
                       {/* Most Popular flag for Advanced package */}
                       {pkg.id === 'advanced' && (
-                        <div className="absolute -top-3 -right-3 bg-gradient-to-r from-[#14c0ff] to-[#59e3a5] text-white text-xs font-semibold px-3 py-1 rounded-md shadow-lg z-30">
+                        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-gradient-to-r from-[#14c0ff] to-[#59e3a5] text-white text-xs font-semibold px-3 py-1 rounded-md shadow-lg z-30">
                           Most Popular
                         </div>
                       )}
@@ -522,7 +528,7 @@ export default function PackagesPage() {
                       )}
                       
                       {/* Content container - same structure for all packages */}
-                      <div className={`${pkg.id === 'advanced' ? `relative z-20 bg-gray-900 rounded-xl p-6 border ${selectedPackage === pkg.id ? 'border-[#59e3a5]' : 'border-white/20'}` : ''}`}>
+                      <div className={`${pkg.id === 'advanced' ? `relative z-20 bg-gray-900 rounded-xl p-6 border h-full flex flex-col ${selectedPackage === pkg.id ? 'border-[#59e3a5]' : 'border-white/20'}` : 'h-full flex flex-col'}`}>
                         <div className="flex items-center justify-center mb-4">
                           <div className="w-12 h-12 bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] rounded-full flex items-center justify-center">
                             <span className="text-lg">🎧</span>
@@ -532,12 +538,12 @@ export default function PackagesPage() {
                         <h3 className="text-lg font-bold text-center mb-2">{pkg.name}</h3>
                         <p className="text-xs text-white/70 text-center mb-4">{pkg.description}</p>
                         
-                        <div className="space-y-2 mb-4">
+                        <div className="space-y-2 mb-4 flex-grow">
                           <div className="text-xs text-white/80">{pkg.plays}</div>
                           <div className="text-xs text-white/80">{pkg.placements}</div>
                         </div>
                         
-                        <div className="text-center">
+                        <div className="text-center mt-auto">
                           <span className="text-xl font-bold">${pkg.price}</span>
                         </div>
                       </div>
