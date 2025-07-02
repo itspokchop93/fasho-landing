@@ -159,8 +159,8 @@ export default function SignUpPage() {
 
           {/* Middle gradient column to blend form with images */}
           <div className="absolute top-0 w-48 h-full z-50" style={{
-            left: 'calc(50% - 200px)',
-            background: 'linear-gradient(to right, transparent 0%, rgba(0,0,0,0.1) 20%, rgba(0,0,0,0.3) 40%, rgba(0,0,0,0.6) 70%, rgba(0,0,0,0.9) 90%, #000000 100%)',
+            left: 'calc(50% - 185px)',
+            background: 'linear-gradient(to right, transparent 0%, rgba(0,0,0,0.05) 8%, rgba(0,0,0,0.1) 16%, rgba(0,0,0,0.2) 25%, rgba(0,0,0,0.3) 33%, rgba(0,0,0,0.4) 41%, rgba(0,0,0,0.5) 50%, rgba(0,0,0,0.6) 58%, rgba(0,0,0,0.7) 66%, rgba(0,0,0,0.8) 75%, rgba(0,0,0,0.9) 83%, rgba(0,0,0,0.95) 91%, #000000 100%)',
             pointerEvents: 'none'
           }}></div>
 
