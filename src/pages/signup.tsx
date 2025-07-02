@@ -241,22 +241,32 @@ export default function SignUpPage() {
                       placeholder="full name"
                       value={formData.fullName}
                       onChange={handleInputChange}
-                      className="w-full bg-transparent border-b-2 border-white/30 pb-3 text-white placeholder-white/60 focus:border-[#59e3a5] focus:outline-none transition-colors text-lg"
+                      className="w-full bg-transparent border-b-2 border-white/30 pb-3 text-white placeholder-white/60 focus:border-[#59e3a5] focus:outline-none transition-colors text-lg autofill-override"
+                      style={{
+                        WebkitTextFillColor: 'white',
+                        WebkitBoxShadow: '0 0 0 1000px transparent inset',
+                        transition: 'background-color 5000s ease-in-out 0s'
+                      }}
                       required
                     />
                   </div>
                 )}
                 
                 <div>
-                  <input
-                    type="email"
-                    name="email"
-                    placeholder="email"
-                    value={formData.email}
-                    onChange={handleInputChange}
-                    className="w-full bg-transparent border-b-2 border-white/30 pb-3 text-white placeholder-white/60 focus:border-[#59e3a5] focus:outline-none transition-colors text-lg"
-                    required
-                  />
+                                      <input
+                      type="email"
+                      name="email"
+                      placeholder="email"
+                      value={formData.email}
+                      onChange={handleInputChange}
+                      className="w-full bg-transparent border-b-2 border-white/30 pb-3 text-white placeholder-white/60 focus:border-[#59e3a5] focus:outline-none transition-colors text-lg autofill-override"
+                      style={{
+                        WebkitTextFillColor: 'white',
+                        WebkitBoxShadow: '0 0 0 1000px transparent inset',
+                        transition: 'background-color 5000s ease-in-out 0s'
+                      }}
+                      required
+                    />
                 </div>
 
                 <div>
@@ -266,7 +276,12 @@ export default function SignUpPage() {
                     placeholder={isLogin ? "password" : "create password"}
                     value={formData.password}
                     onChange={handleInputChange}
-                    className="w-full bg-transparent border-b-2 border-white/30 pb-3 text-white placeholder-white/60 focus:border-[#59e3a5] focus:outline-none transition-colors text-lg"
+                    className="w-full bg-transparent border-b-2 border-white/30 pb-3 text-white placeholder-white/60 focus:border-[#59e3a5] focus:outline-none transition-colors text-lg autofill-override"
+                    style={{
+                      WebkitTextFillColor: 'white',
+                      WebkitBoxShadow: '0 0 0 1000px transparent inset',
+                      transition: 'background-color 5000s ease-in-out 0s'
+                    }}
                     required
                   />
                 </div>
@@ -279,7 +294,12 @@ export default function SignUpPage() {
                       placeholder="confirm password"
                       value={formData.confirmPassword}
                       onChange={handleInputChange}
-                      className="w-full bg-transparent border-b-2 border-white/30 pb-3 text-white placeholder-white/60 focus:border-[#59e3a5] focus:outline-none transition-colors text-lg"
+                      className="w-full bg-transparent border-b-2 border-white/30 pb-3 text-white placeholder-white/60 focus:border-[#59e3a5] focus:outline-none transition-colors text-lg autofill-override"
+                      style={{
+                        WebkitTextFillColor: 'white',
+                        WebkitBoxShadow: '0 0 0 1000px transparent inset',
+                        transition: 'background-color 5000s ease-in-out 0s'
+                      }}
                       required
                     />
                   </div>
@@ -404,7 +424,12 @@ export default function SignUpPage() {
                       placeholder="full name"
                       value={formData.fullName}
                       onChange={handleInputChange}
-                      className="w-full bg-transparent border-b-2 border-white/30 pb-3 text-white placeholder-white/60 focus:border-[#59e3a5] focus:outline-none transition-colors"
+                      className="w-full bg-transparent border-b-2 border-white/30 pb-3 text-white placeholder-white/60 focus:border-[#59e3a5] focus:outline-none transition-colors autofill-override"
+                      style={{
+                        WebkitTextFillColor: 'white',
+                        WebkitBoxShadow: '0 0 0 1000px transparent inset',
+                        transition: 'background-color 5000s ease-in-out 0s'
+                      }}
                       required
                     />
                   </div>
@@ -417,7 +442,12 @@ export default function SignUpPage() {
                     placeholder="email"
                     value={formData.email}
                     onChange={handleInputChange}
-                    className="w-full bg-transparent border-b-2 border-white/30 pb-3 text-white placeholder-white/60 focus:border-[#59e3a5] focus:outline-none transition-colors"
+                    className="w-full bg-transparent border-b-2 border-white/30 pb-3 text-white placeholder-white/60 focus:border-[#59e3a5] focus:outline-none transition-colors autofill-override"
+                    style={{
+                      WebkitTextFillColor: 'white',
+                      WebkitBoxShadow: '0 0 0 1000px transparent inset',
+                      transition: 'background-color 5000s ease-in-out 0s'
+                    }}
                     required
                   />
                 </div>
@@ -429,7 +459,12 @@ export default function SignUpPage() {
                     placeholder={isLogin ? "password" : "create password"}
                     value={formData.password}
                     onChange={handleInputChange}
-                    className="w-full bg-transparent border-b-2 border-white/30 pb-3 text-white placeholder-white/60 focus:border-[#59e3a5] focus:outline-none transition-colors"
+                    className="w-full bg-transparent border-b-2 border-white/30 pb-3 text-white placeholder-white/60 focus:border-[#59e3a5] focus:outline-none transition-colors autofill-override"
+                    style={{
+                      WebkitTextFillColor: 'white',
+                      WebkitBoxShadow: '0 0 0 1000px transparent inset',
+                      transition: 'background-color 5000s ease-in-out 0s'
+                    }}
                     required
                   />
                 </div>
@@ -442,7 +477,12 @@ export default function SignUpPage() {
                       placeholder="confirm password"
                       value={formData.confirmPassword}
                       onChange={handleInputChange}
-                      className="w-full bg-transparent border-b-2 border-white/30 pb-3 text-white placeholder-white/60 focus:border-[#59e3a5] focus:outline-none transition-colors"
+                      className="w-full bg-transparent border-b-2 border-white/30 pb-3 text-white placeholder-white/60 focus:border-[#59e3a5] focus:outline-none transition-colors autofill-override"
+                      style={{
+                        WebkitTextFillColor: 'white',
+                        WebkitBoxShadow: '0 0 0 1000px transparent inset',
+                        transition: 'background-color 5000s ease-in-out 0s'
+                      }}
                       required
                     />
                   </div>

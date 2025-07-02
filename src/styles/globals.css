@@ -16,4 +16,28 @@ body {
   .animate-spin-slow {
     animation: spin-slow 4s linear infinite;
   }
+}
+
+/* Autofill override styles */
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus,
+input:-webkit-autofill:active {
+  -webkit-box-shadow: 0 0 0 30px transparent inset !important;
+  -webkit-text-fill-color: white !important;
+  font-family: inherit !important;
+  font-size: inherit !important;
+  font-weight: inherit !important;
+  transition: background-color 5000s ease-in-out 0s !important;
+}
+
+.autofill-override:-webkit-autofill,
+.autofill-override:-webkit-autofill:hover,
+.autofill-override:-webkit-autofill:focus,
+.autofill-override:-webkit-autofill:active {
+  -webkit-box-shadow: 0 0 0 30px transparent inset !important;
+  -webkit-text-fill-color: white !important;
+  background-color: transparent !important;
+  font-family: inherit !important;
+  transition: background-color 5000s ease-in-out 0s !important;
 } 
