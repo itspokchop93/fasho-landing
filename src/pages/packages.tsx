@@ -62,7 +62,7 @@ export default function PackagesPage() {
   const [animatedPlacements, setAnimatedPlacements] = useState<number>(0);
   const [previousPackage, setPreviousPackage] = useState<string>("");
   const [currentScale, setCurrentScale] = useState<number>(0);
-  const [canScrollLeft, setCanScrollLeft] = useState(false);
+  const [canScrollLeft, setCanScrollLeft] = useState(true); // Show left arrow by default too
   const [canScrollRight, setCanScrollRight] = useState(true); // Start with right arrow showing
   const carouselRef = useRef<HTMLDivElement>(null);
 
@@ -315,11 +315,11 @@ export default function PackagesPage() {
     };
   }, [packages]);
 
-  // Ensure right arrow shows initially when we have scrollable content
+  // Ensure both arrows show initially when we have scrollable content
   useEffect(() => {
     if (packages.length > 2) {
       setCanScrollRight(true);
-      setCanScrollLeft(false);
+      setCanScrollLeft(true); // Show both arrows by default
     }
   }, [packages.length]);
 
@@ -517,7 +517,7 @@ export default function PackagesPage() {
                       
                       {/* Most Popular flag for Advanced package */}
                       {pkg.id === 'advanced' && (
-                        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-gradient-to-r from-[#14c0ff] to-[#59e3a5] text-white text-xs font-semibold px-3 py-1 rounded-md shadow-lg z-30">
+                        <div className="absolute -top-2 left-1/2 -translate-x-1/2 bg-gradient-to-r from-[#14c0ff] to-[#59e3a5] text-white text-xs font-semibold px-4 py-1 rounded-md shadow-lg z-30 whitespace-nowrap">
                           Most Popular
                         </div>
                       )}
@@ -948,10 +948,10 @@ export default function PackagesPage() {
             transform: translateX(0);
           }
           40% {
-            transform: translateX(3px);
+            transform: translateX(5px);
           }
           60% {
-            transform: translateX(1px);
+            transform: translateX(2px);
           }
         }
 
