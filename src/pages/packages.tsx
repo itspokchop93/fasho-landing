@@ -259,7 +259,14 @@ export default function PackagesPage() {
       setSelectedPackage(selectedPackages[currentSongIndex + 1] || "");
       
       // Scroll to top for visual cue that song changed (all devices)
-      window.scrollTo({ top: 0, behavior: 'smooth' });
+      if (typeof window !== 'undefined') {
+        try {
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+        } catch (error) {
+          // Fallback for browsers that don't support smooth behavior
+          window.scrollTo(0, 0);
+        }
+      }
       
       // Delay animation to allow scroll to complete
       setTimeout(() => {
@@ -288,7 +295,14 @@ export default function PackagesPage() {
       setSelectedPackage(selectedPackages[currentSongIndex - 1] || "");
       
       // Scroll to top for visual cue that song changed (all devices)
-      window.scrollTo({ top: 0, behavior: 'smooth' });
+      if (typeof window !== 'undefined') {
+        try {
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+        } catch (error) {
+          // Fallback for browsers that don't support smooth behavior
+          window.scrollTo(0, 0);
+        }
+      }
       
       // Delay animation to allow scroll to complete
       setTimeout(() => {
