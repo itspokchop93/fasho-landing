@@ -3,6 +3,7 @@ import Head from 'next/head';
 import Image from 'next/image';
 import Link from 'next/link';
 import Header from '../components/Header';
+import VerticalShapeDivider from '../components/VerticalShapeDivider';
 
 export default function SignUpPage() {
   const [isLogin, setIsLogin] = useState(false);
@@ -70,6 +71,8 @@ export default function SignUpPage() {
               className="absolute inset-0 bg-cover bg-center bg-no-repeat opacity-35 z-10"
               style={{ backgroundImage: 'url(/marble-bg.jpg)' }}
             ></div>
+            {/* Vertical shape divider */}
+            <VerticalShapeDivider />
             <div className="w-full max-w-md relative z-20">
               <div className="mb-8">
                 <h1 className="text-4xl lg:text-5xl font-extrabold mb-4">

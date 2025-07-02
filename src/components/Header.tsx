@@ -10,7 +10,7 @@ export default function Header({ transparent = false, hideSignUp = false }: Head
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   return (
-    <header className={`fixed top-0 left-0 right-0 z-[60] ${transparent ? 'bg-transparent' : 'bg-black/90 backdrop-blur-sm'} border-b border-white/20`}>
+    <header className={`fixed top-0 left-0 right-0 z-[60] ${transparent ? 'bg-transparent' : 'bg-black/90 backdrop-blur-sm border-b border-white/20'}`}>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
@@ -21,7 +21,7 @@ export default function Header({ transparent = false, hideSignUp = false }: Head
           </div>
 
           {/* Desktop Navigation */}
-          <nav className="hidden md:flex items-center space-x-8">
+          <nav className={`hidden md:flex items-center space-x-8 ${hideSignUp ? 'pr-6' : ''}`}>
             <Link href="/song-promotion" className="text-white hover:text-[#59e3a5] transition-colors font-medium">
               Song Promotion
             </Link>
