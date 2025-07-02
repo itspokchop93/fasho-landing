@@ -5,7 +5,7 @@ export default function Header() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   return (
-    <header className="fixed top-0 left-0 right-0 z-[60] bg-black/90 backdrop-blur-sm border-b border-white/10">
+    <header className="fixed top-0 left-0 right-0 z-[60] bg-black/90 backdrop-blur-sm border-b border-white/20">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
