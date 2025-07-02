@@ -93,10 +93,13 @@ export default function AddSongsPage() {
     if (debounceRef.current) clearTimeout(debounceRef.current);
     if (searchTimeout) clearTimeout(searchTimeout);
 
+    // Clear all previous states when input changes (this enables auto-restart)
+    setError(null);
+    setValidationError(null);
+    setPreviewTrack(null);
+
     if (!input) {
-      setPreviewTrack(null);
-      setError(null);
-      setValidationError(null);
+      setLoading(false);
       return;
     }
 
@@ -104,14 +107,9 @@ export default function AddSongsPage() {
     const validationErr = validateSpotifyUrl(input);
     if (validationErr) {
       setValidationError(validationErr);
-      setError(null);
-      setPreviewTrack(null);
       setLoading(false);
       return;
     }
-
-    // Clear validation error if URL format is valid
-    setValidationError(null);
 
     debounceRef.current = setTimeout(async () => {
       setLoading(true);
@@ -244,10 +242,18 @@ export default function AddSongsPage() {
             onChange={(e) => setInput(e.target.value)}
             className="w-full rounded-md px-4 py-3 text-gray-900 focus:outline-none"
           />
-          {(focused || previewTrack || loading) && !validationError && !error && (
+          {(focused || previewTrack || loading || validationError || error) && (
             <div className="absolute left-0 right-0 mt-2 z-50 w-full border border-white/20 rounded-lg bg-gray-900">
               {previewTrack ? (
                 <TrackCard track={previewTrack} onConfirm={confirmPreview} dark />
+              ) : validationError ? (
+                <div className="p-4 bg-red-900/50 border border-red-500/50 rounded-lg">
+                  <p className="text-red-200 font-medium">{validationError}</p>
+                </div>
+              ) : error ? (
+                <div className="p-4 bg-red-900/50 border border-red-500/50 rounded-lg">
+                  <p className="text-red-200 font-medium">{error}</p>
+                </div>
               ) : (
                 <div className="flex items-center justify-center py-6 gap-3">
                   <svg className="animate-spin h-6 w-6 text-white/70" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
@@ -263,18 +269,7 @@ export default function AddSongsPage() {
           )}
         </div>
 
-        {/* Error messages */}
-        {validationError && (
-          <div className="w-full max-w-xl mb-4 p-4 bg-red-900/50 border border-red-500 rounded-md">
-            <p className="text-red-200">{validationError}</p>
-          </div>
-        )}
 
-        {error && !validationError && (
-          <div className="w-full max-w-xl mb-4 p-4 bg-red-900/50 border border-red-500 rounded-md">
-            <p className="text-red-200">{error}</p>
-          </div>
-        )}
 
         <button
           disabled={tracks.length === 0}
