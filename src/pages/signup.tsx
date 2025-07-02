@@ -71,8 +71,6 @@ export default function SignUpPage() {
               className="absolute inset-0 bg-cover bg-center bg-no-repeat opacity-35 z-10"
               style={{ backgroundImage: 'url(/marble-bg.jpg)' }}
             ></div>
-            {/* Vertical shape divider */}
-            <VerticalShapeDivider />
             <div className="w-full max-w-md relative z-20">
               <div className="mb-8">
                 <h1 className="text-4xl lg:text-5xl font-extrabold mb-4">
@@ -160,6 +158,8 @@ export default function SignUpPage() {
 
           {/* Right side - Images */}
           <div className="w-1/2 relative overflow-hidden">
+            {/* Vertical shape divider positioned at center split */}
+            <VerticalShapeDivider />
             {/* Background gradient overlay */}
             <div className="absolute inset-0 bg-gradient-to-l from-transparent via-black/20 to-black/60 z-10"></div>
             <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-black/20 z-10"></div>
