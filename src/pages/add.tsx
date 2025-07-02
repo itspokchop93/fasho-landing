@@ -244,7 +244,7 @@ export default function AddSongsPage() {
             onChange={(e) => setInput(e.target.value)}
             className="w-full rounded-md px-4 py-3 text-gray-900 focus:outline-none"
           />
-          {(focused || previewTrack) && !validationError && !error && (
+          {(focused || previewTrack || loading) && !validationError && !error && (
             <div className="absolute left-0 right-0 mt-2 z-50 w-full border border-white/20 rounded-lg bg-gray-900">
               {previewTrack ? (
                 <TrackCard track={previewTrack} onConfirm={confirmPreview} dark />
@@ -254,7 +254,9 @@ export default function AddSongsPage() {
                     <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                     <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path>
                   </svg>
-                  <span className="text-white/70">Waiting For Song Link...</span>
+                  <span className="text-white/70 font-semibold">
+                    {loading ? "Searching..." : "Waiting For Song Link..."}
+                  </span>
                 </div>
               )}
             </div>
@@ -267,7 +269,7 @@ export default function AddSongsPage() {
             <p className="text-red-200">{validationError}</p>
           </div>
         )}
-        {loading && <p className="mb-4">Searching…</p>}
+
         {error && !validationError && (
           <div className="w-full max-w-xl mb-4 p-4 bg-red-900/50 border border-red-500 rounded-md">
             <p className="text-red-200">{error}</p>
