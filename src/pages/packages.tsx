@@ -86,6 +86,13 @@ export default function PackagesPage() {
   const currentTrack = tracks[currentSongIndex];
   const isLastSong = currentSongIndex === tracks.length - 1;
   const isOnlySong = tracks.length === 1;
+  const isDiscountedSong = currentSongIndex > 0; // Songs after the first get 25% off
+
+  // Calculate discounted price (25% off, rounded up)
+  const getDiscountedPrice = (originalPrice: number) => {
+    const discounted = originalPrice * 0.75; // 25% off
+    return Math.ceil(discounted); // Round up
+  };
 
   const handlePackageSelect = (packageId: string) => {
     // Toggle functionality - if clicking the same package, unselect it
@@ -422,7 +429,7 @@ export default function PackagesPage() {
         <div className="relative z-20">
         <div className="max-w-7xl mx-auto">
           <h1 className="text-4xl md:text-5xl font-extrabold text-center mb-12">
-            Step 2: Choose your campaign for <span className="text-[#59e3a5]">60% OFF</span>
+            Step 2: Choose your campaign{isDiscountedSong && <> for <span className="text-[#59e3a5]">25% OFF</span></>}
           </h1>
 
           {/* Mobile Layout */}
@@ -439,6 +446,12 @@ export default function PackagesPage() {
               <div className="relative inline-block group">
                 {/* Gradient outline */}
                 <div className="absolute -inset-1 bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] rounded-2xl blur-sm opacity-75"></div>
+                {/* 25% OFF badge for discounted songs */}
+                {isDiscountedSong && (
+                  <div className="absolute -top-3 -right-3 bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] text-black text-sm font-bold px-3 py-1 rounded-full shadow-lg z-10 animate-pulse">
+                    25% OFF
+                  </div>
+                )}
                 <Image
                   src={currentTrack.imageUrl}
                   alt={currentTrack.title}
@@ -546,7 +559,16 @@ export default function PackagesPage() {
                         </div>
                         
                         <div className="text-center mt-auto">
-                          <span className="text-xl font-bold">${pkg.price}</span>
+                          {isDiscountedSong ? (
+                            <div className="space-y-1">
+                              <div className="text-sm text-white/50 line-through">${pkg.price}</div>
+                              <div className="text-xl font-bold bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] bg-clip-text text-transparent">
+                                ${getDiscountedPrice(pkg.price)}
+                              </div>
+                            </div>
+                          ) : (
+                            <span className="text-xl font-bold">${pkg.price}</span>
+                          )}
                         </div>
                       </div>
                     </div>
@@ -746,7 +768,16 @@ export default function PackagesPage() {
                       </div>
                       
                       <div className="text-center">
-                        <span className="text-2xl font-bold">${pkg.price}</span>
+                        {isDiscountedSong ? (
+                          <div className="space-y-1">
+                            <div className="text-sm text-white/50 line-through">${pkg.price}</div>
+                            <div className="text-2xl font-bold bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] bg-clip-text text-transparent">
+                              ${getDiscountedPrice(pkg.price)}
+                            </div>
+                          </div>
+                        ) : (
+                          <span className="text-2xl font-bold">${pkg.price}</span>
+                        )}
                       </div>
                     </div>
                   </div>
@@ -877,6 +908,12 @@ export default function PackagesPage() {
               <div className="relative inline-block group">
                 {/* Gradient outline */}
                 <div className="absolute -inset-1 bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] rounded-2xl blur-sm opacity-75"></div>
+                {/* 25% OFF badge for discounted songs */}
+                {isDiscountedSong && (
+                  <div className="absolute -top-4 -right-4 bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] text-black text-lg font-bold px-4 py-2 rounded-full shadow-lg z-10 animate-pulse">
+                    25% OFF
+                  </div>
+                )}
                 <Image
                   src={currentTrack.imageUrl}
                   alt={currentTrack.title}

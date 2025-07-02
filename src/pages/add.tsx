@@ -143,7 +143,7 @@ export default function AddSongsPage() {
       </Head>
       <main className="min-h-screen bg-black text-white py-24 px-4 flex flex-col items-center">
         <h1 className="text-3xl md:text-5xl font-extrabold text-center mb-12">
-          Add another song now for <span className="text-[#59e3a5]">20% OFF!</span>
+          Add another song now for <span className="text-[#59e3a5]">25% OFF!</span>
         </h1>
 
         {/* cards */}
