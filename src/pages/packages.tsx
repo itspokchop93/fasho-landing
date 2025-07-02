@@ -240,17 +240,12 @@ export default function PackagesPage() {
     }
 
     if (isLastSong || isOnlySong) {
-      // Go to checkout with all selections
-      const orderData = tracks.map((track, index) => ({
-        track,
-        packageId: selectedPackages[index] || selectedPackage,
-        package: packages.find(p => p.id === (selectedPackages[index] || selectedPackage))
-      }));
-      
+      // Go to checkout with tracks and selected packages
       router.push({
         pathname: '/checkout',
         query: {
-          order: JSON.stringify(orderData)
+          tracks: JSON.stringify(tracks),
+          selectedPackages: JSON.stringify(selectedPackages)
         }
       });
     } else {
