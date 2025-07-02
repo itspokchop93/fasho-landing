@@ -244,9 +244,9 @@ export default function AddSongsPage() {
             onChange={(e) => setInput(e.target.value)}
             className="w-full rounded-md px-4 py-3 text-gray-900 focus:outline-none"
           />
-          {(focused || previewTrack) && !validationError && (
+          {(focused || previewTrack) && !validationError && !error && (
             <div className="absolute left-0 right-0 mt-2 z-50 w-full border border-white/20 rounded-lg bg-gray-900">
-              {previewTrack && !error ? (
+              {previewTrack ? (
                 <TrackCard track={previewTrack} onConfirm={confirmPreview} dark />
               ) : (
                 <div className="flex items-center justify-center py-6 gap-3">
