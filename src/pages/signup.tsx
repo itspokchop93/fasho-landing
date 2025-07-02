@@ -57,14 +57,20 @@ export default function SignUpPage() {
       <Head>
         <title>{isLogin ? 'Login' : 'Sign Up'} – Fasho.co</title>
       </Head>
-      <Header />
+      <Header transparent hideSignUp />
       
       <main className="min-h-screen relative bg-black text-white">
         {/* Desktop Layout */}
         <div className="hidden md:flex min-h-screen">
           {/* Left side - Form */}
-          <div className="w-1/2 flex items-center justify-center p-8 lg:p-16">
-            <div className="w-full max-w-md">
+          <div className="w-1/2 relative flex items-center justify-center p-8 lg:p-16">
+            {/* Marble background for form side */}
+            <div className="absolute inset-0 bg-black z-0"></div>
+            <div 
+              className="absolute inset-0 bg-cover bg-center bg-no-repeat opacity-35 z-10"
+              style={{ backgroundImage: 'url(/marble-bg.jpg)' }}
+            ></div>
+            <div className="w-full max-w-md relative z-20">
               <div className="mb-8">
                 <h1 className="text-4xl lg:text-5xl font-extrabold mb-4">
                   welcome to
@@ -185,28 +191,12 @@ export default function SignUpPage() {
 
         {/* Mobile Layout */}
         <div className="md:hidden min-h-screen relative">
-          {/* Background Images */}
-          <div className="absolute inset-0">
-            {images.map((src, index) => (
-              <div
-                key={src}
-                className={`absolute inset-0 transition-opacity duration-1000 ${
-                  index === currentImageIndex ? 'opacity-100' : 'opacity-0'
-                }`}
-              >
-                <Image
-                  src={src}
-                  alt={`Artist ${index + 1}`}
-                  fill
-                  className="object-cover"
-                  priority={index === 0}
-                />
-              </div>
-            ))}
-            
-            {/* Mobile gradient overlay */}
-            <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-black/40 to-black/80 z-10"></div>
-          </div>
+          {/* Marble background for mobile */}
+          <div className="absolute inset-0 bg-black z-0"></div>
+          <div 
+            className="absolute inset-0 bg-cover bg-center bg-no-repeat opacity-35 z-10"
+            style={{ backgroundImage: 'url(/marble-bg.jpg)' }}
+          ></div>
 
           {/* Form content */}
           <div className="relative z-20 min-h-screen flex items-center justify-center p-6 pt-28">
@@ -229,7 +219,7 @@ export default function SignUpPage() {
                       placeholder="full name"
                       value={formData.fullName}
                       onChange={handleInputChange}
-                      className="w-full bg-black/30 backdrop-blur-sm border-2 border-white/20 rounded-lg px-4 py-3 text-white placeholder-white/60 focus:border-[#59e3a5] focus:outline-none transition-colors"
+                      className="w-full bg-transparent border-b-2 border-white/30 pb-3 text-white placeholder-white/60 focus:border-[#59e3a5] focus:outline-none transition-colors"
                       required
                     />
                   </div>
@@ -242,7 +232,7 @@ export default function SignUpPage() {
                     placeholder="email"
                     value={formData.email}
                     onChange={handleInputChange}
-                    className="w-full bg-black/30 backdrop-blur-sm border-2 border-white/20 rounded-lg px-4 py-3 text-white placeholder-white/60 focus:border-[#59e3a5] focus:outline-none transition-colors"
+                    className="w-full bg-transparent border-b-2 border-white/30 pb-3 text-white placeholder-white/60 focus:border-[#59e3a5] focus:outline-none transition-colors"
                     required
                   />
                 </div>
@@ -254,7 +244,7 @@ export default function SignUpPage() {
                     placeholder={isLogin ? "password" : "create password"}
                     value={formData.password}
                     onChange={handleInputChange}
-                    className="w-full bg-black/30 backdrop-blur-sm border-2 border-white/20 rounded-lg px-4 py-3 text-white placeholder-white/60 focus:border-[#59e3a5] focus:outline-none transition-colors"
+                    className="w-full bg-transparent border-b-2 border-white/30 pb-3 text-white placeholder-white/60 focus:border-[#59e3a5] focus:outline-none transition-colors"
                     required
                   />
                 </div>
@@ -267,7 +257,7 @@ export default function SignUpPage() {
                       placeholder="confirm password"
                       value={formData.confirmPassword}
                       onChange={handleInputChange}
-                      className="w-full bg-black/30 backdrop-blur-sm border-2 border-white/20 rounded-lg px-4 py-3 text-white placeholder-white/60 focus:border-[#59e3a5] focus:outline-none transition-colors"
+                      className="w-full bg-transparent border-b-2 border-white/30 pb-3 text-white placeholder-white/60 focus:border-[#59e3a5] focus:outline-none transition-colors"
                       required
                     />
                   </div>
@@ -275,7 +265,7 @@ export default function SignUpPage() {
 
                 <button
                   type="submit"
-                  className="w-full bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] text-black font-bold py-4 px-6 rounded-lg hover:opacity-90 transition-opacity mt-8"
+                  className="w-full bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] text-black font-bold py-4 px-6 rounded-md hover:opacity-90 transition-opacity mt-8"
                 >
                   {isLogin ? 'log in' : 'sign up'}
                 </button>
@@ -295,13 +285,7 @@ export default function SignUpPage() {
             </div>
           </div>
 
-          {/* Mobile artist info overlay */}
-          <div className="absolute bottom-6 left-6 z-20">
-            <div className="text-white">
-              <h3 className="text-lg font-bold">Rising Artist</h3>
-              <p className="text-white/80 text-sm">100k monthly listeners</p>
-            </div>
-          </div>
+
         </div>
       </main>
     </>
