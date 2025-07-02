@@ -62,7 +62,7 @@ export default function PackagesPage() {
   const [animatedPlacements, setAnimatedPlacements] = useState<number>(0);
   const [previousPackage, setPreviousPackage] = useState<string>("");
   const [currentScale, setCurrentScale] = useState<number>(0);
-  const [canScrollLeft, setCanScrollLeft] = useState(true); // Show left arrow by default too
+  const [canScrollLeft, setCanScrollLeft] = useState(false); // Hide left arrow initially
   const [canScrollRight, setCanScrollRight] = useState(true); // Start with right arrow showing
   const carouselRef = useRef<HTMLDivElement>(null);
 
@@ -315,11 +315,11 @@ export default function PackagesPage() {
     };
   }, [packages]);
 
-  // Ensure both arrows show initially when we have scrollable content
+  // Ensure right arrow shows initially when we have scrollable content
   useEffect(() => {
     if (packages.length > 2) {
       setCanScrollRight(true);
-      setCanScrollLeft(true); // Show both arrows by default
+      setCanScrollLeft(false); // Hide left arrow initially
     }
   }, [packages.length]);
 
