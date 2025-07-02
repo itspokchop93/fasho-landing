@@ -48,6 +48,15 @@ export default function SignUpPage() {
     checkUser();
   }, [router, supabase.auth]);
 
+  // Check for confirmation failure message
+  useEffect(() => {
+    if (router.query.message === 'confirmation_failed') {
+      setMessage('Email confirmation failed or expired. Please try signing up again.');
+      // Clean up the URL parameter
+      router.replace('/signup', undefined, { shallow: true });
+    }
+  }, [router]);
+
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData({
       ...formData,
