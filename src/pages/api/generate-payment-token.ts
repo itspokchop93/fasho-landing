@@ -57,68 +57,36 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         "transactionRequest": {
           "transactionType": "authCaptureTransaction",
           "amount": amount.toFixed(2),
-          "currencyCode": "USD",
           "order": {
             "invoiceNumber": `INV-${timestamp}`,
             "description": `Fasho Music Promotion - ${orderItems.length} package(s)`
-          },
-          "customer": {
-            "email": customerEmail
-          },
-          "billTo": {
-            "email": customerEmail
-          },
-          "lineItems": orderItems.map((item, index) => ({
-            "itemId": (index + 1).toString(),
-            "name": item.name.substring(0, 31), // Authorize.net limit
-            "description": item.name.substring(0, 255), // Authorize.net limit
-            "quantity": "1",
-            "unitPrice": item.price.toFixed(2)
-          }))
+          }
         },
         "hostedPaymentSettings": {
           "setting": [
             {
               "settingName": "hostedPaymentReturnOptions",
-              "settingValue": JSON.stringify({
-                "showReceipt": true,
-                "url": `${process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'}/thank-you`,
-                "urlText": "Continue",
-                "cancelUrl": `${process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'}/checkout`,
-                "cancelUrlText": "Cancel"
-              })
+              "settingValue": `{"showReceipt": true, "url": "${process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'}/thank-you", "urlText": "Continue", "cancelUrl": "${process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'}/checkout", "cancelUrlText": "Cancel"}`
             },
             {
-              "settingName": "hostedPaymentButtonOptions",
-              "settingValue": JSON.stringify({
-                "text": "Pay Now"
-              })
+              "settingName": "hostedPaymentButtonOptions", 
+              "settingValue": `{"text": "Pay Now"}`
             },
             {
               "settingName": "hostedPaymentStyleOptions",
-              "settingValue": JSON.stringify({
-                "bgColor": "000000",
-                "color": "ffffff"
-              })
+              "settingValue": `{"bgColor": "000000"}`
             },
             {
               "settingName": "hostedPaymentSecurityOptions",
-              "settingValue": JSON.stringify({
-                "captcha": false
-              })
+              "settingValue": `{"captcha": false}`
             },
             {
-              "settingName": "hostedPaymentShippingAddressOptions", 
-              "settingValue": JSON.stringify({
-                "show": false
-              })
+              "settingName": "hostedPaymentShippingAddressOptions",
+              "settingValue": `{"show": false, "required": false}`
             },
             {
               "settingName": "hostedPaymentBillingAddressOptions",
-              "settingValue": JSON.stringify({
-                "show": true,
-                "required": false
-              })
+              "settingValue": `{"show": true, "required": false}`
             }
           ]
         }
@@ -130,6 +98,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
+        'Accept': 'application/json'
       },
       body: JSON.stringify(acceptHostedRequest),
     });

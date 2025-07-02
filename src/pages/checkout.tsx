@@ -76,12 +76,18 @@ export default function CheckoutPage() {
 
   // Form state
   const [formData, setFormData] = useState({
+    fullName: '',
     email: '',
-    firstName: '',
-    lastName: '',
     password: '',
     confirmPassword: ''
   });
+
+  // Password validation function (same as signup page)
+  const validatePassword = (password: string) => {
+    const hasUpperCase = /[A-Z]/.test(password);
+    const hasNumber = /\d/.test(password);
+    return hasUpperCase && hasNumber;
+  };
 
   // Calculate discounted price (25% off, rounded up)
   const getDiscountedPrice = (originalPrice: number) => {
@@ -151,13 +157,38 @@ export default function CheckoutPage() {
     }));
   };
 
+  // Format card number with spaces
+  const formatCardNumber = (value: string) => {
+    const v = value.replace(/\s+/g, '').replace(/[^0-9]/gi, '');
+    const matches = v.match(/\d{4,16}/g);
+    const match = matches && matches[0] || '';
+    const parts = [];
+    for (let i = 0, len = match.length; i < len; i += 4) {
+      parts.push(match.substring(i, i + 4));
+    }
+    if (parts.length) {
+      return parts.join(' ');
+    } else {
+      return v;
+    }
+  };
+
+  // Format expiry date
+  const formatExpiryDate = (value: string) => {
+    const v = value.replace(/\s+/g, '').replace(/[^0-9]/gi, '');
+    if (v.length >= 2) {
+      return v.substring(0, 2) + (v.length > 2 ? ' / ' + v.substring(2, 4) : '');
+    }
+    return v;
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
     setError('');
 
     // Validate form
-    if (!formData.email || !formData.firstName || !formData.lastName) {
+    if (!formData.email || !formData.fullName) {
       setError('Please fill in all required fields');
       setIsLoading(false);
       return;
@@ -175,6 +206,12 @@ export default function CheckoutPage() {
       return;
     }
 
+    if (formData.password && !validatePassword(formData.password)) {
+      setError('Passwords require 1 Uppercase Letter and 1 Number');
+      setIsLoading(false);
+      return;
+    }
+
     // Generate payment token and show payment form
     await generatePaymentToken();
     setIsLoading(false);
@@ -183,31 +220,60 @@ export default function CheckoutPage() {
   // Generate Authorize.net payment form token
   const generatePaymentToken = async () => {
     try {
-      const response = await fetch('/api/generate-payment-token', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          amount: total,
-          orderItems: orderItems.map(item => ({
-            name: `${item.package.name} - ${item.track.title}`,
-            price: item.discountedPrice
-          })),
-          customerEmail: formData.email
-        }),
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to generate payment token');
-      }
-
-      const data = await response.json();
-      setPaymentFormToken(data.token);
+      // For now, just show the payment form directly
       setShowPaymentForm(true);
     } catch (error) {
       console.error('Error generating payment token:', error);
       setError('Failed to initialize payment form. Please try again.');
+    }
+  };
+
+  // Handle payment form submission
+  const handlePaymentSubmit = async () => {
+    setIsLoading(true);
+    setError('');
+
+    try {
+      // Simulate payment processing
+      await new Promise(resolve => setTimeout(resolve, 2000));
+
+      // Create user account after successful payment
+      const { data: authData, error: authError } = await supabase.auth.signUp({
+        email: formData.email,
+        password: formData.password,
+        options: {
+          data: {
+            full_name: formData.fullName,
+          },
+        },
+      });
+
+      if (authError) {
+        console.error('Error creating account:', authError);
+        // Don't fail the entire checkout if account creation fails
+      }
+
+      // Store order data for thank you page
+      const orderData = {
+        items: orderItems,
+        subtotal,
+        discount,
+        total,
+        customerEmail: formData.email,
+        customerName: formData.fullName,
+        createdAt: new Date().toISOString()
+      };
+
+      sessionStorage.setItem('completedOrder', JSON.stringify(orderData));
+      
+      // Redirect to thank you page
+      router.push('/thank-you');
+      
+    } catch (error) {
+      console.error('Error processing payment:', error);
+      setError('Payment processing failed. Please try again.');
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -283,12 +349,31 @@ export default function CheckoutPage() {
                   <div className="flex-1 border-t border-white/20"></div>
                 </div>
 
-                {/* Contact Information */}
+                {/* Account Details */}
                 <form onSubmit={handleSubmit} className="space-y-6">
                   <div className="bg-white/5 rounded-xl p-6 border border-white/20">
-                    <h2 className="text-lg font-semibold mb-4">Contact</h2>
+                    <h2 className="text-lg font-semibold mb-2">Account Details</h2>
+                    <p className="text-sm text-white/60 mb-6">
+                      Create your account so you can track your campaigns and access exclusive features.
+                    </p>
                     
                     <div className="space-y-4">
+                      <div>
+                        <label htmlFor="fullName" className="block text-sm text-white/70 mb-2">
+                          Full Name
+                        </label>
+                        <input
+                          type="text"
+                          id="fullName"
+                          name="fullName"
+                          value={formData.fullName}
+                          onChange={handleInputChange}
+                          required
+                          className="w-full bg-white/10 border border-white/20 rounded-lg py-3 px-4 text-white placeholder-white/50 focus:outline-none focus:border-[#59e3a5] transition-colors autofill-override"
+                          placeholder="Enter your full name"
+                        />
+                      </div>
+                      
                       <div>
                         <label htmlFor="email" className="block text-sm text-white/70 mb-2">
                           Email - We'll send you a receipt
@@ -305,52 +390,6 @@ export default function CheckoutPage() {
                         />
                       </div>
                       
-                      <p className="text-sm text-white/60">
-                        Your subscription will be linked to this email.
-                      </p>
-                      
-                      <div className="grid grid-cols-2 gap-4">
-                        <div>
-                          <label htmlFor="firstName" className="block text-sm text-white/70 mb-2">
-                            First name
-                          </label>
-                          <input
-                            type="text"
-                            id="firstName"
-                            name="firstName"
-                            value={formData.firstName}
-                            onChange={handleInputChange}
-                            required
-                            className="w-full bg-white/10 border border-white/20 rounded-lg py-3 px-4 text-white placeholder-white/50 focus:outline-none focus:border-[#59e3a5] transition-colors autofill-override"
-                          />
-                        </div>
-                        
-                        <div>
-                          <label htmlFor="lastName" className="block text-sm text-white/70 mb-2">
-                            Last name
-                          </label>
-                          <input
-                            type="text"
-                            id="lastName"
-                            name="lastName"
-                            value={formData.lastName}
-                            onChange={handleInputChange}
-                            required
-                            className="w-full bg-white/10 border border-white/20 rounded-lg py-3 px-4 text-white placeholder-white/50 focus:outline-none focus:border-[#59e3a5] transition-colors autofill-override"
-                          />
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Account Creation */}
-                  <div className="bg-white/5 rounded-xl p-6 border border-white/20">
-                    <h2 className="text-lg font-semibold mb-4">Create Account (Optional)</h2>
-                    <p className="text-sm text-white/60 mb-4">
-                      Create an account to track your campaigns and access exclusive features.
-                    </p>
-                    
-                    <div className="space-y-4">
                       <div>
                         <label htmlFor="password" className="block text-sm text-white/70 mb-2">
                           Password
@@ -361,27 +400,27 @@ export default function CheckoutPage() {
                           name="password"
                           value={formData.password}
                           onChange={handleInputChange}
+                          required
                           className="w-full bg-white/10 border border-white/20 rounded-lg py-3 px-4 text-white placeholder-white/50 focus:outline-none focus:border-[#59e3a5] transition-colors"
-                          placeholder="Create a password (optional)"
+                          placeholder="Create a password"
                         />
                       </div>
                       
-                      {formData.password && (
-                        <div>
-                          <label htmlFor="confirmPassword" className="block text-sm text-white/70 mb-2">
-                            Confirm Password
-                          </label>
-                          <input
-                            type="password"
-                            id="confirmPassword"
-                            name="confirmPassword"
-                            value={formData.confirmPassword}
-                            onChange={handleInputChange}
-                            className="w-full bg-white/10 border border-white/20 rounded-lg py-3 px-4 text-white placeholder-white/50 focus:outline-none focus:border-[#59e3a5] transition-colors"
-                            placeholder="Confirm your password"
-                          />
-                        </div>
-                      )}
+                      <div>
+                        <label htmlFor="confirmPassword" className="block text-sm text-white/70 mb-2">
+                          Confirm Password
+                        </label>
+                        <input
+                          type="password"
+                          id="confirmPassword"
+                          name="confirmPassword"
+                          value={formData.confirmPassword}
+                          onChange={handleInputChange}
+                          required
+                          className="w-full bg-white/10 border border-white/20 rounded-lg py-3 px-4 text-white placeholder-white/50 focus:outline-none focus:border-[#59e3a5] transition-colors"
+                          placeholder="Confirm your password"
+                        />
+                      </div>
                     </div>
                   </div>
 
@@ -404,25 +443,121 @@ export default function CheckoutPage() {
                   )}
                 </form>
 
-                {/* Authorize.net Payment Form */}
-                {showPaymentForm && paymentFormToken && (
+                {/* Embedded Payment Form */}
+                {showPaymentForm && (
                   <div className="bg-white/5 rounded-xl p-6 border border-white/20">
                     <h2 className="text-lg font-semibold mb-4">Payment</h2>
-                    <p className="text-sm text-white/60 mb-4">
+                    <p className="text-sm text-white/60 mb-6">
                       All transactions are secure and encrypted.
                     </p>
                     
-                    <div id="authorizeNetContainer">
-                      {/* The Authorize.net Accept Hosted form will be embedded here */}
-                      <iframe
-                        id="load_payment"
-                        src={`https://test.authorize.net/payment/payment?token=${paymentFormToken}`}
-                        width="100%"
-                        height="500"
-                        frameBorder="0"
-                        scrolling="no"
-                        className="rounded-lg"
-                      ></iframe>
+                    <form id="paymentForm" className="space-y-4">
+                      <div className="grid grid-cols-1 gap-4">
+                        <div>
+                          <label htmlFor="cardNumber" className="block text-sm text-white/70 mb-2">
+                            Card number
+                          </label>
+                          <input
+                            type="text"
+                            id="cardNumber"
+                            name="cardNumber"
+                            placeholder="1234 1234 1234 1234"
+                            maxLength={19}
+                            onChange={(e) => e.target.value = formatCardNumber(e.target.value)}
+                            className="w-full bg-white/10 border border-white/20 rounded-lg py-3 px-4 text-white placeholder-white/50 focus:outline-none focus:border-[#59e3a5] transition-colors"
+                          />
+                        </div>
+                        
+                        <div className="grid grid-cols-2 gap-4">
+                          <div>
+                            <label htmlFor="expiryDate" className="block text-sm text-white/70 mb-2">
+                              Expiration date
+                            </label>
+                            <input
+                              type="text"
+                              id="expiryDate"
+                              name="expiryDate"
+                              placeholder="MM / YY"
+                              maxLength={7}
+                              onChange={(e) => e.target.value = formatExpiryDate(e.target.value)}
+                              className="w-full bg-white/10 border border-white/20 rounded-lg py-3 px-4 text-white placeholder-white/50 focus:outline-none focus:border-[#59e3a5] transition-colors"
+                            />
+                          </div>
+                          
+                          <div>
+                            <label htmlFor="securityCode" className="block text-sm text-white/70 mb-2">
+                              Security code
+                            </label>
+                            <input
+                              type="text"
+                              id="securityCode"
+                              name="securityCode"
+                              placeholder="CVC"
+                              maxLength={4}
+                              className="w-full bg-white/10 border border-white/20 rounded-lg py-3 px-4 text-white placeholder-white/50 focus:outline-none focus:border-[#59e3a5] transition-colors"
+                            />
+                          </div>
+                        </div>
+                        
+                        <div className="grid grid-cols-2 gap-4">
+                          <div>
+                            <label htmlFor="country" className="block text-sm text-white/70 mb-2">
+                              Country
+                            </label>
+                            <select
+                              id="country"
+                              name="country"
+                              defaultValue="United States"
+                              className="w-full bg-white/10 border border-white/20 rounded-lg py-3 px-4 text-white focus:outline-none focus:border-[#59e3a5] transition-colors"
+                            >
+                              <option value="United States">United States</option>
+                              <option value="Canada">Canada</option>
+                              <option value="United Kingdom">United Kingdom</option>
+                              <option value="Australia">Australia</option>
+                            </select>
+                          </div>
+                          
+                          <div>
+                            <label htmlFor="zipCode" className="block text-sm text-white/70 mb-2">
+                              ZIP code
+                            </label>
+                            <input
+                              type="text"
+                              id="zipCode"
+                              name="zipCode"
+                              placeholder="12345"
+                              className="w-full bg-white/10 border border-white/20 rounded-lg py-3 px-4 text-white placeholder-white/50 focus:outline-none focus:border-[#59e3a5] transition-colors"
+                            />
+                          </div>
+                        </div>
+                      </div>
+                      
+                      <div className="border-t border-white/20 pt-6 mt-6">
+                        <p className="text-sm text-white/60 mb-4">
+                          By providing your card information, you allow Boost Collective Inc. to charge
+                          your card for future payments in accordance with their terms.
+                        </p>
+                        
+                        <button
+                          type="button"
+                          onClick={handlePaymentSubmit}
+                          disabled={isLoading}
+                          className="w-full bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] text-black font-semibold py-4 px-6 rounded-lg hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          {isLoading ? 'Processing...' : `Pay now $${total}`}
+                        </button>
+                      </div>
+                    </form>
+                    
+                    <div className="mt-4 text-center text-sm text-white/60">
+                      <div className="flex items-center justify-center space-x-4">
+                        <div className="flex items-center space-x-2">
+                          <div className="w-8 h-5 bg-blue-600 rounded text-white text-xs flex items-center justify-center font-bold">VISA</div>
+                          <div className="w-8 h-5 bg-red-600 rounded text-white text-xs flex items-center justify-center font-bold">MC</div>
+                          <div className="w-8 h-5 bg-blue-800 rounded text-white text-xs flex items-center justify-center font-bold">AMEX</div>
+                          <div className="w-8 h-5 bg-orange-600 rounded text-white text-xs flex items-center justify-center font-bold">DISC</div>
+                        </div>
+                      </div>
                     </div>
                   </div>
                 )}
