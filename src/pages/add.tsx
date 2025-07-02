@@ -116,12 +116,14 @@ export default function AddSongsPage() {
     debounceRef.current = setTimeout(async () => {
       setLoading(true);
       setError(null);
+      let isRequestActive = true;
 
       // Set a timeout for search results
       const timeout = setTimeout(() => {
-        if (loading) {
+        if (isRequestActive && loading) {
           setError("We can't find your song! Make sure you entered the Spotify track link correctly.");
           setLoading(false);
+          isRequestActive = false;
         }
       }, 8000); // 8 second timeout
 
@@ -140,14 +142,27 @@ export default function AddSongsPage() {
         // Clear the timeout since we got a response
         clearTimeout(timeout);
         
-        if (!data.success) throw new Error(data.message);
-        setPreviewTrack(data.track as Track);
+        if (!isRequestActive) return; // Request was cancelled by timeout
+        
+        if (!data.success) {
+          // Transform API errors into user-friendly messages
+          setError("Sorry! We can't find this song on Spotify. Make sure you entered the link correctly and try again.");
+          setPreviewTrack(null);
+        } else {
+          setPreviewTrack(data.track as Track);
+        }
       } catch (err: any) {
         clearTimeout(timeout);
-        setError(err.message);
+        
+        if (!isRequestActive) return; // Request was cancelled by timeout
+        
+        // Transform any API/network errors into user-friendly messages
+        setError("Sorry! We can't find this song on Spotify. Make sure you entered the link correctly and try again.");
         setPreviewTrack(null);
       } finally {
-        setLoading(false);
+        if (isRequestActive) {
+          setLoading(false);
+        }
       }
     }, 500);
 
