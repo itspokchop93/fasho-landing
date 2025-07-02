@@ -254,6 +254,11 @@ export default function PackagesPage() {
       // Go to next song
       setCurrentSongIndex(prev => prev + 1);
       setSelectedPackage(selectedPackages[currentSongIndex + 1] || "");
+      
+      // Scroll to top on mobile for visual cue that song changed
+      if (window.innerWidth < 768) { // Mobile breakpoint
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      }
     }
   };
 
@@ -268,6 +273,18 @@ export default function PackagesPage() {
       sessionStorage.setItem('remainingTracks', JSON.stringify(updatedTracks));
       sessionStorage.setItem('replacingSongIndex', currentSongIndex.toString());
       router.push('/add');
+    }
+  };
+
+  const handlePreviousSong = () => {
+    if (currentSongIndex > 0) {
+      setCurrentSongIndex(prev => prev - 1);
+      setSelectedPackage(selectedPackages[currentSongIndex - 1] || "");
+      
+      // Scroll to top on mobile for visual cue that song changed
+      if (window.innerWidth < 768) { // Mobile breakpoint
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      }
     }
   };
 
@@ -701,6 +718,17 @@ export default function PackagesPage() {
               >
                 Change Songs
               </button>
+              {currentSongIndex > 0 && (
+                <button
+                  onClick={handlePreviousSong}
+                  className="w-full text-white/70 hover:text-white text-sm py-2 flex items-center justify-center gap-2 transition-colors"
+                >
+                  <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                  </svg>
+                  Previous Song
+                </button>
+              )}
             </div>
           </div>
 
@@ -944,6 +972,17 @@ export default function PackagesPage() {
                  >
                    Change Songs
                  </button>
+                 {currentSongIndex > 0 && (
+                   <button
+                     onClick={handlePreviousSong}
+                     className="w-full text-white/70 hover:text-white text-sm py-2 flex items-center justify-center gap-2 transition-colors"
+                   >
+                     <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                     </svg>
+                     Previous Song
+                   </button>
+                 )}
                </div>
             </div>
           </div>
