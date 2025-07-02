@@ -65,6 +65,7 @@ export default function PackagesPage() {
   const [currentScale, setCurrentScale] = useState<number>(0);
   const [canScrollLeft, setCanScrollLeft] = useState(false); // Hide left arrow initially
   const [canScrollRight, setCanScrollRight] = useState(true); // Start with right arrow showing
+  const [songIndicatorKey, setSongIndicatorKey] = useState(0); // For triggering animation
   const carouselRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -74,6 +75,8 @@ export default function PackagesPage() {
       try {
         const parsedTracks = JSON.parse(tracksParam) as Track[];
         setTracks(parsedTracks);
+        // Trigger animation on initial load
+        setSongIndicatorKey(prev => prev + 1);
       } catch (error) {
         console.error("Failed to parse tracks:", error);
         router.push('/add');
@@ -254,6 +257,7 @@ export default function PackagesPage() {
       // Go to next song
       setCurrentSongIndex(prev => prev + 1);
       setSelectedPackage(selectedPackages[currentSongIndex + 1] || "");
+      setSongIndicatorKey(prev => prev + 1); // Trigger animation
       
       // Scroll to top on mobile for visual cue that song changed
       if (window.innerWidth < 768) { // Mobile breakpoint
@@ -280,6 +284,7 @@ export default function PackagesPage() {
     if (currentSongIndex > 0) {
       setCurrentSongIndex(prev => prev - 1);
       setSelectedPackage(selectedPackages[currentSongIndex - 1] || "");
+      setSongIndicatorKey(prev => prev + 1); // Trigger animation
       
       // Scroll to top on mobile for visual cue that song changed
       if (window.innerWidth < 768) { // Mobile breakpoint
@@ -454,7 +459,10 @@ export default function PackagesPage() {
             {/* Mobile: Album art and track info at top */}
             <div className="text-center mb-8">
               <div className="mb-6">
-                <p className="text-white/70 mb-2">
+                <p 
+                  key={songIndicatorKey}
+                  className="text-white/70 mb-2 text-lg font-semibold animate-drop-bounce"
+                >
                   Song {currentSongIndex + 1} of {tracks.length}
                 </p>
                 <div className="w-2 h-2 bg-[#59e3a5] rounded-full mx-auto"></div>
@@ -927,7 +935,10 @@ export default function PackagesPage() {
             {/* Right side - Album art and track info */}
             <div className="text-center">
               <div className="mb-6">
-                <p className="text-white/70 mb-2">
+                <p 
+                  key={songIndicatorKey}
+                  className="text-white/70 mb-2 text-xl font-semibold animate-drop-bounce"
+                >
                   Song {currentSongIndex + 1} of {tracks.length}
                 </p>
                 <div className="w-2 h-2 bg-[#59e3a5] rounded-full mx-auto"></div>
@@ -1033,12 +1044,37 @@ export default function PackagesPage() {
           }
         }
 
+        @keyframes drop-bounce {
+          0% {
+            opacity: 0;
+            transform: translateY(-30px);
+          }
+          40% {
+            opacity: 1;
+            transform: translateY(8px);
+          }
+          60% {
+            transform: translateY(-4px);
+          }
+          80% {
+            transform: translateY(2px);
+          }
+          100% {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+
         .animate-bounce-left {
           animation: bounce-left 2s infinite;
         }
 
         .animate-bounce-right {
           animation: bounce-right 2s infinite;
+        }
+
+        .animate-drop-bounce {
+          animation: drop-bounce 0.8s ease-out forwards;
         }
 
         .animate-spin-slow {
