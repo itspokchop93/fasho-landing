@@ -159,7 +159,7 @@ export default function SignUpPage() {
 
           {/* Middle gradient column to blend form with images */}
           <div className="absolute top-0 w-48 h-full z-50" style={{
-            left: 'calc(50% - 140px)',
+            left: 'calc(50% - 200px)',
             background: 'linear-gradient(to right, transparent 0%, rgba(0,0,0,0.1) 20%, rgba(0,0,0,0.3) 40%, rgba(0,0,0,0.6) 70%, rgba(0,0,0,0.9) 90%, #000000 100%)',
             pointerEvents: 'none'
           }}></div>

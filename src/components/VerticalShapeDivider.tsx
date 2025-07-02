@@ -2,7 +2,7 @@ import React from "react";
 
 export default function VerticalShapeDivider() {
   return (
-    <div className="absolute top-0 left-0 w-40 h-full overflow-visible z-30" style={{ transform: 'translateX(-30%)' }}>
+    <div className="absolute top-0 left-0 w-40 h-full overflow-visible z-30" style={{ transform: 'translateX(-10%)' }}>
       {/* Base layer - solid dark grey to match form background */}
       <svg
         className="absolute inset-0 w-full h-full"
