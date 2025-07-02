@@ -3,6 +3,7 @@ import { useRouter } from "next/router";
 import Head from "next/head";
 import Image from "next/image";
 import { Track } from "../types/track";
+import Header from "../components/Header";
 
 interface Package {
   id: string;
@@ -410,7 +411,8 @@ export default function PackagesPage() {
       <Head>
         <title>Choose Campaign Package – Fasho.co</title>
       </Head>
-      <main className="min-h-screen relative text-white py-12 px-4">
+      <Header />
+      <main className="min-h-screen relative text-white pt-28 pb-12 px-4">
         {/* Background layers */}
         <div className="fixed inset-0 bg-black z-0"></div>
         <div 
