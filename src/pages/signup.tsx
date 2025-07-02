@@ -71,8 +71,10 @@ export default function SignUpPage() {
               className="absolute inset-0 bg-cover bg-center bg-no-repeat opacity-35 z-10"
               style={{ backgroundImage: 'url(/marble-bg.jpg)' }}
             ></div>
-            {/* Transparent to black fade on right side */}
-            <div className="absolute top-0 right-0 w-1/5 h-full bg-gradient-to-r from-transparent to-black z-15"></div>
+            {/* Strong transparent to black fade on right side */}
+            <div className="absolute top-0 right-0 w-1/4 h-full z-15" style={{
+              background: 'linear-gradient(to right, transparent 0%, rgba(0,0,0,0.3) 30%, rgba(0,0,0,0.7) 60%, rgba(0,0,0,0.95) 85%, #000000 100%)'
+            }}></div>
             <div className="w-full max-w-md relative z-20">
               <div className="mb-8">
                 <h1 className="text-4xl lg:text-5xl font-extrabold mb-4">
