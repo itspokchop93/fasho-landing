@@ -17,9 +17,11 @@ export default function AddSongsPage() {
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [validationError, setValidationError] = useState<string | null>(null);
   const [previewTrack, setPreviewTrack] = useState<Track | null>(null);
   const debounceRef = useRef<NodeJS.Timeout | null>(null);
   const [focused, setFocused] = useState(false);
+  const [searchTimeout, setSearchTimeout] = useState<NodeJS.Timeout | null>(null);
 
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -64,19 +66,67 @@ export default function AddSongsPage() {
     }
   }, [router.isReady, title, artist, imageUrl, id, url]);
 
+  // Validate Spotify URL format
+  const validateSpotifyUrl = (url: string): string | null => {
+    if (!url.trim()) return null;
+
+    // Check if it contains "spotify"
+    if (!url.toLowerCase().includes('spotify')) {
+      return "Uh Oh! This is not a Spotify link. Please provide a Spotify track link.";
+    }
+
+    // Check if it's an album link
+    if (url.toLowerCase().includes('album')) {
+      return 'Uh Oh! This is a Spotify "Album" link. We need a direct link to the Track that you want to promote. (open.spotify.com/track/...)';
+    }
+
+    // Check if it's a playlist link
+    if (url.toLowerCase().includes('playlist')) {
+      return 'Uh Oh! This is a Spotify "Playlist" link. We need a direct link to the Track that you want to promote. (open.spotify.com/track/...)';
+    }
+
+    return null; // Valid
+  };
+
   // debounce search when input changes
   useEffect(() => {
     if (debounceRef.current) clearTimeout(debounceRef.current);
+    if (searchTimeout) clearTimeout(searchTimeout);
 
     if (!input) {
       setPreviewTrack(null);
       setError(null);
+      setValidationError(null);
       return;
     }
+
+    // First validate the URL format
+    const validationErr = validateSpotifyUrl(input);
+    if (validationErr) {
+      setValidationError(validationErr);
+      setError(null);
+      setPreviewTrack(null);
+      setLoading(false);
+      return;
+    }
+
+    // Clear validation error if URL format is valid
+    setValidationError(null);
 
     debounceRef.current = setTimeout(async () => {
       setLoading(true);
       setError(null);
+
+      // Set a timeout for search results
+      const timeout = setTimeout(() => {
+        if (loading) {
+          setError("We can't find your song! Make sure you entered the Spotify track link correctly.");
+          setLoading(false);
+        }
+      }, 8000); // 8 second timeout
+
+      setSearchTimeout(timeout);
+
       try {
         const res = await fetch("/api/track", {
           method: "POST",
@@ -86,9 +136,14 @@ export default function AddSongsPage() {
           body: JSON.stringify({ url: input }),
         });
         const data = await res.json();
+        
+        // Clear the timeout since we got a response
+        clearTimeout(timeout);
+        
         if (!data.success) throw new Error(data.message);
         setPreviewTrack(data.track as Track);
       } catch (err: any) {
+        clearTimeout(timeout);
         setError(err.message);
         setPreviewTrack(null);
       } finally {
@@ -98,6 +153,7 @@ export default function AddSongsPage() {
 
     return () => {
       if (debounceRef.current) clearTimeout(debounceRef.current);
+      if (searchTimeout) clearTimeout(searchTimeout);
     };
   }, [input]);
 
@@ -160,34 +216,48 @@ export default function AddSongsPage() {
 
         {/* search input */}
         <div className="w-full max-w-xl relative mb-8">
+          <label className="block text-white/80 text-sm font-medium mb-2">
+            Enter a Spotify track link:
+          </label>
           <input
             ref={inputRef}
             type="url"
-            placeholder="Paste another Spotify link..."
+            placeholder="https://open.spotify.com/track/0FIDCN..."
             value={input}
             onFocus={() => setFocused(true)}
             onBlur={() => setFocused(false)}
             onChange={(e) => setInput(e.target.value)}
             className="w-full rounded-md px-4 py-3 text-gray-900 focus:outline-none"
           />
-          {(focused || previewTrack) && (
+          {(focused || previewTrack) && !validationError && (
             <div className="absolute left-0 right-0 mt-2 z-50 w-full border border-white/20 rounded-lg bg-gray-900">
               {previewTrack && !error ? (
                 <TrackCard track={previewTrack} onConfirm={confirmPreview} dark />
               ) : (
-                <div className="flex items-center justify-center py-6">
+                <div className="flex items-center justify-center py-6 gap-3">
                   <svg className="animate-spin h-6 w-6 text-white/70" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                     <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                     <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path>
                   </svg>
+                  <span className="text-white/70">Waiting For Song Link...</span>
                 </div>
               )}
             </div>
           )}
         </div>
 
+        {/* Error messages */}
+        {validationError && (
+          <div className="w-full max-w-xl mb-4 p-4 bg-red-900/50 border border-red-500 rounded-md">
+            <p className="text-red-200">{validationError}</p>
+          </div>
+        )}
         {loading && <p className="mb-4">Searching…</p>}
-        {error && <p className="text-red-400 mb-4">{error}</p>}
+        {error && !validationError && (
+          <div className="w-full max-w-xl mb-4 p-4 bg-red-900/50 border border-red-500 rounded-md">
+            <p className="text-red-200">{error}</p>
+          </div>
+        )}
 
         <button
           disabled={tracks.length === 0}
