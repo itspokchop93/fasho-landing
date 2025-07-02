@@ -191,8 +191,8 @@ export default function SignUpPage() {
             ))}
 
             {/* Artist info overlay */}
-            <div className="absolute bottom-8 left-8 z-20">
-              <div className="text-white">
+            <div className="absolute bottom-8 right-8 z-20">
+              <div className="text-white text-right">
                 <h3 className="text-2xl font-bold">Rising Artist</h3>
                 <p className="text-white/80">100k monthly listeners</p>
               </div>

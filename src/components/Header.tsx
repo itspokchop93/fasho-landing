@@ -21,7 +21,7 @@ export default function Header({ transparent = false, hideSignUp = false }: Head
           </div>
 
           {/* Desktop Navigation */}
-          <nav className={`hidden md:flex items-center space-x-8 ${hideSignUp ? 'pr-6' : ''}`}>
+          <nav className={`hidden md:flex items-center space-x-8 ${hideSignUp ? 'pr-16' : ''}`}>
             <Link href="/song-promotion" className="text-white hover:text-[#59e3a5] transition-colors font-medium">
               Song Promotion
             </Link>
