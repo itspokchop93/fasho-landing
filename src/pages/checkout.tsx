@@ -258,41 +258,144 @@ export default function CheckoutPage() {
     return v;
   };
 
+  // Check if email exists and user verification status
+  const checkEmailExists = async (email: string) => {
+    if (!email || !email.includes('@')) return;
+    
+    setIsCheckingEmail(true);
+    setFieldErrors(prev => ({ ...prev, email: '' }));
+    
+    try {
+      // Try to sign in with the email and a fake password to check if user exists
+      const { error: signInError } = await supabase.auth.signInWithPassword({
+        email: email,
+        password: 'fake-password-to-check-if-user-exists-12345'
+      });
+      
+      if (signInError) {
+        if (signInError.message?.includes('Invalid login credentials')) {
+          // User exists and is verified (got invalid credentials error)
+          setFieldErrors(prev => ({ 
+            ...prev, 
+            email: 'You already have an account with us! Please LOGIN instead' 
+          }));
+        } else if (signInError.message?.includes('Email not confirmed')) {
+          // User exists but not verified
+          setFieldErrors(prev => ({ 
+            ...prev, 
+            email: 'You already have an account with us but haven\'t verified it yet! Resend Verification Email' 
+          }));
+        } else if (signInError.message?.includes('User not found') || signInError.message?.includes('Invalid email')) {
+          // User doesn't exist - this is good for signup, don't show any error
+          console.log('Email is available for signup');
+        }
+        // For any other error, don't show message (could be rate limiting, etc.)
+      }
+    } catch (error) {
+      console.error('Error checking email:', error);
+      // Don't show error to user for security reasons
+    } finally {
+      setIsCheckingEmail(false);
+    }
+  };
+
+  // Validate if form is ready for payment
+  const isFormValid = () => {
+    // If user is logged in, only need billing info
+    if (currentUser) {
+      return billingData.firstName && 
+             billingData.lastName && 
+             billingData.address && 
+             billingData.city && 
+             billingData.state && 
+             billingData.zip;
+    }
+    
+    // If not logged in, need account info + billing info
+    if (isLoginMode) {
+      // Login mode - need email and password
+      return formData.email && 
+             formData.password &&
+             billingData.firstName && 
+             billingData.lastName && 
+             billingData.address && 
+             billingData.city && 
+             billingData.state && 
+             billingData.zip;
+    } else {
+      // Signup mode - need all account fields + billing + no field errors
+      return formData.email && 
+             formData.password && 
+             formData.confirmPassword &&
+             formData.password === formData.confirmPassword &&
+             formData.password.length >= 6 &&
+             validatePassword(formData.password) &&
+             billingData.firstName && 
+             billingData.lastName && 
+             billingData.address && 
+             billingData.city && 
+             billingData.state && 
+             billingData.zip &&
+             !fieldErrors.email &&
+             !fieldErrors.password &&
+             !fieldErrors.confirmPassword;
+    }
+  };
+
+  // Get the first missing field for error messaging
+  const getFirstMissingField = () => {
+    if (!currentUser && !isLoginMode) {
+      // Signup mode validation
+      if (!formData.email) return 'email';
+      if (fieldErrors.email) return 'email';
+      if (!formData.password) return 'password';
+      if (fieldErrors.password) return 'password';
+      if (!formData.confirmPassword) return 'confirmPassword';
+      if (fieldErrors.confirmPassword) return 'confirmPassword';
+    } else if (!currentUser && isLoginMode) {
+      // Login mode validation
+      if (!formData.email) return 'email';
+      if (!formData.password) return 'password';
+    }
+    
+    // Billing validation for all users
+    if (!billingData.firstName) return 'firstName';
+    if (!billingData.lastName) return 'lastName';
+    if (!billingData.address) return 'address';
+    if (!billingData.city) return 'city';
+    if (!billingData.state) return 'state';
+    if (!billingData.zip) return 'zip';
+    
+    return null;
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
     setError('');
 
-    // Validate form only if user is not already signed in and not in login mode
-    if (!currentUser && !isLoginMode) {
-      if (!formData.email || !billingData.firstName || !billingData.lastName || !billingData.address || !billingData.city || !billingData.state || !billingData.zip) {
-        setError('Please fill in all required billing information fields');
-        setIsLoading(false);
-        return;
+    // Check if form is valid
+    if (!isFormValid()) {
+      const firstMissingField = getFirstMissingField();
+      let errorMessage = 'Please complete all required fields before continuing.';
+      
+      // Scroll to the first missing field
+      if (firstMissingField) {
+        const element = document.getElementById(firstMissingField);
+        if (element) {
+          element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          element.focus();
+        }
+        
+        // Customize error message based on missing field
+        if (['email', 'password', 'confirmPassword'].includes(firstMissingField)) {
+          errorMessage = 'Please complete your account information before continuing.';
+        } else {
+          errorMessage = 'Please complete your billing information before continuing.';
+        }
       }
-
-      if (formData.password && formData.password !== formData.confirmPassword) {
-        setError('Passwords do not match');
-        setIsLoading(false);
-        return;
-      }
-
-      if (formData.password && formData.password.length < 6) {
-        setError('Password must be at least 6 characters long');
-        setIsLoading(false);
-        return;
-      }
-
-      if (formData.password && !validatePassword(formData.password)) {
-        setError('Passwords require 1 Uppercase Letter and 1 Number');
-        setIsLoading(false);
-        return;
-      }
-    }
-
-    // Validate billing information for all users
-    if (!billingData.firstName || !billingData.lastName || !billingData.address || !billingData.city || !billingData.state || !billingData.zip) {
-      setError('Please fill in all required billing information fields');
+      
+      setError(errorMessage);
       setIsLoading(false);
       return;
     }
@@ -402,50 +505,6 @@ export default function CheckoutPage() {
     }
   }, [showPaymentForm, paymentToken]);
 
-  // Check if email exists and user verification status
-  const checkEmailExists = async (email: string) => {
-    if (!email || !email.includes('@')) return;
-    
-    setIsCheckingEmail(true);
-    setFieldErrors(prev => ({ ...prev, email: '' }));
-    
-    try {
-      // Try to trigger a password reset to check if user exists
-      const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: `${window.location.origin}/auth/callback`,
-      });
-      
-      // If no error, user exists
-      if (!error) {
-        // Check if user is confirmed by attempting a sign in with a fake password
-        const { error: signInError } = await supabase.auth.signInWithPassword({
-          email: email,
-          password: 'fake-password-to-check-status'
-        });
-        
-        if (signInError?.message?.includes('Invalid login credentials')) {
-          // User exists and is verified (got invalid credentials error)
-          setFieldErrors(prev => ({ 
-            ...prev, 
-            email: 'You already have an account with us! Please LOGIN instead' 
-          }));
-        } else if (signInError?.message?.includes('Email not confirmed')) {
-          // User exists but not verified
-          setFieldErrors(prev => ({ 
-            ...prev, 
-            email: 'You already have an account with us but haven\'t verified it yet! Resend Verification Email' 
-          }));
-        }
-      }
-      // If error occurred, user likely doesn't exist - don't show any message
-    } catch (error) {
-      console.error('Error checking email:', error);
-      // Don't show error to user for security reasons
-    } finally {
-      setIsCheckingEmail(false);
-    }
-  };
-
   // Handle resending verification email
   const handleResendVerification = async () => {
     try {
@@ -522,21 +581,41 @@ export default function CheckoutPage() {
   // Handle payment form submission
   // Handle iframe communication from Authorize.net
   const handleIframeMessage = (response: any) => {
-    console.log('Iframe response:', response);
+    console.log('🔍 PAYMENT: Iframe response received:', response);
 
     if (!response || typeof response !== 'object') {
-      setError('No payment response received.');
+      console.error('🔍 PAYMENT: Invalid response format');
+      setError('No payment response received. Please try again.');
       setIsLoading(false);
       setShowPaymentForm(false);
       return;
     }
 
+    console.log('🔍 PAYMENT: Response code:', response.responseCode);
+    console.log('🔍 PAYMENT: Response reason:', response.responseReasonText);
+
     if (response.responseCode === '1') {
       // Transaction successful
+      console.log('🔍 PAYMENT: Transaction approved');
       handleSuccessfulPayment(response);
     } else {
-      // Transaction failed
-      setError(`Payment failed: ${response.responseReasonText || 'Unknown error'}`);
+      // Transaction failed - provide more specific error messages
+      console.error('🔍 PAYMENT: Transaction failed with code:', response.responseCode);
+      let errorMessage = 'Payment failed. Please try again.';
+      
+      // Provide specific error messages based on response code
+      if (response.responseCode === '2') {
+        errorMessage = 'Payment was declined. Please check your card details and try again.';
+      } else if (response.responseCode === '3') {
+        errorMessage = 'Payment error occurred. Please verify your card information and try again.';
+      } else if (response.responseCode === '4') {
+        errorMessage = 'Payment is being reviewed. You will receive an email confirmation shortly.';
+      } else if (response.responseReasonText) {
+        // Use the specific reason text if available
+        errorMessage = `Payment failed: ${response.responseReasonText}`;
+      }
+      
+      setError(errorMessage);
       setIsLoading(false);
       setShowPaymentForm(false);
     }
