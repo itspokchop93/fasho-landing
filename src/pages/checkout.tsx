@@ -910,6 +910,7 @@ export default function CheckoutPage() {
                           setLoginInfoMessage(null);
                           setResendError(null);
                           setResendLoading(false);
+                          setEmailStatus(null);
                         }}
                         className="text-[#59e3a5] hover:text-[#14c0ff] text-sm transition-colors"
                       >
@@ -940,74 +941,75 @@ export default function CheckoutPage() {
                           className="w-full bg-white/10 border border-white/20 rounded-lg py-3 px-4 text-white placeholder-white/50 focus:outline-none focus:border-[#59e3a5] transition-colors autofill-override"
                           placeholder="your@email.com"
                         />
-                        {(emailStatus || isCheckingEmail) && (
-                          <div className="mt-2 text-sm">
-                            {isCheckingEmail ? (
-                              <div className="text-white/60 flex items-center">
-                                <div className="w-4 h-4 border-2 border-[#59e3a5] border-t-transparent rounded-full animate-spin mr-2"></div>
-                                Checking email...
-                              </div>
-                            ) : emailStatus === 'exists' ? (
-                              <p className="text-red-400">
-                                You already have an account with us! Please{' '}
-                                <button
-                                  type="button"
-                                  onClick={() => {
-                                    setIsLoginMode(true);
-                                    setEmailStatus(null);
-                                  }}
-                                  className="text-[#59e3a5] hover:text-[#14c0ff] underline transition-colors"
-                                >
-                                  LOGIN
-                                </button>{' '}
-                                instead
-                              </p>
-                            ) : emailStatus === 'unverified' ? (
-                              <div className="text-red-400 flex flex-col gap-2">
-                                <span>You have an account but haven't verified your email yet!</span>
-                                <button
-                                  type="button"
-                                  disabled={resendLoading}
-                                  onClick={async () => {
-                                    setResendLoading(true);
-                                    setResendError(null);
-                                    try {
-                                      const { error } = await supabase.auth.resend({
-                                        type: 'signup',
-                                        email: formData.email,
-                                      });
-                                      if (!error) {
-                                        setLoginInfoMessage('Verification Email sent!');
-                                        setIsLoginMode(true);
-                                        setResendError(null);
-                                      } else {
-                                        setResendError(error.message || 'Failed to resend verification email. Please try again.');
-                                      }
-                                    } catch (error: any) {
-                                      setResendError(error?.message || 'Failed to resend verification email. Please try again.');
-                                    } finally {
-                                      setResendLoading(false);
-                                    }
-                                  }}
-                                  className="text-[#59e3a5] hover:text-[#14c0ff] underline transition-colors w-fit disabled:opacity-50 disabled:cursor-not-allowed"
-                                >
-                                  {resendLoading ? 'Sending...' : 'Resend Verification'}
-                                </button>
-                                {resendError && <span className="text-red-400 text-xs mt-1">{resendError}</span>}
-                              </div>
-                            ) : emailStatus === 'available' ? (
-                              <div className="flex items-center text-green-400">
-                                <svg className="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
-                                  <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                                </svg>
-                                Email is available!
-                              </div>
-                            ) : emailStatus === 'invalid' ? (
-                              <p className="text-red-400">Please enter a valid email address</p>
-                            ) : emailStatus === 'error' ? (
-                              <p className="text-red-400">Error checking email. Please try again.</p>
-                            ) : null}
+                        {loginInfoMessage && (
+                          <div className="bg-green-500/10 border border-green-500/20 rounded-lg p-4 mb-4">
+                            <p className="text-green-400 text-sm">{loginInfoMessage}</p>
                           </div>
+                        )}
+                        {emailStatus === 'exists' && (
+                          <p className="text-red-400">
+                            You already have an account with us! Please{' '}
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setIsLoginMode(true);
+                                setEmailStatus(null);
+                              }}
+                              className="text-[#59e3a5] hover:text-[#14c0ff] underline transition-colors"
+                            >
+                              LOGIN
+                            </button>{' '}
+                            instead
+                          </p>
+                        )}
+                        {emailStatus === 'unverified' && !loginInfoMessage && (
+                          <div className="text-red-400 flex flex-col gap-2">
+                            <span>You have an account but haven't verified your email yet!</span>
+                            <button
+                              type="button"
+                              disabled={resendLoading}
+                              onClick={async () => {
+                                setResendLoading(true);
+                                setResendError(null);
+                                try {
+                                  const { error } = await supabase.auth.resend({
+                                    type: 'signup',
+                                    email: formData.email,
+                                  });
+                                  if (!error) {
+                                    setLoginInfoMessage('Verification Email sent!');
+                                    setIsLoginMode(true);
+                                    setResendError(null);
+                                    setEmailStatus(null);
+                                  } else {
+                                    setResendError(error.message || 'Failed to resend verification email. Please try again.');
+                                  }
+                                } catch (error: any) {
+                                  setResendError(error?.message || 'Failed to resend verification email. Please try again.');
+                                } finally {
+                                  setResendLoading(false);
+                                }
+                              }}
+                              className="text-[#59e3a5] hover:text-[#14c0ff] underline transition-colors w-fit disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                              {resendLoading ? 'Sending...' : 'Resend Verification'}
+                            </button>
+                            {resendError && <span className="text-red-400 text-xs mt-1">{resendError}</span>}
+                          </div>
+                        )}
+                        {emailStatus === 'available' && (
+                          <div className="flex items-center text-green-400">
+                            <svg className="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                              <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                            </svg>
+                            Email is available!
+                          </div>
+                        )}
+                        {emailStatus === 'invalid' && (
+                          <p className="text-red-400">Please enter a valid email address</p>
+                        )}
+                        {emailStatus === 'error' && (
+                          <p className="text-red-400">Error checking email. Please try again.</p>
                         )}
                       </div>
                       
