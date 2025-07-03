@@ -52,15 +52,33 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     // Get Authorize.net credentials from environment variables
     const apiLoginId = process.env.AUTHORIZE_NET_API_LOGIN_ID;
     const transactionKey = process.env.AUTHORIZE_NET_TRANSACTION_KEY;
-    const baseUrl = process.env.NODE_ENV === 'production' 
+    const environment = process.env.AUTHORIZE_NET_ENVIRONMENT || 'sandbox';
+    const baseUrl = environment === 'production' 
       ? 'https://accept.authorize.net' 
       : 'https://apitest.authorize.net'; // Sandbox URL
 
+    console.log('Environment check:', {
+      hasApiLoginId: !!apiLoginId,
+      hasTransactionKey: !!transactionKey,
+      apiLoginIdValue: apiLoginId?.substring(0, 4) + '...',
+      environment,
+      baseUrl,
+      nodeEnv: process.env.NODE_ENV
+    });
+
     if (!apiLoginId || !transactionKey) {
-      console.error('Missing Authorize.net credentials');
+      console.error('Missing Authorize.net credentials - apiLoginId:', !!apiLoginId, 'transactionKey:', !!transactionKey);
       return res.status(500).json({ 
         success: false, 
-        message: 'Payment configuration error' 
+        message: 'Payment configuration error - missing Authorize.net credentials' 
+      });
+    }
+
+    if (apiLoginId === 'your_sandbox_login_id' || transactionKey === 'your_sandbox_transaction_key') {
+      console.error('Authorize.net credentials are still set to placeholder values');
+      return res.status(500).json({ 
+        success: false, 
+        message: 'Payment configuration error - please configure Authorize.net credentials in .env.local' 
       });
     }
 
@@ -126,6 +144,18 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       }
     };
 
+    console.log('Making request to Authorize.net:', baseUrl);
+    console.log('Request payload (sanitized):', {
+      ...acceptHostedRequest,
+      getHostedPaymentPageRequest: {
+        ...acceptHostedRequest.getHostedPaymentPageRequest,
+        merchantAuthentication: {
+          name: apiLoginId?.substring(0, 4) + '...',
+          transactionKey: '[HIDDEN]'
+        }
+      }
+    });
+
     // Make request to Authorize.net
     const response = await fetch(`${baseUrl}/xml/v1/request.api`, {
       method: 'POST',
@@ -136,11 +166,16 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       body: JSON.stringify(acceptHostedRequest),
     });
 
+    console.log('Authorize.net response status:', response.status);
+
     if (!response.ok) {
-      throw new Error(`Authorize.net API request failed: ${response.status}`);
+      const errorText = await response.text();
+      console.error('Authorize.net API request failed:', response.status, errorText);
+      throw new Error(`Authorize.net API request failed: ${response.status} - ${errorText}`);
     }
 
     const responseData = await response.json();
+    console.log('Authorize.net response:', responseData);
 
     // Check if the request was successful
     if (responseData.messages?.resultCode !== 'Ok') {
@@ -157,10 +192,15 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       throw new Error('No payment token received from Authorize.net');
     }
 
+    // Different URLs for payment form vs API calls
+    const paymentFormUrl = environment === 'production' 
+      ? 'https://accept.authorize.net'
+      : 'https://test.authorize.net'; // Different from API URL!
+
     res.status(200).json({
       success: true,
       token: token,
-      paymentUrl: `${baseUrl}/payment/payment?token=${token}`
+      paymentUrl: `${paymentFormUrl}/payment/payment?token=${token}`
     });
 
   } catch (error: any) {
