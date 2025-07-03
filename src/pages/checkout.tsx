@@ -276,6 +276,8 @@ export default function CheckoutPage() {
     setFieldErrors(prev => ({ ...prev, email: '' }));
     
     try {
+      console.log('Checking email existence for:', email);
+      
       const response = await fetch('/api/check-user-exists', {
         method: 'POST',
         headers: {
@@ -285,6 +287,7 @@ export default function CheckoutPage() {
       });
       
       const data = await response.json();
+      console.log('Email check response:', data);
       
       if (response.ok) {
         if (data.exists) {
@@ -302,19 +305,27 @@ export default function CheckoutPage() {
             }));
           }
         } else {
-          // User doesn't exist - clear any error
+          // User doesn't exist - show success message
           setFieldErrors(prev => ({ 
             ...prev, 
-            email: '' 
+            email: 'Email is available!' 
           }));
         }
       } else {
         console.error('Error checking user existence:', data.message);
         // Don't show error to user - fail silently for security
+        setFieldErrors(prev => ({ 
+          ...prev, 
+          email: '' 
+        }));
       }
     } catch (error) {
       console.error('Error checking email:', error);
       // Don't show error to user - fail silently for security
+      setFieldErrors(prev => ({ 
+        ...prev, 
+        email: '' 
+      }));
     } finally {
       setIsCheckingEmail(false);
     }
@@ -357,7 +368,7 @@ export default function CheckoutPage() {
              billingData.city && 
              billingData.state && 
              billingData.zip &&
-             !fieldErrors.email &&
+             (!fieldErrors.email || fieldErrors.email === 'Email is available!') &&
              !fieldErrors.password &&
              !fieldErrors.confirmPassword;
     }
@@ -368,7 +379,7 @@ export default function CheckoutPage() {
     if (!currentUser && !isLoginMode) {
       // Signup mode validation
       if (!formData.email) return 'email';
-      if (fieldErrors.email) return 'email';
+      if (fieldErrors.email && fieldErrors.email !== 'Email is available!') return 'email';
       if (!formData.password) return 'password';
       if (fieldErrors.password) return 'password';
       if (!formData.confirmPassword) return 'confirmPassword';
@@ -986,19 +997,26 @@ export default function CheckoutPage() {
                                 </button>{' '}
                                 instead
                               </p>
-                            ) : fieldErrors.email.includes('Resend Verification Email') ? (
+                            ) : fieldErrors.email.includes('haven\'t verified') ? (
                               <p className="text-red-400">
-                                You already have an account with us but haven't verified it yet!{' '}
+                                You have an account but haven't verified your email yet!{' '}
                                 <button
                                   type="button"
                                   onClick={handleResendVerification}
                                   className="text-[#59e3a5] hover:text-[#14c0ff] underline transition-colors"
                                 >
-                                  Resend Verification Email
+                                  Resend Verification
                                 </button>
                               </p>
+                            ) : fieldErrors.email.includes('Email is available!') ? (
+                              <div className="flex items-center text-green-400">
+                                <svg className="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                                  <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                                </svg>
+                                Email is available!
+                              </div>
                             ) : (
-                              <p className="text-green-400">{fieldErrors.email}</p>
+                              <p className="text-red-400">{fieldErrors.email}</p>
                             )}
                           </div>
                         )}
