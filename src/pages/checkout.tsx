@@ -480,8 +480,20 @@ export default function CheckoutPage() {
         }
       }
 
-      // Redirect to Authorize.net hosted payment page
-      window.location.href = data.paymentUrl;
+      // Submit token to Authorize.net via form POST (not URL redirect)
+      const form = document.createElement('form');
+      form.method = 'POST';
+      // Use sandbox URL since we're using sandbox credentials
+      form.action = 'https://test.authorize.net/payment/payment';
+      
+      const tokenInput = document.createElement('input');
+      tokenInput.type = 'hidden';
+      tokenInput.name = 'token';
+      tokenInput.value = data.token;
+      
+      form.appendChild(tokenInput);
+      document.body.appendChild(form);
+      form.submit();
       
     } catch (error) {
       console.error('Error processing payment:', error);
