@@ -774,7 +774,8 @@ export default function CheckoutPage() {
       const data = await response.json();
 
       if (!data.success) {
-        throw new Error(data.message || 'Payment setup failed');
+        setError(data.message || 'Payment setup failed');
+        return;
       }
 
       // Store order data for after payment completion
