@@ -442,7 +442,7 @@ export default function CheckoutPage() {
       switch (data.type) {
         case 'PAYMENT_COMPLETE':
           console.log('🚀 PARENT PAGE: Payment completed, processing response:', data.response);
-          // Handle payment completion directly
+          // Use ref to always get latest function
           const response = data.response;
           console.log('🔍 PAYMENT: Iframe response received:', response);
 
@@ -460,7 +460,7 @@ export default function CheckoutPage() {
           if (response.responseCode === '1') {
             // Transaction successful
             console.log('🔍 PAYMENT: Transaction approved');
-            handleSuccessfulPayment(response);
+            handleSuccessfulPaymentRef.current(response);
           } else {
             // Transaction failed - provide more specific error messages
             console.error('🔍 PAYMENT: Transaction failed with code:', response.responseCode);
@@ -876,6 +876,11 @@ export default function CheckoutPage() {
       window.removeEventListener('message', globalDebugListener);
     };
   }, []);
+
+  const handleSuccessfulPaymentRef = useRef(handleSuccessfulPayment);
+  useEffect(() => {
+    handleSuccessfulPaymentRef.current = handleSuccessfulPayment;
+  }, [handleSuccessfulPayment]);
 
   if (!router.isReady || orderItems.length === 0) {
     return (
