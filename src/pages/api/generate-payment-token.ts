@@ -9,14 +9,12 @@ interface OrderItem {
 interface BillingInfo {
   firstName: string;
   lastName: string;
-  company?: string;
   address: string;
   address2?: string;
   city: string;
   state: string;
   zip: string;
   country: string;
-  phoneNumber?: string;
 }
 
 interface PaymentRequest {
@@ -87,13 +85,11 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           "billTo": {
             "firstName": billingInfo.firstName,
             "lastName": billingInfo.lastName,
-            "company": billingInfo.company || "",
             "address": billingInfo.address,
             "city": billingInfo.city,
             "state": billingInfo.state,
             "zip": billingInfo.zip,
-            "country": billingInfo.country,
-            "phoneNumber": billingInfo.phoneNumber || ""
+            "country": billingInfo.country
           },
           "customer": {
             "email": customerEmail

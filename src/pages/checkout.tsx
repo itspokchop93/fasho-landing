@@ -86,14 +86,12 @@ export default function CheckoutPage() {
   const [billingData, setBillingData] = useState({
     firstName: '',
     lastName: '',
-    company: '',
     address: '',
     address2: '',
     city: '',
     state: '',
     zip: '',
-    country: 'US',
-    phoneNumber: ''
+    country: 'US'
   });
 
   // Password validation function (same as signup page)
@@ -494,7 +492,7 @@ export default function CheckoutPage() {
                     <div className="space-y-4">
                       <div>
                         <label htmlFor="email" className="block text-sm text-white/70 mb-2">
-                          {isLoginMode ? 'Email' : 'Email - We\'ll send you a receipt'}
+                          Email
                         </label>
                         <input
                           type="email"
@@ -597,21 +595,6 @@ export default function CheckoutPage() {
                           placeholder="Doe"
                         />
                       </div>
-                    </div>
-                    
-                    <div>
-                      <label htmlFor="company" className="block text-sm text-white/70 mb-2">
-                        Company (Optional)
-                      </label>
-                      <input
-                        type="text"
-                        id="company"
-                        name="company"
-                        value={billingData.company}
-                        onChange={handleBillingChange}
-                        className="w-full bg-white/10 border border-white/20 rounded-lg py-3 px-4 text-white placeholder-white/50 focus:outline-none focus:border-[#59e3a5] transition-colors"
-                        placeholder="Your company name"
-                      />
                     </div>
                     
                     <div>
@@ -808,20 +791,128 @@ export default function CheckoutPage() {
                         </select>
                       </div>
                     </div>
+                  </div>
+                </div>
+
+              </div>
+
+              {/* Right Column - Order Summary */}
+              <div className="space-y-6">
+                {/* Order Items */}
+                <div className="bg-white/5 rounded-xl p-6 border border-white/20">
+                  <h2 className="text-lg font-semibold mb-6">Your Order</h2>
+                  
+                  <div className="space-y-4">
+                    {orderItems.map((item, index) => (
+                      <div key={index} className="flex items-center space-x-4 p-4 bg-white/5 rounded-lg">
+                        <div className="relative">
+                          <Image
+                            src={item.track.imageUrl}
+                            alt={item.track.title}
+                            width={60}
+                            height={60}
+                            className="rounded-lg"
+                            unoptimized
+                          />
+                          {item.isDiscounted && (
+                            <div className="absolute -top-2 -right-2 bg-[#59e3a5] text-black text-xs font-bold px-2 py-1 rounded-full">
+                              25% OFF
+                            </div>
+                          )}
+                        </div>
+                        
+                        <div className="flex-1">
+                          <h3 className="font-semibold text-sm">{item.track.title}</h3>
+                          <p className="text-white/60 text-sm">{item.track.artist}</p>
+                          <p className="text-[#59e3a5] text-sm font-medium">{item.package.name}</p>
+                          <p className="text-white/50 text-xs">{item.package.plays} • {item.package.placements}</p>
+                        </div>
+                        
+                        <div className="text-right">
+                          {item.isDiscounted ? (
+                            <div>
+                              <div className="text-white/50 text-sm line-through">${item.originalPrice}</div>
+                              <div className="text-[#59e3a5] font-semibold">${item.discountedPrice}</div>
+                            </div>
+                          ) : (
+                            <div className="font-semibold">${item.discountedPrice}</div>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Price Summary */}
+                <div className="bg-white/5 rounded-xl p-6 border border-white/20">
+                  <div className="space-y-3">
+                    <div className="flex justify-between">
+                      <span className="text-white/70">Subtotal</span>
+                      <span>${subtotal}</span>
+                    </div>
                     
-                    <div>
-                      <label htmlFor="phoneNumber" className="block text-sm text-white/70 mb-2">
-                        Phone Number (Optional)
-                      </label>
-                      <input
-                        type="tel"
-                        id="phoneNumber"
-                        name="phoneNumber"
-                        value={billingData.phoneNumber}
-                        onChange={handleBillingChange}
-                        className="w-full bg-white/10 border border-white/20 rounded-lg py-3 px-4 text-white placeholder-white/50 focus:outline-none focus:border-[#59e3a5] transition-colors"
-                        placeholder="(123) 456-7890"
-                      />
+                    {discount > 0 && (
+                      <div className="flex justify-between text-[#59e3a5]">
+                        <span>Multi-song discount (25% off)</span>
+                        <span>-${discount}</span>
+                      </div>
+                    )}
+                    
+                    <div className="border-t border-white/20 pt-3">
+                      <div className="flex justify-between text-xl font-bold">
+                        <span>Total</span>
+                        <span className="text-[#59e3a5]">${total}</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Popular Add-ons */}
+                <div className="bg-white/5 rounded-xl p-6 border border-white/20">
+                  <h3 className="text-lg font-semibold mb-4">Popular add-ons 🔥</h3>
+                  
+                  <div className="space-y-4">
+                    <div className="border border-pink-500/50 rounded-lg p-4 bg-gradient-to-r from-pink-500/10 to-purple-500/10">
+                      <div className="flex items-start justify-between mb-2">
+                        <div>
+                          <h4 className="font-semibold text-pink-400">Promote on Apple Music (50% OFF)</h4>
+                          <div className="text-sm text-white/70">
+                            <p>🔴 Get added to an Apple Music playlist</p>
+                            <p>🎵 Apple Music add-on reduced if not placed in 7 days</p>
+                          </div>
+                        </div>
+                        <button className="bg-white/20 hover:bg-white/30 text-white p-2 rounded-lg transition-colors">
+                          <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                          </svg>
+                        </button>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <span className="text-white/50 line-through">$94</span>
+                        <span className="font-bold text-pink-400">$47</span>
+                      </div>
+                    </div>
+
+                    <div className="border border-purple-500/50 rounded-lg p-4 bg-gradient-to-r from-purple-500/10 to-blue-500/10">
+                      <div className="flex items-start justify-between mb-2">
+                        <div>
+                          <h4 className="font-semibold text-purple-400">Campaign upgrade (80% OFF)</h4>
+                          <div className="text-sm text-white/70">
+                            <p>✅ Pitch to 2x more playlists ($150 value)</p>
+                            <p>✅ Stay on playlists 2x longer ($100 value)</p>
+                            <p>✅ Priority placements in 24 hours</p>
+                          </div>
+                        </div>
+                        <button className="bg-white/20 hover:bg-white/30 text-white p-2 rounded-lg transition-colors">
+                          <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                          </svg>
+                        </button>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <span className="text-white/50 line-through">$250</span>
+                        <span className="font-bold text-purple-400">$49</span>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -944,128 +1035,6 @@ export default function CheckoutPage() {
                         <div className="w-8 h-5 bg-red-600 rounded text-white text-xs flex items-center justify-center font-bold">MC</div>
                         <div className="w-8 h-5 bg-blue-800 rounded text-white text-xs flex items-center justify-center font-bold">AMEX</div>
                         <div className="w-8 h-5 bg-orange-600 rounded text-white text-xs flex items-center justify-center font-bold">DISC</div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Right Column - Order Summary */}
-              <div className="space-y-6">
-                {/* Order Items */}
-                <div className="bg-white/5 rounded-xl p-6 border border-white/20">
-                  <h2 className="text-lg font-semibold mb-6">Your Order</h2>
-                  
-                  <div className="space-y-4">
-                    {orderItems.map((item, index) => (
-                      <div key={index} className="flex items-center space-x-4 p-4 bg-white/5 rounded-lg">
-                        <div className="relative">
-                          <Image
-                            src={item.track.imageUrl}
-                            alt={item.track.title}
-                            width={60}
-                            height={60}
-                            className="rounded-lg"
-                            unoptimized
-                          />
-                          {item.isDiscounted && (
-                            <div className="absolute -top-2 -right-2 bg-[#59e3a5] text-black text-xs font-bold px-2 py-1 rounded-full">
-                              25% OFF
-                            </div>
-                          )}
-                        </div>
-                        
-                        <div className="flex-1">
-                          <h3 className="font-semibold text-sm">{item.track.title}</h3>
-                          <p className="text-white/60 text-sm">{item.track.artist}</p>
-                          <p className="text-[#59e3a5] text-sm font-medium">{item.package.name}</p>
-                          <p className="text-white/50 text-xs">{item.package.plays} • {item.package.placements}</p>
-                        </div>
-                        
-                        <div className="text-right">
-                          {item.isDiscounted ? (
-                            <div>
-                              <div className="text-white/50 text-sm line-through">${item.originalPrice}</div>
-                              <div className="text-[#59e3a5] font-semibold">${item.discountedPrice}</div>
-                            </div>
-                          ) : (
-                            <div className="font-semibold">${item.discountedPrice}</div>
-                          )}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Price Summary */}
-                <div className="bg-white/5 rounded-xl p-6 border border-white/20">
-                  <div className="space-y-3">
-                    <div className="flex justify-between">
-                      <span className="text-white/70">Subtotal</span>
-                      <span>${subtotal}</span>
-                    </div>
-                    
-                    {discount > 0 && (
-                      <div className="flex justify-between text-[#59e3a5]">
-                        <span>Multi-song discount (25% off)</span>
-                        <span>-${discount}</span>
-                      </div>
-                    )}
-                    
-                    <div className="border-t border-white/20 pt-3">
-                      <div className="flex justify-between text-xl font-bold">
-                        <span>Total</span>
-                        <span className="text-[#59e3a5]">${total}</span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Popular Add-ons */}
-                <div className="bg-white/5 rounded-xl p-6 border border-white/20">
-                  <h3 className="text-lg font-semibold mb-4">Popular add-ons 🔥</h3>
-                  
-                  <div className="space-y-4">
-                    <div className="border border-pink-500/50 rounded-lg p-4 bg-gradient-to-r from-pink-500/10 to-purple-500/10">
-                      <div className="flex items-start justify-between mb-2">
-                        <div>
-                          <h4 className="font-semibold text-pink-400">Promote on Apple Music (50% OFF)</h4>
-                          <div className="text-sm text-white/70">
-                            <p>🔴 Get added to an Apple Music playlist</p>
-                            <p>🎵 Apple Music add-on reduced if not placed in 7 days</p>
-                          </div>
-                        </div>
-                        <button className="bg-white/20 hover:bg-white/30 text-white p-2 rounded-lg transition-colors">
-                          <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-                          </svg>
-                        </button>
-                      </div>
-                      <div className="flex items-center space-x-2">
-                        <span className="text-white/50 line-through">$94</span>
-                        <span className="font-bold text-pink-400">$47</span>
-                      </div>
-                    </div>
-
-                    <div className="border border-purple-500/50 rounded-lg p-4 bg-gradient-to-r from-purple-500/10 to-blue-500/10">
-                      <div className="flex items-start justify-between mb-2">
-                        <div>
-                          <h4 className="font-semibold text-purple-400">Campaign upgrade (80% OFF)</h4>
-                          <div className="text-sm text-white/70">
-                            <p>✅ Pitch to 2x more playlists ($150 value)</p>
-                            <p>✅ Stay on playlists 2x longer ($100 value)</p>
-                            <p>✅ Priority placements in 24 hours</p>
-                          </div>
-                        </div>
-                        <button className="bg-white/20 hover:bg-white/30 text-white p-2 rounded-lg transition-colors">
-                          <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-                          </svg>
-                        </button>
-                      </div>
-                      <div className="flex items-center space-x-2">
-                        <span className="text-white/50 line-through">$250</span>
-                        <span className="font-bold text-purple-400">$49</span>
                       </div>
                     </div>
                   </div>

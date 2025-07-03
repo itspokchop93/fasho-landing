@@ -1,5 +1,6 @@
 import Link from 'next/link';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { createClient } from '../utils/supabase/client';
 
 interface HeaderProps {
   transparent?: boolean;
@@ -8,6 +9,26 @@ interface HeaderProps {
 
 export default function Header({ transparent = false, hideSignUp = false }: HeaderProps = {}) {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [currentUser, setCurrentUser] = useState<any>(null);
+  const supabase = createClient();
+
+  // Check if user is logged in
+  useEffect(() => {
+    const checkUser = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      setCurrentUser(user);
+    };
+    checkUser();
+
+    // Listen for auth changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      (event, session) => {
+        setCurrentUser(session?.user ?? null);
+      }
+    );
+
+    return () => subscription.unsubscribe();
+  }, []);
 
   return (
     <header className={`fixed top-0 left-0 right-0 z-[60] ${transparent ? 'bg-transparent' : 'bg-black/90 backdrop-blur-sm border-b border-white/20'}`}>
@@ -46,11 +67,19 @@ export default function Header({ transparent = false, hideSignUp = false }: Head
               </span>
             </Link>
             
-            {/* Sign Up Button */}
+            {/* Sign Up Button or User Profile */}
             {!hideSignUp && (
-              <Link href="/signup" className="bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] text-black font-semibold px-6 py-2 rounded-md hover:opacity-90 transition-opacity">
-                Sign Up
-              </Link>
+              currentUser ? (
+                <Link href="/dashboard" className="w-10 h-10 bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] rounded-full flex items-center justify-center hover:opacity-90 transition-opacity">
+                  <span className="text-black font-bold text-sm">
+                    {currentUser.email.substring(0, 2).toUpperCase()}
+                  </span>
+                </Link>
+              ) : (
+                <Link href="/signup" className="bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] text-black font-semibold px-6 py-2 rounded-md hover:opacity-90 transition-opacity">
+                  Sign Up
+                </Link>
+              )
             )}
           </nav>
 
@@ -99,11 +128,19 @@ export default function Header({ transparent = false, hideSignUp = false }: Head
                   </span>
                 </Link>
                 
-                {/* Sign Up Button */}
+                {/* Sign Up Button or User Profile */}
                 {!hideSignUp && (
-                  <Link href="/signup" className="bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] text-black font-semibold px-6 py-2 rounded-md hover:opacity-90 transition-opacity">
-                    Sign Up
-                  </Link>
+                  currentUser ? (
+                    <Link href="/dashboard" className="w-10 h-10 bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] rounded-full flex items-center justify-center hover:opacity-90 transition-opacity">
+                      <span className="text-black font-bold text-sm">
+                        {currentUser.email.substring(0, 2).toUpperCase()}
+                      </span>
+                    </Link>
+                  ) : (
+                    <Link href="/signup" className="bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] text-black font-semibold px-6 py-2 rounded-md hover:opacity-90 transition-opacity">
+                      Sign Up
+                    </Link>
+                  )
                 )}
               </div>
             </div>
