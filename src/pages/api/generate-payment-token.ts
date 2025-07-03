@@ -30,23 +30,33 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   }
 
   try {
+    console.log('DEBUG: Incoming request body:', req.body);
     const { amount, orderItems, customerEmail, billingInfo }: PaymentRequest = req.body;
 
-    // Validate required fields
-    if (!amount || !orderItems || !customerEmail || !billingInfo) {
-      return res.status(400).json({ 
-        success: false, 
-        message: 'Missing required fields: amount, orderItems, customerEmail, billingInfo' 
-      });
+    // Validate required fields with detailed logging
+    if (!amount) {
+      console.error('DEBUG: Missing amount');
+      return res.status(400).json({ success: false, message: 'Missing required field: amount' });
     }
-
-    // Validate billing information
-    if (!billingInfo.firstName || !billingInfo.lastName || !billingInfo.address || 
-        !billingInfo.city || !billingInfo.state || !billingInfo.zip || !billingInfo.country) {
-      return res.status(400).json({ 
-        success: false, 
-        message: 'Missing required billing information fields' 
-      });
+    if (!orderItems || !Array.isArray(orderItems) || orderItems.length === 0) {
+      console.error('DEBUG: Missing or invalid orderItems');
+      return res.status(400).json({ success: false, message: 'Missing or invalid required field: orderItems' });
+    }
+    if (!customerEmail) {
+      console.error('DEBUG: Missing customerEmail');
+      return res.status(400).json({ success: false, message: 'Missing required field: customerEmail' });
+    }
+    if (!billingInfo) {
+      console.error('DEBUG: Missing billingInfo');
+      return res.status(400).json({ success: false, message: 'Missing required field: billingInfo' });
+    }
+    // Validate billing information fields
+    const billingFields = ['firstName', 'lastName', 'address', 'city', 'state', 'zip', 'country'];
+    for (const field of billingFields) {
+      if (!(billingInfo as any)[field]) {
+        console.error(`DEBUG: Missing billingInfo.${field}`);
+        return res.status(400).json({ success: false, message: `Missing required billingInfo field: ${field}` });
+      }
     }
 
     // Get Authorize.net credentials from environment variables
