@@ -442,7 +442,46 @@ export default function CheckoutPage() {
       switch (data.type) {
         case 'PAYMENT_COMPLETE':
           console.log('🚀 PARENT PAGE: Payment completed, processing response:', data.response);
-          handleIframeMessage(data.response);
+          // Handle payment completion directly
+          const response = data.response;
+          console.log('🔍 PAYMENT: Iframe response received:', response);
+
+          if (!response || typeof response !== 'object') {
+            console.error('🔍 PAYMENT: Invalid response format');
+            setError('No payment response received. Please try again.');
+            setIsLoading(false);
+            setShowPaymentForm(false);
+            return;
+          }
+
+          console.log('🔍 PAYMENT: Response code:', response.responseCode);
+          console.log('🔍 PAYMENT: Response reason:', response.responseReasonText);
+
+          if (response.responseCode === '1') {
+            // Transaction successful
+            console.log('🔍 PAYMENT: Transaction approved');
+            handleSuccessfulPayment(response);
+          } else {
+            // Transaction failed - provide more specific error messages
+            console.error('🔍 PAYMENT: Transaction failed with code:', response.responseCode);
+            let errorMessage = 'Payment failed. Please try again.';
+            
+            // Provide specific error messages based on response code
+            if (response.responseCode === '2') {
+              errorMessage = 'Payment was declined. Please check your card details and try again.';
+            } else if (response.responseCode === '3') {
+              errorMessage = 'Payment error occurred. Please verify your card information and try again.';
+            } else if (response.responseCode === '4') {
+              errorMessage = 'Payment is being reviewed. You will receive an email confirmation shortly.';
+            } else if (response.responseReasonText) {
+              // Use the specific reason text if available
+              errorMessage = `Payment failed: ${response.responseReasonText}`;
+            }
+            
+            setError(errorMessage);
+            setIsLoading(false);
+            setShowPaymentForm(false);
+          }
           break;
         case 'PAYMENT_CANCELLED':
           console.log('❌ PARENT PAGE: Payment was cancelled');
@@ -569,47 +608,6 @@ export default function CheckoutPage() {
   };
 
   // Handle payment form submission
-  // Handle iframe communication from Authorize.net
-  const handleIframeMessage = (response: any) => {
-    console.log('🔍 PAYMENT: Iframe response received:', response);
-
-    if (!response || typeof response !== 'object') {
-      console.error('🔍 PAYMENT: Invalid response format');
-      setError('No payment response received. Please try again.');
-      setIsLoading(false);
-      setShowPaymentForm(false);
-      return;
-    }
-
-    console.log('🔍 PAYMENT: Response code:', response.responseCode);
-    console.log('🔍 PAYMENT: Response reason:', response.responseReasonText);
-
-    if (response.responseCode === '1') {
-      // Transaction successful
-      console.log('🔍 PAYMENT: Transaction approved');
-      handleSuccessfulPayment(response);
-    } else {
-      // Transaction failed - provide more specific error messages
-      console.error('🔍 PAYMENT: Transaction failed with code:', response.responseCode);
-      let errorMessage = 'Payment failed. Please try again.';
-      
-      // Provide specific error messages based on response code
-      if (response.responseCode === '2') {
-        errorMessage = 'Payment was declined. Please check your card details and try again.';
-      } else if (response.responseCode === '3') {
-        errorMessage = 'Payment error occurred. Please verify your card information and try again.';
-      } else if (response.responseCode === '4') {
-        errorMessage = 'Payment is being reviewed. You will receive an email confirmation shortly.';
-      } else if (response.responseReasonText) {
-        // Use the specific reason text if available
-        errorMessage = `Payment failed: ${response.responseReasonText}`;
-      }
-      
-      setError(errorMessage);
-      setIsLoading(false);
-      setShowPaymentForm(false);
-    }
-  };
 
   // Handle successful payment response
   const handleSuccessfulPayment = async (response: any) => {
@@ -865,6 +863,8 @@ export default function CheckoutPage() {
       setIsLoading(false);
     }
   };
+
+
 
   useEffect(() => {
     // Global debug listener for ALL messages
