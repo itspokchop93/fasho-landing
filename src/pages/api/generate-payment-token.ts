@@ -96,6 +96,36 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const timestamp = Date.now().toString();
     const sequence = Math.floor(Math.random() * 1000000).toString();
     
+    // Defensive: Only include supported, non-empty fields in billTo
+    const billTo: any = {
+      firstName: billingInfo.firstName,
+      lastName: billingInfo.lastName,
+      address: billingInfo.address,
+      city: billingInfo.city,
+      state: billingInfo.state,
+      zip: billingInfo.zip,
+      country: billingInfo.country
+    };
+    // Remove any fields that are empty strings or undefined
+    Object.keys(billTo).forEach(key => {
+      if (!billTo[key]) {
+        delete billTo[key];
+      }
+    });
+    // Defensive: Check field lengths and values
+    if (billTo.state && billTo.state.length !== 2) {
+      console.error('DEBUG: billTo.state is not 2 characters:', billTo.state);
+      return res.status(400).json({ success: false, message: 'State must be 2-letter code' });
+    }
+    if (billTo.country && billTo.country.length !== 2) {
+      console.error('DEBUG: billTo.country is not 2 characters:', billTo.country);
+      return res.status(400).json({ success: false, message: 'Country must be 2-letter code' });
+    }
+    if (billTo.zip && !/^\d{5}(-\d{4})?$/.test(billTo.zip)) {
+      console.error('DEBUG: billTo.zip is not valid US ZIP:', billTo.zip);
+      return res.status(400).json({ success: false, message: 'ZIP code must be 5 or 9 digits' });
+    }
+
     // Create the Accept Hosted request
     const acceptHostedRequest = {
       "getHostedPaymentPageRequest": {
@@ -113,15 +143,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           "customer": {
             "email": customerEmail
           },
-          "billTo": {
-            "firstName": billingInfo.firstName,
-            "lastName": billingInfo.lastName,
-            "address": billingInfo.address,
-            "city": billingInfo.city,
-            "state": billingInfo.state,
-            "zip": billingInfo.zip,
-            "country": billingInfo.country
-          }
+          "billTo": billTo
         },
         "hostedPaymentSettings": {
           "setting": [
