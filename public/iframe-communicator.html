@@ -67,13 +67,17 @@
                         console.log('Parsed transaction response:', response);
                         
                         if (window.parent && window.parent.postMessage) {
-                            console.log('Sending PAYMENT_COMPLETE message to parent');
-                            console.log('Current origin:', window.location.origin);
-                            window.parent.postMessage({
+                            console.log('🚀 IFRAME: Sending PAYMENT_COMPLETE message to parent');
+                            console.log('🚀 IFRAME: Current origin:', window.location.origin);
+                            console.log('🚀 IFRAME: Sending message with response:', response);
+                            var messageToSend = {
                                 type: 'PAYMENT_COMPLETE',
                                 action: 'transactResponse',
                                 response: response
-                            }, '*'); // Use '*' to allow any origin for now
+                            };
+                            console.log('🚀 IFRAME: Final message object:', messageToSend);
+                            window.parent.postMessage(messageToSend, '*'); // Use '*' to allow any origin for now
+                            console.log('🚀 IFRAME: Message sent successfully');
                         }
                         break;
                         
