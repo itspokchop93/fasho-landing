@@ -100,6 +100,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             "invoiceNumber": `INV-${timestamp}`,
             "description": `Fasho Music Promotion - ${orderItems.length} package(s)`
           },
+          "customer": {
+            "email": customerEmail
+          },
           "billTo": {
             "firstName": billingInfo.firstName,
             "lastName": billingInfo.lastName,
@@ -108,9 +111,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             "state": billingInfo.state,
             "zip": billingInfo.zip,
             "country": billingInfo.country
-          },
-          "customer": {
-            "email": customerEmail
           }
         },
         "hostedPaymentSettings": {
