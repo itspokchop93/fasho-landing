@@ -227,12 +227,17 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       ? 'https://accept.authorize.net'
       : 'https://test.authorize.net'; // Different from API URL!
 
+    // URL encode the token to handle special characters
+    const encodedToken = encodeURIComponent(token);
+    const finalPaymentUrl = `${paymentFormUrl}/payment/payment?token=${encodedToken}`;
+    
     console.log('Final payment URL:', `${paymentFormUrl}/payment/payment?token=${token.substring(0, 20)}...`);
+    console.log('Token needs encoding:', token !== encodedToken);
 
     res.status(200).json({
       success: true,
       token: token,
-      paymentUrl: `${paymentFormUrl}/payment/payment?token=${token}`
+      paymentUrl: finalPaymentUrl
     });
 
   } catch (error: any) {
