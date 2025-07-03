@@ -302,8 +302,8 @@ export default function CheckoutPage() {
   }, []);
 
   // Handle login
-  const handleLogin = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleLogin = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
     setIsLoading(true);
     setError('');
 
@@ -492,7 +492,7 @@ export default function CheckoutPage() {
                     <div className="space-y-4">
                       <div>
                         <label htmlFor="email" className="block text-sm text-white/70 mb-2">
-                          Email
+                          Email {!isLoginMode && <span className="text-red-400">*</span>}
                         </label>
                         <input
                           type="email"
@@ -508,7 +508,7 @@ export default function CheckoutPage() {
                       
                       <div>
                         <label htmlFor="password" className="block text-sm text-white/70 mb-2">
-                          Password
+                          Password {!isLoginMode && <span className="text-red-400">*</span>}
                         </label>
                         <input
                           type="password"
@@ -531,7 +531,7 @@ export default function CheckoutPage() {
                       {!isLoginMode && (
                         <div>
                           <label htmlFor="confirmPassword" className="block text-sm text-white/70 mb-2">
-                            Confirm Password
+                            Confirm Password <span className="text-red-400">*</span>
                           </label>
                           <input
                             type="password"
@@ -552,6 +552,20 @@ export default function CheckoutPage() {
                         </div>
                       )}
                     </div>
+
+                    {/* Login Button - Only show in login mode */}
+                    {isLoginMode && (
+                      <div className="mt-6">
+                        <button
+                          type="button"
+                          onClick={handleLogin}
+                          disabled={isLoading}
+                          className="w-full bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] text-black font-semibold py-3 px-6 rounded-lg hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          {isLoading ? 'Logging in...' : 'Login'}
+                        </button>
+                      </div>
+                    )}
                   </div>
                 )}
 
@@ -867,56 +881,6 @@ export default function CheckoutPage() {
                   </div>
                 </div>
 
-                {/* Popular Add-ons */}
-                <div className="bg-white/5 rounded-xl p-6 border border-white/20">
-                  <h3 className="text-lg font-semibold mb-4">Popular add-ons 🔥</h3>
-                  
-                  <div className="space-y-4">
-                    <div className="border border-pink-500/50 rounded-lg p-4 bg-gradient-to-r from-pink-500/10 to-purple-500/10">
-                      <div className="flex items-start justify-between mb-2">
-                        <div>
-                          <h4 className="font-semibold text-pink-400">Promote on Apple Music (50% OFF)</h4>
-                          <div className="text-sm text-white/70">
-                            <p>🔴 Get added to an Apple Music playlist</p>
-                            <p>🎵 Apple Music add-on reduced if not placed in 7 days</p>
-                          </div>
-                        </div>
-                        <button className="bg-white/20 hover:bg-white/30 text-white p-2 rounded-lg transition-colors">
-                          <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-                          </svg>
-                        </button>
-                      </div>
-                      <div className="flex items-center space-x-2">
-                        <span className="text-white/50 line-through">$94</span>
-                        <span className="font-bold text-pink-400">$47</span>
-                      </div>
-                    </div>
-
-                    <div className="border border-purple-500/50 rounded-lg p-4 bg-gradient-to-r from-purple-500/10 to-blue-500/10">
-                      <div className="flex items-start justify-between mb-2">
-                        <div>
-                          <h4 className="font-semibold text-purple-400">Campaign upgrade (80% OFF)</h4>
-                          <div className="text-sm text-white/70">
-                            <p>✅ Pitch to 2x more playlists ($150 value)</p>
-                            <p>✅ Stay on playlists 2x longer ($100 value)</p>
-                            <p>✅ Priority placements in 24 hours</p>
-                          </div>
-                        </div>
-                        <button className="bg-white/20 hover:bg-white/30 text-white p-2 rounded-lg transition-colors">
-                          <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-                          </svg>
-                        </button>
-                      </div>
-                      <div className="flex items-center space-x-2">
-                        <span className="text-white/50 line-through">$250</span>
-                        <span className="font-bold text-purple-400">$49</span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
                 {/* Payment Form */}
                 <div className="bg-white/5 rounded-xl p-6 border border-white/20">
                   <h2 className="text-lg font-semibold mb-4">Payment</h2>
@@ -1035,6 +999,56 @@ export default function CheckoutPage() {
                         <div className="w-8 h-5 bg-red-600 rounded text-white text-xs flex items-center justify-center font-bold">MC</div>
                         <div className="w-8 h-5 bg-blue-800 rounded text-white text-xs flex items-center justify-center font-bold">AMEX</div>
                         <div className="w-8 h-5 bg-orange-600 rounded text-white text-xs flex items-center justify-center font-bold">DISC</div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Popular Add-ons */}
+                <div className="bg-white/5 rounded-xl p-6 border border-white/20">
+                  <h3 className="text-lg font-semibold mb-4">Popular add-ons 🔥</h3>
+                  
+                  <div className="space-y-4">
+                    <div className="border border-pink-500/50 rounded-lg p-4 bg-gradient-to-r from-pink-500/10 to-purple-500/10">
+                      <div className="flex items-start justify-between mb-2">
+                        <div>
+                          <h4 className="font-semibold text-pink-400">Promote on Apple Music (50% OFF)</h4>
+                          <div className="text-sm text-white/70">
+                            <p>🔴 Get added to an Apple Music playlist</p>
+                            <p>🎵 Apple Music add-on reduced if not placed in 7 days</p>
+                          </div>
+                        </div>
+                        <button className="bg-white/20 hover:bg-white/30 text-white p-2 rounded-lg transition-colors">
+                          <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                          </svg>
+                        </button>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <span className="text-white/50 line-through">$94</span>
+                        <span className="font-bold text-pink-400">$47</span>
+                      </div>
+                    </div>
+
+                    <div className="border border-purple-500/50 rounded-lg p-4 bg-gradient-to-r from-purple-500/10 to-blue-500/10">
+                      <div className="flex items-start justify-between mb-2">
+                        <div>
+                          <h4 className="font-semibold text-purple-400">Campaign upgrade (80% OFF)</h4>
+                          <div className="text-sm text-white/70">
+                            <p>✅ Pitch to 2x more playlists ($150 value)</p>
+                            <p>✅ Stay on playlists 2x longer ($100 value)</p>
+                            <p>✅ Priority placements in 24 hours</p>
+                          </div>
+                        </div>
+                        <button className="bg-white/20 hover:bg-white/30 text-white p-2 rounded-lg transition-colors">
+                          <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                          </svg>
+                        </button>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <span className="text-white/50 line-through">$250</span>
+                        <span className="font-bold text-purple-400">$49</span>
                       </div>
                     </div>
                   </div>
