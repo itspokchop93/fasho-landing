@@ -11,17 +11,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     return res.status(400).json({ message: 'Email is required' });
   }
 
-  // Use the service role key for admin access
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
-  // Log presence of env vars (not values)
-  console.log('[DEBUG] SUPABASE_URL present:', !!supabaseUrl);
-  console.log('[DEBUG] SERVICE_ROLE_KEY present:', !!serviceRoleKey);
-  console.log('[DEBUG] Checking email:', email);
-
   if (!supabaseUrl || !serviceRoleKey) {
-    console.error('[DEBUG] Missing Supabase env vars');
     return res.status(500).json({ message: 'Supabase environment variables not set' });
   }
 
@@ -30,31 +23,20 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   });
 
   try {
-    // Query the auth.users table directly
-    const { data, error } = await supabaseAdmin
-      .from('auth.users')
-      .select('id, email, email_confirmed_at')
-      .eq('email', email)
-      .maybeSingle();
-
-    console.log('[DEBUG] Supabase query result:', { data, error });
-
+    // List users (up to 1000) and filter by email
+    const { data, error } = await supabaseAdmin.auth.admin.listUsers({ perPage: 1000 });
     if (error) {
-      const errorMsg = typeof error === 'object' && error && 'message' in error ? error.message : String(error);
-      console.error('[DEBUG] Supabase error:', errorMsg);
-      return res.status(500).json({ message: 'Database error', error: errorMsg });
+      return res.status(500).json({ message: 'Database error', error: error.message });
     }
 
-    if (data) {
-      // User exists
-      return res.status(200).json({ exists: true, verified: !!data.email_confirmed_at });
+    const user = data?.users?.find((u: any) => u.email?.toLowerCase() === email.toLowerCase());
+    if (user) {
+      return res.status(200).json({ exists: true, verified: !!user.email_confirmed_at });
     } else {
-      // User does not exist
       return res.status(200).json({ exists: false, verified: false });
     }
   } catch (err) {
     const errMsg = typeof err === 'object' && err && 'message' in err ? err.message : String(err);
-    console.error('[DEBUG] API error:', errMsg);
     return res.status(500).json({ message: 'Internal server error', error: errMsg });
   }
 } 
