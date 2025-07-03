@@ -78,6 +78,7 @@ export default function CheckoutPage() {
   const [showPaymentForm, setShowPaymentForm] = useState(false);
   const [paymentToken, setPaymentToken] = useState<string>('');
   const [loginError, setLoginError] = useState('');
+  const [emailStatus, setEmailStatus] = useState<null | 'available' | 'exists' | 'unverified' | 'invalid' | 'error'>(null);
 
   // Form state
   const [formData, setFormData] = useState({
@@ -260,15 +261,13 @@ export default function CheckoutPage() {
 
   // Check if email exists and user verification status
   const checkEmailExists = async (email: string) => {
+    setEmailStatus(null);
     if (!email || !email.includes('@')) return;
     
     // Basic email format validation first
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) {
-      setFieldErrors(prev => ({ 
-        ...prev, 
-        email: 'Please enter a valid email address' 
-      }));
+      setEmailStatus('invalid');
       return;
     }
     
@@ -276,8 +275,6 @@ export default function CheckoutPage() {
     setFieldErrors(prev => ({ ...prev, email: '' }));
     
     try {
-      console.log('Checking email existence for:', email);
-      
       const response = await fetch('/api/check-user-exists', {
         method: 'POST',
         headers: {
@@ -287,45 +284,21 @@ export default function CheckoutPage() {
       });
       
       const data = await response.json();
-      console.log('Email check response:', data);
-      
       if (response.ok) {
         if (data.exists) {
           if (data.verified) {
-            // User exists and is verified
-            setFieldErrors(prev => ({ 
-              ...prev, 
-              email: 'You already have an account with us! Please LOGIN instead' 
-            }));
+            setEmailStatus('exists');
           } else {
-            // User exists but not verified
-            setFieldErrors(prev => ({ 
-              ...prev, 
-              email: 'You have an account but haven\'t verified your email yet. Please check your inbox or resend verification.' 
-            }));
+            setEmailStatus('unverified');
           }
         } else {
-          // User doesn't exist - show success message
-          setFieldErrors(prev => ({ 
-            ...prev, 
-            email: 'Email is available!' 
-          }));
+          setEmailStatus('available');
         }
       } else {
-        console.error('Error checking user existence:', data.message);
-        // Don't show error to user - fail silently for security
-        setFieldErrors(prev => ({ 
-          ...prev, 
-          email: '' 
-        }));
+        setEmailStatus('error');
       }
     } catch (error) {
-      console.error('Error checking email:', error);
-      // Don't show error to user - fail silently for security
-      setFieldErrors(prev => ({ 
-        ...prev, 
-        email: '' 
-      }));
+      setEmailStatus('error');
     } finally {
       setIsCheckingEmail(false);
     }
@@ -368,7 +341,7 @@ export default function CheckoutPage() {
              billingData.city && 
              billingData.state && 
              billingData.zip &&
-             (!fieldErrors.email || fieldErrors.email === 'Email is available!') &&
+             (emailStatus === 'available') &&
              !fieldErrors.password &&
              !fieldErrors.confirmPassword;
     }
@@ -379,7 +352,7 @@ export default function CheckoutPage() {
     if (!currentUser && !isLoginMode) {
       // Signup mode validation
       if (!formData.email) return 'email';
-      if (fieldErrors.email && fieldErrors.email !== 'Email is available!') return 'email';
+      if (emailStatus && emailStatus !== 'available') return 'email';
       if (!formData.password) return 'password';
       if (fieldErrors.password) return 'password';
       if (!formData.confirmPassword) return 'confirmPassword';
@@ -979,17 +952,21 @@ export default function CheckoutPage() {
                           className="w-full bg-white/10 border border-white/20 rounded-lg py-3 px-4 text-white placeholder-white/50 focus:outline-none focus:border-[#59e3a5] transition-colors autofill-override"
                           placeholder="your@email.com"
                         />
-                        {/* Email validation feedback */}
-                        {fieldErrors.email && (
+                        {(emailStatus || isCheckingEmail) && (
                           <div className="mt-2 text-sm">
-                            {fieldErrors.email.includes('LOGIN instead') ? (
+                            {isCheckingEmail ? (
+                              <div className="text-white/60 flex items-center">
+                                <div className="w-4 h-4 border-2 border-[#59e3a5] border-t-transparent rounded-full animate-spin mr-2"></div>
+                                Checking email...
+                              </div>
+                            ) : emailStatus === 'exists' ? (
                               <p className="text-red-400">
                                 You already have an account with us! Please{' '}
                                 <button
                                   type="button"
                                   onClick={() => {
                                     setIsLoginMode(true);
-                                    setFieldErrors(prev => ({ ...prev, email: '' }));
+                                    setEmailStatus(null);
                                   }}
                                   className="text-[#59e3a5] hover:text-[#14c0ff] underline transition-colors"
                                 >
@@ -997,7 +974,7 @@ export default function CheckoutPage() {
                                 </button>{' '}
                                 instead
                               </p>
-                            ) : fieldErrors.email.includes('haven\'t verified') ? (
+                            ) : emailStatus === 'unverified' ? (
                               <p className="text-red-400">
                                 You have an account but haven't verified your email yet!{' '}
                                 <button
@@ -1008,22 +985,18 @@ export default function CheckoutPage() {
                                   Resend Verification
                                 </button>
                               </p>
-                            ) : fieldErrors.email.includes('Email is available!') ? (
+                            ) : emailStatus === 'available' ? (
                               <div className="flex items-center text-green-400">
                                 <svg className="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
                                   <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                                 </svg>
                                 Email is available!
                               </div>
-                            ) : (
-                              <p className="text-red-400">{fieldErrors.email}</p>
-                            )}
-                          </div>
-                        )}
-                        {isCheckingEmail && (
-                          <div className="mt-2 text-sm text-white/60 flex items-center">
-                            <div className="w-4 h-4 border-2 border-[#59e3a5] border-t-transparent rounded-full animate-spin mr-2"></div>
-                            Checking email...
+                            ) : emailStatus === 'invalid' ? (
+                              <p className="text-red-400">Please enter a valid email address</p>
+                            ) : emailStatus === 'error' ? (
+                              <p className="text-red-400">Error checking email. Please try again.</p>
+                            ) : null}
                           </div>
                         )}
                       </div>
