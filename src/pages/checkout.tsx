@@ -79,6 +79,7 @@ export default function CheckoutPage() {
   const [paymentToken, setPaymentToken] = useState<string>('');
   const [loginError, setLoginError] = useState('');
   const [emailStatus, setEmailStatus] = useState<null | 'available' | 'exists' | 'unverified' | 'invalid' | 'error'>(null);
+  const [loginInfoMessage, setLoginInfoMessage] = useState<string | null>(null);
 
   // Form state
   const [formData, setFormData] = useState({
@@ -517,12 +518,9 @@ export default function CheckoutPage() {
         type: 'signup',
         email: formData.email,
       });
-      
       if (!error) {
-        setFieldErrors(prev => ({ 
-          ...prev, 
-          email: 'Verification email sent! Please check your inbox.' 
-        }));
+        setLoginInfoMessage('Verification Email sent!');
+        setIsLoginMode(true);
       }
     } catch (error) {
       console.error('Error resending verification:', error);
@@ -557,6 +555,7 @@ export default function CheckoutPage() {
 
       // Refresh page to show logged in state
       window.location.reload();
+      setLoginInfoMessage(null);
     } catch (error) {
       console.error('Login error:', error);
       setLoginError('Login failed. Please try again.');
@@ -922,6 +921,7 @@ export default function CheckoutPage() {
                           setIsLoginMode(!isLoginMode);
                           setError('');
                           setFieldErrors({});
+                          setLoginInfoMessage(null);
                         }}
                         className="text-[#59e3a5] hover:text-[#14c0ff] text-sm transition-colors"
                       >
@@ -1055,6 +1055,11 @@ export default function CheckoutPage() {
                         {loginError && (
                           <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-4 mb-4">
                             <p className="text-red-400 text-sm">{loginError}</p>
+                          </div>
+                        )}
+                        {isLoginMode && loginInfoMessage && (
+                          <div className="bg-green-500/10 border border-green-500/20 rounded-lg p-4 mb-4">
+                            <p className="text-green-400 text-sm">{loginInfoMessage}</p>
                           </div>
                         )}
                         <button
