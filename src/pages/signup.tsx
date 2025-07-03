@@ -13,6 +13,7 @@ export default function SignUpPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [message, setMessage] = useState('');
   const [showResendLink, setShowResendLink] = useState(false);
+  const [fieldErrors, setFieldErrors] = useState<{[key: string]: string}>({});
   const [formData, setFormData] = useState({
     fullName: '',
     email: '',
@@ -96,6 +97,38 @@ export default function SignUpPage() {
       ...formData,
       [e.target.name]: e.target.value
     });
+    
+    // Clear field error when user starts typing
+    if (fieldErrors[e.target.name]) {
+      setFieldErrors(prev => ({
+        ...prev,
+        [e.target.name]: ''
+      }));
+    }
+  };
+
+  // Handle field validation on blur
+  const handleFieldBlur = (field: string, value: string) => {
+    let error = '';
+    
+    if (field === 'password' && value && !isLogin) {
+      if (value.length < 6) {
+        error = 'Password must be at least 6 characters long';
+      } else if (!validatePassword(value)) {
+        error = 'Passwords require 1 Uppercase Letter and 1 Number';
+      }
+    }
+    
+    if (field === 'confirmPassword' && value && formData.password && !isLogin) {
+      if (value !== formData.password) {
+        error = 'Passwords do not match';
+      }
+    }
+    
+    setFieldErrors(prev => ({
+      ...prev,
+      [field]: error
+    }));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -172,6 +205,7 @@ export default function SignUpPage() {
     setIsLogin(!isLogin);
     setMessage('');
     setShowResendLink(false);
+    setFieldErrors({});
     setFormData({
       fullName: '',
       email: '',
@@ -276,7 +310,12 @@ export default function SignUpPage() {
                     placeholder={isLogin ? "password" : "create password"}
                     value={formData.password}
                     onChange={handleInputChange}
-                    className="w-full bg-transparent border-b-2 border-white/30 pb-3 text-white placeholder-white/60 focus:border-[#59e3a5] focus:outline-none transition-colors text-lg autofill-override"
+                    onBlur={(e) => handleFieldBlur('password', e.target.value)}
+                    className={`w-full bg-transparent border-b-2 pb-3 text-white placeholder-white/60 focus:outline-none transition-colors text-lg autofill-override ${
+                      fieldErrors.password 
+                        ? 'border-red-500 focus:border-red-500' 
+                        : 'border-white/30 focus:border-[#59e3a5]'
+                    }`}
                     style={{
                       WebkitTextFillColor: 'white',
                       WebkitBoxShadow: '0 0 0 1000px transparent inset',
@@ -284,6 +323,9 @@ export default function SignUpPage() {
                     }}
                     required
                   />
+                  {fieldErrors.password && (
+                    <p className="text-red-400 text-sm mt-1">{fieldErrors.password}</p>
+                  )}
                 </div>
 
                 {!isLogin && (
@@ -294,7 +336,12 @@ export default function SignUpPage() {
                       placeholder="confirm password"
                       value={formData.confirmPassword}
                       onChange={handleInputChange}
-                      className="w-full bg-transparent border-b-2 border-white/30 pb-3 text-white placeholder-white/60 focus:border-[#59e3a5] focus:outline-none transition-colors text-lg autofill-override"
+                      onBlur={(e) => handleFieldBlur('confirmPassword', e.target.value)}
+                      className={`w-full bg-transparent border-b-2 pb-3 text-white placeholder-white/60 focus:outline-none transition-colors text-lg autofill-override ${
+                        fieldErrors.confirmPassword 
+                          ? 'border-red-500 focus:border-red-500' 
+                          : 'border-white/30 focus:border-[#59e3a5]'
+                      }`}
                       style={{
                         WebkitTextFillColor: 'white',
                         WebkitBoxShadow: '0 0 0 1000px transparent inset',
@@ -302,6 +349,9 @@ export default function SignUpPage() {
                       }}
                       required
                     />
+                    {fieldErrors.confirmPassword && (
+                      <p className="text-red-400 text-sm mt-1">{fieldErrors.confirmPassword}</p>
+                    )}
                   </div>
                 )}
 
@@ -459,7 +509,12 @@ export default function SignUpPage() {
                     placeholder={isLogin ? "password" : "create password"}
                     value={formData.password}
                     onChange={handleInputChange}
-                    className="w-full bg-transparent border-b-2 border-white/30 pb-3 text-white placeholder-white/60 focus:border-[#59e3a5] focus:outline-none transition-colors autofill-override"
+                    onBlur={(e) => handleFieldBlur('password', e.target.value)}
+                    className={`w-full bg-transparent border-b-2 pb-3 text-white placeholder-white/60 focus:outline-none transition-colors autofill-override ${
+                      fieldErrors.password 
+                        ? 'border-red-500 focus:border-red-500' 
+                        : 'border-white/30 focus:border-[#59e3a5]'
+                    }`}
                     style={{
                       WebkitTextFillColor: 'white',
                       WebkitBoxShadow: '0 0 0 1000px transparent inset',
@@ -467,6 +522,9 @@ export default function SignUpPage() {
                     }}
                     required
                   />
+                  {fieldErrors.password && (
+                    <p className="text-red-400 text-sm mt-1">{fieldErrors.password}</p>
+                  )}
                 </div>
 
                 {!isLogin && (
@@ -477,7 +535,12 @@ export default function SignUpPage() {
                       placeholder="confirm password"
                       value={formData.confirmPassword}
                       onChange={handleInputChange}
-                      className="w-full bg-transparent border-b-2 border-white/30 pb-3 text-white placeholder-white/60 focus:border-[#59e3a5] focus:outline-none transition-colors autofill-override"
+                      onBlur={(e) => handleFieldBlur('confirmPassword', e.target.value)}
+                      className={`w-full bg-transparent border-b-2 pb-3 text-white placeholder-white/60 focus:outline-none transition-colors autofill-override ${
+                        fieldErrors.confirmPassword 
+                          ? 'border-red-500 focus:border-red-500' 
+                          : 'border-white/30 focus:border-[#59e3a5]'
+                      }`}
                       style={{
                         WebkitTextFillColor: 'white',
                         WebkitBoxShadow: '0 0 0 1000px transparent inset',
@@ -485,6 +548,9 @@ export default function SignUpPage() {
                       }}
                       required
                     />
+                    {fieldErrors.confirmPassword && (
+                      <p className="text-red-400 text-sm mt-1">{fieldErrors.confirmPassword}</p>
+                    )}
                   </div>
                 )}
 

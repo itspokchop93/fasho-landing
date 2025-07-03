@@ -73,6 +73,7 @@ export default function CheckoutPage() {
   const [error, setError] = useState('');
   const [fieldErrors, setFieldErrors] = useState<{[key: string]: string}>({});
   const [currentUser, setCurrentUser] = useState<any>(null);
+  const [isLoginMode, setIsLoginMode] = useState(false);
 
   // Form state
   const [formData, setFormData] = useState({
@@ -95,14 +96,30 @@ export default function CheckoutPage() {
     return Math.ceil(discounted); // Round up
   };
 
-  // Initialize data from URL params
+  // Initialize data from URL params or localStorage
   useEffect(() => {
     if (!router.isReady) return;
     
-    if (tracksParam && selectedPackagesParam && typeof tracksParam === 'string' && typeof selectedPackagesParam === 'string') {
+    let finalTracksParam = tracksParam;
+    let finalSelectedPackagesParam = selectedPackagesParam;
+    
+    // Check if we have stored cart data from login/logout
+    const storedCart = localStorage.getItem('checkoutCart');
+    if (storedCart) {
       try {
-        const parsedTracks = JSON.parse(tracksParam) as Track[];
-        const parsedPackages = JSON.parse(selectedPackagesParam) as {[key: number]: string};
+        const parsedCart = JSON.parse(storedCart);
+        finalTracksParam = parsedCart.tracks;
+        finalSelectedPackagesParam = parsedCart.selectedPackages;
+        localStorage.removeItem('checkoutCart'); // Clean up
+      } catch (error) {
+        console.error('Failed to parse stored cart:', error);
+      }
+    }
+    
+    if (finalTracksParam && finalSelectedPackagesParam && typeof finalTracksParam === 'string' && typeof finalSelectedPackagesParam === 'string') {
+      try {
+        const parsedTracks = JSON.parse(finalTracksParam) as Track[];
+        const parsedPackages = JSON.parse(finalSelectedPackagesParam) as {[key: number]: string};
         
         setTracks(parsedTracks);
         setSelectedPackages(parsedPackages);
@@ -219,8 +236,8 @@ export default function CheckoutPage() {
     setIsLoading(true);
     setError('');
 
-    // Validate form only if user is not already signed in
-    if (!currentUser) {
+    // Validate form only if user is not already signed in and not in login mode
+    if (!currentUser && !isLoginMode) {
       if (!formData.email || !formData.fullName) {
         setError('Please fill in all required fields');
         setIsLoading(false);
@@ -258,6 +275,59 @@ export default function CheckoutPage() {
     };
     checkUser();
   }, []);
+
+  // Handle login
+  const handleLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsLoading(true);
+    setError('');
+
+    try {
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email: formData.email,
+        password: formData.password,
+      });
+
+      if (error) {
+        setError(error.message);
+        setIsLoading(false);
+        return;
+      }
+
+      // Store cart data in localStorage before refresh
+      const cartData = {
+        tracks: tracksParam,
+        selectedPackages: selectedPackagesParam
+      };
+      localStorage.setItem('checkoutCart', JSON.stringify(cartData));
+
+      // Refresh page to show logged in state
+      window.location.reload();
+    } catch (error) {
+      console.error('Login error:', error);
+      setError('Login failed. Please try again.');
+      setIsLoading(false);
+    }
+  };
+
+  // Handle logout
+  const handleLogout = async () => {
+    try {
+      // Store cart data in localStorage before logout
+      const cartData = {
+        tracks: tracksParam,
+        selectedPackages: selectedPackagesParam
+      };
+      localStorage.setItem('checkoutCart', JSON.stringify(cartData));
+
+      await supabase.auth.signOut();
+      
+      // Refresh page to show logged out state
+      window.location.reload();
+    } catch (error) {
+      console.error('Logout error:', error);
+    }
+  };
 
   // Handle payment form submission
   const handlePaymentSubmit = async () => {
@@ -346,7 +416,15 @@ export default function CheckoutPage() {
                 {/* Account Details or Signed In Status */}
                 {currentUser ? (
                   <div className="bg-white/5 rounded-xl p-6 border border-white/20">
-                    <h2 className="text-lg font-semibold mb-4">Account</h2>
+                    <div className="flex items-center justify-between mb-4">
+                      <h2 className="text-lg font-semibold">Account</h2>
+                      <button
+                        onClick={handleLogout}
+                        className="text-white/60 hover:text-white text-sm transition-colors"
+                      >
+                        Sign Out
+                      </button>
+                    </div>
                     <div className="flex items-center space-x-4">
                       <div className="w-12 h-12 bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] rounded-full flex items-center justify-center">
                         <span className="text-black font-bold text-lg">
@@ -361,31 +439,52 @@ export default function CheckoutPage() {
                   </div>
                 ) : (
                   <div className="bg-white/5 rounded-xl p-6 border border-white/20">
-                    <h2 className="text-lg font-semibold mb-2">Account Details</h2>
+                    <div className="flex items-center justify-between mb-2">
+                      <h2 className="text-lg font-semibold">
+                        {isLoginMode ? 'Sign In' : 'Account Details'}
+                      </h2>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setIsLoginMode(!isLoginMode);
+                          setError('');
+                          setFieldErrors({});
+                        }}
+                        className="text-[#59e3a5] hover:text-[#14c0ff] text-sm transition-colors"
+                      >
+                        {isLoginMode ? 'Create Account' : 'Sign in to my account'}
+                      </button>
+                    </div>
+                    
                     <p className="text-sm text-white/60 mb-6">
-                      Create your account so you can track your campaigns and access exclusive features.
+                      {isLoginMode 
+                        ? 'Sign in to your existing account'
+                        : 'Create your account so you can track your campaigns and access exclusive features.'
+                      }
                     </p>
                     
                     <div className="space-y-4">
-                      <div>
-                        <label htmlFor="fullName" className="block text-sm text-white/70 mb-2">
-                          Full Name
-                        </label>
-                        <input
-                          type="text"
-                          id="fullName"
-                          name="fullName"
-                          value={formData.fullName}
-                          onChange={handleInputChange}
-                          required
-                          className="w-full bg-white/10 border border-white/20 rounded-lg py-3 px-4 text-white placeholder-white/50 focus:outline-none focus:border-[#59e3a5] transition-colors autofill-override"
-                          placeholder="Enter your full name"
-                        />
-                      </div>
+                      {!isLoginMode && (
+                        <div>
+                          <label htmlFor="fullName" className="block text-sm text-white/70 mb-2">
+                            Full Name
+                          </label>
+                          <input
+                            type="text"
+                            id="fullName"
+                            name="fullName"
+                            value={formData.fullName}
+                            onChange={handleInputChange}
+                            required
+                            className="w-full bg-white/10 border border-white/20 rounded-lg py-3 px-4 text-white placeholder-white/50 focus:outline-none focus:border-[#59e3a5] transition-colors autofill-override"
+                            placeholder="Enter your full name"
+                          />
+                        </div>
+                      )}
                       
                       <div>
                         <label htmlFor="email" className="block text-sm text-white/70 mb-2">
-                          Email - We'll send you a receipt
+                          {isLoginMode ? 'Email' : 'Email - We\'ll send you a receipt'}
                         </label>
                         <input
                           type="email"
@@ -409,39 +508,41 @@ export default function CheckoutPage() {
                           name="password"
                           value={formData.password}
                           onChange={handleInputChange}
-                          onBlur={(e) => handleFieldBlur('password', e.target.value)}
+                          onBlur={(e) => !isLoginMode && handleFieldBlur('password', e.target.value)}
                           required
                           className={`w-full bg-white/10 border rounded-lg py-3 px-4 text-white placeholder-white/50 focus:outline-none transition-colors ${
                             fieldErrors.password ? 'border-red-500' : 'border-white/20 focus:border-[#59e3a5]'
                           }`}
-                          placeholder="Create a password"
+                          placeholder={isLoginMode ? 'Enter your password' : 'Create a password'}
                         />
-                        {fieldErrors.password && (
+                        {fieldErrors.password && !isLoginMode && (
                           <p className="text-red-400 text-sm mt-1">{fieldErrors.password}</p>
                         )}
                       </div>
                       
-                      <div>
-                        <label htmlFor="confirmPassword" className="block text-sm text-white/70 mb-2">
-                          Confirm Password
-                        </label>
-                        <input
-                          type="password"
-                          id="confirmPassword"
-                          name="confirmPassword"
-                          value={formData.confirmPassword}
-                          onChange={handleInputChange}
-                          onBlur={(e) => handleFieldBlur('confirmPassword', e.target.value)}
-                          required
-                          className={`w-full bg-white/10 border rounded-lg py-3 px-4 text-white placeholder-white/50 focus:outline-none transition-colors ${
-                            fieldErrors.confirmPassword ? 'border-red-500' : 'border-white/20 focus:border-[#59e3a5]'
-                          }`}
-                          placeholder="Confirm your password"
-                        />
-                        {fieldErrors.confirmPassword && (
-                          <p className="text-red-400 text-sm mt-1">{fieldErrors.confirmPassword}</p>
-                        )}
-                      </div>
+                      {!isLoginMode && (
+                        <div>
+                          <label htmlFor="confirmPassword" className="block text-sm text-white/70 mb-2">
+                            Confirm Password
+                          </label>
+                          <input
+                            type="password"
+                            id="confirmPassword"
+                            name="confirmPassword"
+                            value={formData.confirmPassword}
+                            onChange={handleInputChange}
+                            onBlur={(e) => handleFieldBlur('confirmPassword', e.target.value)}
+                            required
+                            className={`w-full bg-white/10 border rounded-lg py-3 px-4 text-white placeholder-white/50 focus:outline-none transition-colors ${
+                              fieldErrors.confirmPassword ? 'border-red-500' : 'border-white/20 focus:border-[#59e3a5]'
+                            }`}
+                            placeholder="Confirm your password"
+                          />
+                          {fieldErrors.confirmPassword && (
+                            <p className="text-red-400 text-sm mt-1">{fieldErrors.confirmPassword}</p>
+                          )}
+                        </div>
+                      )}
                     </div>
                   </div>
                 )}
@@ -453,7 +554,7 @@ export default function CheckoutPage() {
                     All transactions are secure and encrypted.
                   </p>
                   
-                  <form onSubmit={handleSubmit} className="space-y-4">
+                  <form onSubmit={isLoginMode ? handleLogin : handleSubmit} className="space-y-4">
                     <div className="grid grid-cols-1 gap-4">
                       <div>
                         <label htmlFor="cardNumber" className="block text-sm text-white/70 mb-2">
