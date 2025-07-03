@@ -123,6 +123,71 @@ export default function ThankYouPage() {
               </div>
             </div>
 
+            {/* Order Summary */}
+            <div className="bg-white/5 rounded-xl p-6 border border-white/20 mb-8">
+              <h2 className="text-xl font-semibold mb-6">Your Campaign Details</h2>
+              
+              <div className="space-y-4 mb-6">
+                {orderData.items.map((item, index) => (
+                  <div key={index} className="flex items-center space-x-4 p-4 bg-white/5 rounded-lg">
+                    <div className="relative">
+                      <Image
+                        src={item.track.imageUrl || '/auto1.jpg'}
+                        alt={`${item.track.title} album cover`}
+                        width={60}
+                        height={60}
+                        className="rounded-lg"
+                        unoptimized
+                      />
+                    </div>
+                    
+                    <div className="flex-1">
+                      <h3 className="font-semibold text-sm">{item.track.title}</h3>
+                      <p className="text-white/60 text-sm">{item.track.artist}</p>
+                      <p className="text-[#59e3a5] text-sm font-medium">{item.package.name} Package</p>
+                      <p className="text-white/50 text-xs">{item.package.plays} • {item.package.placements}</p>
+                    </div>
+                    
+                    <div className="text-right">
+                      {item.isDiscounted ? (
+                        <div>
+                          <div className="text-white/50 text-sm line-through">${item.originalPrice}</div>
+                          <div className="font-semibold text-[#59e3a5]">${item.discountedPrice}</div>
+                          <div className="text-xs text-[#59e3a5]">25% OFF</div>
+                        </div>
+                      ) : (
+                        <div className="font-semibold">${item.discountedPrice}</div>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Price Summary */}
+              <div className="border-t border-white/20 pt-4">
+                <div className="space-y-2">
+                  <div className="flex justify-between">
+                    <span className="text-white/70">Subtotal</span>
+                    <span>${orderData.subtotal}</span>
+                  </div>
+                  
+                  {orderData.discount > 0 && (
+                    <div className="flex justify-between text-[#59e3a5]">
+                      <span>Multi-song discount (25% off)</span>
+                      <span>-${orderData.discount}</span>
+                    </div>
+                  )}
+                  
+                  <div className="border-t border-white/20 pt-2">
+                    <div className="flex justify-between text-xl font-bold">
+                      <span>Total Paid</span>
+                      <span className="text-[#59e3a5]">${orderData.total}</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
             <div className="text-center">
               <Link href="/dashboard" className="bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] text-black font-semibold py-4 px-6 rounded-lg hover:opacity-90 transition-opacity">
                 View Dashboard

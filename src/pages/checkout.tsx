@@ -71,8 +71,8 @@ export default function CheckoutPage() {
   const [total, setTotal] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
-  const [paymentFormToken, setPaymentFormToken] = useState<string>('');
-  const [showPaymentForm, setShowPaymentForm] = useState(false);
+  const [fieldErrors, setFieldErrors] = useState<{[key: string]: string}>({});
+  const [currentUser, setCurrentUser] = useState<any>(null);
 
   // Form state
   const [formData, setFormData] = useState({
@@ -155,6 +155,38 @@ export default function CheckoutPage() {
       ...prev,
       [e.target.name]: e.target.value
     }));
+    
+    // Clear field error when user starts typing
+    if (fieldErrors[e.target.name]) {
+      setFieldErrors(prev => ({
+        ...prev,
+        [e.target.name]: ''
+      }));
+    }
+  };
+
+  // Handle field validation on blur
+  const handleFieldBlur = (field: string, value: string) => {
+    let error = '';
+    
+    if (field === 'password' && value) {
+      if (value.length < 6) {
+        error = 'Password must be at least 6 characters long';
+      } else if (!validatePassword(value)) {
+        error = 'Passwords require 1 Uppercase Letter and 1 Number';
+      }
+    }
+    
+    if (field === 'confirmPassword' && value && formData.password) {
+      if (value !== formData.password) {
+        error = 'Passwords do not match';
+      }
+    }
+    
+    setFieldErrors(prev => ({
+      ...prev,
+      [field]: error
+    }));
   };
 
   // Format card number with spaces
@@ -187,70 +219,68 @@ export default function CheckoutPage() {
     setIsLoading(true);
     setError('');
 
-    // Validate form
-    if (!formData.email || !formData.fullName) {
-      setError('Please fill in all required fields');
-      setIsLoading(false);
-      return;
+    // Validate form only if user is not already signed in
+    if (!currentUser) {
+      if (!formData.email || !formData.fullName) {
+        setError('Please fill in all required fields');
+        setIsLoading(false);
+        return;
+      }
+
+      if (formData.password && formData.password !== formData.confirmPassword) {
+        setError('Passwords do not match');
+        setIsLoading(false);
+        return;
+      }
+
+      if (formData.password && formData.password.length < 6) {
+        setError('Password must be at least 6 characters long');
+        setIsLoading(false);
+        return;
+      }
+
+      if (formData.password && !validatePassword(formData.password)) {
+        setError('Passwords require 1 Uppercase Letter and 1 Number');
+        setIsLoading(false);
+        return;
+      }
     }
 
-    if (formData.password && formData.password !== formData.confirmPassword) {
-      setError('Passwords do not match');
-      setIsLoading(false);
-      return;
-    }
-
-    if (formData.password && formData.password.length < 6) {
-      setError('Password must be at least 6 characters long');
-      setIsLoading(false);
-      return;
-    }
-
-    if (formData.password && !validatePassword(formData.password)) {
-      setError('Passwords require 1 Uppercase Letter and 1 Number');
-      setIsLoading(false);
-      return;
-    }
-
-    // Generate payment token and show payment form
-    await generatePaymentToken();
-    setIsLoading(false);
+    // Process payment directly
+    await handlePaymentSubmit();
   };
 
-  // Generate Authorize.net payment form token
-  const generatePaymentToken = async () => {
-    try {
-      // For now, just show the payment form directly
-      setShowPaymentForm(true);
-    } catch (error) {
-      console.error('Error generating payment token:', error);
-      setError('Failed to initialize payment form. Please try again.');
-    }
-  };
+  // Check if user is already logged in
+  useEffect(() => {
+    const checkUser = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      setCurrentUser(user);
+    };
+    checkUser();
+  }, []);
 
   // Handle payment form submission
   const handlePaymentSubmit = async () => {
-    setIsLoading(true);
-    setError('');
-
     try {
       // Simulate payment processing
       await new Promise(resolve => setTimeout(resolve, 2000));
 
-      // Create user account after successful payment
-      const { data: authData, error: authError } = await supabase.auth.signUp({
-        email: formData.email,
-        password: formData.password,
-        options: {
-          data: {
-            full_name: formData.fullName,
+      // Create user account after successful payment (only if not already signed in)
+      if (!currentUser) {
+        const { data: authData, error: authError } = await supabase.auth.signUp({
+          email: formData.email,
+          password: formData.password,
+          options: {
+            data: {
+              full_name: formData.fullName,
+            },
           },
-        },
-      });
+        });
 
-      if (authError) {
-        console.error('Error creating account:', authError);
-        // Don't fail the entire checkout if account creation fails
+        if (authError) {
+          console.error('Error creating account:', authError);
+          // Don't fail the entire checkout if account creation fails
+        }
       }
 
       // Store order data for thank you page
@@ -259,8 +289,8 @@ export default function CheckoutPage() {
         subtotal,
         discount,
         total,
-        customerEmail: formData.email,
-        customerName: formData.fullName,
+        customerEmail: currentUser ? currentUser.email : formData.email,
+        customerName: currentUser ? (currentUser.user_metadata?.full_name || currentUser.email) : formData.fullName,
         createdAt: new Date().toISOString()
       };
 
@@ -311,46 +341,25 @@ export default function CheckoutPage() {
             </div>
             
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-              {/* Left Column - Forms */}
+              {/* Left Column - Account & Payment */}
               <div className="space-y-6">
-                {/* Express Checkout */}
-                <div className="bg-white/5 rounded-xl p-6 border border-white/20">
-                  <h2 className="text-lg font-semibold mb-4 text-center">Express checkout</h2>
-                  
-                  <div className="space-y-3">
-                    <button className="w-full bg-black text-white rounded-lg py-3 px-4 flex items-center justify-center space-x-2 border border-white/20 hover:bg-white/5 transition-colors">
-                      <span className="text-xl">🍎</span>
-                      <span className="font-medium">Pay</span>
-                    </button>
-                    
-                    <button className="w-full bg-white text-black rounded-lg py-3 px-4 flex items-center justify-center space-x-2 hover:bg-gray-100 transition-colors">
-                      <span className="text-xl">G</span>
-                      <span className="font-medium">Pay</span>
-                      <div className="flex items-center space-x-1 ml-2">
-                        <div className="w-8 h-5 bg-blue-600 rounded text-white text-xs flex items-center justify-center font-bold">VISA</div>
-                        <span className="text-sm">•••• 5640</span>
+                {/* Account Details or Signed In Status */}
+                {currentUser ? (
+                  <div className="bg-white/5 rounded-xl p-6 border border-white/20">
+                    <h2 className="text-lg font-semibold mb-4">Account</h2>
+                    <div className="flex items-center space-x-4">
+                      <div className="w-12 h-12 bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] rounded-full flex items-center justify-center">
+                        <span className="text-black font-bold text-lg">
+                          {currentUser.email.substring(0, 2).toUpperCase()}
+                        </span>
                       </div>
-                    </button>
-                    
-                    <button className="w-full bg-[#00d4aa] text-white rounded-lg py-3 px-4 flex items-center justify-center space-x-2 hover:bg-[#00c199] transition-colors">
-                      <span className="font-medium">Pay with</span>
-                      <span className="font-bold">⚡ link</span>
-                    </button>
+                      <div>
+                        <p className="text-white font-medium">You are currently signed in</p>
+                        <p className="text-white/60 text-sm">{currentUser.email}</p>
+                      </div>
+                    </div>
                   </div>
-                  
-                  <div className="text-center text-sm text-white/60 mt-4">
-                    By using express checkout, we will use email address of that provider.
-                  </div>
-                </div>
-
-                <div className="flex items-center">
-                  <div className="flex-1 border-t border-white/20"></div>
-                  <div className="px-4 text-white/60 text-sm">OR</div>
-                  <div className="flex-1 border-t border-white/20"></div>
-                </div>
-
-                {/* Account Details */}
-                <form onSubmit={handleSubmit} className="space-y-6">
+                ) : (
                   <div className="bg-white/5 rounded-xl p-6 border border-white/20">
                     <h2 className="text-lg font-semibold mb-2">Account Details</h2>
                     <p className="text-sm text-white/60 mb-6">
@@ -400,10 +409,16 @@ export default function CheckoutPage() {
                           name="password"
                           value={formData.password}
                           onChange={handleInputChange}
+                          onBlur={(e) => handleFieldBlur('password', e.target.value)}
                           required
-                          className="w-full bg-white/10 border border-white/20 rounded-lg py-3 px-4 text-white placeholder-white/50 focus:outline-none focus:border-[#59e3a5] transition-colors"
+                          className={`w-full bg-white/10 border rounded-lg py-3 px-4 text-white placeholder-white/50 focus:outline-none transition-colors ${
+                            fieldErrors.password ? 'border-red-500' : 'border-white/20 focus:border-[#59e3a5]'
+                          }`}
                           placeholder="Create a password"
                         />
+                        {fieldErrors.password && (
+                          <p className="text-red-400 text-sm mt-1">{fieldErrors.password}</p>
+                        )}
                       </div>
                       
                       <div>
@@ -416,151 +431,143 @@ export default function CheckoutPage() {
                           name="confirmPassword"
                           value={formData.confirmPassword}
                           onChange={handleInputChange}
+                          onBlur={(e) => handleFieldBlur('confirmPassword', e.target.value)}
                           required
-                          className="w-full bg-white/10 border border-white/20 rounded-lg py-3 px-4 text-white placeholder-white/50 focus:outline-none focus:border-[#59e3a5] transition-colors"
+                          className={`w-full bg-white/10 border rounded-lg py-3 px-4 text-white placeholder-white/50 focus:outline-none transition-colors ${
+                            fieldErrors.confirmPassword ? 'border-red-500' : 'border-white/20 focus:border-[#59e3a5]'
+                          }`}
                           placeholder="Confirm your password"
                         />
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Error Message */}
-                  {error && (
-                    <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-4">
-                      <p className="text-red-400 text-sm">{error}</p>
-                    </div>
-                  )}
-
-                  {/* Submit Button */}
-                  {!showPaymentForm && (
-                    <button
-                      type="submit"
-                      disabled={isLoading}
-                      className="w-full bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] text-black font-semibold py-4 px-6 rounded-lg hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      {isLoading ? 'Processing...' : 'Continue to Payment'}
-                    </button>
-                  )}
-                </form>
-
-                {/* Embedded Payment Form */}
-                {showPaymentForm && (
-                  <div className="bg-white/5 rounded-xl p-6 border border-white/20">
-                    <h2 className="text-lg font-semibold mb-4">Payment</h2>
-                    <p className="text-sm text-white/60 mb-6">
-                      All transactions are secure and encrypted.
-                    </p>
-                    
-                    <form id="paymentForm" className="space-y-4">
-                      <div className="grid grid-cols-1 gap-4">
-                        <div>
-                          <label htmlFor="cardNumber" className="block text-sm text-white/70 mb-2">
-                            Card number
-                          </label>
-                          <input
-                            type="text"
-                            id="cardNumber"
-                            name="cardNumber"
-                            placeholder="1234 1234 1234 1234"
-                            maxLength={19}
-                            onChange={(e) => e.target.value = formatCardNumber(e.target.value)}
-                            className="w-full bg-white/10 border border-white/20 rounded-lg py-3 px-4 text-white placeholder-white/50 focus:outline-none focus:border-[#59e3a5] transition-colors"
-                          />
-                        </div>
-                        
-                        <div className="grid grid-cols-2 gap-4">
-                          <div>
-                            <label htmlFor="expiryDate" className="block text-sm text-white/70 mb-2">
-                              Expiration date
-                            </label>
-                            <input
-                              type="text"
-                              id="expiryDate"
-                              name="expiryDate"
-                              placeholder="MM / YY"
-                              maxLength={7}
-                              onChange={(e) => e.target.value = formatExpiryDate(e.target.value)}
-                              className="w-full bg-white/10 border border-white/20 rounded-lg py-3 px-4 text-white placeholder-white/50 focus:outline-none focus:border-[#59e3a5] transition-colors"
-                            />
-                          </div>
-                          
-                          <div>
-                            <label htmlFor="securityCode" className="block text-sm text-white/70 mb-2">
-                              Security code
-                            </label>
-                            <input
-                              type="text"
-                              id="securityCode"
-                              name="securityCode"
-                              placeholder="CVC"
-                              maxLength={4}
-                              className="w-full bg-white/10 border border-white/20 rounded-lg py-3 px-4 text-white placeholder-white/50 focus:outline-none focus:border-[#59e3a5] transition-colors"
-                            />
-                          </div>
-                        </div>
-                        
-                        <div className="grid grid-cols-2 gap-4">
-                          <div>
-                            <label htmlFor="country" className="block text-sm text-white/70 mb-2">
-                              Country
-                            </label>
-                            <select
-                              id="country"
-                              name="country"
-                              defaultValue="United States"
-                              className="w-full bg-white/10 border border-white/20 rounded-lg py-3 px-4 text-white focus:outline-none focus:border-[#59e3a5] transition-colors"
-                            >
-                              <option value="United States">United States</option>
-                              <option value="Canada">Canada</option>
-                              <option value="United Kingdom">United Kingdom</option>
-                              <option value="Australia">Australia</option>
-                            </select>
-                          </div>
-                          
-                          <div>
-                            <label htmlFor="zipCode" className="block text-sm text-white/70 mb-2">
-                              ZIP code
-                            </label>
-                            <input
-                              type="text"
-                              id="zipCode"
-                              name="zipCode"
-                              placeholder="12345"
-                              className="w-full bg-white/10 border border-white/20 rounded-lg py-3 px-4 text-white placeholder-white/50 focus:outline-none focus:border-[#59e3a5] transition-colors"
-                            />
-                          </div>
-                        </div>
-                      </div>
-                      
-                      <div className="border-t border-white/20 pt-6 mt-6">
-                        <p className="text-sm text-white/60 mb-4">
-                          By providing your card information, you allow Boost Collective Inc. to charge
-                          your card for future payments in accordance with their terms.
-                        </p>
-                        
-                        <button
-                          type="button"
-                          onClick={handlePaymentSubmit}
-                          disabled={isLoading}
-                          className="w-full bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] text-black font-semibold py-4 px-6 rounded-lg hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
-                        >
-                          {isLoading ? 'Processing...' : `Pay now $${total}`}
-                        </button>
-                      </div>
-                    </form>
-                    
-                    <div className="mt-4 text-center text-sm text-white/60">
-                      <div className="flex items-center justify-center space-x-4">
-                        <div className="flex items-center space-x-2">
-                          <div className="w-8 h-5 bg-blue-600 rounded text-white text-xs flex items-center justify-center font-bold">VISA</div>
-                          <div className="w-8 h-5 bg-red-600 rounded text-white text-xs flex items-center justify-center font-bold">MC</div>
-                          <div className="w-8 h-5 bg-blue-800 rounded text-white text-xs flex items-center justify-center font-bold">AMEX</div>
-                          <div className="w-8 h-5 bg-orange-600 rounded text-white text-xs flex items-center justify-center font-bold">DISC</div>
-                        </div>
+                        {fieldErrors.confirmPassword && (
+                          <p className="text-red-400 text-sm mt-1">{fieldErrors.confirmPassword}</p>
+                        )}
                       </div>
                     </div>
                   </div>
                 )}
+
+                {/* Payment Form */}
+                <div className="bg-white/5 rounded-xl p-6 border border-white/20">
+                  <h2 className="text-lg font-semibold mb-4">Payment</h2>
+                  <p className="text-sm text-white/60 mb-6">
+                    All transactions are secure and encrypted.
+                  </p>
+                  
+                  <form onSubmit={handleSubmit} className="space-y-4">
+                    <div className="grid grid-cols-1 gap-4">
+                      <div>
+                        <label htmlFor="cardNumber" className="block text-sm text-white/70 mb-2">
+                          Card number
+                        </label>
+                        <input
+                          type="text"
+                          id="cardNumber"
+                          name="cardNumber"
+                          placeholder="1234 1234 1234 1234"
+                          maxLength={19}
+                          onChange={(e) => e.target.value = formatCardNumber(e.target.value)}
+                          className="w-full bg-white/10 border border-white/20 rounded-lg py-3 px-4 text-white placeholder-white/50 focus:outline-none focus:border-[#59e3a5] transition-colors"
+                        />
+                      </div>
+                      
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <label htmlFor="expiryDate" className="block text-sm text-white/70 mb-2">
+                            Expiration date
+                          </label>
+                          <input
+                            type="text"
+                            id="expiryDate"
+                            name="expiryDate"
+                            placeholder="MM / YY"
+                            maxLength={7}
+                            onChange={(e) => e.target.value = formatExpiryDate(e.target.value)}
+                            className="w-full bg-white/10 border border-white/20 rounded-lg py-3 px-4 text-white placeholder-white/50 focus:outline-none focus:border-[#59e3a5] transition-colors"
+                          />
+                        </div>
+                        
+                        <div>
+                          <label htmlFor="securityCode" className="block text-sm text-white/70 mb-2">
+                            Security code
+                          </label>
+                          <input
+                            type="text"
+                            id="securityCode"
+                            name="securityCode"
+                            placeholder="CVC"
+                            maxLength={4}
+                            className="w-full bg-white/10 border border-white/20 rounded-lg py-3 px-4 text-white placeholder-white/50 focus:outline-none focus:border-[#59e3a5] transition-colors"
+                          />
+                        </div>
+                      </div>
+                      
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <label htmlFor="country" className="block text-sm text-white/70 mb-2">
+                            Country
+                          </label>
+                          <select
+                            id="country"
+                            name="country"
+                            defaultValue="United States"
+                            className="w-full bg-white/10 border border-white/20 rounded-lg py-3 px-4 text-white focus:outline-none focus:border-[#59e3a5] transition-colors"
+                          >
+                            <option value="United States">United States</option>
+                            <option value="Canada">Canada</option>
+                            <option value="United Kingdom">United Kingdom</option>
+                            <option value="Australia">Australia</option>
+                          </select>
+                        </div>
+                        
+                        <div>
+                          <label htmlFor="zipCode" className="block text-sm text-white/70 mb-2">
+                            ZIP code
+                          </label>
+                          <input
+                            type="text"
+                            id="zipCode"
+                            name="zipCode"
+                            placeholder="12345"
+                            className="w-full bg-white/10 border border-white/20 rounded-lg py-3 px-4 text-white placeholder-white/50 focus:outline-none focus:border-[#59e3a5] transition-colors"
+                          />
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Error Message */}
+                    {error && (
+                      <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-4 mt-4">
+                        <p className="text-red-400 text-sm">{error}</p>
+                      </div>
+                    )}
+                    
+                    <div className="border-t border-white/20 pt-6 mt-6">
+                      <p className="text-sm text-white/60 mb-4">
+                        By providing your card information, you allow Boost Collective Inc. to charge
+                        your card for future payments in accordance with their terms.
+                      </p>
+                      
+                      <button
+                        type="submit"
+                        disabled={isLoading}
+                        className="w-full bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] text-black font-semibold py-4 px-6 rounded-lg hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        {isLoading ? 'Processing...' : `Complete Checkout · $${total}`}
+                      </button>
+                    </div>
+                  </form>
+                  
+                  <div className="mt-4 text-center text-sm text-white/60">
+                    <div className="flex items-center justify-center space-x-4">
+                      <div className="flex items-center space-x-2">
+                        <div className="w-8 h-5 bg-blue-600 rounded text-white text-xs flex items-center justify-center font-bold">VISA</div>
+                        <div className="w-8 h-5 bg-red-600 rounded text-white text-xs flex items-center justify-center font-bold">MC</div>
+                        <div className="w-8 h-5 bg-blue-800 rounded text-white text-xs flex items-center justify-center font-bold">AMEX</div>
+                        <div className="w-8 h-5 bg-orange-600 rounded text-white text-xs flex items-center justify-center font-bold">DISC</div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
               </div>
 
               {/* Right Column - Order Summary */}
