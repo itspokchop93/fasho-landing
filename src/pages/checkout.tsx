@@ -77,6 +77,7 @@ export default function CheckoutPage() {
   const [isCheckingEmail, setIsCheckingEmail] = useState(false);
   const [showPaymentForm, setShowPaymentForm] = useState(false);
   const [paymentToken, setPaymentToken] = useState<string>('');
+  const [loginError, setLoginError] = useState('');
 
   // Form state
   const [formData, setFormData] = useState({
@@ -193,6 +194,11 @@ export default function CheckoutPage() {
         ...prev,
         [e.target.name]: ''
       }));
+    }
+    
+    // Clear login error when user starts typing
+    if (loginError) {
+      setLoginError('');
     }
   };
 
@@ -431,8 +437,10 @@ export default function CheckoutPage() {
           }));
         }
       }
+      // If error occurred, user likely doesn't exist - don't show any message
     } catch (error) {
       console.error('Error checking email:', error);
+      // Don't show error to user for security reasons
     } finally {
       setIsCheckingEmail(false);
     }
@@ -461,7 +469,7 @@ export default function CheckoutPage() {
   const handleLogin = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
     setIsLoading(true);
-    setError('');
+    setLoginError('');
 
     try {
       const { data, error } = await supabase.auth.signInWithPassword({
@@ -471,7 +479,7 @@ export default function CheckoutPage() {
 
       if (error) {
         // Generic error message for security
-        setError('Login credentials do not match our records. Please check your email and password.');
+        setLoginError('Login credentials do not match our records. Please check your email and password.');
         setIsLoading(false);
         return;
       }
@@ -487,7 +495,7 @@ export default function CheckoutPage() {
       window.location.reload();
     } catch (error) {
       console.error('Login error:', error);
-      setError('Login failed. Please try again.');
+      setLoginError('Login failed. Please try again.');
       setIsLoading(false);
     }
   };
@@ -552,6 +560,9 @@ export default function CheckoutPage() {
       const pendingOrder = JSON.parse(pendingOrderData);
       console.log('🚀 CHECKOUT: Retrieved pendingOrder data:', pendingOrder);
       
+      // Track if we created a new account
+      let newAccountCreated = false;
+      
       // Create user account after successful payment (only if not already signed in)
       if (!currentUser) {
         const { data: authData, error: authError } = await supabase.auth.signUp({
@@ -566,6 +577,8 @@ export default function CheckoutPage() {
         if (authError) {
           console.error('Error creating account:', authError);
           // Don't fail the entire checkout if account creation fails
+        } else {
+          newAccountCreated = true;
         }
       }
       
@@ -577,6 +590,7 @@ export default function CheckoutPage() {
         total: pendingOrder.total,
         customerEmail: pendingOrder.customerEmail,
         customerName: pendingOrder.customerName,
+        newAccountCreated: newAccountCreated,
         paymentData: {
           transactionId: response.transId,
           authorization: response.authorization,
@@ -905,6 +919,12 @@ export default function CheckoutPage() {
                     {/* Login Button - Only show in login mode */}
                     {isLoginMode && (
                       <div className="mt-6">
+                        {/* Login Error Message */}
+                        {loginError && (
+                          <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-4 mb-4">
+                            <p className="text-red-400 text-sm">{loginError}</p>
+                          </div>
+                        )}
                         <button
                           type="button"
                           onClick={handleLogin}

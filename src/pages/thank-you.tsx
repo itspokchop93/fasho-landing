@@ -33,6 +33,7 @@ interface OrderData {
   total: number;
   customerEmail: string;
   customerName: string;
+  newAccountCreated?: boolean;
   paymentData?: any;
   createdAt: string;
 }
@@ -136,11 +137,18 @@ export default function ThankYouPage() {
               </div>
               <h1 className="text-4xl md:text-5xl font-bold mb-4">Thank You! 🎉</h1>
               <p className="text-xl text-white/70 mb-2">Your order has been successfully processed</p>
-              <p className="text-white/60 mb-4">Your account has been created! Please check your email for a verification link so you can login to track your campaigns.</p>
-              <div className="bg-[#59e3a5]/10 border border-[#59e3a5]/20 rounded-lg p-4 text-center">
-                <p className="text-[#59e3a5] font-semibold">📧 Verification Email Sent!</p>
-                <p className="text-white/70 text-sm mt-1">Check your inbox and click the verification link to activate your account</p>
-              </div>
+              {orderData.newAccountCreated && (
+                <>
+                  <p className="text-white/60 mb-4">Your account has been created! Please check your email for a verification link so you can login to track your campaigns.</p>
+                  <div className="bg-[#59e3a5]/10 border border-[#59e3a5]/20 rounded-lg p-4 text-center">
+                    <p className="text-[#59e3a5] font-semibold">📧 Verification Email Sent!</p>
+                    <p className="text-white/70 text-sm mt-1">Check your inbox and click the verification link to activate your account</p>
+                  </div>
+                </>
+              )}
+              {!orderData.newAccountCreated && (
+                <p className="text-white/60 mb-4">You can now track your campaign progress in your dashboard.</p>
+              )}
             </div>
 
             {/* Order Summary */}
