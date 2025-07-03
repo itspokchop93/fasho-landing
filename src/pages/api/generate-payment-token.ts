@@ -121,19 +121,32 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             },
             {
               "settingName": "hostedPaymentButtonOptions", 
-              "settingValue": `{"text": "Start Your Campaign", "backgroundColor": "#59e3a5", "textColor": "#ffffff"}`
+              "settingValue": JSON.stringify({
+                text: "Start Your Campaign",
+                backgroundColor: "#59e3a5",
+                textColor: "#ffffff"
+              })
             },
             {
               "settingName": "hostedPaymentStyleOptions",
-              "settingValue": `{"bgColor": "#333333", "textColor": "#ffffff"}`
+              "settingValue": JSON.stringify({
+                bgColor: "#333333",
+                textColor: "#ffffff"
+              })
             },
             {
               "settingName": "hostedPaymentHeaderText",
-              "settingValue": `{"headerText": "FASHO.co", "headerTextColor": "#59e3a5"}`
+              "settingValue": JSON.stringify({
+                headerText: "FASHO.co",
+                headerTextColor: "#59e3a5"
+              })
             },
             {
               "settingName": "hostedPaymentPaymentOptions",
-              "settingValue": `{"card": true, "eCheck": false}`
+              "settingValue": JSON.stringify({
+                card: true,
+                eCheck: false
+              })
             },
             {
               "settingName": "hostedPaymentSecurityOptions",
@@ -250,7 +263,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     console.error('Error generating payment token:', error);
     res.status(500).json({
       success: false,
-      message: 'Failed to generate payment token'
+      message: error?.message || 'Failed to generate payment token'
     });
   }
 } 
