@@ -347,6 +347,20 @@ export default function CheckoutPage() {
     };
   }, []);
 
+  // Handle payment form display and submission
+  useEffect(() => {
+    if (showPaymentForm && paymentToken) {
+      console.log('Payment form is shown with token:', paymentToken.substring(0, 20) + '...');
+      
+      // Delay to ensure DOM is ready
+      const timer = setTimeout(() => {
+        submitTokenToIframe();
+      }, 1000);
+      
+      return () => clearTimeout(timer);
+    }
+  }, [showPaymentForm, paymentToken]);
+
   // Check if email exists and user verification status
   const checkEmailExists = async (email: string) => {
     if (!email || !email.includes('@')) return;
@@ -529,11 +543,27 @@ export default function CheckoutPage() {
 
   // Submit token to iframe
   const submitTokenToIframe = () => {
-    if (!paymentToken) return;
+    if (!paymentToken) {
+      console.error('No payment token available');
+      return;
+    }
+    
+    console.log('Submitting token to iframe:', paymentToken.substring(0, 20) + '...');
     
     const form = document.getElementById('paymentIframeForm') as HTMLFormElement;
     if (form) {
+      console.log('Submitting form to iframe');
       form.submit();
+      
+      // Hide loading overlay after form submission
+      setTimeout(() => {
+        const loader = document.getElementById('iframeLoader');
+        if (loader) {
+          loader.style.display = 'none';
+        }
+      }, 3000);
+    } else {
+      console.error('Payment iframe form not found');
     }
   };
 
@@ -1179,24 +1209,41 @@ export default function CheckoutPage() {
                         target="paymentIframe" 
                         style={{ display: 'none' }}
                       >
-                        <input type="hidden" name="token" value={paymentToken} />
+                        <input type="hidden" name="token" value={paymentToken || ''} />
                       </form>
                       
                       {/* Payment iframe container */}
-                      <div className="payment-iframe-container">
+                      <div className="payment-iframe-container relative">
                         <iframe 
                           name="paymentIframe" 
                           id="paymentIframe"
+                          src="about:blank"
                           width="100%" 
                           height="600px"
                           frameBorder="0" 
                           scrolling="no"
-                          onLoad={submitTokenToIframe}
+                          onLoad={(e) => {
+                            console.log('Iframe loaded');
+                            const iframe = e.target as HTMLIFrameElement;
+                            try {
+                              console.log('Iframe URL:', iframe.contentWindow?.location.href);
+                            } catch (err) {
+                              console.log('Cannot access iframe URL (cross-origin)');
+                            }
+                          }}
                           className="rounded-lg border border-white/20"
                         />
+                        
+                        {/* Loading overlay */}
+                        <div className="absolute inset-0 bg-white/5 rounded-lg flex items-center justify-center" id="iframeLoader">
+                          <div className="text-center">
+                            <div className="w-8 h-8 border-2 border-[#59e3a5] border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+                            <p className="text-white/70">Loading secure payment form...</p>
+                          </div>
+                        </div>
                       </div>
                       
-                      <div className="mt-4 text-center">
+                      <div className="mt-4 text-center space-x-4">
                         <button
                           type="button"
                           onClick={() => {
@@ -1207,6 +1254,18 @@ export default function CheckoutPage() {
                           className="text-white/60 hover:text-white text-sm transition-colors"
                         >
                           ← Back to checkout
+                        </button>
+                        
+                        {/* Debug button - remove in production */}
+                        <button
+                          type="button"
+                          onClick={() => {
+                            console.log('Manual submit triggered');
+                            submitTokenToIframe();
+                          }}
+                          className="text-[#59e3a5] hover:text-[#14c0ff] text-sm transition-colors"
+                        >
+                          🔄 Reload Payment Form
                         </button>
                       </div>
                     </div>
