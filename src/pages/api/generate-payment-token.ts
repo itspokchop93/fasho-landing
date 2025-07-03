@@ -120,18 +120,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
               "settingValue": "{\"showReceipt\": false, \"url\": \"https://fasho-landing.vercel.app/thank-you\", \"urlText\": \"Continue\", \"cancelUrl\": \"https://fasho-landing.vercel.app/checkout\", \"cancelUrlText\": \"Cancel\"}"
             },
             {
-              "settingName": "hostedPaymentButtonOptions",
-              "settingValue": "{\"text\": \"Start Your Campaign\"}"
-            },
-            {
-              "settingName": "hostedPaymentStyleOptions",
-              "settingValue": "{\"bgColor\": \"#333333\"}"
-            },
-            {
-              "settingName": "hostedPaymentPaymentOptions",
-              "settingValue": "{\"cardCodeRequired\": true, \"showBankAccount\": false}"
-            },
-            {
               "settingName": "hostedPaymentIFrameCommunicatorUrl",
               "settingValue": "\"https://fasho-landing.vercel.app/iframe-communicator.html\""
             }
