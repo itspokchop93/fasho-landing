@@ -511,22 +511,6 @@ export default function CheckoutPage() {
     }
   }, [showPaymentForm, paymentToken]);
 
-  // Handle resending verification email
-  const handleResendVerification = async () => {
-    try {
-      const { error } = await supabase.auth.resend({
-        type: 'signup',
-        email: formData.email,
-      });
-      if (!error) {
-        setLoginInfoMessage('Verification Email sent!');
-        setIsLoginMode(true);
-      }
-    } catch (error) {
-      console.error('Error resending verification:', error);
-    }
-  };
-
   // Handle login
   const handleLogin = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
@@ -975,16 +959,29 @@ export default function CheckoutPage() {
                                 instead
                               </p>
                             ) : emailStatus === 'unverified' ? (
-                              <p className="text-red-400">
-                                You have an account but haven't verified your email yet!{' '}
+                              <div className="text-red-400 flex flex-col gap-2">
+                                <span>You have an account but haven't verified your email yet!</span>
                                 <button
                                   type="button"
-                                  onClick={handleResendVerification}
-                                  className="text-[#59e3a5] hover:text-[#14c0ff] underline transition-colors"
+                                  onClick={async () => {
+                                    try {
+                                      const { error } = await supabase.auth.resend({
+                                        type: 'signup',
+                                        email: formData.email,
+                                      });
+                                      if (!error) {
+                                        setLoginInfoMessage('Verification Email sent!');
+                                        setIsLoginMode(true);
+                                      }
+                                    } catch (error) {
+                                      console.error('Error resending verification:', error);
+                                    }
+                                  }}
+                                  className="text-[#59e3a5] hover:text-[#14c0ff] underline transition-colors w-fit"
                                 >
                                   Resend Verification
                                 </button>
-                              </p>
+                              </div>
                             ) : emailStatus === 'available' ? (
                               <div className="flex items-center text-green-400">
                                 <svg className="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
