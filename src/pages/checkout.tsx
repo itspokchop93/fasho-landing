@@ -80,6 +80,8 @@ export default function CheckoutPage() {
   const [loginError, setLoginError] = useState('');
   const [emailStatus, setEmailStatus] = useState<null | 'available' | 'exists' | 'unverified' | 'invalid' | 'error'>(null);
   const [loginInfoMessage, setLoginInfoMessage] = useState<string | null>(null);
+  const [resendLoading, setResendLoading] = useState(false);
+  const [resendError, setResendError] = useState<string | null>(null);
 
   // Form state
   const [formData, setFormData] = useState({
@@ -906,6 +908,8 @@ export default function CheckoutPage() {
                           setError('');
                           setFieldErrors({});
                           setLoginInfoMessage(null);
+                          setResendError(null);
+                          setResendLoading(false);
                         }}
                         className="text-[#59e3a5] hover:text-[#14c0ff] text-sm transition-colors"
                       >
@@ -963,7 +967,10 @@ export default function CheckoutPage() {
                                 <span>You have an account but haven't verified your email yet!</span>
                                 <button
                                   type="button"
+                                  disabled={resendLoading}
                                   onClick={async () => {
+                                    setResendLoading(true);
+                                    setResendError(null);
                                     try {
                                       const { error } = await supabase.auth.resend({
                                         type: 'signup',
@@ -972,15 +979,20 @@ export default function CheckoutPage() {
                                       if (!error) {
                                         setLoginInfoMessage('Verification Email sent!');
                                         setIsLoginMode(true);
+                                      } else {
+                                        setResendError('Failed to resend verification email. Please try again.');
                                       }
                                     } catch (error) {
-                                      console.error('Error resending verification:', error);
+                                      setResendError('Failed to resend verification email. Please try again.');
+                                    } finally {
+                                      setResendLoading(false);
                                     }
                                   }}
-                                  className="text-[#59e3a5] hover:text-[#14c0ff] underline transition-colors w-fit"
+                                  className="text-[#59e3a5] hover:text-[#14c0ff] underline transition-colors w-fit disabled:opacity-50 disabled:cursor-not-allowed"
                                 >
-                                  Resend Verification
+                                  {resendLoading ? 'Sending...' : 'Resend Verification'}
                                 </button>
+                                {resendError && <span className="text-red-400 text-xs mt-1">{resendError}</span>}
                               </div>
                             ) : emailStatus === 'available' ? (
                               <div className="flex items-center text-green-400">
