@@ -1069,11 +1069,6 @@ export default function CheckoutPage() {
                             <p className="text-red-400 text-sm">{loginError}</p>
                           </div>
                         )}
-                        {loginInfoMessage && (
-                          <div className="bg-green-500/10 border border-green-500/20 rounded-lg p-4 mb-4">
-                            <p className="text-green-400 text-sm">{loginInfoMessage}</p>
-                          </div>
-                        )}
                         <button
                           type="button"
                           onClick={handleLogin}
