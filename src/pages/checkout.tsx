@@ -307,8 +307,13 @@ export default function CheckoutPage() {
   // Listen for iframe communication messages
   useEffect(() => {
     const handleMessage = (event: MessageEvent) => {
+      console.log('Received message from iframe:', event);
+      console.log('Message origin:', event.origin);
+      console.log('Message data:', event.data);
+      
       // Verify origin for security
       if (event.origin !== window.location.origin) {
+        console.log('Message origin mismatch. Expected:', window.location.origin, 'Got:', event.origin);
         return;
       }
 
@@ -316,20 +321,24 @@ export default function CheckoutPage() {
       
       switch (data.type) {
         case 'PAYMENT_COMPLETE':
+          console.log('Payment completed, processing response:', data.response);
           handleIframeMessage(data.response);
           break;
           
         case 'PAYMENT_CANCELLED':
+          console.log('Payment was cancelled');
           setError('Payment was cancelled');
           setIsLoading(false);
           setShowPaymentForm(false);
           break;
           
         case 'PAYMENT_SUCCESS':
+          console.log('Payment success event received');
           // Handle successful save if needed
           break;
           
         case 'RESIZE_IFRAME':
+          console.log('Resize iframe request:', data.width, 'x', data.height);
           // Resize iframe if needed
           const iframe = document.getElementById('paymentIframe') as HTMLIFrameElement;
           if (iframe && data.width && data.height) {
@@ -337,6 +346,9 @@ export default function CheckoutPage() {
             iframe.style.height = data.height + 'px';
           }
           break;
+          
+        default:
+          console.log('Unknown message type:', data.type);
       }
     };
 
@@ -357,7 +369,19 @@ export default function CheckoutPage() {
         submitTokenToIframe();
       }, 1000);
       
-      return () => clearTimeout(timer);
+      // Set a timeout to check if payment is stuck
+      const paymentTimeout = setTimeout(() => {
+        console.log('Payment timeout reached - no response received');
+        // You can uncomment the lines below if you want automatic timeout handling
+        // setError('Payment processing timed out. Please try again or contact support.');
+        // setShowPaymentForm(false);
+        // setIsLoading(false);
+      }, 300000); // 5 minutes timeout
+      
+      return () => {
+        clearTimeout(timer);
+        clearTimeout(paymentTimeout);
+      };
     }
   }, [showPaymentForm, paymentToken]);
 
