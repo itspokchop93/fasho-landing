@@ -541,6 +541,17 @@ export default function CheckoutPage() {
       console.log('🚀 CHECKOUT: Current orderItems:', orderItems);
       console.log('🚀 CHECKOUT: Current totals - subtotal:', subtotal, 'discount:', discount, 'total:', total);
       
+      // Get the pending order data from sessionStorage since state may have been cleared
+      const pendingOrderData = sessionStorage.getItem('pendingOrder');
+      if (!pendingOrderData) {
+        console.error('No pending order data found in sessionStorage');
+        setError('Order data not found. Please try again.');
+        return;
+      }
+      
+      const pendingOrder = JSON.parse(pendingOrderData);
+      console.log('🚀 CHECKOUT: Retrieved pendingOrder data:', pendingOrder);
+      
       // Create user account after successful payment (only if not already signed in)
       if (!currentUser) {
         const { data: authData, error: authError } = await supabase.auth.signUp({
@@ -557,14 +568,15 @@ export default function CheckoutPage() {
           // Don't fail the entire checkout if account creation fails
         }
       }
-      // Store order data for thank you page in the format expected by thank-you.tsx
+      
+      // Store order data for thank you page using the pending order data
       const orderData = {
-        items: orderItems,
-        subtotal,
-        discount,
-        total,
-        customerEmail: formData.email,
-        customerName: `${billingData.firstName} ${billingData.lastName}`,
+        items: pendingOrder.items,
+        subtotal: pendingOrder.subtotal,
+        discount: pendingOrder.discount,
+        total: pendingOrder.total,
+        customerEmail: pendingOrder.customerEmail,
+        customerName: pendingOrder.customerName,
         paymentData: {
           transactionId: response.transId,
           authorization: response.authorization,
@@ -575,6 +587,10 @@ export default function CheckoutPage() {
       };
       console.log('🚀 CHECKOUT: Storing completedOrder in sessionStorage:', orderData);
       sessionStorage.setItem('completedOrder', JSON.stringify(orderData));
+      
+      // Clean up pending order
+      sessionStorage.removeItem('pendingOrder');
+      
       console.log('🚀 CHECKOUT: completedOrder stored, redirecting to thank-you');
       // Redirect to thank you page
       router.push('/thank-you');
