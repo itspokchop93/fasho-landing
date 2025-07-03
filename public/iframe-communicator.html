@@ -42,7 +42,10 @@
                             window.parent.postMessage({
                                 type: 'PAYMENT_SUCCESS',
                                 action: 'successfulSave'
-                            }, 'https://fasho-landing.vercel.app');
+                            }, '*');
+                            setTimeout(() => {
+                                window.parent.postMessage({ type: 'DEBUG', msg: 'Communicator sent message' }, '*');
+                            }, 1000);
                         }
                         break;
                     
@@ -53,7 +56,10 @@
                             window.parent.postMessage({
                                 type: 'PAYMENT_CANCELLED',
                                 action: 'cancel'
-                            }, 'https://fasho-landing.vercel.app');
+                            }, '*');
+                            setTimeout(() => {
+                                window.parent.postMessage({ type: 'DEBUG', msg: 'Communicator sent message' }, '*');
+                            }, 1000);
                         }
                         break;
                     
@@ -70,8 +76,11 @@
                                 action: 'transactResponse',
                                 response: response
                             };
-                            window.parent.postMessage(messageToSend, 'https://fasho-landing.vercel.app');
-                            console.log('🚀 IFRAME: Message sent successfully to https://fasho-landing.vercel.app');
+                            window.parent.postMessage(messageToSend, '*');
+                            console.log('🚀 IFRAME: Message sent successfully to *');
+                            setTimeout(() => {
+                                window.parent.postMessage({ type: 'DEBUG', msg: 'Communicator sent message' }, '*');
+                            }, 1000);
                         }
                         break;
                     
@@ -86,7 +95,10 @@
                                 action: 'resizeWindow',
                                 width: w,
                                 height: h
-                            }, 'https://fasho-landing.vercel.app');
+                            }, '*');
+                            setTimeout(() => {
+                                window.parent.postMessage({ type: 'DEBUG', msg: 'Communicator sent message' }, '*');
+                            }, 1000);
                         }
                         break;
                     

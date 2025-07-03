@@ -691,6 +691,17 @@ export default function CheckoutPage() {
     }
   };
 
+  useEffect(() => {
+    // Global debug listener for ALL messages
+    const globalDebugListener = (event: MessageEvent) => {
+      console.log('GLOBAL DEBUG: Parent received message:', event);
+    };
+    window.addEventListener('message', globalDebugListener);
+    return () => {
+      window.removeEventListener('message', globalDebugListener);
+    };
+  }, []);
+
   if (!router.isReady || orderItems.length === 0) {
     return (
       <div className="min-h-screen bg-black text-white flex items-center justify-center">
