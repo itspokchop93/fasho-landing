@@ -631,6 +631,7 @@ export default function CheckoutPage() {
       
       // Track if we created a new account
       let newAccountCreated = false;
+      let userId = currentUser?.id || null;
       
       // Create user account after successful payment (only if not already signed in)
       if (!currentUser) {
@@ -648,10 +649,49 @@ export default function CheckoutPage() {
           // Don't fail the entire checkout if account creation fails
         } else {
           newAccountCreated = true;
+          userId = authData.user?.id || null;
         }
       }
       
-      // Store order data for thank you page using the pending order data
+      // Create order in database
+      const orderPayload = {
+        items: pendingOrder.items,
+        subtotal: pendingOrder.subtotal,
+        discount: pendingOrder.discount,
+        total: pendingOrder.total,
+        customerEmail: pendingOrder.customerEmail,
+        customerName: pendingOrder.customerName,
+        billingInfo: pendingOrder.billingInfo,
+        paymentData: {
+          transactionId: response.transId,
+          authorization: response.authorization,
+          accountNumber: response.accountNumber,
+          accountType: response.accountType,
+        },
+        userId: userId
+      };
+
+      console.log('🚀 CHECKOUT: Creating order in database:', orderPayload);
+      
+      const orderResponse = await fetch('/api/create-order', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(orderPayload),
+      });
+
+      const orderResult = await orderResponse.json();
+
+      if (!orderResult.success) {
+        console.error('Error creating order:', orderResult.message);
+        setError('Payment was successful but there was an error saving your order. Please contact support with your transaction ID: ' + response.transId);
+        return;
+      }
+
+      console.log('🚀 CHECKOUT: Order created successfully:', orderResult.order);
+      
+      // Store order data for thank you page using the pending order data + order number
       const orderData = {
         items: pendingOrder.items,
         subtotal: pendingOrder.subtotal,
@@ -660,13 +700,15 @@ export default function CheckoutPage() {
         customerEmail: pendingOrder.customerEmail,
         customerName: pendingOrder.customerName,
         newAccountCreated: newAccountCreated,
+        orderNumber: orderResult.order.orderNumber,
+        orderId: orderResult.order.id,
         paymentData: {
           transactionId: response.transId,
           authorization: response.authorization,
           accountNumber: response.accountNumber,
           accountType: response.accountType,
         },
-        createdAt: new Date().toISOString(),
+        createdAt: orderResult.order.createdAt,
       };
       console.log('🚀 CHECKOUT: Storing completedOrder in sessionStorage:', orderData);
       sessionStorage.setItem('completedOrder', JSON.stringify(orderData));

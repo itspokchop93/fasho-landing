@@ -34,6 +34,8 @@ interface OrderData {
   customerEmail: string;
   customerName: string;
   newAccountCreated?: boolean;
+  orderNumber?: string;
+  orderId?: string;
   paymentData?: any;
   createdAt: string;
 }
@@ -137,6 +139,12 @@ export default function ThankYouPage() {
               </div>
               <h1 className="text-4xl md:text-5xl font-bold mb-4">Thank You! 🎉</h1>
               <p className="text-xl text-white/70 mb-2">Your order has been successfully processed</p>
+              {orderData.orderNumber && (
+                <div className="bg-gradient-to-r from-[#59e3a5]/10 to-[#14c0ff]/10 border border-[#59e3a5]/20 rounded-lg p-4 mb-4">
+                  <p className="text-[#59e3a5] font-semibold text-lg">Order #{orderData.orderNumber}</p>
+                  <p className="text-white/70 text-sm">Keep this number for your records</p>
+                </div>
+              )}
               {orderData.newAccountCreated && (
                 <>
                   <p className="text-white/60 mb-4">Your account has been created! Please check your email for a verification link so you can login to track your campaigns.</p>
