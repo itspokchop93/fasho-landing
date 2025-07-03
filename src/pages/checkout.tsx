@@ -548,35 +548,30 @@ export default function CheckoutPage() {
             },
           },
         });
-
         if (authError) {
           console.error('Error creating account:', authError);
           // Don't fail the entire checkout if account creation fails
         }
       }
-
-      // Store order data for thank you page
+      // Store order data for thank you page in the format expected by thank-you.tsx
       const orderData = {
         items: orderItems,
         subtotal,
         discount,
         total,
-        transactionId: response.transId,
-        authorization: response.authorization,
-        accountNumber: response.accountNumber,
-        accountType: response.accountType,
-        customer: {
-          email: formData.email,
-          name: `${billingData.firstName} ${billingData.lastName}`,
+        customerEmail: formData.email,
+        customerName: `${billingData.firstName} ${billingData.lastName}`,
+        paymentData: {
+          transactionId: response.transId,
+          authorization: response.authorization,
+          accountNumber: response.accountNumber,
+          accountType: response.accountType,
         },
-        billing: billingData,
+        createdAt: new Date().toISOString(),
       };
-
       sessionStorage.setItem('completedOrder', JSON.stringify(orderData));
-      
       // Redirect to thank you page
       router.push('/thank-you');
-      
     } catch (error) {
       console.error('Error processing successful payment:', error);
       setError('Payment was successful but there was an error processing your order. Please contact support.');
