@@ -127,7 +127,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           "setting": [
             {
               "settingName": "hostedPaymentReturnOptions",
-              "settingValue": "{\"showReceipt\": false, \"url\": \"https://fasho-landing.vercel.app/thank-you\", \"urlText\": \"Continue\", \"cancelUrl\": \"https://fasho-landing.vercel.app/checkout\", \"cancelUrlText\": \"Cancel\"}"
+              "settingValue": "{\"showReceipt\": false, \"url\": \"https://fasho-landing.vercel.app/thank-you\", \"cancelUrl\": \"https://fasho-landing.vercel.app/checkout\"}"
             },
             {
               "settingName": "hostedPaymentIFrameCommunicatorUrl",
