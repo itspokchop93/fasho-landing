@@ -537,6 +537,10 @@ export default function CheckoutPage() {
   // Handle successful payment response
   const handleSuccessfulPayment = async (response: any) => {
     try {
+      console.log('🚀 CHECKOUT: handleSuccessfulPayment called with response:', response);
+      console.log('🚀 CHECKOUT: Current orderItems:', orderItems);
+      console.log('🚀 CHECKOUT: Current totals - subtotal:', subtotal, 'discount:', discount, 'total:', total);
+      
       // Create user account after successful payment (only if not already signed in)
       if (!currentUser) {
         const { data: authData, error: authError } = await supabase.auth.signUp({
@@ -569,7 +573,9 @@ export default function CheckoutPage() {
         },
         createdAt: new Date().toISOString(),
       };
+      console.log('🚀 CHECKOUT: Storing completedOrder in sessionStorage:', orderData);
       sessionStorage.setItem('completedOrder', JSON.stringify(orderData));
+      console.log('🚀 CHECKOUT: completedOrder stored, redirecting to thank-you');
       // Redirect to thank you page
       router.push('/thank-you');
     } catch (error) {

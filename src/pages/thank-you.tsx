@@ -43,12 +43,16 @@ export default function ThankYouPage() {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
+    console.log('🔍 THANK YOU PAGE: Checking for order data...');
+    
     // Check for completed order first
     let storedOrder = sessionStorage.getItem('completedOrder');
+    console.log('🔍 THANK YOU PAGE: completedOrder from sessionStorage:', storedOrder);
     
     // If no completed order, check for pending order (from Authorize.net redirect)
     if (!storedOrder) {
       const pendingOrder = sessionStorage.getItem('pendingOrder');
+      console.log('🔍 THANK YOU PAGE: pendingOrder from sessionStorage:', pendingOrder);
       if (pendingOrder) {
         // Move pending order to completed order
         sessionStorage.setItem('completedOrder', pendingOrder);
@@ -60,6 +64,10 @@ export default function ThankYouPage() {
     if (storedOrder) {
       try {
         const parsedOrder = JSON.parse(storedOrder) as OrderData;
+        console.log('🔍 THANK YOU PAGE: Parsed order data:', parsedOrder);
+        console.log('🔍 THANK YOU PAGE: Order items:', parsedOrder.items);
+        console.log('🔍 THANK YOU PAGE: Subtotal:', parsedOrder.subtotal);
+        console.log('🔍 THANK YOU PAGE: Total:', parsedOrder.total);
         setOrderData(parsedOrder);
         // Clear the stored order data
         sessionStorage.removeItem('completedOrder');
@@ -69,6 +77,7 @@ export default function ThankYouPage() {
         router.push('/');
       }
     } else {
+      console.log('🔍 THANK YOU PAGE: No order data found, redirecting to home');
       // No order data found, redirect to home
       router.push('/');
     }
