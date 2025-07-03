@@ -150,19 +150,19 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             },
             {
               "settingName": "hostedPaymentSecurityOptions",
-              "settingValue": `{"captcha": false}`
+              "settingValue": JSON.stringify({ captcha: false })
             },
             {
               "settingName": "hostedPaymentShippingAddressOptions",
-              "settingValue": `{"show": false, "required": false}`
+              "settingValue": JSON.stringify({ show: false, required: false })
             },
             {
               "settingName": "hostedPaymentBillingAddressOptions",
-              "settingValue": `{"show": false, "required": false}`
+              "settingValue": JSON.stringify({ show: false, required: false })
             },
             {
               "settingName": "hostedPaymentIFrameCommunicatorUrl",
-              "settingValue": `{"url": "https://fasho-landing.vercel.app/iframe-communicator.html"}`
+              "settingValue": JSON.stringify({ url: "https://fasho-landing.vercel.app/iframe-communicator.html" })
             }
           ]
         }
@@ -196,7 +196,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     if (!response.ok) {
       const errorText = await response.text();
       console.error('Authorize.net API request failed:', response.status, errorText);
-      throw new Error(`Authorize.net API request failed: ${response.status} - ${errorText}`);
+      return res.status(500).json({
+        success: false,
+        message: `Authorize.net API request failed: ${response.status} - ${errorText}`
+      });
     }
 
     const responseData = await response.json();
