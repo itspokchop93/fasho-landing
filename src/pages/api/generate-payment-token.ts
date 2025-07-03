@@ -175,7 +175,18 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     }
 
     const responseData = await response.json();
-    console.log('Authorize.net response:', responseData);
+    console.log('Authorize.net response structure:', {
+      hasToken: !!responseData.token,
+      tokenType: typeof responseData.token,
+      tokenLength: responseData.token ? responseData.token.length : 0,
+      messages: responseData.messages,
+      keys: Object.keys(responseData)
+    });
+    
+    // Log full response in development for debugging
+    if (environment === 'sandbox') {
+      console.log('Full Authorize.net response:', JSON.stringify(responseData, null, 2));
+    }
 
     // Check if the request was successful
     if (responseData.messages?.resultCode !== 'Ok') {
@@ -186,16 +197,37 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       });
     }
 
-    // Return the payment token
-    const token = responseData.token;
+    // Extract the payment token from the response
+    // Check if the response has the expected structure
+    let token;
+    if (responseData.token) {
+      token = responseData.token;
+    } else if (responseData.getHostedPaymentPageResponse && responseData.getHostedPaymentPageResponse.token) {
+      token = responseData.getHostedPaymentPageResponse.token;
+    } else {
+      console.error('No token found in response structure:', responseData);
+      throw new Error('No payment token found in Authorize.net response');
+    }
+    
+    console.log('Extracted token:', token ? token.substring(0, 20) + '...' : 'null');
+    
     if (!token) {
+      console.error('No payment token received from Authorize.net response:', responseData);
       throw new Error('No payment token received from Authorize.net');
+    }
+
+    // Validate token format - should be a string
+    if (typeof token !== 'string') {
+      console.error('Invalid token format received:', typeof token, token);
+      throw new Error('Invalid payment token format received from Authorize.net');
     }
 
     // Different URLs for payment form vs API calls
     const paymentFormUrl = environment === 'production' 
       ? 'https://accept.authorize.net'
       : 'https://test.authorize.net'; // Different from API URL!
+
+    console.log('Final payment URL:', `${paymentFormUrl}/payment/payment?token=${token.substring(0, 20)}...`);
 
     res.status(200).json({
       success: true,
