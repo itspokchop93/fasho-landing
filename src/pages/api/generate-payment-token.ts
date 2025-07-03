@@ -121,11 +121,19 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             },
             {
               "settingName": "hostedPaymentButtonOptions", 
-              "settingValue": `{"text": "Complete Payment"}`
+              "settingValue": `{"text": "Start Your Campaign", "backgroundColor": "#59e3a5", "textColor": "#ffffff"}`
             },
             {
               "settingName": "hostedPaymentStyleOptions",
-              "settingValue": `{"bgColor": "59e3a5"}`
+              "settingValue": `{"bgColor": "#333333", "textColor": "#ffffff"}`
+            },
+            {
+              "settingName": "hostedPaymentHeaderText",
+              "settingValue": `{"headerText": "FASHO.co", "headerTextColor": "#59e3a5"}`
+            },
+            {
+              "settingName": "hostedPaymentPaymentOptions",
+              "settingValue": `{"card": true, "eCheck": false}`
             },
             {
               "settingName": "hostedPaymentSecurityOptions",
