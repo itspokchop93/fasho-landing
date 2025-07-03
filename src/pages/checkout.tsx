@@ -97,9 +97,9 @@ export default function CheckoutPage() {
     address: '',
     address2: '',
     city: '',
-    state: '',
+    state: '', // 2-letter code only
     zip: '',
-    country: 'US'
+    country: 'US' // 2-letter code only
   });
 
   // Password validation function (same as signup page)
@@ -207,9 +207,17 @@ export default function CheckoutPage() {
   };
 
   const handleBillingChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+    let value = e.target.value;
+    // Defensive: Only allow 2-letter codes for state and country
+    if (e.target.name === 'state' && value.length > 2) {
+      value = value.slice(0, 2).toUpperCase();
+    }
+    if (e.target.name === 'country' && value.length > 2) {
+      value = value.slice(0, 2).toUpperCase();
+    }
     setBillingData(prev => ({
       ...prev,
-      [e.target.name]: e.target.value
+      [e.target.name]: value
     }));
   };
 
@@ -751,12 +759,17 @@ export default function CheckoutPage() {
 
   const handlePaymentSubmit = async () => {
     try {
+      // Defensive: Ensure state and country are 2-letter codes before submitting
+      const safeBillingData = {
+        ...billingData,
+        state: billingData.state.slice(0, 2).toUpperCase(),
+        country: billingData.country.slice(0, 2).toUpperCase()
+      };
       // Prepare order items for payment API
       const paymentOrderItems = orderItems.map(item => ({
         name: `${item.track.title} - ${item.package.name}`,
         price: item.discountedPrice
       }));
-
       // Generate payment token from Authorize.net
       const response = await fetch('/api/generate-payment-token', {
         method: 'POST',
@@ -767,7 +780,7 @@ export default function CheckoutPage() {
           amount: total,
           orderItems: paymentOrderItems,
           customerEmail: currentUser ? currentUser.email : formData.email,
-          billingInfo: billingData
+          billingInfo: safeBillingData
         }),
       });
 
