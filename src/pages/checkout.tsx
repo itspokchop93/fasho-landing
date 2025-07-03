@@ -523,7 +523,14 @@ export default function CheckoutPage() {
   // Handle iframe communication from Authorize.net
   const handleIframeMessage = (response: any) => {
     console.log('Iframe response:', response);
-    
+
+    if (!response || typeof response !== 'object') {
+      setError('No payment response received.');
+      setIsLoading(false);
+      setShowPaymentForm(false);
+      return;
+    }
+
     if (response.responseCode === '1') {
       // Transaction successful
       handleSuccessfulPayment(response);
