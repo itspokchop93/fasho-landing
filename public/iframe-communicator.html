@@ -39,10 +39,11 @@
                         console.log('Payment profile saved successfully');
                         if (window.parent && window.parent.postMessage) {
                             console.log('Sending PAYMENT_SUCCESS message to parent');
+                            console.log('Current origin:', window.location.origin);
                             window.parent.postMessage({
                                 type: 'PAYMENT_SUCCESS',
                                 action: 'successfulSave'
-                            }, window.location.origin);
+                            }, '*'); // Use '*' to allow any origin for now
                         }
                         break;
                         
@@ -51,10 +52,11 @@
                         console.log('Payment was cancelled by user');
                         if (window.parent && window.parent.postMessage) {
                             console.log('Sending PAYMENT_CANCELLED message to parent');
+                            console.log('Current origin:', window.location.origin);
                             window.parent.postMessage({
                                 type: 'PAYMENT_CANCELLED',
                                 action: 'cancel'
-                            }, window.location.origin);
+                            }, '*'); // Use '*' to allow any origin for now
                         }
                         break;
                         
@@ -66,11 +68,12 @@
                         
                         if (window.parent && window.parent.postMessage) {
                             console.log('Sending PAYMENT_COMPLETE message to parent');
+                            console.log('Current origin:', window.location.origin);
                             window.parent.postMessage({
                                 type: 'PAYMENT_COMPLETE',
                                 action: 'transactResponse',
                                 response: response
-                            }, window.location.origin);
+                            }, '*'); // Use '*' to allow any origin for now
                         }
                         break;
                         
@@ -85,7 +88,7 @@
                                 action: 'resizeWindow',
                                 width: w,
                                 height: h
-                            }, window.location.origin);
+                            }, '*'); // Use '*' to allow any origin for now
                         }
                         break;
                         
