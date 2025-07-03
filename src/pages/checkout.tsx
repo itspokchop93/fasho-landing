@@ -310,53 +310,45 @@ export default function CheckoutPage() {
       console.log('🎯 PARENT PAGE: Received message from iframe:', event);
       console.log('🎯 PARENT PAGE: Message origin:', event.origin);
       console.log('🎯 PARENT PAGE: Message data:', event.data);
-      
-      // Verify origin for security - allow our main domain
-      const allowedOrigins = [
-        'https://fasho-landing.vercel.app',
-        window.location.origin
-      ];
-      
-      if (!allowedOrigins.includes(event.origin)) {
-        console.log('🚫 PARENT PAGE: Message origin not allowed. Expected one of:', allowedOrigins, 'Got:', event.origin);
-        return;
-      }
-      console.log('✅ PARENT PAGE: Message origin check passed. Origin:', event.origin);
-
+      // TEMP: Remove origin check for debugging
+      // const allowedOrigins = [
+      //   'https://fasho-landing.vercel.app',
+      //   window.location.origin
+      // ];
+      // if (!allowedOrigins.includes(event.origin)) {
+      //   console.log('🚫 PARENT PAGE: Message origin not allowed. Expected one of:', allowedOrigins, 'Got:', event.origin);
+      //   return;
+      // }
+      // console.log('✅ PARENT PAGE: Message origin check passed. Origin:', event.origin);
       const data = event.data;
-      console.log('🎯 PARENT PAGE: Processing message type:', data?.type);
-      
-              switch (data.type) {
-          case 'PAYMENT_COMPLETE':
-            console.log('🚀 PARENT PAGE: Payment completed, processing response:', data.response);
-            handleIframeMessage(data.response);
-            break;
-            
-          case 'PAYMENT_CANCELLED':
-            console.log('❌ PARENT PAGE: Payment was cancelled');
-            setError('Payment was cancelled');
-            setIsLoading(false);
-            setShowPaymentForm(false);
-            break;
-            
-          case 'PAYMENT_SUCCESS':
-            console.log('✅ PARENT PAGE: Payment success event received');
-            // Handle successful save if needed
-            break;
-            
-          case 'RESIZE_IFRAME':
-            console.log('📏 PARENT PAGE: Resize iframe request:', data.width, 'x', data.height);
-            // Resize iframe if needed
-            const iframe = document.getElementById('paymentIframe') as HTMLIFrameElement;
-            if (iframe && data.width && data.height) {
-              iframe.style.width = data.width + 'px';
-              iframe.style.height = data.height + 'px';
-            }
-            break;
-            
-          default:
-            console.log('❓ PARENT PAGE: Unknown message type:', data.type, 'Full data:', data);
-        }
+      console.log('🎯 PARENT PAGE: Processing message type:', data?.type, '| typeof:', typeof data, '| Full data:', data);
+      switch (data.type) {
+        case 'PAYMENT_COMPLETE':
+          console.log('🚀 PARENT PAGE: Payment completed, processing response:', data.response);
+          handleIframeMessage(data.response);
+          break;
+        case 'PAYMENT_CANCELLED':
+          console.log('❌ PARENT PAGE: Payment was cancelled');
+          setError('Payment was cancelled');
+          setIsLoading(false);
+          setShowPaymentForm(false);
+          break;
+        case 'PAYMENT_SUCCESS':
+          console.log('✅ PARENT PAGE: Payment success event received');
+          // Handle successful save if needed
+          break;
+        case 'RESIZE_IFRAME':
+          console.log('📏 PARENT PAGE: Resize iframe request:', data.width, 'x', data.height);
+          // Resize iframe if needed
+          const iframe = document.getElementById('paymentIframe') as HTMLIFrameElement;
+          if (iframe && data.width && data.height) {
+            iframe.style.width = data.width + 'px';
+            iframe.style.height = data.height + 'px';
+          }
+          break;
+        default:
+          console.log('❓ PARENT PAGE: Unknown message type:', data.type, '| Full data:', data);
+      }
     };
 
     // Add a global message listener to catch ALL messages for debugging

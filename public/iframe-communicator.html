@@ -8,6 +8,11 @@
 <body>
     <script type="text/javascript">
         console.log('Communicator loaded!');
+        console.log('--- FRAME DEBUG ---');
+        console.log('window.location.href:', window.location.href);
+        console.log('document.referrer:', document.referrer);
+        console.log('window.parent === window.top:', window.parent === window.top);
+        console.log('-------------------');
         (function() {
             function parseQueryString(str) {
                 var vars = [];
@@ -21,7 +26,19 @@
                 return vars;
             }
 
+            function sendToAllParents(message) {
+                if (window.parent && window.parent.postMessage) {
+                    console.log('Sending message to window.parent');
+                    window.parent.postMessage(message, '*');
+                }
+                if (window.top && window.top !== window && window.top.postMessage) {
+                    console.log('Sending message to window.top');
+                    window.top.postMessage(message, '*');
+                }
+            }
+
             function receiveMessage(event) {
+                console.log('==============================');
                 console.log('Iframe communicator received message:', event);
                 console.log('Event origin:', event.origin);
                 console.log('Event data:', event.data);
@@ -38,30 +55,24 @@
                 switch (params["action"]) {
                     case "successfulSave":
                         console.log('Payment profile saved successfully');
-                        if (window.parent && window.parent.postMessage) {
-                            console.log('Sending PAYMENT_SUCCESS message to parent');
-                            window.parent.postMessage({
-                                type: 'PAYMENT_SUCCESS',
-                                action: 'successfulSave'
-                            }, '*');
-                            setTimeout(() => {
-                                window.parent.postMessage({ type: 'DEBUG', msg: 'Communicator sent message' }, '*');
-                            }, 1000);
-                        }
+                        sendToAllParents({
+                            type: 'PAYMENT_SUCCESS',
+                            action: 'successfulSave'
+                        });
+                        setTimeout(() => {
+                            sendToAllParents({ type: 'DEBUG', msg: 'Communicator sent message' });
+                        }, 1000);
                         break;
                     
                     case "cancel":
                         console.log('Payment was cancelled by user');
-                        if (window.parent && window.parent.postMessage) {
-                            console.log('Sending PAYMENT_CANCELLED message to parent');
-                            window.parent.postMessage({
-                                type: 'PAYMENT_CANCELLED',
-                                action: 'cancel'
-                            }, '*');
-                            setTimeout(() => {
-                                window.parent.postMessage({ type: 'DEBUG', msg: 'Communicator sent message' }, '*');
-                            }, 1000);
-                        }
+                        sendToAllParents({
+                            type: 'PAYMENT_CANCELLED',
+                            action: 'cancel'
+                        });
+                        setTimeout(() => {
+                            sendToAllParents({ type: 'DEBUG', msg: 'Communicator sent message' });
+                        }, 1000);
                         break;
                     
                     case "transactResponse":
@@ -70,19 +81,17 @@
                         var response = JSON.parse(params["response"]);
                         console.log('Parsed transaction response:', response);
                         
-                        if (window.parent && window.parent.postMessage) {
-                            console.log('🚀 IFRAME: Sending PAYMENT_COMPLETE message to parent');
-                            var messageToSend = {
-                                type: 'PAYMENT_COMPLETE',
-                                action: 'transactResponse',
-                                response: response
-                            };
-                            window.parent.postMessage(messageToSend, '*');
-                            console.log('🚀 IFRAME: Message sent successfully to *');
-                            setTimeout(() => {
-                                window.parent.postMessage({ type: 'DEBUG', msg: 'Communicator sent message' }, '*');
-                            }, 1000);
-                        }
+                        console.log('🚀 IFRAME: Sending PAYMENT_COMPLETE message to parent and top');
+                        var messageToSend = {
+                            type: 'PAYMENT_COMPLETE',
+                            action: 'transactResponse',
+                            response: response
+                        };
+                        sendToAllParents(messageToSend);
+                        console.log('🚀 IFRAME: Message sent successfully to parent and top');
+                        setTimeout(() => {
+                            sendToAllParents({ type: 'DEBUG', msg: 'Communicator sent message' });
+                        }, 1000);
                         break;
                     
                     case "resizeWindow":
@@ -90,17 +99,15 @@
                         var w = parseInt(params["width"]);
                         var h = parseInt(params["height"]);
                         console.log('Resize request:', w, 'x', h);
-                        if (window.parent && window.parent.postMessage) {
-                            window.parent.postMessage({
-                                type: 'RESIZE_IFRAME',
-                                action: 'resizeWindow',
-                                width: w,
-                                height: h
-                            }, '*');
-                            setTimeout(() => {
-                                window.parent.postMessage({ type: 'DEBUG', msg: 'Communicator sent message' }, '*');
-                            }, 1000);
-                        }
+                        sendToAllParents({
+                            type: 'RESIZE_IFRAME',
+                            action: 'resizeWindow',
+                            width: w,
+                            height: h
+                        });
+                        setTimeout(() => {
+                            sendToAllParents({ type: 'DEBUG', msg: 'Communicator sent message' });
+                        }, 1000);
                         break;
                     
                     default:
@@ -108,6 +115,7 @@
                         console.log('All params:', params);
                         break;
                 }
+                console.log('==============================');
             }
 
             // Listen for messages from Authorize.net
