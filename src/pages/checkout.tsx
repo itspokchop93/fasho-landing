@@ -74,6 +74,7 @@ export default function CheckoutPage() {
   const [fieldErrors, setFieldErrors] = useState<{[key: string]: string}>({});
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [isLoginMode, setIsLoginMode] = useState(false);
+  const [isCheckingEmail, setIsCheckingEmail] = useState(false);
   const [showPaymentForm, setShowPaymentForm] = useState(false);
   const [paymentToken, setPaymentToken] = useState<string>('');
   const [loginError, setLoginError] = useState('');
@@ -259,25 +260,63 @@ export default function CheckoutPage() {
 
   // Check if email exists and user verification status
   const checkEmailExists = async (email: string) => {
-    // Simplified approach: Don't check for existing users preemptively
-    // Let the signup process handle duplicate emails naturally
-    // This prevents false positives and is more reliable
-    
     if (!email || !email.includes('@')) return;
     
-    // Just validate email format - no existence checking
+    // Basic email format validation first
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) {
       setFieldErrors(prev => ({ 
         ...prev, 
         email: 'Please enter a valid email address' 
       }));
-    } else {
-      // Clear any existing email errors
-      setFieldErrors(prev => ({ 
-        ...prev, 
-        email: '' 
-      }));
+      return;
+    }
+    
+    setIsCheckingEmail(true);
+    setFieldErrors(prev => ({ ...prev, email: '' }));
+    
+    try {
+      const response = await fetch('/api/check-user-exists', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email }),
+      });
+      
+      const data = await response.json();
+      
+      if (response.ok) {
+        if (data.exists) {
+          if (data.verified) {
+            // User exists and is verified
+            setFieldErrors(prev => ({ 
+              ...prev, 
+              email: 'You already have an account with us! Please LOGIN instead' 
+            }));
+          } else {
+            // User exists but not verified
+            setFieldErrors(prev => ({ 
+              ...prev, 
+              email: 'You have an account but haven\'t verified your email yet. Please check your inbox or resend verification.' 
+            }));
+          }
+        } else {
+          // User doesn't exist - clear any error
+          setFieldErrors(prev => ({ 
+            ...prev, 
+            email: '' 
+          }));
+        }
+      } else {
+        console.error('Error checking user existence:', data.message);
+        // Don't show error to user - fail silently for security
+      }
+    } catch (error) {
+      console.error('Error checking email:', error);
+      // Don't show error to user - fail silently for security
+    } finally {
+      setIsCheckingEmail(false);
     }
   };
 
@@ -747,42 +786,60 @@ export default function CheckoutPage() {
       
       // Create user account after successful payment token generation (only if not already signed in)
       if (!currentUser) {
-        const { data: authData, error: authError } = await supabase.auth.signUp({
-          email: formData.email,
-          password: formData.password,
-          options: {
-            data: {
-              full_name: `${billingData.firstName} ${billingData.lastName}`,
-            },
+        // First check if user already exists to prevent duplicate account creation
+        const checkResponse = await fetch('/api/check-user-exists', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
           },
+          body: JSON.stringify({ email: formData.email }),
         });
-
-        if (authError) {
-          console.error('Error creating account:', authError);
+        
+        const checkData = await checkResponse.json();
+        
+        if (checkData.exists) {
+          // User already exists, try to sign them in
+          const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
+            email: formData.email,
+            password: formData.password,
+          });
           
-          // Handle specific signup errors
-          if (authError.message?.includes('User already registered')) {
-            // User exists, try to sign them in instead
-            const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
-              email: formData.email,
-              password: formData.password,
-            });
-            
-            if (signInError) {
-              // Password is wrong - show error and stop checkout
-              setError('An account with this email already exists. Please use the correct password or sign in first.');
-              return;
-            }
-            
-            // Successfully signed in - continue with checkout
-            console.log('User signed in successfully during checkout');
-          } else {
-            // Other signup errors - don't fail the entire checkout
-            console.log('Account creation failed but continuing with checkout:', authError.message);
+          if (signInError) {
+            // Password is wrong - show error and stop checkout
+            setError('An account with this email already exists. Please use the correct password or sign in first.');
+            return;
           }
+          
+          // Successfully signed in - continue with checkout
+          console.log('User signed in successfully during checkout');
         } else {
-          // Account created successfully
-          console.log('New account created successfully');
+          // User doesn't exist, create new account
+          const { data: authData, error: authError } = await supabase.auth.signUp({
+            email: formData.email,
+            password: formData.password,
+            options: {
+              data: {
+                full_name: `${billingData.firstName} ${billingData.lastName}`,
+              },
+            },
+          });
+
+          if (authError) {
+            console.error('Error creating account:', authError);
+            
+            // Handle specific signup errors
+            if (authError.message?.includes('User already registered')) {
+              // This shouldn't happen since we checked, but handle it anyway
+              setError('An account with this email already exists. Please sign in first.');
+              return;
+            } else {
+              // Other signup errors - don't fail the entire checkout
+              console.log('Account creation failed but continuing with checkout:', authError.message);
+            }
+          } else {
+            // Account created successfully
+            console.log('New account created successfully');
+          }
         }
       }
 
@@ -945,7 +1002,12 @@ export default function CheckoutPage() {
                             )}
                           </div>
                         )}
-
+                        {isCheckingEmail && (
+                          <div className="mt-2 text-sm text-white/60 flex items-center">
+                            <div className="w-4 h-4 border-2 border-[#59e3a5] border-t-transparent rounded-full animate-spin mr-2"></div>
+                            Checking email...
+                          </div>
+                        )}
                       </div>
                       
                       <div>
