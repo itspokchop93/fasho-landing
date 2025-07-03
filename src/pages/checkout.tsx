@@ -979,6 +979,7 @@ export default function CheckoutPage() {
                                       if (!error) {
                                         setLoginInfoMessage('Verification Email sent!');
                                         setIsLoginMode(true);
+                                        setResendError(null);
                                       } else {
                                         setResendError(error.message || 'Failed to resend verification email. Please try again.');
                                       }
@@ -1066,7 +1067,7 @@ export default function CheckoutPage() {
                             <p className="text-red-400 text-sm">{loginError}</p>
                           </div>
                         )}
-                        {isLoginMode && loginInfoMessage && (
+                        {loginInfoMessage && (
                           <div className="bg-green-500/10 border border-green-500/20 rounded-lg p-4 mb-4">
                             <p className="text-green-400 text-sm">{loginInfoMessage}</p>
                           </div>
