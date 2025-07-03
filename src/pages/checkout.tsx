@@ -77,10 +77,23 @@ export default function CheckoutPage() {
 
   // Form state
   const [formData, setFormData] = useState({
-    fullName: '',
     email: '',
     password: '',
     confirmPassword: ''
+  });
+
+  // Billing info state
+  const [billingData, setBillingData] = useState({
+    firstName: '',
+    lastName: '',
+    company: '',
+    address: '',
+    address2: '',
+    city: '',
+    state: '',
+    zip: '',
+    country: 'US',
+    phoneNumber: ''
   });
 
   // Password validation function (same as signup page)
@@ -182,6 +195,13 @@ export default function CheckoutPage() {
     }
   };
 
+  const handleBillingChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+    setBillingData(prev => ({
+      ...prev,
+      [e.target.name]: e.target.value
+    }));
+  };
+
   // Handle field validation on blur
   const handleFieldBlur = (field: string, value: string) => {
     let error = '';
@@ -238,8 +258,8 @@ export default function CheckoutPage() {
 
     // Validate form only if user is not already signed in and not in login mode
     if (!currentUser && !isLoginMode) {
-      if (!formData.email || !formData.fullName) {
-        setError('Please fill in all required fields');
+      if (!formData.email || !billingData.firstName || !billingData.lastName || !billingData.address || !billingData.city || !billingData.state || !billingData.zip) {
+        setError('Please fill in all required billing information fields');
         setIsLoading(false);
         return;
       }
@@ -261,6 +281,13 @@ export default function CheckoutPage() {
         setIsLoading(false);
         return;
       }
+    }
+
+    // Validate billing information for all users
+    if (!billingData.firstName || !billingData.lastName || !billingData.address || !billingData.city || !billingData.state || !billingData.zip) {
+      setError('Please fill in all required billing information fields');
+      setIsLoading(false);
+      return;
     }
 
     // Process payment directly
@@ -342,7 +369,7 @@ export default function CheckoutPage() {
           password: formData.password,
           options: {
             data: {
-              full_name: formData.fullName,
+              full_name: `${billingData.firstName} ${billingData.lastName}`,
             },
           },
         });
@@ -360,7 +387,8 @@ export default function CheckoutPage() {
         discount,
         total,
         customerEmail: currentUser ? currentUser.email : formData.email,
-        customerName: currentUser ? (currentUser.user_metadata?.full_name || currentUser.email) : formData.fullName,
+        customerName: currentUser ? (currentUser.user_metadata?.full_name || currentUser.email) : `${billingData.firstName} ${billingData.lastName}`,
+        billingInfo: billingData,
         createdAt: new Date().toISOString()
       };
 
@@ -464,24 +492,6 @@ export default function CheckoutPage() {
                     </p>
                     
                     <div className="space-y-4">
-                      {!isLoginMode && (
-                        <div>
-                          <label htmlFor="fullName" className="block text-sm text-white/70 mb-2">
-                            Full Name
-                          </label>
-                          <input
-                            type="text"
-                            id="fullName"
-                            name="fullName"
-                            value={formData.fullName}
-                            onChange={handleInputChange}
-                            required
-                            className="w-full bg-white/10 border border-white/20 rounded-lg py-3 px-4 text-white placeholder-white/50 focus:outline-none focus:border-[#59e3a5] transition-colors autofill-override"
-                            placeholder="Enter your full name"
-                          />
-                        </div>
-                      )}
-                      
                       <div>
                         <label htmlFor="email" className="block text-sm text-white/70 mb-2">
                           {isLoginMode ? 'Email' : 'Email - We\'ll send you a receipt'}
@@ -546,6 +556,275 @@ export default function CheckoutPage() {
                     </div>
                   </div>
                 )}
+
+                {/* Billing Information */}
+                <div className="bg-white/5 rounded-xl p-6 border border-white/20">
+                  <h2 className="text-lg font-semibold mb-2">Billing Information</h2>
+                  <p className="text-sm text-white/60 mb-6">
+                    Enter your billing address for payment verification.
+                  </p>
+                  
+                  <div className="space-y-4">
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <label htmlFor="firstName" className="block text-sm text-white/70 mb-2">
+                          First Name <span className="text-red-400">*</span>
+                        </label>
+                        <input
+                          type="text"
+                          id="firstName"
+                          name="firstName"
+                          value={billingData.firstName}
+                          onChange={handleBillingChange}
+                          required
+                          className="w-full bg-white/10 border border-white/20 rounded-lg py-3 px-4 text-white placeholder-white/50 focus:outline-none focus:border-[#59e3a5] transition-colors"
+                          placeholder="John"
+                        />
+                      </div>
+                      
+                      <div>
+                        <label htmlFor="lastName" className="block text-sm text-white/70 mb-2">
+                          Last Name <span className="text-red-400">*</span>
+                        </label>
+                        <input
+                          type="text"
+                          id="lastName"
+                          name="lastName"
+                          value={billingData.lastName}
+                          onChange={handleBillingChange}
+                          required
+                          className="w-full bg-white/10 border border-white/20 rounded-lg py-3 px-4 text-white placeholder-white/50 focus:outline-none focus:border-[#59e3a5] transition-colors"
+                          placeholder="Doe"
+                        />
+                      </div>
+                    </div>
+                    
+                    <div>
+                      <label htmlFor="company" className="block text-sm text-white/70 mb-2">
+                        Company (Optional)
+                      </label>
+                      <input
+                        type="text"
+                        id="company"
+                        name="company"
+                        value={billingData.company}
+                        onChange={handleBillingChange}
+                        className="w-full bg-white/10 border border-white/20 rounded-lg py-3 px-4 text-white placeholder-white/50 focus:outline-none focus:border-[#59e3a5] transition-colors"
+                        placeholder="Your company name"
+                      />
+                    </div>
+                    
+                    <div>
+                      <label htmlFor="address" className="block text-sm text-white/70 mb-2">
+                        Street Address <span className="text-red-400">*</span>
+                      </label>
+                      <input
+                        type="text"
+                        id="address"
+                        name="address"
+                        value={billingData.address}
+                        onChange={handleBillingChange}
+                        required
+                        className="w-full bg-white/10 border border-white/20 rounded-lg py-3 px-4 text-white placeholder-white/50 focus:outline-none focus:border-[#59e3a5] transition-colors"
+                        placeholder="123 Main Street"
+                      />
+                    </div>
+                    
+                    <div>
+                      <label htmlFor="address2" className="block text-sm text-white/70 mb-2">
+                        Address Line 2 (Optional)
+                      </label>
+                      <input
+                        type="text"
+                        id="address2"
+                        name="address2"
+                        value={billingData.address2}
+                        onChange={handleBillingChange}
+                        className="w-full bg-white/10 border border-white/20 rounded-lg py-3 px-4 text-white placeholder-white/50 focus:outline-none focus:border-[#59e3a5] transition-colors"
+                        placeholder="Apt, suite, etc."
+                      />
+                    </div>
+                    
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <label htmlFor="city" className="block text-sm text-white/70 mb-2">
+                          City <span className="text-red-400">*</span>
+                        </label>
+                        <input
+                          type="text"
+                          id="city"
+                          name="city"
+                          value={billingData.city}
+                          onChange={handleBillingChange}
+                          required
+                          className="w-full bg-white/10 border border-white/20 rounded-lg py-3 px-4 text-white placeholder-white/50 focus:outline-none focus:border-[#59e3a5] transition-colors"
+                          placeholder="New York"
+                        />
+                      </div>
+                      
+                      <div>
+                        <label htmlFor="state" className="block text-sm text-white/70 mb-2">
+                          State <span className="text-red-400">*</span>
+                        </label>
+                        <select
+                          id="state"
+                          name="state"
+                          value={billingData.state}
+                          onChange={handleBillingChange}
+                          required
+                          className="w-full bg-white/10 border border-white/20 rounded-lg py-3 px-4 text-white focus:outline-none focus:border-[#59e3a5] transition-colors"
+                        >
+                          <option value="">Select State</option>
+                          <option value="AL">Alabama</option>
+                          <option value="AK">Alaska</option>
+                          <option value="AZ">Arizona</option>
+                          <option value="AR">Arkansas</option>
+                          <option value="CA">California</option>
+                          <option value="CO">Colorado</option>
+                          <option value="CT">Connecticut</option>
+                          <option value="DE">Delaware</option>
+                          <option value="FL">Florida</option>
+                          <option value="GA">Georgia</option>
+                          <option value="HI">Hawaii</option>
+                          <option value="ID">Idaho</option>
+                          <option value="IL">Illinois</option>
+                          <option value="IN">Indiana</option>
+                          <option value="IA">Iowa</option>
+                          <option value="KS">Kansas</option>
+                          <option value="KY">Kentucky</option>
+                          <option value="LA">Louisiana</option>
+                          <option value="ME">Maine</option>
+                          <option value="MD">Maryland</option>
+                          <option value="MA">Massachusetts</option>
+                          <option value="MI">Michigan</option>
+                          <option value="MN">Minnesota</option>
+                          <option value="MS">Mississippi</option>
+                          <option value="MO">Missouri</option>
+                          <option value="MT">Montana</option>
+                          <option value="NE">Nebraska</option>
+                          <option value="NV">Nevada</option>
+                          <option value="NH">New Hampshire</option>
+                          <option value="NJ">New Jersey</option>
+                          <option value="NM">New Mexico</option>
+                          <option value="NY">New York</option>
+                          <option value="NC">North Carolina</option>
+                          <option value="ND">North Dakota</option>
+                          <option value="OH">Ohio</option>
+                          <option value="OK">Oklahoma</option>
+                          <option value="OR">Oregon</option>
+                          <option value="PA">Pennsylvania</option>
+                          <option value="RI">Rhode Island</option>
+                          <option value="SC">South Carolina</option>
+                          <option value="SD">South Dakota</option>
+                          <option value="TN">Tennessee</option>
+                          <option value="TX">Texas</option>
+                          <option value="UT">Utah</option>
+                          <option value="VT">Vermont</option>
+                          <option value="VA">Virginia</option>
+                          <option value="WA">Washington</option>
+                          <option value="WV">West Virginia</option>
+                          <option value="WI">Wisconsin</option>
+                          <option value="WY">Wyoming</option>
+                        </select>
+                      </div>
+                    </div>
+                    
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <label htmlFor="zip" className="block text-sm text-white/70 mb-2">
+                          ZIP Code <span className="text-red-400">*</span>
+                        </label>
+                        <input
+                          type="text"
+                          id="zip"
+                          name="zip"
+                          value={billingData.zip}
+                          onChange={handleBillingChange}
+                          required
+                          className="w-full bg-white/10 border border-white/20 rounded-lg py-3 px-4 text-white placeholder-white/50 focus:outline-none focus:border-[#59e3a5] transition-colors"
+                          placeholder="12345"
+                        />
+                      </div>
+                      
+                      <div>
+                        <label htmlFor="billingCountry" className="block text-sm text-white/70 mb-2">
+                          Country <span className="text-red-400">*</span>
+                        </label>
+                        <select
+                          id="billingCountry"
+                          name="country"
+                          value={billingData.country}
+                          onChange={handleBillingChange}
+                          required
+                          className="w-full bg-white/10 border border-white/20 rounded-lg py-3 px-4 text-white focus:outline-none focus:border-[#59e3a5] transition-colors"
+                        >
+                          <option value="US">United States</option>
+                          <option value="CA">Canada</option>
+                          <option value="GB">United Kingdom</option>
+                          <option value="AU">Australia</option>
+                          <option value="DE">Germany</option>
+                          <option value="FR">France</option>
+                          <option value="IT">Italy</option>
+                          <option value="ES">Spain</option>
+                          <option value="NL">Netherlands</option>
+                          <option value="BE">Belgium</option>
+                          <option value="CH">Switzerland</option>
+                          <option value="AT">Austria</option>
+                          <option value="SE">Sweden</option>
+                          <option value="NO">Norway</option>
+                          <option value="DK">Denmark</option>
+                          <option value="FI">Finland</option>
+                          <option value="IE">Ireland</option>
+                          <option value="PT">Portugal</option>
+                          <option value="PL">Poland</option>
+                          <option value="CZ">Czech Republic</option>
+                          <option value="HU">Hungary</option>
+                          <option value="GR">Greece</option>
+                          <option value="JP">Japan</option>
+                          <option value="KR">South Korea</option>
+                          <option value="SG">Singapore</option>
+                          <option value="HK">Hong Kong</option>
+                          <option value="NZ">New Zealand</option>
+                          <option value="BR">Brazil</option>
+                          <option value="MX">Mexico</option>
+                          <option value="AR">Argentina</option>
+                          <option value="CL">Chile</option>
+                          <option value="CO">Colombia</option>
+                          <option value="PE">Peru</option>
+                          <option value="ZA">South Africa</option>
+                          <option value="EG">Egypt</option>
+                          <option value="AE">United Arab Emirates</option>
+                          <option value="SA">Saudi Arabia</option>
+                          <option value="IL">Israel</option>
+                          <option value="TR">Turkey</option>
+                          <option value="IN">India</option>
+                          <option value="CN">China</option>
+                          <option value="TH">Thailand</option>
+                          <option value="MY">Malaysia</option>
+                          <option value="ID">Indonesia</option>
+                          <option value="PH">Philippines</option>
+                          <option value="VN">Vietnam</option>
+                          <option value="TW">Taiwan</option>
+                        </select>
+                      </div>
+                    </div>
+                    
+                    <div>
+                      <label htmlFor="phoneNumber" className="block text-sm text-white/70 mb-2">
+                        Phone Number (Optional)
+                      </label>
+                      <input
+                        type="tel"
+                        id="phoneNumber"
+                        name="phoneNumber"
+                        value={billingData.phoneNumber}
+                        onChange={handleBillingChange}
+                        className="w-full bg-white/10 border border-white/20 rounded-lg py-3 px-4 text-white placeholder-white/50 focus:outline-none focus:border-[#59e3a5] transition-colors"
+                        placeholder="(123) 456-7890"
+                      />
+                    </div>
+                  </div>
+                </div>
 
                 {/* Payment Form */}
                 <div className="bg-white/5 rounded-xl p-6 border border-white/20">

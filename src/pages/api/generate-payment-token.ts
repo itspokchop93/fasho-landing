@@ -6,10 +6,24 @@ interface OrderItem {
   price: number;
 }
 
+interface BillingInfo {
+  firstName: string;
+  lastName: string;
+  company?: string;
+  address: string;
+  address2?: string;
+  city: string;
+  state: string;
+  zip: string;
+  country: string;
+  phoneNumber?: string;
+}
+
 interface PaymentRequest {
   amount: number;
   orderItems: OrderItem[];
   customerEmail: string;
+  billingInfo: BillingInfo;
 }
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
@@ -18,13 +32,22 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   }
 
   try {
-    const { amount, orderItems, customerEmail }: PaymentRequest = req.body;
+    const { amount, orderItems, customerEmail, billingInfo }: PaymentRequest = req.body;
 
     // Validate required fields
-    if (!amount || !orderItems || !customerEmail) {
+    if (!amount || !orderItems || !customerEmail || !billingInfo) {
       return res.status(400).json({ 
         success: false, 
-        message: 'Missing required fields: amount, orderItems, customerEmail' 
+        message: 'Missing required fields: amount, orderItems, customerEmail, billingInfo' 
+      });
+    }
+
+    // Validate billing information
+    if (!billingInfo.firstName || !billingInfo.lastName || !billingInfo.address || 
+        !billingInfo.city || !billingInfo.state || !billingInfo.zip || !billingInfo.country) {
+      return res.status(400).json({ 
+        success: false, 
+        message: 'Missing required billing information fields' 
       });
     }
 
@@ -60,6 +83,20 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           "order": {
             "invoiceNumber": `INV-${timestamp}`,
             "description": `Fasho Music Promotion - ${orderItems.length} package(s)`
+          },
+          "billTo": {
+            "firstName": billingInfo.firstName,
+            "lastName": billingInfo.lastName,
+            "company": billingInfo.company || "",
+            "address": billingInfo.address,
+            "city": billingInfo.city,
+            "state": billingInfo.state,
+            "zip": billingInfo.zip,
+            "country": billingInfo.country,
+            "phoneNumber": billingInfo.phoneNumber || ""
+          },
+          "customer": {
+            "email": customerEmail
           }
         },
         "hostedPaymentSettings": {
@@ -86,7 +123,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             },
             {
               "settingName": "hostedPaymentBillingAddressOptions",
-              "settingValue": `{"show": true, "required": false}`
+              "settingValue": `{"show": false, "required": false}`
             }
           ]
         }
