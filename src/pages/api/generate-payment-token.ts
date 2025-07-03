@@ -132,12 +132,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
               })
             },
             {
-              "settingName": "hostedPaymentHeaderText",
-              "settingValue": JSON.stringify({
-                headerText: "FASHO.co"
-              })
-            },
-            {
               "settingName": "hostedPaymentPaymentOptions",
               "settingValue": JSON.stringify({
                 card: true,
