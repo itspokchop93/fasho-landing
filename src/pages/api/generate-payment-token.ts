@@ -122,23 +122,19 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             {
               "settingName": "hostedPaymentButtonOptions", 
               "settingValue": JSON.stringify({
-                text: "Start Your Campaign",
-                backgroundColor: "#59e3a5",
-                textColor: "#ffffff"
+                text: "Start Your Campaign"
               })
             },
             {
               "settingName": "hostedPaymentStyleOptions",
               "settingValue": JSON.stringify({
-                bgColor: "#333333",
-                textColor: "#ffffff"
+                bgColor: "#333333"
               })
             },
             {
               "settingName": "hostedPaymentHeaderText",
               "settingValue": JSON.stringify({
-                headerText: "FASHO.co",
-                headerTextColor: "#59e3a5"
+                headerText: "FASHO.co"
               })
             },
             {
