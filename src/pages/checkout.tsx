@@ -74,6 +74,7 @@ export default function CheckoutPage() {
   const [fieldErrors, setFieldErrors] = useState<{[key: string]: string}>({});
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [isLoginMode, setIsLoginMode] = useState(false);
+  const [isCheckingEmail, setIsCheckingEmail] = useState(false);
 
   // Form state
   const [formData, setFormData] = useState({
@@ -301,6 +302,67 @@ export default function CheckoutPage() {
     checkUser();
   }, []);
 
+  // Check if email exists and user verification status
+  const checkEmailExists = async (email: string) => {
+    if (!email || !email.includes('@')) return;
+    
+    setIsCheckingEmail(true);
+    setFieldErrors(prev => ({ ...prev, email: '' }));
+    
+    try {
+      // Try to trigger a password reset to check if user exists
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: `${window.location.origin}/auth/callback`,
+      });
+      
+      // If no error, user exists
+      if (!error) {
+        // Check if user is confirmed by attempting a sign in with a fake password
+        const { error: signInError } = await supabase.auth.signInWithPassword({
+          email: email,
+          password: 'fake-password-to-check-status'
+        });
+        
+        if (signInError?.message?.includes('Invalid login credentials')) {
+          // User exists and is verified (got invalid credentials error)
+          setFieldErrors(prev => ({ 
+            ...prev, 
+            email: 'You already have an account with us! Please LOGIN instead' 
+          }));
+        } else if (signInError?.message?.includes('Email not confirmed')) {
+          // User exists but not verified
+          setFieldErrors(prev => ({ 
+            ...prev, 
+            email: 'You already have an account with us but haven\'t verified it yet! Resend Verification Email' 
+          }));
+        }
+      }
+    } catch (error) {
+      console.error('Error checking email:', error);
+    } finally {
+      setIsCheckingEmail(false);
+    }
+  };
+
+  // Handle resending verification email
+  const handleResendVerification = async () => {
+    try {
+      const { error } = await supabase.auth.resend({
+        type: 'signup',
+        email: formData.email,
+      });
+      
+      if (!error) {
+        setFieldErrors(prev => ({ 
+          ...prev, 
+          email: 'Verification email sent! Please check your inbox.' 
+        }));
+      }
+    } catch (error) {
+      console.error('Error resending verification:', error);
+    }
+  };
+
   // Handle login
   const handleLogin = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
@@ -314,7 +376,8 @@ export default function CheckoutPage() {
       });
 
       if (error) {
-        setError(error.message);
+        // Generic error message for security
+        setError('Login credentials do not match our records. Please check your email and password.');
         setIsLoading(false);
         return;
       }
@@ -357,10 +420,49 @@ export default function CheckoutPage() {
   // Handle payment form submission
   const handlePaymentSubmit = async () => {
     try {
-      // Simulate payment processing
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      // Prepare order items for payment API
+      const paymentOrderItems = orderItems.map(item => ({
+        name: `${item.track.title} - ${item.package.name}`,
+        price: item.discountedPrice
+      }));
 
-      // Create user account after successful payment (only if not already signed in)
+      // Generate payment token from Authorize.net
+      const response = await fetch('/api/generate-payment-token', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          amount: total,
+          orderItems: paymentOrderItems,
+          customerEmail: currentUser ? currentUser.email : formData.email,
+          billingInfo: billingData
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!data.success) {
+        throw new Error(data.message || 'Payment setup failed');
+      }
+
+      // Store order data for after payment completion
+      const orderData = {
+        items: orderItems,
+        subtotal,
+        discount,
+        total,
+        customerEmail: currentUser ? currentUser.email : formData.email,
+        customerName: currentUser ? (currentUser.user_metadata?.full_name || currentUser.email) : `${billingData.firstName} ${billingData.lastName}`,
+        billingInfo: billingData,
+        createdAt: new Date().toISOString(),
+        paymentToken: data.token
+      };
+
+      // Store pending order data
+      sessionStorage.setItem('pendingOrder', JSON.stringify(orderData));
+      
+      // Create user account after successful payment token generation (only if not already signed in)
       if (!currentUser) {
         const { data: authData, error: authError } = await supabase.auth.signUp({
           email: formData.email,
@@ -378,26 +480,12 @@ export default function CheckoutPage() {
         }
       }
 
-      // Store order data for thank you page
-      const orderData = {
-        items: orderItems,
-        subtotal,
-        discount,
-        total,
-        customerEmail: currentUser ? currentUser.email : formData.email,
-        customerName: currentUser ? (currentUser.user_metadata?.full_name || currentUser.email) : `${billingData.firstName} ${billingData.lastName}`,
-        billingInfo: billingData,
-        createdAt: new Date().toISOString()
-      };
-
-      sessionStorage.setItem('completedOrder', JSON.stringify(orderData));
-      
-      // Redirect to thank you page
-      router.push('/thank-you');
+      // Redirect to Authorize.net hosted payment page
+      window.location.href = data.paymentUrl;
       
     } catch (error) {
       console.error('Error processing payment:', error);
-      setError('Payment processing failed. Please try again.');
+      setError(error instanceof Error ? error.message : 'Payment processing failed. Please try again.');
     } finally {
       setIsLoading(false);
     }
@@ -500,10 +588,51 @@ export default function CheckoutPage() {
                           name="email"
                           value={formData.email}
                           onChange={handleInputChange}
+                          onBlur={(e) => !isLoginMode && checkEmailExists(e.target.value)}
                           required
                           className="w-full bg-white/10 border border-white/20 rounded-lg py-3 px-4 text-white placeholder-white/50 focus:outline-none focus:border-[#59e3a5] transition-colors autofill-override"
                           placeholder="your@email.com"
                         />
+                        {/* Email validation feedback */}
+                        {fieldErrors.email && (
+                          <div className="mt-2 text-sm">
+                            {fieldErrors.email.includes('LOGIN instead') ? (
+                              <p className="text-red-400">
+                                You already have an account with us! Please{' '}
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setIsLoginMode(true);
+                                    setFieldErrors(prev => ({ ...prev, email: '' }));
+                                  }}
+                                  className="text-[#59e3a5] hover:text-[#14c0ff] underline transition-colors"
+                                >
+                                  LOGIN
+                                </button>{' '}
+                                instead
+                              </p>
+                            ) : fieldErrors.email.includes('Resend Verification Email') ? (
+                              <p className="text-red-400">
+                                You already have an account with us but haven't verified it yet!{' '}
+                                <button
+                                  type="button"
+                                  onClick={handleResendVerification}
+                                  className="text-[#59e3a5] hover:text-[#14c0ff] underline transition-colors"
+                                >
+                                  Resend Verification Email
+                                </button>
+                              </p>
+                            ) : (
+                              <p className="text-green-400">{fieldErrors.email}</p>
+                            )}
+                          </div>
+                        )}
+                        {isCheckingEmail && (
+                          <div className="mt-2 text-sm text-white/60 flex items-center">
+                            <div className="w-4 h-4 border-2 border-[#59e3a5] border-t-transparent rounded-full animate-spin mr-2"></div>
+                            Checking email...
+                          </div>
+                        )}
                       </div>
                       
                       <div>

@@ -43,8 +43,19 @@ export default function ThankYouPage() {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    // Get order data from session storage
-    const storedOrder = sessionStorage.getItem('completedOrder');
+    // Check for completed order first
+    let storedOrder = sessionStorage.getItem('completedOrder');
+    
+    // If no completed order, check for pending order (from Authorize.net redirect)
+    if (!storedOrder) {
+      const pendingOrder = sessionStorage.getItem('pendingOrder');
+      if (pendingOrder) {
+        // Move pending order to completed order
+        sessionStorage.setItem('completedOrder', pendingOrder);
+        sessionStorage.removeItem('pendingOrder');
+        storedOrder = pendingOrder;
+      }
+    }
     
     if (storedOrder) {
       try {
