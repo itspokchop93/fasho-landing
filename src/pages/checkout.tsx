@@ -311,12 +311,17 @@ export default function CheckoutPage() {
       console.log('🎯 PARENT PAGE: Message origin:', event.origin);
       console.log('🎯 PARENT PAGE: Message data:', event.data);
       
-      // Verify origin for security - temporarily disabled for debugging
-      // if (event.origin !== window.location.origin) {
-      //   console.log('Message origin mismatch. Expected:', window.location.origin, 'Got:', event.origin);
-      //   return;
-      // }
-      console.log('🎯 PARENT PAGE: Message origin check passed. Origin:', event.origin);
+      // Verify origin for security - allow our main domain
+      const allowedOrigins = [
+        'https://fasho-landing.vercel.app',
+        window.location.origin
+      ];
+      
+      if (!allowedOrigins.includes(event.origin)) {
+        console.log('🚫 PARENT PAGE: Message origin not allowed. Expected one of:', allowedOrigins, 'Got:', event.origin);
+        return;
+      }
+      console.log('✅ PARENT PAGE: Message origin check passed. Origin:', event.origin);
 
       const data = event.data;
       console.log('🎯 PARENT PAGE: Processing message type:', data?.type);

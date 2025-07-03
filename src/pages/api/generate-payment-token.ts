@@ -117,7 +117,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           "setting": [
             {
               "settingName": "hostedPaymentReturnOptions",
-              "settingValue": `{"showReceipt": false, "url": "${process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'}/thank-you", "urlText": "Continue", "cancelUrl": "${process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'}/checkout", "cancelUrlText": "Cancel"}`
+              "settingValue": `{"showReceipt": false, "url": "https://fasho-landing.vercel.app/thank-you", "urlText": "Continue", "cancelUrl": "https://fasho-landing.vercel.app/checkout", "cancelUrlText": "Cancel"}`
             },
             {
               "settingName": "hostedPaymentButtonOptions", 
@@ -141,7 +141,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             },
             {
               "settingName": "hostedPaymentIFrameCommunicatorUrl",
-              "settingValue": `{"url": "${process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'}/iframe-communicator.html"}`
+              "settingValue": `{"url": "https://fasho-landing.vercel.app/iframe-communicator.html"}`
             }
           ]
         }

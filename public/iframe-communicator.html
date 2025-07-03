@@ -43,7 +43,7 @@
                             window.parent.postMessage({
                                 type: 'PAYMENT_SUCCESS',
                                 action: 'successfulSave'
-                            }, '*'); // Use '*' to allow any origin for now
+                            }, 'https://fasho-landing.vercel.app');
                         }
                         break;
                         
@@ -56,7 +56,7 @@
                             window.parent.postMessage({
                                 type: 'PAYMENT_CANCELLED',
                                 action: 'cancel'
-                            }, '*'); // Use '*' to allow any origin for now
+                            }, 'https://fasho-landing.vercel.app');
                         }
                         break;
                         
@@ -76,8 +76,8 @@
                                 response: response
                             };
                             console.log('🚀 IFRAME: Final message object:', messageToSend);
-                            window.parent.postMessage(messageToSend, '*'); // Use '*' to allow any origin for now
-                            console.log('🚀 IFRAME: Message sent successfully');
+                            window.parent.postMessage(messageToSend, 'https://fasho-landing.vercel.app');
+                            console.log('🚀 IFRAME: Message sent successfully to https://fasho-landing.vercel.app');
                         }
                         break;
                         
@@ -92,7 +92,7 @@
                                 action: 'resizeWindow',
                                 width: w,
                                 height: h
-                            }, '*'); // Use '*' to allow any origin for now
+                            }, 'https://fasho-landing.vercel.app');
                         }
                         break;
                         
