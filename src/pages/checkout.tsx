@@ -980,10 +980,10 @@ export default function CheckoutPage() {
                                         setLoginInfoMessage('Verification Email sent!');
                                         setIsLoginMode(true);
                                       } else {
-                                        setResendError('Failed to resend verification email. Please try again.');
+                                        setResendError(error.message || 'Failed to resend verification email. Please try again.');
                                       }
-                                    } catch (error) {
-                                      setResendError('Failed to resend verification email. Please try again.');
+                                    } catch (error: any) {
+                                      setResendError(error?.message || 'Failed to resend verification email. Please try again.');
                                     } finally {
                                       setResendLoading(false);
                                     }
