@@ -117,42 +117,23 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           "setting": [
             {
               "settingName": "hostedPaymentReturnOptions",
-              "settingValue": `{"showReceipt": false, "url": "https://fasho-landing.vercel.app/thank-you", "urlText": "Continue", "cancelUrl": "https://fasho-landing.vercel.app/checkout", "cancelUrlText": "Cancel"}`
+              "settingValue": "{\"showReceipt\": false, \"url\": \"https://fasho-landing.vercel.app/thank-you\", \"urlText\": \"Continue\", \"cancelUrl\": \"https://fasho-landing.vercel.app/checkout\", \"cancelUrlText\": \"Cancel\"}"
             },
             {
-              "settingName": "hostedPaymentButtonOptions", 
-              "settingValue": JSON.stringify({
-                text: "Start Your Campaign"
-              })
+              "settingName": "hostedPaymentButtonOptions",
+              "settingValue": "{\"text\": \"Start Your Campaign\"}"
             },
             {
               "settingName": "hostedPaymentStyleOptions",
-              "settingValue": JSON.stringify({
-                bgColor: "#333333"
-              })
+              "settingValue": "{\"bgColor\": \"#333333\"}"
             },
             {
               "settingName": "hostedPaymentPaymentOptions",
-              "settingValue": JSON.stringify({
-                card: true,
-                eCheck: false
-              })
-            },
-            {
-              "settingName": "hostedPaymentSecurityOptions",
-              "settingValue": JSON.stringify({ captcha: false })
-            },
-            {
-              "settingName": "hostedPaymentShippingAddressOptions",
-              "settingValue": JSON.stringify({ show: false, required: false })
-            },
-            {
-              "settingName": "hostedPaymentBillingAddressOptions",
-              "settingValue": JSON.stringify({ show: false, required: false })
+              "settingValue": "{\"cardCodeRequired\": true, \"showBankAccount\": false}"
             },
             {
               "settingName": "hostedPaymentIFrameCommunicatorUrl",
-              "settingValue": JSON.stringify({ url: "https://fasho-landing.vercel.app/iframe-communicator.html" })
+              "settingValue": "\"https://fasho-landing.vercel.app/iframe-communicator.html\""
             }
           ]
         }
