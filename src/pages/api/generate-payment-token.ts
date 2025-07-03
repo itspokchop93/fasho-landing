@@ -117,15 +117,15 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           "setting": [
             {
               "settingName": "hostedPaymentReturnOptions",
-              "settingValue": `{"showReceipt": true, "url": "${process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'}/thank-you", "urlText": "Continue", "cancelUrl": "${process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'}/checkout", "cancelUrlText": "Cancel"}`
+              "settingValue": `{"showReceipt": false, "url": "${process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'}/thank-you", "urlText": "Continue", "cancelUrl": "${process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'}/checkout", "cancelUrlText": "Cancel"}`
             },
             {
               "settingName": "hostedPaymentButtonOptions", 
-              "settingValue": `{"text": "Pay Now"}`
+              "settingValue": `{"text": "Complete Payment"}`
             },
             {
               "settingName": "hostedPaymentStyleOptions",
-              "settingValue": `{"bgColor": "000000"}`
+              "settingValue": `{"bgColor": "59e3a5"}`
             },
             {
               "settingName": "hostedPaymentSecurityOptions",
@@ -138,6 +138,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             {
               "settingName": "hostedPaymentBillingAddressOptions",
               "settingValue": `{"show": false, "required": false}`
+            },
+            {
+              "settingName": "hostedPaymentIFrameCommunicatorUrl",
+              "settingValue": `{"url": "${process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'}/iframe-communicator.html"}`
             }
           ]
         }

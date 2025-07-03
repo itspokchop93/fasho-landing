@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Payment Communicator</title>
+</head>
+<body>
+    <script type="text/javascript">
+        (function() {
+            function parseQueryString(str) {
+                var vars = [];
+                var arr = str.split('&');
+                var pair;
+                for (var i = 0; i < arr.length; i++) {
+                    pair = arr[i].split('=');
+                    vars.push(pair[0]);
+                    vars[pair[0]] = decodeURIComponent(pair[1]);
+                }
+                return vars;
+            }
+
+            function receiveMessage(event) {
+                // Verify origin for security
+                if (event.origin !== "https://test.authorize.net" && event.origin !== "https://accept.authorize.net") {
+                    return;
+                }
+
+                var params = parseQueryString(event.data);
+                
+                switch (params["action"]) {
+                    case "successfulSave":
+                        // Payment profile saved
+                        if (window.parent && window.parent.postMessage) {
+                            window.parent.postMessage({
+                                type: 'PAYMENT_SUCCESS',
+                                action: 'successfulSave'
+                            }, window.location.origin);
+                        }
+                        break;
+                        
+                    case "cancel":
+                        // Payment cancelled
+                        if (window.parent && window.parent.postMessage) {
+                            window.parent.postMessage({
+                                type: 'PAYMENT_CANCELLED',
+                                action: 'cancel'
+                            }, window.location.origin);
+                        }
+                        break;
+                        
+                    case "transactResponse":
+                        // Transaction completed
+                        var response = JSON.parse(params["response"]);
+                        if (window.parent && window.parent.postMessage) {
+                            window.parent.postMessage({
+                                type: 'PAYMENT_COMPLETE',
+                                action: 'transactResponse',
+                                response: response
+                            }, window.location.origin);
+                        }
+                        break;
+                        
+                    case "resizeWindow":
+                        // Resize iframe
+                        var w = parseInt(params["width"]);
+                        var h = parseInt(params["height"]);
+                        if (window.parent && window.parent.postMessage) {
+                            window.parent.postMessage({
+                                type: 'RESIZE_IFRAME',
+                                action: 'resizeWindow',
+                                width: w,
+                                height: h
+                            }, window.location.origin);
+                        }
+                        break;
+                }
+            }
+
+            // Listen for messages from Authorize.net
+            if (window.addEventListener) {
+                window.addEventListener("message", receiveMessage, false);
+            } else if (window.attachEvent) {
+                window.attachEvent("onmessage", receiveMessage);
+            }
+        })();
+    </script>
+</body>
+</html> 

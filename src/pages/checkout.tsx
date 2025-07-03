@@ -75,6 +75,8 @@ export default function CheckoutPage() {
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [isLoginMode, setIsLoginMode] = useState(false);
   const [isCheckingEmail, setIsCheckingEmail] = useState(false);
+  const [showPaymentForm, setShowPaymentForm] = useState(false);
+  const [paymentToken, setPaymentToken] = useState<string>('');
 
   // Form state
   const [formData, setFormData] = useState({
@@ -302,6 +304,49 @@ export default function CheckoutPage() {
     checkUser();
   }, []);
 
+  // Listen for iframe communication messages
+  useEffect(() => {
+    const handleMessage = (event: MessageEvent) => {
+      // Verify origin for security
+      if (event.origin !== window.location.origin) {
+        return;
+      }
+
+      const data = event.data;
+      
+      switch (data.type) {
+        case 'PAYMENT_COMPLETE':
+          handleIframeMessage(data.response);
+          break;
+          
+        case 'PAYMENT_CANCELLED':
+          setError('Payment was cancelled');
+          setIsLoading(false);
+          setShowPaymentForm(false);
+          break;
+          
+        case 'PAYMENT_SUCCESS':
+          // Handle successful save if needed
+          break;
+          
+        case 'RESIZE_IFRAME':
+          // Resize iframe if needed
+          const iframe = document.getElementById('paymentIframe') as HTMLIFrameElement;
+          if (iframe && data.width && data.height) {
+            iframe.style.width = data.width + 'px';
+            iframe.style.height = data.height + 'px';
+          }
+          break;
+      }
+    };
+
+    window.addEventListener('message', handleMessage);
+    
+    return () => {
+      window.removeEventListener('message', handleMessage);
+    };
+  }, []);
+
   // Check if email exists and user verification status
   const checkEmailExists = async (email: string) => {
     if (!email || !email.includes('@')) return;
@@ -418,6 +463,80 @@ export default function CheckoutPage() {
   };
 
   // Handle payment form submission
+  // Handle iframe communication from Authorize.net
+  const handleIframeMessage = (response: any) => {
+    console.log('Iframe response:', response);
+    
+    if (response.responseCode === '1') {
+      // Transaction successful
+      handleSuccessfulPayment(response);
+    } else {
+      // Transaction failed
+      setError(`Payment failed: ${response.responseReasonText || 'Unknown error'}`);
+      setIsLoading(false);
+      setShowPaymentForm(false);
+    }
+  };
+
+  // Handle successful payment response
+  const handleSuccessfulPayment = async (response: any) => {
+    try {
+      // Create user account after successful payment (only if not already signed in)
+      if (!currentUser) {
+        const { data: authData, error: authError } = await supabase.auth.signUp({
+          email: formData.email,
+          password: formData.password,
+          options: {
+            data: {
+              full_name: `${billingData.firstName} ${billingData.lastName}`,
+            },
+          },
+        });
+
+        if (authError) {
+          console.error('Error creating account:', authError);
+          // Don't fail the entire checkout if account creation fails
+        }
+      }
+
+      // Store order data for thank you page
+      const orderData = {
+        items: orderItems,
+        subtotal,
+        discount,
+        total,
+        transactionId: response.transId,
+        authorization: response.authorization,
+        accountNumber: response.accountNumber,
+        accountType: response.accountType,
+        customer: {
+          email: formData.email,
+          name: `${billingData.firstName} ${billingData.lastName}`,
+        },
+        billing: billingData,
+      };
+
+      sessionStorage.setItem('completedOrder', JSON.stringify(orderData));
+      
+      // Redirect to thank you page
+      router.push('/thank-you');
+      
+    } catch (error) {
+      console.error('Error processing successful payment:', error);
+      setError('Payment was successful but there was an error processing your order. Please contact support.');
+    }
+  };
+
+  // Submit token to iframe
+  const submitTokenToIframe = () => {
+    if (!paymentToken) return;
+    
+    const form = document.getElementById('paymentIframeForm') as HTMLFormElement;
+    if (form) {
+      form.submit();
+    }
+  };
+
   const handlePaymentSubmit = async () => {
     try {
       // Prepare order items for payment API
@@ -480,20 +599,9 @@ export default function CheckoutPage() {
         }
       }
 
-      // Submit token to Authorize.net via form POST (not URL redirect)
-      const form = document.createElement('form');
-      form.method = 'POST';
-      // Use sandbox URL since we're using sandbox credentials
-      form.action = 'https://test.authorize.net/payment/payment';
-      
-      const tokenInput = document.createElement('input');
-      tokenInput.type = 'hidden';
-      tokenInput.name = 'token';
-      tokenInput.value = data.token;
-      
-      form.appendChild(tokenInput);
-      document.body.appendChild(form);
-      form.submit();
+      // Show payment iframe with the token
+      setPaymentToken(data.token);
+      setShowPaymentForm(true);
       
     } catch (error) {
       console.error('Error processing payment:', error);
@@ -1029,109 +1137,80 @@ export default function CheckoutPage() {
                     All transactions are secure and encrypted.
                   </p>
                   
-                  <form onSubmit={isLoginMode ? handleLogin : handleSubmit} className="space-y-4">
-                    <div className="grid grid-cols-1 gap-4">
-                      <div>
-                        <label htmlFor="cardNumber" className="block text-sm text-white/70 mb-2">
-                          Card number
-                        </label>
-                        <input
-                          type="text"
-                          id="cardNumber"
-                          name="cardNumber"
-                          placeholder="1234 1234 1234 1234"
-                          maxLength={19}
-                          onChange={(e) => e.target.value = formatCardNumber(e.target.value)}
-                          className="w-full bg-white/10 border border-white/20 rounded-lg py-3 px-4 text-white placeholder-white/50 focus:outline-none focus:border-[#59e3a5] transition-colors"
+                  {!showPaymentForm ? (
+                    // Account validation form (before payment)
+                    <form onSubmit={isLoginMode ? handleLogin : handleSubmit} className="space-y-4">
+                      {/* Error Message */}
+                      {error && (
+                        <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-4 mb-4">
+                          <p className="text-red-400 text-sm">{error}</p>
+                        </div>
+                      )}
+                      
+                      <div className="border-t border-white/20 pt-6">
+                        <p className="text-sm text-white/60 mb-4">
+                          By providing your card information, you allow Boost Collective Inc. to charge
+                          your card for future payments in accordance with their terms.
+                        </p>
+                        
+                        <button
+                          type="submit"
+                          disabled={isLoading}
+                          className="w-full bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] text-black font-semibold py-4 px-6 rounded-lg hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          {isLoading ? 'Processing...' : `Continue to Payment · $${total}`}
+                        </button>
+                      </div>
+                    </form>
+                  ) : (
+                    // Authorize.net iframe payment form
+                    <div>
+                      <div className="mb-4">
+                        <p className="text-sm text-white/60">
+                          Enter your payment details below. Your information is secure and encrypted.
+                        </p>
+                      </div>
+                      
+                      {/* Hidden form to submit token to iframe */}
+                      <form 
+                        id="paymentIframeForm" 
+                        method="post" 
+                        action="https://test.authorize.net/payment/payment" 
+                        target="paymentIframe" 
+                        style={{ display: 'none' }}
+                      >
+                        <input type="hidden" name="token" value={paymentToken} />
+                      </form>
+                      
+                      {/* Payment iframe container */}
+                      <div className="payment-iframe-container">
+                        <iframe 
+                          name="paymentIframe" 
+                          id="paymentIframe"
+                          width="100%" 
+                          height="600px"
+                          frameBorder="0" 
+                          scrolling="no"
+                          onLoad={submitTokenToIframe}
+                          className="rounded-lg border border-white/20"
                         />
                       </div>
                       
-                      <div className="grid grid-cols-2 gap-4">
-                        <div>
-                          <label htmlFor="expiryDate" className="block text-sm text-white/70 mb-2">
-                            Expiration date
-                          </label>
-                          <input
-                            type="text"
-                            id="expiryDate"
-                            name="expiryDate"
-                            placeholder="MM / YY"
-                            maxLength={7}
-                            onChange={(e) => e.target.value = formatExpiryDate(e.target.value)}
-                            className="w-full bg-white/10 border border-white/20 rounded-lg py-3 px-4 text-white placeholder-white/50 focus:outline-none focus:border-[#59e3a5] transition-colors"
-                          />
-                        </div>
-                        
-                        <div>
-                          <label htmlFor="securityCode" className="block text-sm text-white/70 mb-2">
-                            Security code
-                          </label>
-                          <input
-                            type="text"
-                            id="securityCode"
-                            name="securityCode"
-                            placeholder="CVC"
-                            maxLength={4}
-                            className="w-full bg-white/10 border border-white/20 rounded-lg py-3 px-4 text-white placeholder-white/50 focus:outline-none focus:border-[#59e3a5] transition-colors"
-                          />
-                        </div>
-                      </div>
-                      
-                      <div className="grid grid-cols-2 gap-4">
-                        <div>
-                          <label htmlFor="country" className="block text-sm text-white/70 mb-2">
-                            Country
-                          </label>
-                          <select
-                            id="country"
-                            name="country"
-                            defaultValue="United States"
-                            className="w-full bg-white/10 border border-white/20 rounded-lg py-3 px-4 text-white focus:outline-none focus:border-[#59e3a5] transition-colors"
-                          >
-                            <option value="United States">United States</option>
-                            <option value="Canada">Canada</option>
-                            <option value="United Kingdom">United Kingdom</option>
-                            <option value="Australia">Australia</option>
-                          </select>
-                        </div>
-                        
-                        <div>
-                          <label htmlFor="zipCode" className="block text-sm text-white/70 mb-2">
-                            ZIP code
-                          </label>
-                          <input
-                            type="text"
-                            id="zipCode"
-                            name="zipCode"
-                            placeholder="12345"
-                            className="w-full bg-white/10 border border-white/20 rounded-lg py-3 px-4 text-white placeholder-white/50 focus:outline-none focus:border-[#59e3a5] transition-colors"
-                          />
-                        </div>
+                      <div className="mt-4 text-center">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setShowPaymentForm(false);
+                            setPaymentToken('');
+                            setError('');
+                          }}
+                          className="text-white/60 hover:text-white text-sm transition-colors"
+                        >
+                          ← Back to checkout
+                        </button>
                       </div>
                     </div>
-
-                    {/* Error Message */}
-                    {error && (
-                      <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-4 mt-4">
-                        <p className="text-red-400 text-sm">{error}</p>
-                      </div>
-                    )}
-                    
-                    <div className="border-t border-white/20 pt-6 mt-6">
-                      <p className="text-sm text-white/60 mb-4">
-                        By providing your card information, you allow Boost Collective Inc. to charge
-                        your card for future payments in accordance with their terms.
-                      </p>
-                      
-                      <button
-                        type="submit"
-                        disabled={isLoading}
-                        className="w-full bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] text-black font-semibold py-4 px-6 rounded-lg hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
-                      >
-                        {isLoading ? 'Processing...' : `Complete Checkout · $${total}`}
-                      </button>
-                    </div>
-                  </form>
+                  )}
                   
                   <div className="mt-4 text-center text-sm text-white/60">
                     <div className="flex items-center justify-center space-x-4">
