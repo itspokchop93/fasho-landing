@@ -74,7 +74,6 @@ export default function CheckoutPage() {
   const [fieldErrors, setFieldErrors] = useState<{[key: string]: string}>({});
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [isLoginMode, setIsLoginMode] = useState(false);
-  const [isCheckingEmail, setIsCheckingEmail] = useState(false);
   const [showPaymentForm, setShowPaymentForm] = useState(false);
   const [paymentToken, setPaymentToken] = useState<string>('');
   const [loginError, setLoginError] = useState('');
@@ -260,42 +259,25 @@ export default function CheckoutPage() {
 
   // Check if email exists and user verification status
   const checkEmailExists = async (email: string) => {
+    // Simplified approach: Don't check for existing users preemptively
+    // Let the signup process handle duplicate emails naturally
+    // This prevents false positives and is more reliable
+    
     if (!email || !email.includes('@')) return;
     
-    setIsCheckingEmail(true);
-    setFieldErrors(prev => ({ ...prev, email: '' }));
-    
-    try {
-      // Try to sign in with the email and a fake password to check if user exists
-      const { error: signInError } = await supabase.auth.signInWithPassword({
-        email: email,
-        password: 'fake-password-to-check-if-user-exists-12345'
-      });
-      
-      if (signInError) {
-        if (signInError.message?.includes('Invalid login credentials')) {
-          // User exists and is verified (got invalid credentials error)
-          setFieldErrors(prev => ({ 
-            ...prev, 
-            email: 'You already have an account with us! Please LOGIN instead' 
-          }));
-        } else if (signInError.message?.includes('Email not confirmed')) {
-          // User exists but not verified
-          setFieldErrors(prev => ({ 
-            ...prev, 
-            email: 'You already have an account with us but haven\'t verified it yet! Resend Verification Email' 
-          }));
-        } else if (signInError.message?.includes('User not found') || signInError.message?.includes('Invalid email')) {
-          // User doesn't exist - this is good for signup, don't show any error
-          console.log('Email is available for signup');
-        }
-        // For any other error, don't show message (could be rate limiting, etc.)
-      }
-    } catch (error) {
-      console.error('Error checking email:', error);
-      // Don't show error to user for security reasons
-    } finally {
-      setIsCheckingEmail(false);
+    // Just validate email format - no existence checking
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      setFieldErrors(prev => ({ 
+        ...prev, 
+        email: 'Please enter a valid email address' 
+      }));
+    } else {
+      // Clear any existing email errors
+      setFieldErrors(prev => ({ 
+        ...prev, 
+        email: '' 
+      }));
     }
   };
 
@@ -777,7 +759,30 @@ export default function CheckoutPage() {
 
         if (authError) {
           console.error('Error creating account:', authError);
-          // Don't fail the entire checkout if account creation fails
+          
+          // Handle specific signup errors
+          if (authError.message?.includes('User already registered')) {
+            // User exists, try to sign them in instead
+            const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
+              email: formData.email,
+              password: formData.password,
+            });
+            
+            if (signInError) {
+              // Password is wrong - show error and stop checkout
+              setError('An account with this email already exists. Please use the correct password or sign in first.');
+              return;
+            }
+            
+            // Successfully signed in - continue with checkout
+            console.log('User signed in successfully during checkout');
+          } else {
+            // Other signup errors - don't fail the entire checkout
+            console.log('Account creation failed but continuing with checkout:', authError.message);
+          }
+        } else {
+          // Account created successfully
+          console.log('New account created successfully');
         }
       }
 
@@ -940,12 +945,7 @@ export default function CheckoutPage() {
                             )}
                           </div>
                         )}
-                        {isCheckingEmail && (
-                          <div className="mt-2 text-sm text-white/60 flex items-center">
-                            <div className="w-4 h-4 border-2 border-[#59e3a5] border-t-transparent rounded-full animate-spin mr-2"></div>
-                            Checking email...
-                          </div>
-                        )}
+
                       </div>
                       
                       <div>
