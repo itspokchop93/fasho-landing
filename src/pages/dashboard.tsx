@@ -1,6 +1,6 @@
 import { GetServerSideProps } from 'next'
 import { createClientSSR } from '../utils/supabase/server'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { createClient } from '../utils/supabase/client'
 import { useRouter } from 'next/router'
 
@@ -17,7 +17,29 @@ interface DashboardProps {
 export default function Dashboard({ user }: DashboardProps) {
   const router = useRouter()
   const [isLoading, setIsLoading] = useState(false)
+  const [orders, setOrders] = useState<any[]>([])
+  const [ordersLoading, setOrdersLoading] = useState(true)
   const supabase = createClient()
+
+  useEffect(() => {
+    async function fetchOrders() {
+      setOrdersLoading(true)
+      try {
+        const res = await fetch('/api/get-user-orders')
+        const data = await res.json()
+        if (data.success) {
+          setOrders(data.orders)
+        } else {
+          setOrders([])
+        }
+      } catch (err) {
+        setOrders([])
+      } finally {
+        setOrdersLoading(false)
+      }
+    }
+    fetchOrders()
+  }, [])
 
   const handleSignOut = async () => {
     setIsLoading(true)
@@ -62,7 +84,7 @@ export default function Dashboard({ user }: DashboardProps) {
           </div>
 
           {/* User Info Card */}
-          <div className="bg-black rounded-lg p-6 border border-gray-700">
+          <div className="bg-black rounded-lg p-6 border border-gray-700 mb-8">
             <h3 className="text-xl font-semibold text-white mb-4">
               Your Account Information
             </h3>
@@ -82,6 +104,50 @@ export default function Dashboard({ user }: DashboardProps) {
                 <span className="text-white ml-2 font-mono text-sm">{user.id}</span>
               </div>
             </div>
+          </div>
+
+          {/* Your Campaigns Section */}
+          <div className="bg-black rounded-lg p-6 border border-gray-700 mb-8">
+            <h3 className="text-xl font-semibold text-white mb-4">Your Campaigns</h3>
+            {ordersLoading ? (
+              <div className="text-gray-400">Loading your campaigns...</div>
+            ) : orders.length === 0 ? (
+              <div className="text-gray-400">You have not started any campaigns yet.</div>
+            ) : (
+              <div className="space-y-4">
+                {orders.map(order => (
+                  <div key={order.id} className="flex items-center justify-between bg-gray-900 border border-gray-800 rounded-lg p-4">
+                    {/* Album covers */}
+                    <div className="flex items-center space-x-2">
+                      {order.items.map((item: any, idx: number) => (
+                        <img
+                          key={item.id}
+                          src={item.track.imageUrl || '/auto1.jpg'}
+                          alt={item.track.title}
+                          className="w-12 h-12 rounded-lg border-2 border-gray-800 object-cover"
+                          style={{ marginLeft: idx === 0 ? 0 : '-12px', zIndex: 10 - idx }}
+                        />
+                      ))}
+                    </div>
+                    {/* Order info */}
+                    <div className="flex-1 ml-6">
+                      <div className="flex items-center space-x-4">
+                        <span className="font-semibold text-white">Order #{order.orderNumber}</span>
+                        <span className="text-gray-400 text-sm">{new Date(order.createdAt).toLocaleDateString()}</span>
+                      </div>
+                    </div>
+                    {/* Status */}
+                    <div className="flex items-center space-x-2">
+                      <span className="relative flex h-3 w-3">
+                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+                        <span className="relative inline-flex rounded-full h-3 w-3 bg-green-500"></span>
+                      </span>
+                      <span className="text-green-400 font-semibold">Marketing In Progress</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
 
           {/* Navigation Cards */}
