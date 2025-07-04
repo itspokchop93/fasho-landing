@@ -1,8 +1,9 @@
 import { GetServerSideProps } from 'next'
 import { createClientSSR } from '../utils/supabase/server'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { createClient } from '../utils/supabase/client'
 import { useRouter } from 'next/router'
+import Lottie from 'lottie-react'
 
 interface DashboardProps {
   user: {
@@ -22,9 +23,33 @@ export default function Dashboard({ user }: DashboardProps) {
   const [expandedOrders, setExpandedOrders] = useState<Set<string>>(new Set())
   const [activeTab, setActiveTab] = useState('dashboard')
   const [showSignOutModal, setShowSignOutModal] = useState(false)
-  const [chartAnimating, setChartAnimating] = useState(false)
   const [animatedData, setAnimatedData] = useState<number[]>([])
+  const [chartAnimating, setChartAnimating] = useState(false)
+  const [lottieAnimationData, setLottieAnimationData] = useState(null)
+  const lottieRef = useRef(null)
   const supabase = createClient()
+
+  // Fetch Lottie animation data
+  useEffect(() => {
+    const fetchLottieData = async () => {
+      try {
+        const response = await fetch('https://lottie.host/b85b82bf-f332-408e-adfc-310fb881ddcf/CJGk9Z9X2e.json')
+        const data = await response.json()
+        setLottieAnimationData(data)
+      } catch (error) {
+        console.error('Failed to fetch Lottie animation:', error)
+      }
+    }
+
+    fetchLottieData()
+  }, [])
+
+  // Control Lottie animation speed
+  useEffect(() => {
+    if (lottieRef.current) {
+      lottieRef.current.setSpeed(0.5)
+    }
+  }, [lottieAnimationData])
 
   const toggleOrderExpansion = (orderId: string) => {
     const newExpanded = new Set(expandedOrders)
@@ -102,44 +127,72 @@ export default function Dashboard({ user }: DashboardProps) {
     return dailyData
   }
 
-  // Animation effect for chart
+  // Animation effect for chart - using packages page approach
   useEffect(() => {
     if (orders.length === 0) return
     
     setChartAnimating(true)
     const targetData = generateChartData()
     
+    // Two-phase animation like packages page
     let animationId: number
     let startTime: number
+    let phaseStartTime: number
+    let phase: 'down' | 'up' = 'down'
+    
+    // Starting values for down animation
+    const startingData = animatedData.length > 0 ? [...animatedData] : new Array(30).fill(0)
     
     const animate = (timestamp: number) => {
       if (!startTime) startTime = timestamp
+      if (!phaseStartTime) phaseStartTime = timestamp
       
-      const elapsed = timestamp - startTime
-      const duration = 3000 // Increased to 3 seconds for smoother animation
-      const progress = Math.min(elapsed / duration, 1)
+      const elapsed = timestamp - phaseStartTime
+      const phaseDuration = 350 // Fast like packages page
+      const progress = Math.min(elapsed / phaseDuration, 1)
       
-      // Smoother easing function (ease-out-quart)
-      const easeOutQuart = 1 - Math.pow(1 - progress, 4)
+      // Easing function (ease-out-cubic) - same as packages page
+      const easeOutCubic = 1 - Math.pow(1 - progress, 3)
       
-      // Animate each point from left to right with smoother staggered timing
-      const newAnimatedData = targetData.map((targetValue, index) => {
-        const pointDelay = (index / 29) * 0.3 // Reduced stagger for smoother effect
-        const pointProgress = Math.max(0, Math.min(1, (easeOutQuart - pointDelay) / (1 - pointDelay)))
+      if (phase === 'down') {
+        // Animate down from starting values to zero (right to left)
+        const newAnimatedData = startingData.map((startValue, index) => {
+          const pointDelay = ((29 - index) / 29) * 0.3 // Right to left
+          const pointProgress = Math.max(0, Math.min(1, (easeOutCubic - pointDelay) / (1 - pointDelay)))
+          return startValue * (1 - pointProgress)
+        })
         
-        // Apply smooth interpolation
-        const smoothProgress = pointProgress * pointProgress * (3 - 2 * pointProgress) // Smoothstep
-        return targetValue * smoothProgress
-      })
-      
-      setAnimatedData(newAnimatedData)
-      
-      if (progress >= 1) {
-        setChartAnimating(false)
-        return
+        setAnimatedData(newAnimatedData)
+        
+        if (progress >= 1) {
+          // Switch to up phase
+          phase = 'up'
+          phaseStartTime = timestamp
+          setAnimatedData(new Array(30).fill(0)) // Reset to zeros
+        }
+      } else {
+        // Animate up to target values (left to right)
+        const newAnimatedData = targetData.map((targetValue, index) => {
+          const pointDelay = (index / 29) * 0.3 // Left to right
+          const pointProgress = Math.max(0, Math.min(1, (easeOutCubic - pointDelay) / (1 - pointDelay)))
+          return targetValue * pointProgress
+        })
+        
+        setAnimatedData(newAnimatedData)
+        
+        if (progress >= 1) {
+          setChartAnimating(false)
+          return
+        }
       }
       
       animationId = requestAnimationFrame(animate)
+    }
+    
+    // Start with zeros if no previous data
+    if (animatedData.length === 0) {
+      setAnimatedData(new Array(30).fill(0))
+      phase = 'up'
     }
     
     animationId = requestAnimationFrame(animate)
@@ -264,29 +317,42 @@ export default function Dashboard({ user }: DashboardProps) {
       {/* Hero Section & Chart */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         {/* Hero Section */}
-        <div className="dashboard-hero-gradient rounded-2xl p-8 border border-gray-800/30 relative overflow-hidden">
-          <div className="relative z-10">
-            <h2 className="text-3xl font-bold text-white mb-4">
-              Welcome to FASHO.CO
-            </h2>
-            <p className="text-xl text-gray-300 mb-6">
-              It's time to dominate on Spotify! 🚀
-            </p>
-            <button 
-              onClick={() => router.push('/add')}
-              className="bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white px-8 py-3 rounded-xl font-semibold transition-all duration-300 transform hover:scale-105"
-            >
-              Start New Campaign
-            </button>
-          </div>
-          
-          {/* 3D Floating Emojis */}
-          <div className="absolute inset-0 pointer-events-none">
-            <div className="floating-emoji-1">🎵</div>
-            <div className="floating-emoji-2">🎧</div>
-            <div className="floating-emoji-3">🎤</div>
-            <div className="floating-emoji-4">🎶</div>
-            <div className="floating-emoji-5">🔥</div>
+        <div className="dashboard-hero-gradient rounded-2xl p-8 border border-gray-800/30 relative overflow-hidden min-h-[400px]">
+          <div className="flex items-center justify-between h-full">
+            <div className="relative z-10 flex-1 pr-8">
+              <h2 className="text-4xl lg:text-5xl font-bold text-white mb-6 leading-tight">
+                <span className="text-2xl lg:text-3xl">Welcome to</span><br />
+                <span className="bg-gradient-to-r from-green-400 to-blue-500 bg-clip-text text-transparent">
+                  FASHO.CO
+                </span>
+              </h2>
+              <p className="text-xl lg:text-2xl text-gray-300 mb-8 leading-relaxed">
+                It's time to dominate on Spotify! 🚀
+              </p>
+              <button 
+                onClick={() => router.push('/add')}
+                className="bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white px-8 py-4 rounded-xl text-lg font-semibold transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl"
+              >
+                Start New Campaign
+              </button>
+            </div>
+            
+            {/* Lottie Animation */}
+            <div className="relative z-10 flex items-center justify-center">
+              {lottieAnimationData ? (
+                <Lottie 
+                  animationData={lottieAnimationData}
+                  loop={true}
+                  autoplay={true}
+                  className="w-72 h-72 lg:w-80 lg:h-80"
+                  lottieRef={lottieRef}
+                />
+              ) : (
+                <div className="w-72 h-72 lg:w-80 lg:h-80 bg-gray-800/50 rounded-lg flex items-center justify-center">
+                  <div className="text-gray-400">Loading animation...</div>
+                </div>
+              )}
+            </div>
           </div>
         </div>
 
@@ -296,7 +362,7 @@ export default function Dashboard({ user }: DashboardProps) {
           <div className="text-sm text-gray-400 mb-4">
             Total estimated plays: {totalPlays.toLocaleString()}
           </div>
-          <div className="relative h-64">
+          <div className="relative h-64 bg-black/20 rounded-lg p-4 pl-16">
             {/* Enhanced Chart Visualization */}
             <svg className="w-full h-full" viewBox="0 0 400 200">
               <defs>
@@ -377,8 +443,8 @@ export default function Dashboard({ user }: DashboardProps) {
               })}
             </svg>
             
-            {/* Y-axis labels */}
-            <div className="absolute left-0 top-0 h-full flex flex-col justify-between text-xs text-gray-400 -ml-12 w-10 text-right pr-2">
+            {/* Y-axis labels - positioned inside container */}
+            <div className="absolute left-2 top-0 h-full flex flex-col justify-between text-xs text-gray-400 w-12 text-right pr-2">
               <span className={`transition-opacity duration-500 ${totalPlays > 0 ? 'opacity-100' : 'opacity-30'}`}>
                 {yAxisLabels[0]}
               </span>
@@ -390,7 +456,7 @@ export default function Dashboard({ user }: DashboardProps) {
           </div>
           
           {/* Chart Labels */}
-          <div className="flex justify-between mt-4 text-sm text-gray-400">
+          <div className="flex justify-between mt-4 text-sm text-gray-400 pl-16">
             <span>Day 1</span>
             <span>Day 15</span>
             <span>Day 30</span>
