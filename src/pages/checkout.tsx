@@ -770,23 +770,29 @@ export default function CheckoutPage() {
         name: `${item.track.title} - ${item.package.name}`,
         price: item.discountedPrice
       }));
+      // Log the data being sent to the payment API
+      const paymentData = {
+        amount: total,
+        orderItems: paymentOrderItems,
+        customerEmail: currentUser ? currentUser.email : formData.email,
+        billingInfo: safeBillingData
+      };
+      console.log('Sending payment data:', paymentData);
+      
       // Generate payment token from Authorize.net
       const response = await fetch('/api/generate-payment-token', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          amount: total,
-          orderItems: paymentOrderItems,
-          customerEmail: currentUser ? currentUser.email : formData.email,
-          billingInfo: safeBillingData
-        }),
+        body: JSON.stringify(paymentData),
       });
 
       const data = await response.json();
+      console.log('Payment token response:', data);
 
       if (!data.success) {
+        console.error('Payment token generation failed:', data);
         setError(data.message || 'Payment setup failed');
         return;
       }

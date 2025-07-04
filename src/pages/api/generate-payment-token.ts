@@ -178,6 +178,18 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         }
       }
     });
+    
+    // Log the full request payload for debugging (without sensitive data)
+    console.log('FULL REQUEST PAYLOAD:', JSON.stringify({
+      ...acceptHostedRequest,
+      getHostedPaymentPageRequest: {
+        ...acceptHostedRequest.getHostedPaymentPageRequest,
+        merchantAuthentication: {
+          name: '[HIDDEN]',
+          transactionKey: '[HIDDEN]'
+        }
+      }
+    }, null, 2));
 
     // Make request to Authorize.net
     const response = await fetch(`${baseUrl}/xml/v1/request.api`, {
@@ -209,10 +221,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       keys: Object.keys(responseData)
     });
     
-    // Log full response in development for debugging
-    if (environment === 'sandbox') {
-      console.log('Full Authorize.net response:', JSON.stringify(responseData, null, 2));
-    }
+    // Always log full response for debugging
+    console.log('Full Authorize.net response:', JSON.stringify(responseData, null, 2));
 
     // Check if the request was successful
     if (responseData.messages?.resultCode !== 'Ok') {
