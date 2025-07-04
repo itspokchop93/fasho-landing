@@ -91,43 +91,78 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       return res.status(400).json({ success: false, message: 'Missing required order information' });
     }
 
-    // Generate unique order number
+    // Generate unique order number with retry logic
     console.log('🔍 CREATE-ORDER: Generating order number...');
-    const orderNumber = await generateOrderNumber(supabase);
-    console.log('🔍 CREATE-ORDER: Generated order number:', orderNumber);
+    let orderNumber;
+    let order;
+    let orderCreated = false;
+    const maxOrderRetries = 3;
     
-    // Create the order record
-    console.log('🔍 CREATE-ORDER: Creating order record in database...');
-    const orderData = {
-      order_number: orderNumber,
-      user_id: userId || null,
-      customer_email: customerEmail,
-      customer_name: customerName,
-      subtotal: subtotal,
-      discount: discount,
-      total: total,
-      status: 'completed',
-      payment_status: 'paid',
-      billing_info: billingInfo,
-      payment_data: paymentData,
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString()
-    };
-    console.log('🔍 CREATE-ORDER: Order data to insert:', JSON.stringify(orderData, null, 2));
-    
-    const { data: order, error: orderError } = await supabase
-      .from('orders')
-      .insert([orderData])
-      .select()
-      .single();
+    for (let orderAttempt = 1; orderAttempt <= maxOrderRetries; orderAttempt++) {
+      try {
+        orderNumber = await generateOrderNumber(supabase);
+        console.log(`🔍 CREATE-ORDER: Generated order number (attempt ${orderAttempt}):`, orderNumber);
+        
+        // Create the order record
+        console.log('🔍 CREATE-ORDER: Creating order record in database...');
+        const orderData = {
+          order_number: orderNumber,
+          user_id: userId || null,
+          customer_email: customerEmail,
+          customer_name: customerName,
+          subtotal: subtotal,
+          discount: discount,
+          total: total,
+          status: 'completed',
+          payment_status: 'paid',
+          billing_info: billingInfo,
+          payment_data: paymentData,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        };
+        console.log('🔍 CREATE-ORDER: Order data to insert:', JSON.stringify(orderData, null, 2));
+        
+        const { data: orderResult, error: orderError } = await supabase
+          .from('orders')
+          .insert([orderData])
+          .select()
+          .single();
 
-    if (orderError) {
-      console.error('🔍 CREATE-ORDER: Error creating order:', orderError);
-      console.error('🔍 CREATE-ORDER: Order error details:', JSON.stringify(orderError, null, 2));
-      return res.status(500).json({ success: false, message: 'Failed to create order', error: orderError });
+        if (orderError) {
+          console.error('🔍 CREATE-ORDER: Error creating order:', orderError);
+          console.error('🔍 CREATE-ORDER: Order error details:', JSON.stringify(orderError, null, 2));
+          
+          // Check if it's a duplicate key error (order number conflict)
+          if (orderError.code === '23505' || orderError.message?.includes('duplicate') || orderError.message?.includes('unique')) {
+            console.log('🔍 CREATE-ORDER: Duplicate order number detected, retrying with new number...');
+            if (orderAttempt < maxOrderRetries) {
+              await new Promise(resolve => setTimeout(resolve, 300)); // Wait before retry
+              continue;
+            }
+          }
+          
+          return res.status(500).json({ success: false, message: 'Failed to create order', error: orderError });
+        }
+        
+        // Success!
+        order = orderResult;
+        orderCreated = true;
+        console.log('🔍 CREATE-ORDER: Order created successfully:', order);
+        break;
+        
+      } catch (error) {
+        console.error(`🔍 CREATE-ORDER: Unexpected error on order creation attempt ${orderAttempt}:`, error);
+        if (orderAttempt === maxOrderRetries) {
+          throw error; // Re-throw if this was the last attempt
+        }
+        await new Promise(resolve => setTimeout(resolve, 500));
+      }
     }
     
-    console.log('🔍 CREATE-ORDER: Order created successfully:', order);
+    if (!orderCreated || !order) {
+      console.error('🔍 CREATE-ORDER: Failed to create order after all attempts');
+      return res.status(500).json({ success: false, message: 'Failed to create order after multiple attempts' });
+    }
 
     // Create order items
     console.log('🔍 CREATE-ORDER: Creating order items...');
@@ -183,41 +218,89 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 }
 
 async function generateOrderNumber(supabase: any): Promise<string> {
-  try {
-    // Get the latest order number to determine the next sequence
-    const { data: latestOrder, error } = await supabase
-      .from('orders')
-      .select('order_number')
-      .order('created_at', { ascending: false })
-      .limit(1);
-
-    if (error) {
-      console.error('Error fetching latest order:', error);
-      // If we can't fetch, start with 3001
-      return 'FASHO-3001';
-    }
-
-    let nextNumber = 3001; // Starting number
-
-    if (latestOrder && latestOrder.length > 0) {
-      const lastOrderNumber = latestOrder[0].order_number;
-      // Extract the number part (e.g., "FASHO-3005" -> "3005")
-      const numberPart = lastOrderNumber.replace('FASHO-', '');
-      const lastNumber = parseInt(numberPart, 10);
+  const maxRetries = 5;
+  
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      console.log(`🔍 ORDER-NUMBER: Attempt ${attempt} to generate unique order number`);
       
-      if (!isNaN(lastNumber)) {
-        nextNumber = lastNumber + 1;
+      // Get the latest order number to determine the next sequence
+      const { data: latestOrder, error } = await supabase
+        .from('orders')
+        .select('order_number')
+        .order('created_at', { ascending: false })
+        .limit(1);
+
+      if (error) {
+        console.error('🔍 ORDER-NUMBER: Error fetching latest order:', error);
+        // If we can't fetch, use timestamp-based fallback
+        const timestamp = Date.now().toString().slice(-4);
+        const fallbackNumber = `FASHO-3${timestamp}`;
+        console.log('🔍 ORDER-NUMBER: Using fallback number:', fallbackNumber);
+        return fallbackNumber;
       }
+
+      let nextNumber = 3001; // Starting number
+
+      if (latestOrder && latestOrder.length > 0) {
+        const lastOrderNumber = latestOrder[0].order_number;
+        console.log('🔍 ORDER-NUMBER: Latest order number found:', lastOrderNumber);
+        
+        // Extract the number part (e.g., "FASHO-3005" -> "3005")
+        const numberPart = lastOrderNumber.replace('FASHO-', '');
+        const lastNumber = parseInt(numberPart, 10);
+        
+        if (!isNaN(lastNumber)) {
+          nextNumber = lastNumber + 1;
+        }
+      }
+
+      // Format as 4-digit number with leading zeros if needed
+      const formattedNumber = nextNumber.toString().padStart(4, '0');
+      const proposedOrderNumber = `FASHO-${formattedNumber}`;
+      
+      console.log('🔍 ORDER-NUMBER: Proposed order number:', proposedOrderNumber);
+      
+      // Check if this order number already exists (race condition protection)
+      const { data: existingOrder, error: checkError } = await supabase
+        .from('orders')
+        .select('order_number')
+        .eq('order_number', proposedOrderNumber)
+        .limit(1);
+        
+      if (checkError) {
+        console.error('🔍 ORDER-NUMBER: Error checking for existing order:', checkError);
+        // Continue to next attempt
+        continue;
+      }
+      
+      if (existingOrder && existingOrder.length > 0) {
+        console.log('🔍 ORDER-NUMBER: Order number already exists, retrying...');
+        // Add a small delay before retry to avoid rapid-fire attempts
+        await new Promise(resolve => setTimeout(resolve, 100));
+        continue;
+      }
+      
+      console.log('🔍 ORDER-NUMBER: Order number is unique, using:', proposedOrderNumber);
+      return proposedOrderNumber;
+
+    } catch (error) {
+      console.error(`🔍 ORDER-NUMBER: Error on attempt ${attempt}:`, error);
+      if (attempt === maxRetries) {
+        // Final fallback - use timestamp with random component
+        const timestamp = Date.now().toString().slice(-4);
+        const random = Math.floor(Math.random() * 100).toString().padStart(2, '0');
+        const fallbackNumber = `FASHO-9${timestamp}${random}`;
+        console.log('🔍 ORDER-NUMBER: Using final fallback number:', fallbackNumber);
+        return fallbackNumber;
+      }
+      // Wait before retry
+      await new Promise(resolve => setTimeout(resolve, 200));
     }
-
-    // Format as 4-digit number with leading zeros if needed
-    const formattedNumber = nextNumber.toString().padStart(4, '0');
-    return `FASHO-${formattedNumber}`;
-
-  } catch (error) {
-    console.error('Error generating order number:', error);
-    // Fallback to timestamp-based number if all else fails
-    const timestamp = Date.now().toString().slice(-4);
-    return `FASHO-3${timestamp}`;
   }
+  
+  // This should never be reached, but just in case
+  const emergencyNumber = `FASHO-${Date.now().toString().slice(-6)}`;
+  console.log('🔍 ORDER-NUMBER: Using emergency fallback:', emergencyNumber);
+  return emergencyNumber;
 } 
