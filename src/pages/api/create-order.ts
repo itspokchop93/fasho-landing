@@ -54,6 +54,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   }
 
   try {
+    console.log('🔍 CREATE-ORDER: Starting order creation process');
+    console.log('🔍 CREATE-ORDER: Request body:', JSON.stringify(req.body, null, 2));
+    
     const supabase = createClient(req, res);
     const {
       items,
@@ -66,6 +69,18 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       paymentData,
       userId
     }: CreateOrderRequest = req.body;
+    
+    console.log('🔍 CREATE-ORDER: Extracted data:', {
+      itemsCount: items?.length,
+      subtotal,
+      discount,
+      total,
+      customerEmail,
+      customerName,
+      userId,
+      hasBillingInfo: !!billingInfo,
+      hasPaymentData: !!paymentData
+    });
 
     // Validate required fields
     if (!items || !Array.isArray(items) || items.length === 0) {
@@ -77,37 +92,45 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     }
 
     // Generate unique order number
+    console.log('🔍 CREATE-ORDER: Generating order number...');
     const orderNumber = await generateOrderNumber(supabase);
+    console.log('🔍 CREATE-ORDER: Generated order number:', orderNumber);
     
     // Create the order record
+    console.log('🔍 CREATE-ORDER: Creating order record in database...');
+    const orderData = {
+      order_number: orderNumber,
+      user_id: userId || null,
+      customer_email: customerEmail,
+      customer_name: customerName,
+      subtotal: subtotal,
+      discount: discount,
+      total: total,
+      status: 'completed',
+      payment_status: 'paid',
+      billing_info: billingInfo,
+      payment_data: paymentData,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
+    };
+    console.log('🔍 CREATE-ORDER: Order data to insert:', JSON.stringify(orderData, null, 2));
+    
     const { data: order, error: orderError } = await supabase
       .from('orders')
-      .insert([
-        {
-          order_number: orderNumber,
-          user_id: userId || null,
-          customer_email: customerEmail,
-          customer_name: customerName,
-          subtotal: subtotal,
-          discount: discount,
-          total: total,
-          status: 'completed',
-          payment_status: 'paid',
-          billing_info: billingInfo,
-          payment_data: paymentData,
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString()
-        }
-      ])
+      .insert([orderData])
       .select()
       .single();
 
     if (orderError) {
-      console.error('Error creating order:', orderError);
-      return res.status(500).json({ success: false, message: 'Failed to create order' });
+      console.error('🔍 CREATE-ORDER: Error creating order:', orderError);
+      console.error('🔍 CREATE-ORDER: Order error details:', JSON.stringify(orderError, null, 2));
+      return res.status(500).json({ success: false, message: 'Failed to create order', error: orderError });
     }
+    
+    console.log('🔍 CREATE-ORDER: Order created successfully:', order);
 
     // Create order items
+    console.log('🔍 CREATE-ORDER: Creating order items...');
     const orderItems = items.map(item => ({
       order_id: order.id,
       track_id: item.track.id,
@@ -125,17 +148,22 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       discounted_price: item.discountedPrice,
       is_discounted: item.isDiscounted
     }));
+    
+    console.log('🔍 CREATE-ORDER: Order items to insert:', JSON.stringify(orderItems, null, 2));
 
     const { error: itemsError } = await supabase
       .from('order_items')
       .insert(orderItems);
 
     if (itemsError) {
-      console.error('Error creating order items:', itemsError);
+      console.error('🔍 CREATE-ORDER: Error creating order items:', itemsError);
+      console.error('🔍 CREATE-ORDER: Items error details:', JSON.stringify(itemsError, null, 2));
       // Try to cleanup the order if items failed
       await supabase.from('orders').delete().eq('id', order.id);
-      return res.status(500).json({ success: false, message: 'Failed to create order items' });
+      return res.status(500).json({ success: false, message: 'Failed to create order items', error: itemsError });
     }
+    
+    console.log('🔍 CREATE-ORDER: Order items created successfully');
 
     return res.status(200).json({
       success: true,
@@ -148,8 +176,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     });
 
   } catch (error) {
-    console.error('Error in create-order API:', error);
-    return res.status(500).json({ success: false, message: 'Internal server error' });
+    console.error('🔍 CREATE-ORDER: Unexpected error in create-order API:', error);
+    console.error('🔍 CREATE-ORDER: Error stack:', error instanceof Error ? error.stack : 'No stack trace');
+    return res.status(500).json({ success: false, message: 'Internal server error', error: error instanceof Error ? error.message : 'Unknown error' });
   }
 }
 
