@@ -180,7 +180,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           "amount": amount.toFixed(2),
           "order": {
             "invoiceNumber": invoiceNumber,
-            "description": `Fasho Music Promotion - ${orderItems.length} package(s)`
+            "description": `FASHO.co - Digital Marketing - ${orderItems.length} package(s)`
           },
           "customer": {
             "email": customerEmail.toString().trim()
