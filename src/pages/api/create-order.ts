@@ -224,36 +224,48 @@ async function generateOrderNumber(supabase: any): Promise<string> {
     try {
       console.log(`🔍 ORDER-NUMBER: Attempt ${attempt} to generate unique order number`);
       
-      // Get the latest order number to determine the next sequence
-      const { data: latestOrder, error } = await supabase
+      // Get all order numbers to find the highest one
+      const { data: allOrders, error } = await supabase
         .from('orders')
         .select('order_number')
-        .order('created_at', { ascending: false })
-        .limit(1);
+        .like('order_number', 'FASHO-%');
 
       if (error) {
-        console.error('🔍 ORDER-NUMBER: Error fetching latest order:', error);
+        console.error('🔍 ORDER-NUMBER: Error fetching orders:', error);
         // If we can't fetch, use timestamp-based fallback
         const timestamp = Date.now().toString().slice(-4);
-        const fallbackNumber = `FASHO-3${timestamp}`;
+        const random = Math.floor(Math.random() * 100).toString().padStart(2, '0');
+        const fallbackNumber = `FASHO-8${timestamp}${random}`;
         console.log('🔍 ORDER-NUMBER: Using fallback number:', fallbackNumber);
         return fallbackNumber;
       }
 
       let nextNumber = 3001; // Starting number
 
-      if (latestOrder && latestOrder.length > 0) {
-        const lastOrderNumber = latestOrder[0].order_number;
-        console.log('🔍 ORDER-NUMBER: Latest order number found:', lastOrderNumber);
+      if (allOrders && allOrders.length > 0) {
+        console.log(`🔍 ORDER-NUMBER: Found ${allOrders.length} existing orders`);
         
-        // Extract the number part (e.g., "FASHO-3005" -> "3005")
-        const numberPart = lastOrderNumber.replace('FASHO-', '');
-        const lastNumber = parseInt(numberPart, 10);
+        // Find the highest order number
+        let highestNumber = 3000; // Base number
         
-        if (!isNaN(lastNumber)) {
-          nextNumber = lastNumber + 1;
+        for (const order of allOrders) {
+          const orderNumber = order.order_number;
+          // Extract the number part (e.g., "FASHO-3005" -> "3005")
+          const numberPart = orderNumber.replace('FASHO-', '');
+          const orderNum = parseInt(numberPart, 10);
+          
+          if (!isNaN(orderNum) && orderNum > highestNumber) {
+            highestNumber = orderNum;
+          }
         }
+        
+        nextNumber = highestNumber + 1;
+        console.log('🔍 ORDER-NUMBER: Highest existing number:', highestNumber, 'Next number:', nextNumber);
       }
+
+      // Add randomization to prevent conflicts in concurrent requests
+      const randomOffset = Math.floor(Math.random() * 10); // 0-9
+      nextNumber += randomOffset;
 
       // Format as 4-digit number with leading zeros if needed
       const formattedNumber = nextNumber.toString().padStart(4, '0');
@@ -277,7 +289,7 @@ async function generateOrderNumber(supabase: any): Promise<string> {
       if (existingOrder && existingOrder.length > 0) {
         console.log('🔍 ORDER-NUMBER: Order number already exists, retrying...');
         // Add a small delay before retry to avoid rapid-fire attempts
-        await new Promise(resolve => setTimeout(resolve, 100));
+        await new Promise(resolve => setTimeout(resolve, 100 + (attempt * 50)));
         continue;
       }
       
@@ -289,13 +301,13 @@ async function generateOrderNumber(supabase: any): Promise<string> {
       if (attempt === maxRetries) {
         // Final fallback - use timestamp with random component
         const timestamp = Date.now().toString().slice(-4);
-        const random = Math.floor(Math.random() * 100).toString().padStart(2, '0');
+        const random = Math.floor(Math.random() * 1000).toString().padStart(3, '0');
         const fallbackNumber = `FASHO-9${timestamp}${random}`;
         console.log('🔍 ORDER-NUMBER: Using final fallback number:', fallbackNumber);
         return fallbackNumber;
       }
-      // Wait before retry
-      await new Promise(resolve => setTimeout(resolve, 200));
+      // Wait before retry with increasing delay
+      await new Promise(resolve => setTimeout(resolve, 200 + (attempt * 100)));
     }
   }
   
