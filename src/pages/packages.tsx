@@ -492,6 +492,30 @@ export default function PackagesPage() {
           className="fixed inset-0 bg-cover bg-center bg-no-repeat opacity-35 z-10"
           style={{ backgroundImage: 'url(/marble-bg.jpg)' }}
         ></div>
+        
+        {/* Floating Dust Particles */}
+        <div className="floating-particles">
+          <div className="floating-particle"></div>
+          <div className="floating-particle"></div>
+          <div className="floating-particle"></div>
+          <div className="floating-particle"></div>
+          <div className="floating-particle"></div>
+          <div className="floating-particle"></div>
+          <div className="floating-particle"></div>
+          <div className="floating-particle"></div>
+          <div className="floating-particle"></div>
+          <div className="floating-particle"></div>
+          <div className="floating-particle"></div>
+          <div className="floating-particle"></div>
+          <div className="floating-particle"></div>
+          <div className="floating-particle"></div>
+          <div className="floating-particle"></div>
+          <div className="floating-particle"></div>
+          <div className="floating-particle"></div>
+          <div className="floating-particle"></div>
+          <div className="floating-particle"></div>
+          <div className="floating-particle"></div>
+        </div>
         <div className="relative z-20">
         <div className="max-w-7xl mx-auto">
           <h1 className={`${isDiscountedSong ? 'text-3xl' : 'text-4xl'} md:text-5xl font-extrabold text-center mb-12`}>
@@ -513,8 +537,6 @@ export default function PackagesPage() {
               </div>
               
               <div className="relative inline-block group">
-                {/* Gradient outline */}
-                <div className="absolute -inset-1 bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] rounded-2xl blur-sm opacity-75"></div>
                 {/* 25% OFF badge for discounted songs */}
                 {isDiscountedSong && (
                   <div className="absolute -top-3 -right-3 bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] text-black text-sm font-bold px-3 py-1 rounded-full shadow-lg z-10 animate-pulse">
@@ -526,7 +548,7 @@ export default function PackagesPage() {
                   alt={currentTrack.title}
                   width={300}
                   height={300}
-                  className="relative rounded-2xl shadow-2xl mx-auto transition-transform duration-300 group-hover:-translate-y-2"
+                  className="rounded-2xl shadow-2xl mx-auto transition-transform duration-300 group-hover:-translate-y-2 album-warp-3d"
                   unoptimized
                 />
               </div>
@@ -978,10 +1000,10 @@ export default function PackagesPage() {
 
             {/* Right side - Album art and track info */}
             <div className="text-center">
-              <div className="mb-6">
+              <div className="mb-4">
                 <p 
                   key={songIndicatorKey}
-                  className="text-white/70 mb-2 text-xl font-semibold animate-drop-bounce"
+                  className="text-white/70 mb-2 text-lg font-semibold animate-drop-bounce"
                 >
                   Song {currentSongIndex + 1} of {tracks.length}
                 </p>
@@ -989,8 +1011,6 @@ export default function PackagesPage() {
               </div>
               
               <div className="relative inline-block group">
-                {/* Gradient outline */}
-                <div className="absolute -inset-1 bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] rounded-2xl blur-sm opacity-75"></div>
                 {/* 25% OFF badge for discounted songs */}
                 {isDiscountedSong && (
                   <div className="absolute -top-4 -right-4 bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] text-black text-lg font-bold px-4 py-2 rounded-full shadow-lg z-10 animate-pulse">
@@ -1000,14 +1020,14 @@ export default function PackagesPage() {
                 <Image
                   src={currentTrack.imageUrl}
                   alt={currentTrack.title}
-                  width={400}
-                  height={400}
-                  className="relative rounded-2xl shadow-2xl mx-auto transition-transform duration-300 group-hover:-translate-y-2"
+                  width={320}
+                  height={320}
+                  className="rounded-2xl shadow-2xl mx-auto transition-transform duration-300 group-hover:-translate-y-2 album-warp-3d"
                   unoptimized
                 />
               </div>
               
-                             <div className="mt-6 mb-8">
+                             <div className="mt-4 mb-6">
                  <h2 className="text-2xl font-bold mb-2">{currentTrack.title}</h2>
                  <p className="text-xl text-white/70">{currentTrack.artist}</p>
                </div>
@@ -1147,6 +1167,8 @@ export default function PackagesPage() {
           );
           border-radius: 0.75rem;
         }
+
+
       `}</style>
     </>
   );

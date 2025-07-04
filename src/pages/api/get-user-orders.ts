@@ -21,12 +21,13 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const limitNum = parseInt(limit as string, 10);
     const offsetNum = parseInt(offset as string, 10);
 
-    // Fetch user's orders with items
+    // Fetch user's orders with items and add-on items
     const { data: orders, error } = await supabase
       .from('orders')
       .select(`
         *,
-        order_items (*)
+        order_items (*),
+        add_on_items (*)
       `)
       .eq('user_id', user.id)
       .order('created_at', { ascending: false })
@@ -51,7 +52,15 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       createdAt: order.created_at,
       updatedAt: order.updated_at,
       itemCount: order.order_items.length,
-      addOnItems: order.addon_items || [], // Include add-on items from JSONB field
+      addOnItems: order.add_on_items.map((item: any) => ({
+        id: item.addon_id,
+        name: item.addon_name,
+        description: item.addon_description,
+        emoji: item.emoji,
+        originalPrice: item.original_price,
+        price: item.discounted_price,
+        isOnSale: item.is_discounted
+      })),
       items: order.order_items.map((item: any) => ({
         id: item.id,
         track: {

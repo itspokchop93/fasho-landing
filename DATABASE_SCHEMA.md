@@ -57,7 +57,42 @@ CREATE TABLE order_items (
 CREATE INDEX idx_order_items_order_id ON order_items(order_id);
 ```
 
-### 3. Row Level Security (RLS) Policies
+### 3. Add-on Items Table
+```sql
+CREATE TABLE add_on_items (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  order_id UUID NOT NULL REFERENCES orders(id) ON DELETE CASCADE,
+  addon_id VARCHAR(50) NOT NULL,
+  addon_name VARCHAR(255) NOT NULL,
+  addon_description TEXT,
+  original_price INTEGER NOT NULL, -- in cents
+  discounted_price INTEGER NOT NULL, -- in cents
+  is_discounted BOOLEAN DEFAULT false,
+  emoji VARCHAR(10),
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Create indexes for better query performance
+CREATE INDEX idx_add_on_items_order_id ON add_on_items(order_id);
+CREATE INDEX idx_add_on_items_addon_id ON add_on_items(addon_id);
+
+-- Create updated_at trigger
+CREATE OR REPLACE FUNCTION update_add_on_items_updated_at()
+RETURNS TRIGGER AS $$
+BEGIN
+    NEW.updated_at = NOW();
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER update_add_on_items_updated_at
+    BEFORE UPDATE ON add_on_items
+    FOR EACH ROW
+    EXECUTE FUNCTION update_add_on_items_updated_at();
+```
+
+### 4. Row Level Security (RLS) Policies
 
 ```sql
 -- Enable RLS on orders table
@@ -91,6 +126,21 @@ CREATE POLICY "Users can view own order items" ON order_items
 -- Allow service role to insert order items (for API)
 CREATE POLICY "Service role can insert order items" ON order_items
   FOR INSERT WITH CHECK (true);
+
+-- Enable RLS on add_on_items table
+ALTER TABLE add_on_items ENABLE ROW LEVEL SECURITY;
+
+-- Users can only see add-on items for their own orders
+CREATE POLICY "Users can view their own add-on items" ON add_on_items
+    FOR SELECT USING (
+        order_id IN (
+            SELECT id FROM orders WHERE user_id = auth.uid()
+        )
+    );
+
+-- Allow authenticated users to insert add-on items (will be validated by application logic)
+CREATE POLICY "Authenticated users can insert add-on items" ON add_on_items
+    FOR INSERT WITH CHECK (auth.role() = 'authenticated');
 ```
 
 ## Setup Instructions
@@ -154,5 +204,22 @@ CREATE POLICY "Service role can insert order items" ON order_items
   "discounted_price": 67.00,
   "is_discounted": true,
   "created_at": "2025-01-03T10:30:00Z"
+}
+```
+
+### Add-on Item Record Example
+```json
+{
+  "id": "addon-uuid-here",
+  "order_id": "123e4567-e89b-12d3-a456-426614174000",
+  "addon_id": "ai-mastering",
+  "addon_name": "AI Mastering",
+  "addon_description": "AI Mastering - Premium add-on service",
+  "original_price": 4999,
+  "discounted_price": 3999,
+  "is_discounted": true,
+  "emoji": "🎵",
+  "created_at": "2025-01-03T10:30:00Z",
+  "updated_at": "2025-01-03T10:30:00Z"
 }
 ``` 

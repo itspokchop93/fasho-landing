@@ -108,6 +108,7 @@ export default function CheckoutPage() {
   const [total, setTotal] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
+  const [formError, setFormError] = useState('');
   const [sessionId, setSessionId] = useState<string>('');
   const [fieldErrors, setFieldErrors] = useState<{[key: string]: string}>({});
   const [currentUser, setCurrentUser] = useState<any>(null);
@@ -121,6 +122,7 @@ export default function CheckoutPage() {
   const [loginInfoMessage, setLoginInfoMessage] = useState<string | null>(null);
   const [resendLoading, setResendLoading] = useState(false);
   const [resendError, setResendError] = useState<string | null>(null);
+  const [lastSessionId, setLastSessionId] = useState<string>('');
 
   // Form state
   const [formData, setFormData] = useState({
@@ -363,6 +365,46 @@ export default function CheckoutPage() {
         // Store session ID for later use
         setSessionId(sessionIdParam as string);
         
+        // Only clear add-ons when session ID changes (not on refresh of same session)
+        if (lastSessionId && lastSessionId !== sessionIdParam) {
+          localStorage.removeItem('selectedAddOns');
+          setSelectedAddOns(new Set());
+          setAddOnOrderItems([]);
+        }
+        setLastSessionId(sessionIdParam as string);
+        
+        // Restore add-ons from localStorage if they exist (and it's the same session)
+        if (!lastSessionId || lastSessionId === sessionIdParam) {
+          const storedAddOns = localStorage.getItem('selectedAddOns');
+          if (storedAddOns) {
+            try {
+              const parsedAddOns = JSON.parse(storedAddOns) as string[];
+              const addOnSet = new Set(parsedAddOns);
+              const addOnItems: AddOnOrderItem[] = [];
+              
+              parsedAddOns.forEach(addOnId => {
+                const addOn = addOnProducts.find(p => p.id === addOnId);
+                if (addOn) {
+                  addOnItems.push({
+                    id: addOn.id,
+                    name: addOn.name,
+                    emoji: addOn.emoji,
+                    price: addOn.salePrice,
+                    originalPrice: addOn.originalPrice,
+                    isOnSale: addOn.salePrice < addOn.originalPrice
+                  });
+                }
+              });
+              
+              setSelectedAddOns(addOnSet);
+              setAddOnOrderItems(addOnItems);
+            } catch (error) {
+              console.error('Failed to restore add-ons from localStorage:', error);
+              localStorage.removeItem('selectedAddOns');
+            }
+          }
+        }
+        
         // Build order items
         const items: OrderItem[] = [];
         let calculatedSubtotal = 0;
@@ -396,35 +438,6 @@ export default function CheckoutPage() {
         setSubtotal(calculatedSubtotal);
         setDiscount(calculatedDiscount);
         setTotal(calculatedSubtotal - calculatedDiscount);
-        
-        // Restore add-ons from localStorage if they exist
-        const storedAddOns = localStorage.getItem('selectedAddOns');
-        if (storedAddOns) {
-          try {
-            const parsedAddOns = JSON.parse(storedAddOns) as string[];
-            const addOnSet = new Set(parsedAddOns);
-            const addOnItems: AddOnOrderItem[] = [];
-            
-            parsedAddOns.forEach(addOnId => {
-              const addOn = addOnProducts.find(p => p.id === addOnId);
-              if (addOn) {
-                addOnItems.push({
-                  id: addOn.id,
-                  name: addOn.name,
-                  emoji: addOn.emoji,
-                  price: addOn.salePrice,
-                  originalPrice: addOn.originalPrice,
-                  isOnSale: addOn.salePrice < addOn.originalPrice
-                });
-              }
-            });
-            
-            setSelectedAddOns(addOnSet);
-            setAddOnOrderItems(addOnItems);
-          } catch (error) {
-            console.error("Failed to restore add-ons:", error);
-          }
-        }
         
       } catch (error) {
         console.error('Error validating session:', error);
@@ -461,6 +474,11 @@ export default function CheckoutPage() {
     if (loginError) {
       setLoginError('');
     }
+    
+    // Clear form error when user starts typing
+    if (formError) {
+      setFormError('');
+    }
   };
 
   const handleBillingChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
@@ -476,6 +494,11 @@ export default function CheckoutPage() {
       ...prev,
       [e.target.name]: value
     }));
+    
+    // Clear form error when user starts typing
+    if (formError) {
+      setFormError('');
+    }
   };
 
   // Handle field validation on blur
@@ -645,7 +668,7 @@ export default function CheckoutPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
-    setError('');
+    setFormError('');
 
     // Check if form is valid
     if (!isFormValid()) {
@@ -668,7 +691,7 @@ export default function CheckoutPage() {
         }
       }
       
-      setError(errorMessage);
+      setFormError(errorMessage);
       setIsLoading(false);
       return;
     }
@@ -1000,8 +1023,9 @@ export default function CheckoutPage() {
       console.log('🚀 CHECKOUT: Storing completedOrder in sessionStorage:', orderData);
       sessionStorage.setItem('completedOrder', JSON.stringify(orderData));
       
-      // Clean up pending order
+      // Clean up pending order and add-ons
       sessionStorage.removeItem('pendingOrder');
+      localStorage.removeItem('selectedAddOns');
       
       console.log('🚀 CHECKOUT: completedOrder stored, redirecting to thank-you');
       // Redirect to thank you page
@@ -1084,7 +1108,7 @@ export default function CheckoutPage() {
       if (!data.success) {
         console.error('Payment token generation failed:', data);
         console.error('Debug info:', data.debug);
-        setError(data.message || 'Payment setup failed');
+        setFormError(data.message || 'Payment setup failed');
         return;
       }
 
@@ -1127,7 +1151,7 @@ export default function CheckoutPage() {
           
           if (signInError) {
             // Password is wrong - show error and stop checkout
-            setError('An account with this email already exists. Please use the correct password or sign in first.');
+            setFormError('An account with this email already exists. Please use the correct password or sign in first.');
             return;
           }
           
@@ -1151,7 +1175,7 @@ export default function CheckoutPage() {
             // Handle specific signup errors
             if (authError.message?.includes('User already registered')) {
               // This shouldn't happen since we checked, but handle it anyway
-              setError('An account with this email already exists. Please sign in first.');
+              setFormError('An account with this email already exists. Please sign in first.');
               return;
             } else {
               // Other signup errors - don't fail the entire checkout
@@ -1171,7 +1195,7 @@ export default function CheckoutPage() {
       
     } catch (error) {
       console.error('Error processing payment:', error);
-      setError(error instanceof Error ? error.message : 'Payment processing failed. Please try again.');
+      setFormError(error instanceof Error ? error.message : 'Payment processing failed. Please try again.');
     } finally {
       setIsLoading(false);
     }
@@ -1216,8 +1240,8 @@ export default function CheckoutPage() {
     );
   }
 
-  // Display session validation errors
-  if (error) {
+  // Display session validation errors (only for session-specific issues)
+  if (error && (error === 'already_completed' || error.includes('checkout session') || error.includes('session'))) {
     const isAlreadyCompleted = error === 'already_completed';
     
     return (
@@ -1345,6 +1369,7 @@ export default function CheckoutPage() {
                         onClick={() => {
                           setIsLoginMode(!isLoginMode);
                           setError('');
+                          setFormError('');
                           setFieldErrors({});
                           setLoginInfoMessage(null);
                           setResendError(null);
@@ -1944,9 +1969,9 @@ export default function CheckoutPage() {
                   <div className="max-w-md mx-auto">
                     <form onSubmit={isLoginMode ? handleLogin : handleSubmit} className="space-y-4">
                       {/* Error Message */}
-                      {error && (
+                      {formError && (
                         <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-4 mb-4">
-                          <p className="text-red-400 text-sm">{error}</p>
+                          <p className="text-red-400 text-sm">{formError}</p>
                         </div>
                       )}
                       

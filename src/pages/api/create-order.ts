@@ -219,27 +219,25 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         order_id: order.id,
         addon_id: item.id,
         addon_name: item.name,
-        addon_emoji: item.emoji,
+        addon_description: `${item.name} - Premium add-on service`,
         original_price: item.originalPrice,
-        sale_price: item.price,
-        is_on_sale: item.isOnSale
+        discounted_price: item.price,
+        is_discounted: item.isOnSale,
+        emoji: item.emoji
       }));
       
       console.log('🔍 CREATE-ORDER: Add-on items to insert:', JSON.stringify(addOnOrderItems, null, 2));
 
-      // For now, store add-on items in order metadata (since we don't have add_on_items table yet)
-      const { error: updateError } = await supabase
-        .from('orders')
-        .update({ 
-          addon_items: addOnOrderItems // Store as JSONB in orders table
-        })
-        .eq('id', order.id);
+      const { error: addOnError } = await supabase
+        .from('add_on_items')
+        .insert(addOnOrderItems);
 
-      if (updateError) {
-        console.error('🔍 CREATE-ORDER: Error storing add-on items:', updateError);
-        // Don't fail the entire order if add-on storage fails
+      if (addOnError) {
+        console.error('🔍 CREATE-ORDER: Error creating add-on items:', addOnError);
+        console.error('🔍 CREATE-ORDER: Add-on error details:', JSON.stringify(addOnError, null, 2));
+        // Don't fail the entire order if add-on creation fails, but log the error
       } else {
-        console.log('🔍 CREATE-ORDER: Add-on items stored successfully');
+        console.log('🔍 CREATE-ORDER: Add-on items created successfully');
       }
     }
 
