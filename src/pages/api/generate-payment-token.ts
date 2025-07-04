@@ -195,7 +195,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             },
             {
               "settingName": "hostedPaymentIFrameCommunicatorUrl",
-              "settingValue": "https://fasho-landing.vercel.app/iframe-communicator.html"
+              "settingValue": "{\"url\": \"https://fasho-landing.vercel.app/iframe-communicator.html\"}"
             }
           ]
         }
