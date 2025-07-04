@@ -13,43 +13,39 @@
         console.log('document.referrer:', document.referrer);
         console.log('window.parent === window.top:', window.parent === window.top);
         console.log('-------------------');
-        (function() {
-            function parseQueryString(str) {
-                var vars = [];
-                var arr = str.split('&');
-                var pair;
-                for (var i = 0; i < arr.length; i++) {
-                    pair = arr[i].split('=');
-                    vars.push(pair[0]);
-                    vars[pair[0]] = decodeURIComponent(pair[1]);
-                }
-                return vars;
+        
+        // Parse query string function
+        function parseQueryString(str) {
+            var vars = [];
+            var arr = str.split('&');
+            var pair;
+            for (var i = 0; i < arr.length; i++) {
+                pair = arr[i].split('=');
+                vars.push(pair[0]);
+                vars[pair[0]] = decodeURIComponent(pair[1]);
             }
+            return vars;
+        }
 
-            function sendToAllParents(message) {
-                if (window.parent && window.parent.postMessage) {
-                    console.log('Sending message to window.parent');
-                    window.parent.postMessage(message, '*');
-                }
-                if (window.top && window.top !== window && window.top.postMessage) {
-                    console.log('Sending message to window.top');
-                    window.top.postMessage(message, '*');
-                }
+        // Send message to parent windows
+        function sendToAllParents(message) {
+            if (window.parent && window.parent.postMessage) {
+                console.log('Sending message to window.parent');
+                window.parent.postMessage(message, '*');
             }
+            if (window.top && window.top !== window && window.top.postMessage) {
+                console.log('Sending message to window.top');
+                window.top.postMessage(message, '*');
+            }
+        }
 
-            function receiveMessage(event) {
+        // Create the AuthorizeNetIFrame global object as required by the API
+        window.AuthorizeNetIFrame = {
+            onReceiveCommunication: function(querystr) {
                 console.log('==============================');
-                console.log('Iframe communicator received message:', event);
-                console.log('Event origin:', event.origin);
-                console.log('Event data:', event.data);
+                console.log('AuthorizeNetIFrame.onReceiveCommunication called with:', querystr);
                 
-                // Verify origin for security
-                if (event.origin !== "https://test.authorize.net" && event.origin !== "https://accept.authorize.net") {
-                    console.log('Origin not allowed:', event.origin);
-                    return;
-                }
-
-                var params = parseQueryString(event.data);
+                var params = parseQueryString(querystr);
                 console.log('Parsed params:', params);
                 
                 switch (params["action"]) {
@@ -59,9 +55,6 @@
                             type: 'PAYMENT_SUCCESS',
                             action: 'successfulSave'
                         });
-                        setTimeout(() => {
-                            sendToAllParents({ type: 'DEBUG', msg: 'Communicator sent message' });
-                        }, 1000);
                         break;
                     
                     case "cancel":
@@ -70,9 +63,6 @@
                             type: 'PAYMENT_CANCELLED',
                             action: 'cancel'
                         });
-                        setTimeout(() => {
-                            sendToAllParents({ type: 'DEBUG', msg: 'Communicator sent message' });
-                        }, 1000);
                         break;
                     
                     case "transactResponse":
@@ -89,9 +79,6 @@
                         };
                         sendToAllParents(messageToSend);
                         console.log('🚀 IFRAME: Message sent successfully to parent and top');
-                        setTimeout(() => {
-                            sendToAllParents({ type: 'DEBUG', msg: 'Communicator sent message' });
-                        }, 1000);
                         break;
                     
                     case "resizeWindow":
@@ -105,9 +92,6 @@
                             width: w,
                             height: h
                         });
-                        setTimeout(() => {
-                            sendToAllParents({ type: 'DEBUG', msg: 'Communicator sent message' });
-                        }, 1000);
                         break;
                     
                     default:
@@ -117,14 +101,30 @@
                 }
                 console.log('==============================');
             }
+        };
 
-            // Listen for messages from Authorize.net
-            if (window.addEventListener) {
-                window.addEventListener("message", receiveMessage, false);
-            } else if (window.attachEvent) {
-                window.attachEvent("onmessage", receiveMessage);
+        // Also keep the message event listener as backup
+        function receiveMessage(event) {
+            console.log('Message event received:', event);
+            console.log('Event origin:', event.origin);
+            console.log('Event data:', event.data);
+            
+            // Verify origin for security
+            if (event.origin !== "https://test.authorize.net" && event.origin !== "https://accept.authorize.net") {
+                console.log('Origin not allowed:', event.origin);
+                return;
             }
-        })();
+
+            // Call the AuthorizeNetIFrame handler
+            window.AuthorizeNetIFrame.onReceiveCommunication(event.data);
+        }
+
+        // Listen for messages from Authorize.net
+        if (window.addEventListener) {
+            window.addEventListener("message", receiveMessage, false);
+        } else if (window.attachEvent) {
+            window.attachEvent("onmessage", receiveMessage);
+        }
     </script>
 </body>
 </html> 
