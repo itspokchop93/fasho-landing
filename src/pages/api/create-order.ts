@@ -93,8 +93,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     // Generate unique order number with retry logic
     console.log('🔍 CREATE-ORDER: Generating order number...');
-    let orderNumber;
-    let order;
+    let orderNumber: string;
+    let order: any;
     let orderCreated = false;
     const maxOrderRetries = 3;
     
