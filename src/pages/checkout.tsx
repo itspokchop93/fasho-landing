@@ -320,24 +320,30 @@ export default function CheckoutPage() {
           console.error('Session validation failed:', errorData);
           
           if (errorData.reason === 'already_used') {
-            setError('This checkout session has already been completed. Please start a new checkout.');
+            setError('already_completed');
           } else if (errorData.reason === 'expired') {
             setError('This checkout session has expired. Please start a new checkout.');
           } else {
             setError('Invalid checkout session. Please start a new checkout.');
           }
           
-          // Redirect after 3 seconds
+          // Redirect after appropriate time
           setTimeout(() => {
-            router.push('/add');
-          }, 3000);
+            if (errorData.reason === 'already_used') {
+              router.push('/dashboard');
+            } else {
+              router.push('/add');
+            }
+          }, errorData.reason === 'already_used' ? 2500 : 3000);
           return;
         }
 
         const { sessionData } = await response.json();
         
         // For development: if no sessionData, fall back to URL params
-        let sessionTracks, sessionPackages;
+        let sessionTracks: Track[];
+        let sessionPackages: {[key: number]: string};
+        
         if (sessionData) {
           sessionTracks = sessionData.tracks;
           sessionPackages = sessionData.selectedPackages;
@@ -1210,11 +1216,13 @@ export default function CheckoutPage() {
 
   // Display session validation errors
   if (error) {
+    const isAlreadyCompleted = error === 'already_completed';
+    
     return (
       <>
         <Head>
-          <title>Checkout Error - FASHO</title>
-          <meta name="description" content="Checkout session error" />
+          <title>{isAlreadyCompleted ? 'Payment Complete' : 'Checkout Error'} - FASHO</title>
+          <meta name="description" content={isAlreadyCompleted ? 'Payment already completed' : 'Checkout session error'} />
         </Head>
         <Header />
         
@@ -1229,22 +1237,43 @@ export default function CheckoutPage() {
           <div className="relative z-20">
             <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
               <div className="text-center">
-                <div className="bg-red-500/10 border border-red-500/20 rounded-xl p-8 mb-8">
-                  <div className="w-16 h-16 bg-red-500/20 rounded-full flex items-center justify-center mx-auto mb-4">
-                    <svg className="w-8 h-8 text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z" />
-                    </svg>
+                {isAlreadyCompleted ? (
+                  <div className="bg-green-500/10 border border-green-500/20 rounded-xl p-8 mb-8">
+                    <div className="w-16 h-16 bg-green-500/20 rounded-full flex items-center justify-center mx-auto mb-4">
+                      <svg className="w-8 h-8 text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                      </svg>
+                    </div>
+                    <h1 className="text-2xl md:text-3xl font-bold mb-4 text-green-400">You already completed this checkout! 😊</h1>
+                    <div className="flex items-center justify-center space-x-3 text-white/60 text-sm mb-6">
+                      <div className="w-4 h-4 border-2 border-[#59e3a5] border-t-transparent rounded-full animate-spin"></div>
+                      <span>Redirecting you to your dashboard...</span>
+                    </div>
+                    <button
+                      onClick={() => router.push('/dashboard')}
+                      className="bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] text-black font-semibold py-3 px-6 rounded-lg hover:opacity-90 transition-opacity"
+                    >
+                      Go to Dashboard
+                    </button>
                   </div>
-                  <h1 className="text-2xl md:text-3xl font-bold mb-4 text-red-400">Checkout Session Error</h1>
-                  <p className="text-white/80 mb-6 max-w-2xl mx-auto">{error}</p>
-                  <p className="text-white/60 text-sm mb-6">You will be redirected to start a new checkout in a few seconds...</p>
-                  <button
-                    onClick={() => router.push('/add')}
-                    className="bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] text-black font-semibold py-3 px-6 rounded-lg hover:opacity-90 transition-opacity"
-                  >
-                    Start New Checkout
-                  </button>
-                </div>
+                ) : (
+                  <div className="bg-red-500/10 border border-red-500/20 rounded-xl p-8 mb-8">
+                    <div className="w-16 h-16 bg-red-500/20 rounded-full flex items-center justify-center mx-auto mb-4">
+                      <svg className="w-8 h-8 text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z" />
+                      </svg>
+                    </div>
+                    <h1 className="text-2xl md:text-3xl font-bold mb-4 text-red-400">Checkout Session Error</h1>
+                    <p className="text-white/80 mb-6 max-w-2xl mx-auto">{error}</p>
+                    <p className="text-white/60 text-sm mb-6">You will be redirected to start a new checkout in a few seconds...</p>
+                    <button
+                      onClick={() => router.push('/add')}
+                      className="bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] text-black font-semibold py-3 px-6 rounded-lg hover:opacity-90 transition-opacity"
+                    >
+                      Start New Checkout
+                    </button>
+                  </div>
+                )}
               </div>
             </div>
           </div>
