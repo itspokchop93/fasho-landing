@@ -197,7 +197,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
               "settingName": "hostedPaymentIFrameCommunicatorUrl",
               "settingValue": "{\"url\": \"https://fasho-landing.vercel.app/iframe-communicator.html\"}"
             },
-            {
+                        {
               "settingName": "hostedPaymentStyleOptions",
               "settingValue": "{\"bgColor\": \"#333333\"}"
             },
@@ -224,14 +224,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             {
               "settingName": "hostedPaymentOrderOptions",
               "settingValue": "{\"show\": true, \"merchantName\": \"FASHO.co - Digital Marketing\"}"
-            },
-            {
-              "settingName": "hostedPaymentHeaderText",
-              "settingValue": "FASHO.co - Digital Marketing"
-            },
-            {
-              "settingName": "hostedPaymentFooterText",
-              "settingValue": "FASHO.co - Digital Marketing"
             },
             {
               "settingName": "hostedPaymentButtonOptions",
