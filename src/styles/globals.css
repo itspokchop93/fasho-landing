@@ -511,21 +511,21 @@ input:-webkit-autofill:active {
 .dashboard-background::before {
   content: '';
   position: absolute;
-  top: 5%;
+  top: -10%;
   left: 50%;
   transform: translateX(-50%);
-  width: 1200px;
-  height: 600px;
+  width: 1400px;
+  height: 700px;
   background: radial-gradient(
     ellipse at center,
-    rgba(5, 150, 105, 0.2) 0%,
-    rgba(16, 185, 129, 0.15) 25%,
-    rgba(59, 130, 246, 0.1) 50%,
-    rgba(147, 51, 234, 0.08) 75%,
+    rgba(5, 150, 105, 0.25) 0%,
+    rgba(16, 185, 129, 0.2) 25%,
+    rgba(59, 130, 246, 0.15) 50%,
+    rgba(147, 51, 234, 0.1) 75%,
     transparent 100%
   );
   border-radius: 50%;
-  filter: blur(60px);
+  filter: blur(80px);
   pointer-events: none;
   z-index: 0;
 }

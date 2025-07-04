@@ -22,6 +22,8 @@ export default function Dashboard({ user }: DashboardProps) {
   const [expandedOrders, setExpandedOrders] = useState<Set<string>>(new Set())
   const [activeTab, setActiveTab] = useState('dashboard')
   const [showSignOutModal, setShowSignOutModal] = useState(false)
+  const [chartAnimating, setChartAnimating] = useState(false)
+  const [animatedData, setAnimatedData] = useState<number[]>([])
   const supabase = createClient()
 
   const toggleOrderExpansion = (orderId: string) => {
@@ -54,6 +56,101 @@ export default function Dashboard({ user }: DashboardProps) {
     fetchOrders()
   }, [])
 
+  // Calculate total estimated plays from orders in the last 30 days
+  const calculateTotalPlays = () => {
+    const thirtyDaysAgo = new Date()
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30)
+    
+    const recentOrders = orders.filter(order => {
+      const orderDate = new Date(order.createdAt)
+      return orderDate >= thirtyDaysAgo
+    })
+    
+    let totalPlays = 0
+    recentOrders.forEach(order => {
+      if (order.items && order.items.length > 0) {
+        order.items.forEach((item: any) => {
+          // Extract plays from package (e.g., "1k Plays" -> 1000)
+          const playsMatch = item.package.plays.match(/(\d+)k?\s*Plays/i)
+          if (playsMatch) {
+            let plays = parseInt(playsMatch[1])
+            if (item.package.plays.toLowerCase().includes('k')) {
+              plays *= 1000
+            }
+            totalPlays += plays
+          }
+        })
+      }
+    })
+    
+    return totalPlays
+  }
+
+  // Generate 30-day projection data
+  const generateChartData = () => {
+    const totalPlays = calculateTotalPlays()
+    if (totalPlays === 0) return []
+    
+    const dailyData = []
+    for (let i = 0; i < 30; i++) {
+      const progress = i / 29
+      const randomVariation = 0.85 + Math.random() * 0.3 // 85-115% of expected
+      const dailyPlays = Math.floor(totalPlays * progress * randomVariation)
+      dailyData.push(Math.max(0, dailyPlays))
+    }
+    
+    return dailyData
+  }
+
+  // Animation effect for chart
+  useEffect(() => {
+    if (orders.length === 0) return
+    
+    setChartAnimating(true)
+    const targetData = generateChartData()
+    
+    let animationId: number
+    let startTime: number
+    
+    const animate = (timestamp: number) => {
+      if (!startTime) startTime = timestamp
+      
+      const elapsed = timestamp - startTime
+      const duration = 3000 // Increased to 3 seconds for smoother animation
+      const progress = Math.min(elapsed / duration, 1)
+      
+      // Smoother easing function (ease-out-quart)
+      const easeOutQuart = 1 - Math.pow(1 - progress, 4)
+      
+      // Animate each point from left to right with smoother staggered timing
+      const newAnimatedData = targetData.map((targetValue, index) => {
+        const pointDelay = (index / 29) * 0.3 // Reduced stagger for smoother effect
+        const pointProgress = Math.max(0, Math.min(1, (easeOutQuart - pointDelay) / (1 - pointDelay)))
+        
+        // Apply smooth interpolation
+        const smoothProgress = pointProgress * pointProgress * (3 - 2 * pointProgress) // Smoothstep
+        return targetValue * smoothProgress
+      })
+      
+      setAnimatedData(newAnimatedData)
+      
+      if (progress >= 1) {
+        setChartAnimating(false)
+        return
+      }
+      
+      animationId = requestAnimationFrame(animate)
+    }
+    
+    animationId = requestAnimationFrame(animate)
+    
+    return () => {
+      if (animationId) {
+        cancelAnimationFrame(animationId)
+      }
+    }
+  }, [orders])
+
   const handleSignOut = async () => {
     setIsLoading(true)
     const { error } = await supabase.auth.signOut()
@@ -70,6 +167,44 @@ export default function Dashboard({ user }: DashboardProps) {
   const totalCampaigns = orders.length
   const runningCampaigns = orders.filter(order => order.status === 'marketing in progress').length
   const completedCampaigns = orders.filter(order => order.status === 'completed').length
+
+  // Format numbers with K notation for Y-axis labels
+  const formatNumberWithK = (num: number): string => {
+    if (num >= 1000000) {
+      return (num / 1000000).toFixed(1).replace(/\.0$/, '') + 'M'
+    }
+    if (num >= 1000) {
+      return (num / 1000).toFixed(0) + 'K'
+    }
+    return num.toString()
+  }
+
+  // Get Y-axis labels for the chart with K notation
+  const getYAxisLabels = (maxValue: number) => {
+    if (maxValue === 0) return ['10K', '5K', '0']
+    
+    let step: number
+    if (maxValue >= 50000) {
+      step = 10000
+    } else if (maxValue >= 20000) {
+      step = 5000
+    } else if (maxValue >= 5000) {
+      step = 1000
+    } else {
+      step = 500
+    }
+    
+    const topValue = Math.ceil(maxValue / step) * step
+    const midValue = Math.floor(topValue / 2 / step) * step
+    
+    return [formatNumberWithK(topValue), formatNumberWithK(midValue), '0']
+  }
+
+  const totalPlays = calculateTotalPlays()
+  const chartData = generateChartData()
+  const displayData = animatedData.length > 0 ? animatedData : chartData
+  const maxPlays = Math.max(...chartData, 1)
+  const yAxisLabels = getYAxisLabels(maxPlays)
 
   const sidebarItems = [
     { id: 'dashboard', label: 'Dashboard', icon: 'M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2H5a2 2 0 00-2-2z' },
@@ -157,7 +292,10 @@ export default function Dashboard({ user }: DashboardProps) {
 
         {/* Chart Section */}
         <div className="bg-gradient-to-br from-gray-950/90 to-gray-900/90 backdrop-blur-sm rounded-2xl p-6 border border-gray-800/30">
-          <h3 className="text-xl font-semibold text-white mb-6">This Month's Projected Growth</h3>
+          <h3 className="text-xl font-semibold text-white mb-4">Next 30 Days Projected Plays</h3>
+          <div className="text-sm text-gray-400 mb-4">
+            Total estimated plays: {totalPlays.toLocaleString()}
+          </div>
           <div className="relative h-64">
             {/* Enhanced Chart Visualization */}
             <svg className="w-full h-full" viewBox="0 0 400 200">
@@ -165,6 +303,10 @@ export default function Dashboard({ user }: DashboardProps) {
                 <linearGradient id="chartGradient" x1="0%" y1="0%" x2="100%" y2="0%">
                   <stop offset="0%" style={{ stopColor: '#10b981', stopOpacity: 1 }} />
                   <stop offset="100%" style={{ stopColor: '#3b82f6', stopOpacity: 1 }} />
+                </linearGradient>
+                <linearGradient id="areaGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+                  <stop offset="0%" style={{ stopColor: '#10b981', stopOpacity: 0.3 }} />
+                  <stop offset="100%" style={{ stopColor: '#3b82f6', stopOpacity: 0.1 }} />
                 </linearGradient>
                 <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
                   <feGaussianBlur stdDeviation="4" result="coloredBlur"/>
@@ -190,44 +332,68 @@ export default function Dashboard({ user }: DashboardProps) {
                 <line x1="0" y1="160" x2="400" y2="160" />
               </g>
               
-              {/* Glowing Background Line */}
-              <polyline
-                fill="none"
-                stroke="url(#chartGradient)"
-                strokeWidth="8"
-                opacity="0.3"
-                filter="url(#strongGlow)"
-                points="20,160 80,140 140,100 200,80 260,60 320,40 380,20"
-              />
+              {/* Area under the curve */}
+              {displayData.length > 0 && (
+                <path
+                  d={`M 0 200 ${displayData.map((plays, index) => {
+                    const x = (index / (displayData.length - 1)) * 400;
+                    const y = maxPlays > 0 ? 200 - (plays / maxPlays) * 160 : 200;
+                    return `L ${x} ${y}`;
+                  }).join(' ')} L 400 200 Z`}
+                  fill="url(#areaGradient)"
+                />
+              )}
               
               {/* Main Glowing Chart Line */}
-              <polyline
-                fill="none"
-                stroke="url(#chartGradient)"
-                strokeWidth="4"
-                filter="url(#glow)"
-                points="20,160 80,140 140,100 200,80 260,60 320,40 380,20"
-              />
+              {displayData.length > 0 && (
+                <path
+                  d={`M ${displayData.map((plays, index) => {
+                    const x = (index / (displayData.length - 1)) * 400;
+                    const y = maxPlays > 0 ? 200 - (plays / maxPlays) * 160 : 200;
+                    return `${x} ${y}`;
+                  }).join(' L ')}`}
+                  fill="none"
+                  stroke="url(#chartGradient)"
+                  strokeWidth="3"
+                  filter="url(#glow)"
+                />
+              )}
               
               {/* Data Points with Glow */}
-              <g fill="url(#chartGradient)" filter="url(#glow)">
-                <circle cx="20" cy="160" r="5" />
-                <circle cx="80" cy="140" r="5" />
-                <circle cx="140" cy="100" r="5" />
-                <circle cx="200" cy="80" r="5" />
-                <circle cx="260" cy="60" r="5" />
-                <circle cx="320" cy="40" r="5" />
-                <circle cx="380" cy="20" r="5" />
-              </g>
+              {displayData.map((plays, index) => {
+                const x = (index / (displayData.length - 1)) * 400;
+                const y = maxPlays > 0 ? 200 - (plays / maxPlays) * 160 : 200;
+                
+                return (
+                  <circle
+                    key={index}
+                    cx={x}
+                    cy={y}
+                    r="4"
+                    fill="url(#chartGradient)"
+                    filter="url(#glow)"
+                  />
+                );
+              })}
             </svg>
+            
+            {/* Y-axis labels */}
+            <div className="absolute left-0 top-0 h-full flex flex-col justify-between text-xs text-gray-400 -ml-12 w-10 text-right pr-2">
+              <span className={`transition-opacity duration-500 ${totalPlays > 0 ? 'opacity-100' : 'opacity-30'}`}>
+                {yAxisLabels[0]}
+              </span>
+              <span className={`transition-opacity duration-500 ${totalPlays > 0 ? 'opacity-100' : 'opacity-30'}`}>
+                {yAxisLabels[1]}
+              </span>
+              <span>{yAxisLabels[2]}</span>
+            </div>
           </div>
           
           {/* Chart Labels */}
           <div className="flex justify-between mt-4 text-sm text-gray-400">
-            <span>Week 1</span>
-            <span>Week 2</span>
-            <span>Week 3</span>
-            <span>Week 4</span>
+            <span>Day 1</span>
+            <span>Day 15</span>
+            <span>Day 30</span>
           </div>
         </div>
       </div>
