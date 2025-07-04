@@ -896,6 +896,16 @@ export default function CheckoutPage() {
     handleSuccessfulPaymentRef.current = handleSuccessfulPayment;
   }, [handleSuccessfulPayment]);
 
+  // Auto-submit the payment form when token is available
+  useEffect(() => {
+    if (paymentToken && showPaymentForm) {
+      console.log('Auto-submitting payment form with token');
+      setTimeout(() => {
+        submitTokenToIframe();
+      }, 500); // Small delay to ensure iframe is ready
+    }
+  }, [paymentToken, showPaymentForm]);
+
   if (!router.isReady || orderItems.length === 0) {
     return (
       <div className="min-h-screen bg-black text-white flex items-center justify-center">

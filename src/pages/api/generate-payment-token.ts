@@ -106,9 +106,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       zip: billingInfo.zip,
       country: billingInfo.country
     };
+    
     // Remove any fields that are empty strings or undefined
     Object.keys(billTo).forEach(key => {
-      if (!billTo[key]) {
+      if (!billTo[key] || billTo[key] === '') {
         delete billTo[key];
       }
     });
@@ -124,6 +125,12 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     if (billTo.zip && !/^\d{5}(-\d{4})?$/.test(billTo.zip)) {
       console.error('DEBUG: billTo.zip is not valid US ZIP:', billTo.zip);
       return res.status(400).json({ success: false, message: 'ZIP code must be 5 or 9 digits' });
+    }
+    
+    // Ensure required fields are present
+    if (!billTo.firstName || !billTo.lastName || !billTo.address || !billTo.city || !billTo.state || !billTo.zip || !billTo.country) {
+      console.error('DEBUG: Missing required billing fields:', billTo);
+      return res.status(400).json({ success: false, message: 'All billing information fields are required' });
     }
 
     // Create the Accept Hosted request
@@ -153,7 +160,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             },
             {
               "settingName": "hostedPaymentIFrameCommunicatorUrl",
-              "settingValue": "\"https://fasho-landing.vercel.app/iframe-communicator.html\""
+              "settingValue": "https://fasho-landing.vercel.app/iframe-communicator.html"
             }
           ]
         }
