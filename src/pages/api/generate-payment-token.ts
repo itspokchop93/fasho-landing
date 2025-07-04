@@ -96,6 +96,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const timestamp = Date.now().toString();
     const sequence = Math.floor(Math.random() * 1000000).toString();
     
+    // Create a shorter, simpler invoice number to avoid conflicts
+    const shortTimestamp = timestamp.slice(-8); // Last 8 digits of timestamp
+    const invoiceNumber = `INV${shortTimestamp}`;
+    
     // Defensive: Only include supported, non-empty fields in billTo
     const billTo: any = {
       firstName: billingInfo.firstName,
@@ -162,7 +166,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           "transactionType": "authCaptureTransaction",
           "amount": amount.toFixed(2),
           "order": {
-            "invoiceNumber": `INV-${timestamp}`,
+            "invoiceNumber": invoiceNumber,
             "description": `Fasho Music Promotion - ${orderItems.length} package(s)`
           },
           "customer": {
@@ -208,6 +212,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         }
       }
     }, null, 2));
+    
+    // DEBUGGING: Log the exact billTo object being sent
+    console.log('DEBUGGING: billTo object:', JSON.stringify(billTo, null, 2));
 
     // Make request to Authorize.net
     const response = await fetch(`${baseUrl}/xml/v1/request.api`, {
