@@ -199,7 +199,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             },
                         {
               "settingName": "hostedPaymentStyleOptions",
-              "settingValue": "{\"bgColor\": \"#333333\"}"
+              "settingValue": "{\"bgColor\": \"#59e3a5\"}"
             },
             {
               "settingName": "hostedPaymentPaymentOptions",
@@ -215,7 +215,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             },
             {
               "settingName": "hostedPaymentBillingAddressOptions",
-              "settingValue": "{\"show\": true, \"required\": false}"
+              "settingValue": "{\"show\": false, \"required\": false}"
             },
             {
               "settingName": "hostedPaymentCustomerOptions",
@@ -223,11 +223,11 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             },
             {
               "settingName": "hostedPaymentOrderOptions",
-              "settingValue": "{\"show\": true, \"merchantName\": \"FASHO.co - Digital Marketing\"}"
+              "settingValue": "{\"show\": true, \"merchantName\": \"FASHO.co\"}"
             },
             {
               "settingName": "hostedPaymentButtonOptions",
-              "settingValue": "{\"text\": \"Pay Now\"}"
+              "settingValue": "{\"text\": \"Complete Checkout\"}"
             }
           ]
         }
