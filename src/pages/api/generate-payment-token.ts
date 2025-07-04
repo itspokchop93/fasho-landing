@@ -199,7 +199,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             },
                         {
               "settingName": "hostedPaymentStyleOptions",
-              "settingValue": "{\"bgColor\": \"#59e3a5\"}"
+              "settingValue": "{\"bgColor\": \"#49ba87\"}"
             },
             {
               "settingName": "hostedPaymentPaymentOptions",
