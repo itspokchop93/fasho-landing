@@ -46,6 +46,19 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       console.error('DEBUG: Missing customerEmail');
       return res.status(400).json({ success: false, message: 'Missing required field: customerEmail' });
     }
+    
+    // Validate email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(customerEmail)) {
+      console.error('DEBUG: Invalid email format:', customerEmail);
+      return res.status(400).json({ success: false, message: 'Invalid email format' });
+    }
+    
+    // Check email length (Authorize.net has a 255 character limit)
+    if (customerEmail.length > 255) {
+      console.error('DEBUG: Email too long:', customerEmail.length);
+      return res.status(400).json({ success: false, message: 'Email address is too long (max 255 characters)' });
+    }
     if (!billingInfo) {
       console.error('DEBUG: Missing billingInfo');
       return res.status(400).json({ success: false, message: 'Missing required field: billingInfo' });
@@ -170,7 +183,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             "description": `Fasho Music Promotion - ${orderItems.length} package(s)`
           },
           "customer": {
-            "email": customerEmail
+            "email": customerEmail.toString().trim()
           },
           "billTo": billTo
         },
@@ -215,6 +228,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     
     // DEBUGGING: Log the exact billTo object being sent
     console.log('DEBUGGING: billTo object:', JSON.stringify(billTo, null, 2));
+    console.log('DEBUGGING: customerEmail:', customerEmail);
+    console.log('DEBUGGING: customerEmail length:', customerEmail.length);
+    console.log('DEBUGGING: customerEmail type:', typeof customerEmail);
 
     // Make request to Authorize.net
     const response = await fetch(`${baseUrl}/xml/v1/request.api`, {
@@ -258,7 +274,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         // Temporary debugging - include full error details
         debug: {
           messages: responseData.messages,
-          fullResponse: responseData
+          fullResponse: responseData,
+          errorMessage: responseData.messages?.message?.[0]?.text,
+          errorCode: responseData.messages?.message?.[0]?.code
         }
       });
     }
