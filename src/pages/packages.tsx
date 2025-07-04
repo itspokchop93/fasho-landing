@@ -233,21 +233,44 @@ export default function PackagesPage() {
     };
   }, [selectedPackage]);
 
-  const handleNext = () => {
+  const handleNext = async () => {
     if (!selectedPackage) {
       alert("Please select a package before continuing");
       return;
     }
 
     if (isLastSong || isOnlySong) {
-      // Go to checkout with tracks and selected packages
-      router.push({
-        pathname: '/checkout',
-        query: {
-          tracks: JSON.stringify(tracks),
-          selectedPackages: JSON.stringify(selectedPackages)
+      try {
+        // Create secure checkout session
+        const response = await fetch('/api/create-checkout-session', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            tracks,
+            selectedPackages,
+            userId: null // Can be updated when auth is added
+          }),
+        });
+
+        if (!response.ok) {
+          throw new Error('Failed to create checkout session');
         }
-      });
+
+        const { sessionId } = await response.json();
+
+        // Go to checkout with session ID
+        router.push({
+          pathname: '/checkout',
+          query: {
+            sessionId
+          }
+        });
+      } catch (error) {
+        console.error('Error creating checkout session:', error);
+        alert('Failed to proceed to checkout. Please try again.');
+      }
     } else {
       // Go to next song
       const newIndex = currentSongIndex + 1;

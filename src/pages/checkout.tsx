@@ -108,6 +108,7 @@ export default function CheckoutPage() {
   const [total, setTotal] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
+  const [sessionId, setSessionId] = useState<string>('');
   const [fieldErrors, setFieldErrors] = useState<{[key: string]: string}>({});
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [isLoginMode, setIsLoginMode] = useState(false);
@@ -262,41 +263,107 @@ export default function CheckoutPage() {
     setTotal(finalTotal);
   };
 
-  // Initialize data from URL params or localStorage
+  // Validate checkout session and load data
   useEffect(() => {
-    if (!router.isReady) return;
-    
-    let finalTracksParam = tracksParam;
-    let finalSelectedPackagesParam = selectedPackagesParam;
-    
-    // Check if we have stored cart data from login/logout
-    const storedCart = localStorage.getItem('checkoutCart');
-    if (storedCart) {
-      try {
-        const parsedCart = JSON.parse(storedCart);
-        finalTracksParam = parsedCart.tracks;
-        finalSelectedPackagesParam = parsedCart.selectedPackages;
-        localStorage.removeItem('checkoutCart'); // Clean up
-      } catch (error) {
-        console.error('Failed to parse stored cart:', error);
+    const validateSession = async () => {
+      if (!router.isReady) return;
+
+      const { sessionId: sessionIdParam, tracks: tracksParam, selectedPackages: selectedPackagesParam } = router.query;
+      
+      // Check for legacy URL parameters (backward compatibility)
+      if (tracksParam && selectedPackagesParam && !sessionIdParam) {
+        // Handle old-style checkout URLs by redirecting to session-based approach
+        try {
+          const response = await fetch('/api/create-checkout-session', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              tracks: JSON.parse(tracksParam as string),
+              selectedPackages: JSON.parse(selectedPackagesParam as string),
+              userId: null
+            }),
+          });
+
+          if (response.ok) {
+            const { sessionId: newSessionId } = await response.json();
+            router.replace({
+              pathname: '/checkout',
+              query: { sessionId: newSessionId }
+            });
+            return;
+          }
+        } catch (error) {
+          console.error('Failed to create session for legacy URL:', error);
+        }
       }
-    }
-    
-    if (finalTracksParam && finalSelectedPackagesParam && typeof finalTracksParam === 'string' && typeof finalSelectedPackagesParam === 'string') {
+
+      if (!sessionIdParam) {
+        console.error('No session ID provided');
+        router.push('/add');
+        return;
+      }
+
       try {
-        const parsedTracks = JSON.parse(finalTracksParam) as Track[];
-        const parsedPackages = JSON.parse(finalSelectedPackagesParam) as {[key: number]: string};
+        // Validate session
+        const response = await fetch('/api/validate-checkout-session', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ sessionId: sessionIdParam }),
+        });
+
+        if (!response.ok) {
+          const errorData = await response.json();
+          console.error('Session validation failed:', errorData);
+          
+          if (errorData.reason === 'already_used') {
+            setError('This checkout session has already been completed. Please start a new checkout.');
+          } else if (errorData.reason === 'expired') {
+            setError('This checkout session has expired. Please start a new checkout.');
+          } else {
+            setError('Invalid checkout session. Please start a new checkout.');
+          }
+          
+          // Redirect after 3 seconds
+          setTimeout(() => {
+            router.push('/add');
+          }, 3000);
+          return;
+        }
+
+        const { sessionData } = await response.json();
         
-        setTracks(parsedTracks);
-        setSelectedPackages(parsedPackages);
+        // For development: if no sessionData, fall back to URL params
+        let sessionTracks, sessionPackages;
+        if (sessionData) {
+          sessionTracks = sessionData.tracks;
+          sessionPackages = sessionData.selectedPackages;
+        } else {
+          // Fall back to URL parameters for development
+          if (tracksParam && selectedPackagesParam) {
+            sessionTracks = JSON.parse(tracksParam as string);
+            sessionPackages = JSON.parse(selectedPackagesParam as string);
+          } else {
+            throw new Error('No session data available');
+          }
+        }
+        
+        setTracks(sessionTracks);
+        setSelectedPackages(sessionPackages);
+        
+        // Store session ID for later use
+        setSessionId(sessionIdParam as string);
         
         // Build order items
         const items: OrderItem[] = [];
         let calculatedSubtotal = 0;
         let calculatedDiscount = 0;
         
-        parsedTracks.forEach((track, index) => {
-          const packageId = parsedPackages[index];
+        sessionTracks.forEach((track: Track, index: number) => {
+          const packageId = sessionPackages[index];
           const selectedPackage = packages.find(p => p.id === packageId);
           
           if (selectedPackage) {
@@ -354,13 +421,16 @@ export default function CheckoutPage() {
         }
         
       } catch (error) {
-        console.error("Failed to parse checkout data:", error);
-        router.push('/add');
+        console.error('Error validating session:', error);
+        setError('Failed to load checkout session. Please try again.');
+        setTimeout(() => {
+          router.push('/add');
+        }, 3000);
       }
-    } else {
-      router.push('/add');
-    }
-  }, [router.isReady, tracksParam, selectedPackagesParam]);
+    };
+
+    validateSession();
+  }, [router.isReady, router.query]);
 
   // Update totals when add-ons change
   useEffect(() => {
@@ -881,6 +951,25 @@ export default function CheckoutPage() {
 
       console.log('🚀 CHECKOUT: Order created successfully:', orderResult.order);
       
+      // Mark checkout session as completed
+      if (sessionId) {
+        try {
+          await fetch('/api/complete-checkout-session', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ 
+              sessionId
+            }),
+          });
+          console.log('🚀 CHECKOUT: Session marked as completed');
+        } catch (error) {
+          console.error('Error marking session as completed:', error);
+          // Don't fail the entire process if session completion fails
+        }
+      }
+      
       // Store order data for thank you page using the pending order data + order number
       const orderData = {
         items: pendingOrder.items,
@@ -1108,7 +1197,7 @@ export default function CheckoutPage() {
     }
   }, [paymentToken, showPaymentForm]);
 
-  if (!router.isReady || orderItems.length === 0) {
+  if (!router.isReady || (orderItems.length === 0 && !error)) {
     return (
       <div className="min-h-screen bg-black text-white flex items-center justify-center">
         <div className="text-center">
@@ -1116,6 +1205,51 @@ export default function CheckoutPage() {
           <p>Loading checkout...</p>
         </div>
       </div>
+    );
+  }
+
+  // Display session validation errors
+  if (error) {
+    return (
+      <>
+        <Head>
+          <title>Checkout Error - FASHO</title>
+          <meta name="description" content="Checkout session error" />
+        </Head>
+        <Header />
+        
+        <main className="min-h-screen relative text-white pt-20 pb-12">
+          {/* Background layers */}
+          <div className="fixed inset-0 bg-black z-0"></div>
+          <div 
+            className="fixed inset-0 bg-cover bg-center bg-no-repeat opacity-20 z-10"
+            style={{ backgroundImage: 'url(/marble-bg.jpg)' }}
+          ></div>
+          
+          <div className="relative z-20">
+            <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+              <div className="text-center">
+                <div className="bg-red-500/10 border border-red-500/20 rounded-xl p-8 mb-8">
+                  <div className="w-16 h-16 bg-red-500/20 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <svg className="w-8 h-8 text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z" />
+                    </svg>
+                  </div>
+                  <h1 className="text-2xl md:text-3xl font-bold mb-4 text-red-400">Checkout Session Error</h1>
+                  <p className="text-white/80 mb-6 max-w-2xl mx-auto">{error}</p>
+                  <p className="text-white/60 text-sm mb-6">You will be redirected to start a new checkout in a few seconds...</p>
+                  <button
+                    onClick={() => router.push('/add')}
+                    className="bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] text-black font-semibold py-3 px-6 rounded-lg hover:opacity-90 transition-opacity"
+                  >
+                    Start New Checkout
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </main>
+      </>
     );
   }
 

@@ -220,7 +220,7 @@ export default function AddSongsPage() {
     }
   };
 
-  const promote = () => {
+  const promote = async () => {
     // Check if we're coming back from checkout with remaining cart data
     if (typeof window !== "undefined") {
       const checkoutCart = localStorage.getItem("checkoutCart");
@@ -232,16 +232,34 @@ export default function AddSongsPage() {
           // Clear the checkout cart since we're moving forward
           localStorage.removeItem("checkoutCart");
           
-          // Go directly to checkout with the updated tracks and previous package selections
-          router.push({
-            pathname: "/checkout",
-            query: {
-              tracks: JSON.stringify(tracks),
-              selectedPackages: JSON.stringify(selectedPackages),
+          // Create new session and go to checkout
+          const response = await fetch('/api/create-checkout-session', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
             },
+            body: JSON.stringify({
+              tracks,
+              selectedPackages,
+              userId: null
+            }),
           });
-          return;
-        } catch {}
+
+          if (response.ok) {
+            const { sessionId } = await response.json();
+            router.push({
+              pathname: "/checkout",
+              query: { sessionId }
+            });
+            return;
+          } else {
+            console.error('Failed to create checkout session');
+            // Fall back to normal packages flow
+          }
+        } catch (error) {
+          console.error('Failed to create checkout session:', error);
+          // Fall back to normal packages flow
+        }
       }
     }
 
