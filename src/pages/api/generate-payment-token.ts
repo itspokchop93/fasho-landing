@@ -127,10 +127,28 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       return res.status(400).json({ success: false, message: 'ZIP code must be 5 or 9 digits' });
     }
     
-    // Ensure required fields are present
+    // Ensure required fields are present and valid
     if (!billTo.firstName || !billTo.lastName || !billTo.address || !billTo.city || !billTo.state || !billTo.zip || !billTo.country) {
       console.error('DEBUG: Missing required billing fields:', billTo);
       return res.status(400).json({ success: false, message: 'All billing information fields are required' });
+    }
+    
+    // Additional validation - check for common issues
+    if (billTo.firstName.length > 50) {
+      console.error('DEBUG: firstName too long:', billTo.firstName.length);
+      return res.status(400).json({ success: false, message: 'First name is too long (max 50 characters)' });
+    }
+    if (billTo.lastName.length > 50) {
+      console.error('DEBUG: lastName too long:', billTo.lastName.length);
+      return res.status(400).json({ success: false, message: 'Last name is too long (max 50 characters)' });
+    }
+    if (billTo.address.length > 60) {
+      console.error('DEBUG: address too long:', billTo.address.length);
+      return res.status(400).json({ success: false, message: 'Address is too long (max 60 characters)' });
+    }
+    if (billTo.city.length > 40) {
+      console.error('DEBUG: city too long:', billTo.city.length);
+      return res.status(400).json({ success: false, message: 'City is too long (max 40 characters)' });
     }
 
     // Create the Accept Hosted request
@@ -229,7 +247,12 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       console.error('Authorize.net API error:', responseData.messages);
       return res.status(400).json({
         success: false,
-        message: responseData.messages?.message?.[0]?.text || 'Payment setup failed'
+        message: responseData.messages?.message?.[0]?.text || 'Payment setup failed',
+        // Temporary debugging - include full error details
+        debug: {
+          messages: responseData.messages,
+          fullResponse: responseData
+        }
       });
     }
 

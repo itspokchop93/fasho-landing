@@ -793,6 +793,7 @@ export default function CheckoutPage() {
 
       if (!data.success) {
         console.error('Payment token generation failed:', data);
+        console.error('Debug info:', data.debug);
         setError(data.message || 'Payment setup failed');
         return;
       }
