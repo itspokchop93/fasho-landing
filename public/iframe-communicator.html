@@ -7,12 +7,20 @@
 </head>
 <body>
     <script type="text/javascript">
-        console.log('Communicator loaded!');
-        console.log('--- FRAME DEBUG ---');
-        console.log('window.location.href:', window.location.href);
-        console.log('document.referrer:', document.referrer);
-        console.log('window.parent === window.top:', window.parent === window.top);
-        console.log('-------------------');
+        console.log('🔧 IFRAME COMMUNICATOR: Loaded successfully!');
+        console.log('🔧 IFRAME COMMUNICATOR: window.location.href:', window.location.href);
+        console.log('🔧 IFRAME COMMUNICATOR: document.referrer:', document.referrer);
+        console.log('🔧 IFRAME COMMUNICATOR: window.parent === window.top:', window.parent === window.top);
+        console.log('🔧 IFRAME COMMUNICATOR: AuthorizeNetIFrame object created:', typeof window.AuthorizeNetIFrame);
+        
+        // Test if we can communicate with parent immediately
+        setTimeout(function() {
+            console.log('🔧 IFRAME COMMUNICATOR: Testing parent communication...');
+            sendToAllParents({
+                type: 'IFRAME_LOADED',
+                message: 'Iframe communicator is ready'
+            });
+        }, 1000);
         
         // Parse query string function
         function parseQueryString(str) {
@@ -42,8 +50,8 @@
         // Create the AuthorizeNetIFrame global object as required by the API
         window.AuthorizeNetIFrame = {
             onReceiveCommunication: function(querystr) {
-                console.log('==============================');
-                console.log('AuthorizeNetIFrame.onReceiveCommunication called with:', querystr);
+                console.log('🔧 IFRAME COMMUNICATOR: ==============================');
+                console.log('🔧 IFRAME COMMUNICATOR: AuthorizeNetIFrame.onReceiveCommunication called with:', querystr);
                 
                 var params = parseQueryString(querystr);
                 console.log('Parsed params:', params);

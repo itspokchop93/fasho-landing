@@ -315,7 +315,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     res.status(200).json({
       success: true,
-      token: token
+      token: token,
+      paymentFormUrl: `${paymentFormUrl}/payment/payment`
     });
 
   } catch (error: any) {

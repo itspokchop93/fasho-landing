@@ -77,6 +77,7 @@ export default function CheckoutPage() {
   const [isCheckingEmail, setIsCheckingEmail] = useState(false);
   const [showPaymentForm, setShowPaymentForm] = useState(false);
   const [paymentToken, setPaymentToken] = useState<string>('');
+  const [paymentFormUrl, setPaymentFormUrl] = useState<string>('');
   const [loginError, setLoginError] = useState('');
   const [emailStatus, setEmailStatus] = useState<null | 'available' | 'exists' | 'unverified' | 'invalid' | 'error'>(null);
   const [loginInfoMessage, setLoginInfoMessage] = useState<string | null>(null);
@@ -510,6 +511,9 @@ export default function CheckoutPage() {
             iframe.style.height = data.height + 'px';
           }
           break;
+        case 'IFRAME_LOADED':
+          console.log('🔧 PARENT PAGE: Iframe communicator loaded successfully:', data.message);
+          break;
         default:
           console.log('❓ PARENT PAGE: Unknown message type:', data.type, '| Full data:', data);
       }
@@ -875,6 +879,7 @@ export default function CheckoutPage() {
 
       // Show payment iframe with the token
       setPaymentToken(data.token);
+      setPaymentFormUrl(data.paymentFormUrl);
       setShowPaymentForm(true);
       
     } catch (error) {
@@ -1517,7 +1522,7 @@ export default function CheckoutPage() {
                       <form 
                         id="paymentIframeForm" 
                         method="post" 
-                        action="https://test.authorize.net/payment/payment" 
+                        action={paymentFormUrl || "https://test.authorize.net/payment/payment"} 
                         target="paymentIframe" 
                         style={{ display: 'none' }}
                       >
