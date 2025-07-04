@@ -32,6 +32,19 @@ export default function AddSongsPage() {
     // If tracks already initialized, skip
     if (tracks.length > 0) return;
 
+    // Check if we're coming back from checkout with remaining tracks
+    if (typeof window !== "undefined") {
+      const checkoutCart = localStorage.getItem("checkoutCart");
+      if (checkoutCart) {
+        try {
+          const cartData = JSON.parse(checkoutCart);
+          const parsedTracks = JSON.parse(cartData.tracks) as Track[];
+          setTracks(parsedTracks);
+          return;
+        } catch {}
+      }
+    }
+
     // Check if we're coming back from "Change Songs" with remaining tracks
     if (typeof window !== "undefined") {
       const remainingTracks = sessionStorage.getItem("remainingTracks");
@@ -196,7 +209,43 @@ export default function AddSongsPage() {
     }
   };
 
+  // Remove a track from the lineup
+  const removeTrack = (indexToRemove: number) => {
+    const newTracks = tracks.filter((_, index) => index !== indexToRemove);
+    setTracks(newTracks);
+    
+    // If no tracks left, redirect to home page
+    if (newTracks.length === 0) {
+      router.push('/');
+    }
+  };
+
   const promote = () => {
+    // Check if we're coming back from checkout with remaining cart data
+    if (typeof window !== "undefined") {
+      const checkoutCart = localStorage.getItem("checkoutCart");
+      if (checkoutCart) {
+        try {
+          const cartData = JSON.parse(checkoutCart);
+          const selectedPackages = JSON.parse(cartData.selectedPackages);
+          
+          // Clear the checkout cart since we're moving forward
+          localStorage.removeItem("checkoutCart");
+          
+          // Go directly to checkout with the updated tracks and previous package selections
+          router.push({
+            pathname: "/checkout",
+            query: {
+              tracks: JSON.stringify(tracks),
+              selectedPackages: JSON.stringify(selectedPackages),
+            },
+          });
+          return;
+        } catch {}
+      }
+    }
+
+    // Normal flow - go to packages page
     router.push({
       pathname: "/packages",
       query: {
@@ -219,7 +268,11 @@ export default function AddSongsPage() {
         <div className="flex gap-6 mb-10 flex-wrap justify-center items-center">
           {tracks.map((t, idx) => (
             <React.Fragment key={idx}>
-              <SelectedTrackCard track={t} showDiscount={idx > 0} />
+              <SelectedTrackCard 
+                track={t} 
+                showDiscount={idx > 0} 
+                onRemove={() => removeTrack(idx)}
+              />
               <span className="text-5xl text-white/50 mx-4 flex items-center w-full sm:w-auto justify-center basis-full sm:basis-auto">+</span>
             </React.Fragment>
           ))}

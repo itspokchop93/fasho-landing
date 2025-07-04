@@ -23,6 +23,27 @@ interface OrderItem {
   isDiscounted: boolean;
 }
 
+interface AddOnProduct {
+  id: string;
+  name: string;
+  description: string[];
+  originalPrice: number;
+  salePrice: number;
+  emoji: string;
+  color: string;
+  borderColor: string;
+  bgGradient: string;
+}
+
+interface AddOnOrderItem {
+  id: string;
+  name: string;
+  emoji: string;
+  price: number;
+  originalPrice: number;
+  isOnSale: boolean;
+}
+
 const packages: Package[] = [
   {
     id: "starter",
@@ -58,6 +79,20 @@ const packages: Package[] = [
   }
 ];
 
+const addOnProducts: AddOnProduct[] = [
+  {
+    id: "apple-music",
+    name: "Promote on Apple Music (50% OFF)",
+    description: ["🔴 Get added to an Apple Music playlist", "🎵 Apple Music add-on reduced if not placed in 7 days"],
+    originalPrice: 94,
+    salePrice: 47,
+    emoji: "🍎",
+    color: "text-pink-400",
+    borderColor: "border-pink-500/50",
+    bgGradient: "bg-gradient-to-r from-pink-500/10 to-purple-500/10"
+  }
+];
+
 export default function CheckoutPage() {
   const router = useRouter();
   const { tracks: tracksParam, selectedPackages: selectedPackagesParam } = router.query;
@@ -66,6 +101,8 @@ export default function CheckoutPage() {
   const [tracks, setTracks] = useState<Track[]>([]);
   const [selectedPackages, setSelectedPackages] = useState<{[key: number]: string}>({});
   const [orderItems, setOrderItems] = useState<OrderItem[]>([]);
+  const [selectedAddOns, setSelectedAddOns] = useState<Set<string>>(new Set());
+  const [addOnOrderItems, setAddOnOrderItems] = useState<AddOnOrderItem[]>([]);
   const [subtotal, setSubtotal] = useState(0);
   const [discount, setDiscount] = useState(0);
   const [total, setTotal] = useState(0);
@@ -114,6 +151,115 @@ export default function CheckoutPage() {
   const getDiscountedPrice = (originalPrice: number) => {
     const discounted = originalPrice * 0.75; // 25% off
     return Math.ceil(discounted); // Round up
+  };
+
+  // Handle add-on selection
+  const toggleAddOn = (addOnId: string) => {
+    const newSelectedAddOns = new Set(selectedAddOns);
+    const addOn = addOnProducts.find(p => p.id === addOnId);
+    
+    if (!addOn) return;
+    
+    if (newSelectedAddOns.has(addOnId)) {
+      // Remove add-on
+      newSelectedAddOns.delete(addOnId);
+      setAddOnOrderItems(prev => prev.filter(item => item.id !== addOnId));
+    } else {
+      // Add add-on
+      newSelectedAddOns.add(addOnId);
+      const addOnOrderItem: AddOnOrderItem = {
+        id: addOn.id,
+        name: addOn.name,
+        emoji: addOn.emoji,
+        price: addOn.salePrice,
+        originalPrice: addOn.originalPrice,
+        isOnSale: addOn.salePrice < addOn.originalPrice
+      };
+      setAddOnOrderItems(prev => [...prev, addOnOrderItem]);
+    }
+    
+    setSelectedAddOns(newSelectedAddOns);
+    
+    // Save to localStorage for persistence
+    localStorage.setItem('selectedAddOns', JSON.stringify(Array.from(newSelectedAddOns)));
+    
+    updateTotals();
+  };
+
+  // Remove add-on from line items
+  const removeAddOn = (addOnId: string) => {
+    const newSelectedAddOns = new Set(selectedAddOns);
+    newSelectedAddOns.delete(addOnId);
+    setSelectedAddOns(newSelectedAddOns);
+    setAddOnOrderItems(prev => prev.filter(item => item.id !== addOnId));
+    
+    // Save to localStorage for persistence
+    localStorage.setItem('selectedAddOns', JSON.stringify(Array.from(newSelectedAddOns)));
+    
+    updateTotals();
+  };
+
+  // Handle changing a song - redirect to /add page with remaining songs
+  const changeSong = (trackIndex: number) => {
+    // Remove the selected track and its package
+    const remainingTracks = tracks.filter((_, index) => index !== trackIndex);
+    const remainingPackages: {[key: number]: string} = {};
+    
+    // Reindex the remaining packages
+    let newIndex = 0;
+    Object.entries(selectedPackages).forEach(([oldIndex, packageId]) => {
+      if (parseInt(oldIndex) !== trackIndex) {
+        remainingPackages[newIndex] = packageId;
+        newIndex++;
+      }
+    });
+
+    // Store remaining cart data for when they return
+    if (remainingTracks.length > 0) {
+      const cartData = {
+        tracks: JSON.stringify(remainingTracks),
+        selectedPackages: JSON.stringify(remainingPackages)
+      };
+      localStorage.setItem('checkoutCart', JSON.stringify(cartData));
+    } else {
+      localStorage.removeItem('checkoutCart');
+    }
+
+    // Redirect to /add page
+    router.push('/add');
+  };
+
+  // Update totals including add-ons
+  const updateTotals = () => {
+    // Calculate main items totals
+    let mainSubtotal = 0;
+    let mainDiscount = 0;
+    
+    orderItems.forEach(item => {
+      mainSubtotal += item.originalPrice;
+      if (item.isDiscounted) {
+        mainDiscount += (item.originalPrice - item.discountedPrice);
+      }
+    });
+    
+    // Calculate add-on totals
+    let addOnSubtotal = 0;
+    let addOnDiscount = 0;
+    
+    addOnOrderItems.forEach(item => {
+      addOnSubtotal += item.originalPrice;
+      if (item.isOnSale) {
+        addOnDiscount += (item.originalPrice - item.price);
+      }
+    });
+    
+    const totalSubtotal = mainSubtotal + addOnSubtotal;
+    const totalDiscount = mainDiscount + addOnDiscount;
+    const finalTotal = totalSubtotal - totalDiscount;
+    
+    setSubtotal(totalSubtotal);
+    setDiscount(totalDiscount);
+    setTotal(finalTotal);
   };
 
   // Initialize data from URL params or localStorage
@@ -178,6 +324,35 @@ export default function CheckoutPage() {
         setDiscount(calculatedDiscount);
         setTotal(calculatedSubtotal - calculatedDiscount);
         
+        // Restore add-ons from localStorage if they exist
+        const storedAddOns = localStorage.getItem('selectedAddOns');
+        if (storedAddOns) {
+          try {
+            const parsedAddOns = JSON.parse(storedAddOns) as string[];
+            const addOnSet = new Set(parsedAddOns);
+            const addOnItems: AddOnOrderItem[] = [];
+            
+            parsedAddOns.forEach(addOnId => {
+              const addOn = addOnProducts.find(p => p.id === addOnId);
+              if (addOn) {
+                addOnItems.push({
+                  id: addOn.id,
+                  name: addOn.name,
+                  emoji: addOn.emoji,
+                  price: addOn.salePrice,
+                  originalPrice: addOn.originalPrice,
+                  isOnSale: addOn.salePrice < addOn.originalPrice
+                });
+              }
+            });
+            
+            setSelectedAddOns(addOnSet);
+            setAddOnOrderItems(addOnItems);
+          } catch (error) {
+            console.error("Failed to restore add-ons:", error);
+          }
+        }
+        
       } catch (error) {
         console.error("Failed to parse checkout data:", error);
         router.push('/add');
@@ -186,6 +361,11 @@ export default function CheckoutPage() {
       router.push('/add');
     }
   }, [router.isReady, tracksParam, selectedPackagesParam]);
+
+  // Update totals when add-ons change
+  useEffect(() => {
+    updateTotals();
+  }, [orderItems, addOnOrderItems]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData(prev => ({
@@ -735,7 +915,7 @@ export default function CheckoutPage() {
     }
   };
 
-  // Submit token to iframe
+  // Payment form submission function
   const submitTokenToIframe = () => {
     if (!paymentToken) {
       console.error('No payment token available');
@@ -774,10 +954,19 @@ export default function CheckoutPage() {
         name: `${item.track.title} - ${item.package.name}`,
         price: item.discountedPrice
       }));
+      
+      // Add add-on items to payment order items
+      const addOnPaymentItems = addOnOrderItems.map(item => ({
+        name: `${item.emoji} ${item.name.replace(/ \(.*\)/, '')}`,
+        price: item.price
+      }));
+      
+      const allPaymentItems = [...paymentOrderItems, ...addOnPaymentItems];
+      
       // Log the data being sent to the payment API
       const paymentData = {
         amount: total,
-        orderItems: paymentOrderItems,
+        orderItems: allPaymentItems,
         customerEmail: currentUser ? currentUser.email : formData.email,
         billingInfo: safeBillingData
       };
@@ -805,6 +994,7 @@ export default function CheckoutPage() {
       // Store order data for after payment completion
       const orderData = {
         items: orderItems,
+        addOnItems: addOnOrderItems,
         subtotal,
         discount,
         total,
@@ -932,7 +1122,8 @@ export default function CheckoutPage() {
   return (
     <>
       <Head>
-        <title>Checkout – Fasho.co</title>
+        <title>Checkout - FASHO</title>
+        <meta name="description" content="Complete your music promotion order" />
       </Head>
       <Header />
       
@@ -1412,9 +1603,19 @@ export default function CheckoutPage() {
                 <div className="bg-white/5 rounded-xl p-6 border border-white/20">
                   <h2 className="text-lg font-semibold mb-6">Your Order</h2>
                   
-                  <div className="space-y-4">
+                  <div className={`space-y-4 ${(orderItems.length + addOnOrderItems.length) > 2 ? 'max-h-[240px] overflow-y-auto pr-4 pl-2 pt-2 pb-2 scrollbar-thin scrollbar-thumb-white/20 scrollbar-track-transparent' : ''}`}>
                     {orderItems.map((item, index) => (
-                      <div key={index} className="flex items-center space-x-4 p-4 bg-white/5 rounded-lg">
+                      <div key={index} className="flex items-center space-x-4 p-5 bg-white/5 rounded-lg relative min-h-[100px]">
+                        {/* Change Song Button */}
+                        <button
+                          onClick={() => changeSong(index)}
+                          className="absolute -top-1 -right-1 bg-blue-500/50 hover:bg-blue-600/70 text-white text-xs px-2 py-1 rounded-full transition-colors shadow-lg border-2 border-white/50 z-20 text-xs"
+                          title="Change this song"
+                          style={{ fontSize: '10px' }}
+                        >
+                          Change Song
+                        </button>
+                        
                         <div className="relative">
                           <Image
                             src={item.track.imageUrl}
@@ -1425,7 +1626,7 @@ export default function CheckoutPage() {
                             unoptimized
                           />
                           {item.isDiscounted && (
-                            <div className="absolute -top-2 -right-2 bg-[#59e3a5] text-black text-xs font-bold px-2 py-1 rounded-full">
+                            <div className="absolute -top-2 -right-2 bg-[#59e3a5] text-black text-xs font-bold px-2 py-1 rounded-full whitespace-nowrap">
                               25% OFF
                             </div>
                           )}
@@ -1450,6 +1651,51 @@ export default function CheckoutPage() {
                         </div>
                       </div>
                     ))}
+                    
+                    {/* Add-on Items */}
+                    {addOnOrderItems.map((item, index) => (
+                      <div key={`addon-${index}`} className="flex items-center space-x-4 p-4 bg-white/5 rounded-lg relative">
+                        {/* Remove Add-on Button */}
+                        <button
+                          onClick={() => removeAddOn(item.id)}
+                          className="absolute -top-2 -right-2 w-5 h-5 bg-red-500/50 hover:bg-red-600/70 text-white rounded-full flex items-center justify-center shadow-lg transition-colors z-20 border-2 border-white/50"
+                          title="Remove add-on"
+                        >
+                          <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                          </svg>
+                        </button>
+                        
+                        <div className="relative">
+                          <div className="w-[60px] h-[60px] bg-gradient-to-br from-purple-500/20 to-pink-500/20 rounded-lg flex items-center justify-center text-2xl border border-white/10">
+                            {item.emoji}
+                          </div>
+                          {item.isOnSale && (
+                            <div className="absolute -top-2 -right-2 bg-[#59e3a5] text-black text-xs font-bold px-2 py-1 rounded-full">
+                              SALE
+                            </div>
+                          )}
+                        </div>
+                        
+                        <div className="flex-1">
+                          <h3 className="font-semibold text-sm">{item.name.replace(/ \(.*\)/, '')}</h3>
+                          <p className="text-white/60 text-sm">Add-on Service</p>
+                          <p className="text-[#59e3a5] text-sm font-medium">Premium Add-on</p>
+                          <p className="text-white/50 text-xs">Enhanced promotion package</p>
+                        </div>
+                        
+                        <div className="text-right">
+                          {item.isOnSale ? (
+                            <div>
+                              <div className="text-white/50 text-sm line-through">${item.originalPrice}</div>
+                              <div className="text-[#59e3a5] font-semibold">${item.price}</div>
+                            </div>
+                          ) : (
+                            <div className="font-semibold">${item.price}</div>
+                          )}
+                        </div>
+                      </div>
+                    ))}
                   </div>
                 </div>
 
@@ -1468,133 +1714,12 @@ export default function CheckoutPage() {
                       </div>
                     )}
                     
+
+                    
                     <div className="border-t border-white/20 pt-3">
                       <div className="flex justify-between text-xl font-bold">
                         <span>Total</span>
                         <span className="text-[#59e3a5]">${total}</span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Payment Form */}
-                <div className="bg-white/5 rounded-xl p-6 border border-white/20">
-                  <h2 className="text-lg font-semibold mb-4">Payment</h2>
-                  <p className="text-sm text-white/60 mb-6">
-                    All transactions are secure and encrypted.
-                  </p>
-                  
-                  {!showPaymentForm ? (
-                    // Account validation form (before payment)
-                    <form onSubmit={isLoginMode ? handleLogin : handleSubmit} className="space-y-4">
-                      {/* Error Message */}
-                      {error && (
-                        <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-4 mb-4">
-                          <p className="text-red-400 text-sm">{error}</p>
-                        </div>
-                      )}
-                      
-                      <div className="border-t border-white/20 pt-6">
-                        <p className="text-sm text-white/60 mb-4">
-                          By providing your card information, you allow Boost Collective Inc. to charge
-                          your card for future payments in accordance with their terms.
-                        </p>
-                        
-                        <button
-                          type="submit"
-                          disabled={isLoading}
-                          className="w-full bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] text-black font-semibold py-4 px-6 rounded-lg hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
-                        >
-                          {isLoading ? 'Processing...' : `Continue to Payment · $${total}`}
-                        </button>
-                      </div>
-                    </form>
-                  ) : (
-                    // Authorize.net iframe payment form
-                    <div>
-                      <div className="mb-4">
-                        <p className="text-sm text-white/60">
-                          Enter your payment details below. Your information is secure and encrypted.
-                        </p>
-                      </div>
-                      
-                      {/* Hidden form to submit token to iframe */}
-                      <form 
-                        id="paymentIframeForm" 
-                        method="post" 
-                        action={paymentFormUrl || "https://test.authorize.net/payment/payment"} 
-                        target="paymentIframe" 
-                        style={{ display: 'none' }}
-                      >
-                        <input type="hidden" name="token" value={paymentToken || ''} />
-                      </form>
-                      
-                      {/* Payment iframe container */}
-                      <div className="payment-iframe-container relative">
-                        <iframe 
-                          name="paymentIframe" 
-                          id="paymentIframe"
-                          src="about:blank"
-                          width="100%" 
-                          height="600px"
-                          frameBorder="0" 
-                          scrolling="no"
-                          onLoad={(e) => {
-                            console.log('Iframe loaded');
-                            const iframe = e.target as HTMLIFrameElement;
-                            try {
-                              console.log('Iframe URL:', iframe.contentWindow?.location.href);
-                            } catch (err) {
-                              console.log('Cannot access iframe URL (cross-origin)');
-                            }
-                          }}
-                          className="rounded-lg border border-white/20"
-                        />
-                        
-                        {/* Loading overlay */}
-                        <div className="absolute inset-0 bg-white/5 rounded-lg flex items-center justify-center" id="iframeLoader">
-                          <div className="text-center">
-                            <div className="w-8 h-8 border-2 border-[#59e3a5] border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-                            <p className="text-white/70">Loading secure payment form...</p>
-                          </div>
-                        </div>
-                      </div>
-                      
-                      <div className="mt-4 text-center space-x-4">
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setShowPaymentForm(false);
-                            setPaymentToken('');
-                            setError('');
-                          }}
-                          className="text-white/60 hover:text-white text-sm transition-colors"
-                        >
-                          ← Back to checkout
-                        </button>
-                        
-                        {/* Debug button - remove in production */}
-                        <button
-                          type="button"
-                          onClick={() => {
-                            console.log('Manual submit triggered');
-                            submitTokenToIframe();
-                          }}
-                          className="text-[#59e3a5] hover:text-[#14c0ff] text-sm transition-colors"
-                        >
-                          🔄 Reload Payment Form
-                        </button>
-                      </div>
-                    </div>
-                  )}
-                  
-                  <div className="mt-4 text-center text-sm text-white/60">
-                    <div className="flex items-center justify-center space-x-4">
-                      <div className="flex items-center space-x-2">
-                        <div className="w-8 h-5 bg-blue-600 rounded text-white text-xs flex items-center justify-center font-bold">VISA</div>
-                        <div className="w-8 h-5 bg-red-600 rounded text-white text-xs flex items-center justify-center font-bold">MC</div>
-                        <div className="w-8 h-5 bg-blue-800 rounded text-white text-xs flex items-center justify-center font-bold">AMEX</div>
-                        <div className="w-8 h-5 bg-orange-600 rounded text-white text-xs flex items-center justify-center font-bold">DISC</div>
                       </div>
                     </div>
                   </div>
@@ -1614,10 +1739,23 @@ export default function CheckoutPage() {
                             <p>🎵 Apple Music add-on reduced if not placed in 7 days</p>
                           </div>
                         </div>
-                        <button className="bg-white/20 hover:bg-white/30 text-white p-2 rounded-lg transition-colors">
-                          <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-                          </svg>
+                        <button 
+                          onClick={() => toggleAddOn('apple-music')}
+                          className={`p-2 rounded-lg transition-colors ${
+                            selectedAddOns.has('apple-music') 
+                              ? 'bg-[#59e3a5] text-black hover:bg-[#4bc995]' 
+                              : 'bg-white/20 hover:bg-white/30 text-white'
+                          }`}
+                        >
+                          {selectedAddOns.has('apple-music') ? (
+                            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                            </svg>
+                          ) : (
+                            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                            </svg>
+                          )}
                         </button>
                       </div>
                       <div className="flex items-center space-x-2">
@@ -1626,35 +1764,154 @@ export default function CheckoutPage() {
                       </div>
                     </div>
 
-                    <div className="border border-purple-500/50 rounded-lg p-4 bg-gradient-to-r from-purple-500/10 to-blue-500/10">
-                      <div className="flex items-start justify-between mb-2">
-                        <div>
-                          <h4 className="font-semibold text-purple-400">Campaign upgrade (80% OFF)</h4>
-                          <div className="text-sm text-white/70">
-                            <p>✅ Pitch to 2x more playlists ($150 value)</p>
-                            <p>✅ Stay on playlists 2x longer ($100 value)</p>
-                            <p>✅ Priority placements in 24 hours</p>
-                          </div>
+
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Full-Width Payment Section */}
+            <div className="mt-8">
+              <div className="bg-white/5 rounded-xl p-6 border border-white/20">
+                
+                {!showPaymentForm ? (
+                  // Account validation form (before payment)
+                  <div className="max-w-md mx-auto">
+                    <form onSubmit={isLoginMode ? handleLogin : handleSubmit} className="space-y-4">
+                      {/* Error Message */}
+                      {error && (
+                        <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-4 mb-4">
+                          <p className="text-red-400 text-sm">{error}</p>
                         </div>
-                        <button className="bg-white/20 hover:bg-white/30 text-white p-2 rounded-lg transition-colors">
-                          <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-                          </svg>
+                      )}
+                      
+                                            <div>
+                          <button
+                          type="submit"
+                          disabled={isLoading}
+                          className="w-full bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] text-black font-semibold py-4 px-6 rounded-lg hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          {isLoading ? 'Processing...' : `Continue to Payment · $${total}`}
                         </button>
                       </div>
-                      <div className="flex items-center space-x-2">
-                        <span className="text-white/50 line-through">$250</span>
-                        <span className="font-bold text-purple-400">$49</span>
+                    </form>
+                  </div>
+                ) : (
+                  // Authorize.net iframe payment form
+                  <div>
+                    {/* Step 3 Header with animated green dot */}
+                    <div className="mb-6 text-center">
+                      <h3 className="text-xl font-semibold mb-2">
+                        <span className="text-[#59e3a5]">Step 3:</span> Submit Your Payment
+                      </h3>
+                      <div className="flex items-center justify-center space-x-3">
+                        <div className="relative">
+                          <div className="w-3 h-3 bg-[#59e3a5] rounded-full"></div>
+                          <div className="absolute inset-0 w-3 h-3 bg-[#59e3a5] rounded-full animate-ping opacity-75"></div>
+                        </div>
+                        <p className="text-base font-semibold text-white/80">
+                          Waiting for successful payment...
+                        </p>
                       </div>
+                    </div>
+                    
+                    {/* Hidden form to submit token to iframe */}
+                    <form 
+                      id="paymentIframeForm" 
+                      method="post" 
+                      action={paymentFormUrl || "https://test.authorize.net/payment/payment"} 
+                      target="paymentIframe" 
+                      style={{ display: 'none' }}
+                    >
+                      <input type="hidden" name="token" value={paymentToken || ''} />
+                    </form>
+                    
+                    {/* Payment iframe container - Adjusted size: 85% width, 475px height */}
+                    <div className="payment-iframe-container relative w-[85%] bg-white/[0.02] rounded-xl overflow-hidden mx-auto">
+                      <iframe 
+                        name="paymentIframe" 
+                        id="paymentIframe"
+                        src="about:blank"
+                        width="100%" 
+                        height="475px"
+                        frameBorder="0" 
+                        scrolling="auto"
+                        onLoad={(e) => {
+                          console.log('Iframe loaded');
+                          const iframe = e.target as HTMLIFrameElement;
+                          try {
+                            console.log('Iframe URL:', iframe.contentWindow?.location.href);
+                          } catch (err) {
+                            console.log('Cannot access iframe URL (cross-origin)');
+                          }
+                          
+                          // Hide the loading overlay
+                          const loader = document.getElementById('iframeLoader');
+                          if (loader) {
+                            loader.style.display = 'none';
+                          }
+                        }}
+                        className="rounded-lg border border-white/20 w-full block bg-white"
+                        style={{
+                          maxWidth: '100%',
+                          overflow: 'hidden',
+                          border: 'none'
+                        }}
+                      />
+                      
+                      {/* Loading overlay */}
+                      <div className="absolute inset-0 bg-white/5 rounded-lg flex items-center justify-center" id="iframeLoader">
+                        <div className="text-center">
+                          <div className="w-8 h-8 border-2 border-[#59e3a5] border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+                          <p className="text-white/70">Loading secure payment form...</p>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <div className="mt-4 text-center space-x-4">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setShowPaymentForm(false);
+                          setPaymentToken('');
+                          setError('');
+                        }}
+                        className="text-white/60 hover:text-white text-sm transition-colors"
+                      >
+                        ← Back to checkout
+                      </button>
+                      
+                      {/* Debug button - remove in production */}
+                      <button
+                        type="button"
+                        onClick={() => {
+                          console.log('Manual submit triggered');
+                          submitTokenToIframe();
+                        }}
+                        className="text-[#59e3a5] hover:text-[#14c0ff] text-sm transition-colors"
+                      >
+                        🔄 Reload Payment Form
+                      </button>
+                    </div>
+                  </div>
+                )}
+                
+                <div className="mt-4 text-center text-sm text-white/60">
+                  <div className="flex items-center justify-center space-x-4">
+                    <div className="flex items-center space-x-2">
+                      <div className="w-8 h-5 bg-blue-600 rounded text-white text-xs flex items-center justify-center font-bold">VISA</div>
+                      <div className="w-8 h-5 bg-red-600 rounded text-white text-xs flex items-center justify-center font-bold">MC</div>
+                      <div className="w-8 h-5 bg-blue-800 rounded text-white text-xs flex items-center justify-center font-bold">AMEX</div>
+                      <div className="w-8 h-5 bg-orange-600 rounded text-white text-xs flex items-center justify-center font-bold">DISC</div>
                     </div>
                   </div>
                 </div>
+              </div>
 
-                {/* Trust indicators */}
-                <div className="text-center text-sm text-white/60">
-                  <p className="mb-2">🔒 Secure checkout powered by Authorize.net</p>
-                  <p>💳 All major credit cards accepted</p>
-                </div>
+              {/* Trust indicators */}
+              <div className="text-center text-sm text-white/60 mt-6">
+                <p className="mb-2">🔒 Secure checkout powered by Authorize.net</p>
+                <p>💳 All major credit cards accepted</p>
               </div>
             </div>
           </div>
