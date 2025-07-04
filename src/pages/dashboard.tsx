@@ -26,7 +26,7 @@ export default function Dashboard({ user }: DashboardProps) {
   const [animatedData, setAnimatedData] = useState<number[]>([])
   const [chartAnimating, setChartAnimating] = useState(false)
   const [lottieAnimationData, setLottieAnimationData] = useState(null)
-  const lottieRef = useRef(null)
+  const lottieRef = useRef<any>(null)
   const supabase = createClient()
 
   // Fetch Lottie animation data
@@ -46,8 +46,13 @@ export default function Dashboard({ user }: DashboardProps) {
 
   // Control Lottie animation speed
   useEffect(() => {
-    if (lottieRef.current) {
-      lottieRef.current.setSpeed(0.5)
+    if (lottieRef.current && lottieAnimationData) {
+      // Ensure animation is loaded before setting speed
+      setTimeout(() => {
+        if (lottieRef.current) {
+          lottieRef.current.setSpeed(0.5)
+        }
+      }, 100)
     }
   }, [lottieAnimationData])
 
@@ -317,38 +322,38 @@ export default function Dashboard({ user }: DashboardProps) {
       {/* Hero Section & Chart */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         {/* Hero Section */}
-        <div className="dashboard-hero-gradient rounded-2xl p-8 border border-gray-800/30 relative overflow-hidden min-h-[400px]">
-          <div className="flex items-center justify-between h-full">
-            <div className="relative z-10 flex-1 pr-8">
-              <h2 className="text-4xl lg:text-5xl font-bold text-white mb-6 leading-tight">
-                <span className="text-2xl lg:text-3xl">Welcome to</span><br />
+        <div className="dashboard-hero-gradient rounded-2xl p-4 lg:p-8 border border-gray-800/30 relative overflow-hidden min-h-[400px]">
+          <div className="flex flex-col lg:flex-row items-center justify-between h-full">
+            <div className="relative z-10 flex-1 lg:pr-8 text-center lg:text-left">
+              <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold text-white mb-4 lg:mb-6 leading-tight">
+                <span className="text-xl md:text-2xl lg:text-3xl">Welcome to</span><br />
                 <span className="bg-gradient-to-r from-green-400 to-blue-500 bg-clip-text text-transparent">
                   FASHO.CO
                 </span>
               </h2>
-              <p className="text-xl lg:text-2xl text-gray-300 mb-8 leading-relaxed">
+              <p className="text-lg md:text-xl lg:text-2xl text-gray-300 mb-6 lg:mb-8 leading-relaxed">
                 It's time to dominate on Spotify! 🚀
               </p>
               <button 
                 onClick={() => router.push('/add')}
-                className="bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white px-8 py-4 rounded-xl text-lg font-semibold transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl"
+                className="bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white px-6 md:px-8 py-3 md:py-4 rounded-xl text-base md:text-lg font-semibold transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl"
               >
                 Start New Campaign
               </button>
             </div>
             
             {/* Lottie Animation */}
-            <div className="relative z-10 flex items-center justify-center">
+            <div className="relative z-10 flex items-center justify-center mt-6 lg:mt-0">
               {lottieAnimationData ? (
                 <Lottie 
                   animationData={lottieAnimationData}
                   loop={true}
                   autoplay={true}
-                  className="w-72 h-72 lg:w-80 lg:h-80"
+                  className="w-64 h-64 md:w-80 md:h-80 lg:w-96 lg:h-96 xl:w-[420px] xl:h-[420px]"
                   lottieRef={lottieRef}
                 />
               ) : (
-                <div className="w-72 h-72 lg:w-80 lg:h-80 bg-gray-800/50 rounded-lg flex items-center justify-center">
+                <div className="w-64 h-64 md:w-80 md:h-80 lg:w-96 lg:h-96 xl:w-[420px] xl:h-[420px] bg-gray-800/50 rounded-lg flex items-center justify-center">
                   <div className="text-gray-400">Loading animation...</div>
                 </div>
               )}
@@ -357,12 +362,12 @@ export default function Dashboard({ user }: DashboardProps) {
         </div>
 
         {/* Chart Section */}
-        <div className="bg-gradient-to-br from-gray-950/90 to-gray-900/90 backdrop-blur-sm rounded-2xl p-6 border border-gray-800/30">
-          <h3 className="text-xl font-semibold text-white mb-4">Next 30 Days Projected Plays</h3>
+        <div className="bg-gradient-to-br from-gray-950/90 to-gray-900/90 backdrop-blur-sm rounded-2xl p-4 lg:p-6 border border-gray-800/30">
+          <h3 className="text-lg lg:text-xl font-semibold text-white mb-4">Next 30 Days Projected Plays</h3>
           <div className="text-sm text-gray-400 mb-4">
             Total estimated plays: {totalPlays.toLocaleString()}
           </div>
-          <div className="relative h-64 bg-black/20 rounded-lg p-4 pl-16">
+          <div className="relative h-48 lg:h-64 bg-black/20 rounded-lg p-2 lg:p-4 pl-12 lg:pl-16">
             {/* Enhanced Chart Visualization */}
             <svg className="w-full h-full" viewBox="0 0 400 200">
               <defs>
@@ -444,7 +449,7 @@ export default function Dashboard({ user }: DashboardProps) {
             </svg>
             
             {/* Y-axis labels - positioned inside container */}
-            <div className="absolute left-2 top-0 h-full flex flex-col justify-between text-xs text-gray-400 w-12 text-right pr-2">
+            <div className="absolute left-1 lg:left-2 top-0 h-full flex flex-col justify-between text-xs text-gray-400 w-8 lg:w-12 text-right pr-1 lg:pr-2">
               <span className={`transition-opacity duration-500 ${totalPlays > 0 ? 'opacity-100' : 'opacity-30'}`}>
                 {yAxisLabels[0]}
               </span>
@@ -456,7 +461,7 @@ export default function Dashboard({ user }: DashboardProps) {
           </div>
           
           {/* Chart Labels */}
-          <div className="flex justify-between mt-4 text-sm text-gray-400 pl-16">
+          <div className="flex justify-between mt-4 text-sm text-gray-400 pl-12 lg:pl-16">
             <span>Day 1</span>
             <span>Day 15</span>
             <span>Day 30</span>
@@ -465,7 +470,7 @@ export default function Dashboard({ user }: DashboardProps) {
       </div>
 
       {/* Your Campaigns Section */}
-      <div className="bg-gradient-to-br from-gray-950/90 to-gray-900/90 backdrop-blur-sm rounded-2xl p-8 border border-gray-800/30">
+      <div className="bg-gradient-to-br from-gray-950/90 to-gray-900/90 backdrop-blur-sm rounded-2xl p-4 lg:p-8 border border-gray-800/30">
         <div className="flex items-center justify-between mb-6">
           <h3 className="text-2xl font-bold text-white">Your Campaigns</h3>
           <button 
@@ -981,8 +986,8 @@ export default function Dashboard({ user }: DashboardProps) {
 
   return (
     <div className="min-h-screen dashboard-background flex">
-      {/* Sidebar */}
-      <div className="w-64 bg-gradient-to-b from-gray-950/95 to-gray-900/95 backdrop-blur-sm border-r border-gray-800/30 flex flex-col">
+      {/* Desktop Sidebar */}
+      <div className="hidden lg:flex w-64 bg-gradient-to-b from-gray-950/95 to-gray-900/95 backdrop-blur-sm border-r border-gray-800/30 flex-col">
         {/* Logo */}
         <div className="p-6 border-b border-gray-800/30">
           <h1 className="text-2xl font-bold text-white">FASHO.CO</h1>
@@ -1038,24 +1043,64 @@ export default function Dashboard({ user }: DashboardProps) {
       {/* Main Content */}
       <div className="flex-1 flex flex-col relative z-10">
         {/* Header */}
-        <header className="bg-gray-950/95 backdrop-blur-sm border-b border-gray-900/30 p-6 relative z-20">
+        <header className="bg-gray-950/95 backdrop-blur-sm border-b border-gray-900/30 p-4 lg:p-6 relative z-20">
           <div className="flex items-center justify-between">
             <div>
-              <h2 className="text-2xl font-bold text-white capitalize">{activeTab}</h2>
-              <p className="text-gray-400">
+              {/* Mobile Logo */}
+              <div className="lg:hidden mb-2">
+                <h1 className="text-xl font-bold text-white">FASHO.CO</h1>
+              </div>
+              <h2 className="text-xl lg:text-2xl font-bold text-white capitalize">{activeTab}</h2>
+              <p className="text-sm lg:text-base text-gray-400">
                 {activeTab === 'dashboard' && 'Welcome back! Here\'s your campaign overview.'}
                 {activeTab === 'campaigns' && 'Manage and monitor all your music campaigns.'}
                 {activeTab === 'faq' && 'Find answers to common questions.'}
                 {activeTab === 'contact' && 'Get in touch with our support team.'}
               </p>
             </div>
+            {/* Mobile User Avatar */}
+            <div className="lg:hidden">
+              <div className="w-10 h-10 bg-gradient-to-br from-green-500 to-green-600 rounded-full flex items-center justify-center">
+                <span className="text-white font-semibold text-sm">
+                  {user.user_metadata?.full_name?.[0] || user.email[0].toUpperCase()}
+                </span>
+              </div>
+            </div>
           </div>
         </header>
         
         {/* Content */}
-        <main className="flex-1 p-6 overflow-y-auto relative z-20">
+        <main className="flex-1 p-4 lg:p-6 overflow-y-auto relative z-20 pb-20 lg:pb-0">
           {renderContent()}
         </main>
+      </div>
+      
+      {/* Mobile Bottom Navigation */}
+      <div className="lg:hidden fixed bottom-0 left-0 right-0 bg-gray-950/95 backdrop-blur-sm border-t border-gray-800/30 px-4 py-2 z-30">
+        <div className="flex items-center justify-around">
+          {sidebarItems.map((item) => (
+            <button
+              key={item.id}
+              onClick={() => {
+                if (item.id === 'signout') {
+                  setShowSignOutModal(true)
+                } else {
+                  setActiveTab(item.id)
+                }
+              }}
+              className={`flex flex-col items-center space-y-1 px-3 py-2 rounded-lg transition-all duration-300 ${
+                activeTab === item.id 
+                  ? 'text-green-400' 
+                  : 'text-gray-400 hover:text-white'
+              }`}
+            >
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={item.icon} />
+              </svg>
+              <span className="text-xs font-medium">{item.label}</span>
+            </button>
+          ))}
+        </div>
       </div>
       
       {/* Sign Out Modal */}
