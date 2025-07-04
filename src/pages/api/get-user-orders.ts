@@ -51,6 +51,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       createdAt: order.created_at,
       updatedAt: order.updated_at,
       itemCount: order.order_items.length,
+      addOnItems: order.addon_items || [], // Include add-on items from JSONB field
       items: order.order_items.map((item: any) => ({
         id: item.id,
         track: {

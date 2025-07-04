@@ -26,8 +26,18 @@ interface OrderItem {
   isDiscounted: boolean;
 }
 
+interface AddOnOrderItem {
+  id: string;
+  name: string;
+  emoji: string;
+  price: number;
+  originalPrice: number;
+  isOnSale: boolean;
+}
+
 interface OrderData {
   items: OrderItem[];
+  addOnItems?: AddOnOrderItem[];
   subtotal: number;
   discount: number;
   total: number;
@@ -197,6 +207,46 @@ export default function ThankYouPage() {
                     </div>
                   </div>
                 ))}
+                
+                {/* Add-on Items */}
+                {orderData.addOnItems && orderData.addOnItems.length > 0 && (
+                  <>
+                    <div className="border-t border-white/10 pt-4 mt-4">
+                      <h3 className="text-lg font-semibold mb-3 text-[#59e3a5]">Add-on Services</h3>
+                    </div>
+                    {orderData.addOnItems.map((item, index) => (
+                      <div key={`addon-${index}`} className="flex items-center space-x-4 p-4 bg-white/5 rounded-lg">
+                        <div className="relative">
+                          <div className="w-[60px] h-[60px] bg-gradient-to-br from-purple-500/20 to-pink-500/20 rounded-lg flex items-center justify-center text-2xl border border-white/10">
+                            {item.emoji}
+                          </div>
+                          {item.isOnSale && (
+                            <div className="absolute -top-2 -right-2 bg-[#59e3a5] text-black text-xs font-bold px-2 py-1 rounded-full">
+                              SALE
+                            </div>
+                          )}
+                        </div>
+                        
+                        <div className="flex-1">
+                          <h3 className="font-semibold text-sm">{item.name.replace(/ \(.*\)/, '')}</h3>
+                          <p className="text-white/60 text-sm">Additional promotion service</p>
+                        </div>
+                        
+                        <div className="text-right">
+                          {item.isOnSale ? (
+                            <div>
+                              <div className="text-white/50 text-sm line-through">${item.originalPrice}</div>
+                              <div className="font-semibold text-[#59e3a5]">${item.price}</div>
+                              <div className="text-xs text-[#59e3a5]">ON SALE</div>
+                            </div>
+                          ) : (
+                            <div className="font-semibold">${item.price}</div>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </>
+                )}
               </div>
 
               {/* Price Summary */}

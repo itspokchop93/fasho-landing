@@ -922,6 +922,7 @@ export default function CheckoutPage() {
       // Create order in database
       const orderPayload = {
         items: pendingOrder.items,
+        addOnItems: pendingOrder.addOnItems || [], // Include add-on items
         subtotal: pendingOrder.subtotal,
         discount: pendingOrder.discount,
         total: pendingOrder.total,
@@ -979,6 +980,7 @@ export default function CheckoutPage() {
       // Store order data for thank you page using the pending order data + order number
       const orderData = {
         items: pendingOrder.items,
+        addOnItems: pendingOrder.addOnItems || [], // Include add-on items for thank you page
         subtotal: pendingOrder.subtotal,
         discount: pendingOrder.discount,
         total: pendingOrder.total,

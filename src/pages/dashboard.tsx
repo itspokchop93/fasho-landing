@@ -19,7 +19,18 @@ export default function Dashboard({ user }: DashboardProps) {
   const [isLoading, setIsLoading] = useState(false)
   const [orders, setOrders] = useState<any[]>([])
   const [ordersLoading, setOrdersLoading] = useState(true)
+  const [expandedOrders, setExpandedOrders] = useState<Set<string>>(new Set())
   const supabase = createClient()
+
+  const toggleOrderExpansion = (orderId: string) => {
+    const newExpanded = new Set(expandedOrders)
+    if (newExpanded.has(orderId)) {
+      newExpanded.delete(orderId)
+    } else {
+      newExpanded.add(orderId)
+    }
+    setExpandedOrders(newExpanded)
+  }
 
   useEffect(() => {
     async function fetchOrders() {
@@ -115,37 +126,178 @@ export default function Dashboard({ user }: DashboardProps) {
               <div className="text-gray-400">You have not started any campaigns yet.</div>
             ) : (
               <div className="space-y-4">
-                {orders.map(order => (
-                  <div key={order.id} className="flex items-center justify-between bg-gray-900 border border-gray-800 rounded-lg p-4">
-                    {/* Album covers */}
-                    <div className="flex items-center space-x-2">
-                      {order.items.map((item: any, idx: number) => (
-                        <img
-                          key={item.id}
-                          src={item.track.imageUrl || '/auto1.jpg'}
-                          alt={item.track.title}
-                          className="w-12 h-12 rounded-lg border-2 border-gray-800 object-cover"
-                          style={{ marginLeft: idx === 0 ? 0 : '-12px', zIndex: 10 - idx }}
-                        />
-                      ))}
-                    </div>
-                    {/* Order info */}
-                    <div className="flex-1 ml-6">
-                      <div className="flex items-center space-x-4">
-                        <span className="font-semibold text-white">Order #{order.orderNumber}</span>
-                        <span className="text-gray-400 text-sm">{new Date(order.createdAt).toLocaleDateString()}</span>
+                {orders.map(order => {
+                  const isExpanded = expandedOrders.has(order.id)
+                  return (
+                    <div key={order.id} className="bg-gray-900 border border-gray-800 rounded-lg overflow-hidden">
+                      {/* Collapsible Header */}
+                      <div 
+                        className="flex items-center justify-between p-4 cursor-pointer hover:bg-gray-800 transition-colors"
+                        onClick={() => toggleOrderExpansion(order.id)}
+                      >
+                        {/* Album covers */}
+                        <div className="flex items-center space-x-2">
+                          {order.items.slice(0, 3).map((item: any, idx: number) => (
+                            <img
+                              key={item.id}
+                              src={item.track.imageUrl || '/auto1.jpg'}
+                              alt={item.track.title}
+                              className="w-12 h-12 rounded-lg border-2 border-gray-800 object-cover"
+                              style={{ marginLeft: idx === 0 ? 0 : '-12px', zIndex: 10 - idx }}
+                            />
+                          ))}
+                          {order.items.length > 3 && (
+                            <div className="w-12 h-12 bg-gray-700 rounded-lg border-2 border-gray-800 flex items-center justify-center text-white text-xs font-semibold"
+                                 style={{ marginLeft: '-12px', zIndex: 7 }}>
+                              +{order.items.length - 3}
+                            </div>
+                          )}
+                        </div>
+                        
+                        {/* Order info */}
+                        <div className="flex-1 ml-6">
+                          <div className="flex items-center space-x-4">
+                            <span className="font-semibold text-white">Order #{order.orderNumber}</span>
+                            <span className="text-gray-400 text-sm">{new Date(order.createdAt).toLocaleDateString()}</span>
+                            <span className="text-green-400 font-semibold">${order.total}</span>
+                          </div>
+                        </div>
+                        
+                        {/* Status and Expand Arrow */}
+                        <div className="flex items-center space-x-4">
+                          <div className="flex items-center space-x-2">
+                            <span className="relative flex h-3 w-3">
+                              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+                              <span className="relative inline-flex rounded-full h-3 w-3 bg-green-500"></span>
+                            </span>
+                            <span className="text-green-400 font-semibold">Marketing In Progress</span>
+                          </div>
+                          
+                          {/* Expand/Collapse Arrow */}
+                          <div className="flex items-center justify-center w-6 h-6">
+                            <svg 
+                              className={`w-4 h-4 text-gray-400 transition-transform duration-200 ${isExpanded ? 'rotate-180' : ''}`}
+                              fill="none" 
+                              viewBox="0 0 24 24" 
+                              stroke="currentColor"
+                            >
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                            </svg>
+                          </div>
+                        </div>
                       </div>
+                      
+                      {/* Expandable Content */}
+                      {isExpanded && (
+                        <div className="border-t border-gray-800 p-6 bg-gray-950">
+                          <div className="grid md:grid-cols-2 gap-6">
+                            {/* Order Details */}
+                            <div>
+                              <h4 className="text-lg font-semibold text-white mb-4">Order Details</h4>
+                              <div className="space-y-2 text-sm">
+                                <div className="flex justify-between">
+                                  <span className="text-gray-400">Order Number:</span>
+                                  <span className="text-white font-mono">{order.orderNumber}</span>
+                                </div>
+                                <div className="flex justify-between">
+                                  <span className="text-gray-400">Order Date:</span>
+                                  <span className="text-white">{new Date(order.createdAt).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</span>
+                                </div>
+                                <div className="flex justify-between">
+                                  <span className="text-gray-400">Customer:</span>
+                                  <span className="text-white">{order.customerName}</span>
+                                </div>
+                                <div className="flex justify-between">
+                                  <span className="text-gray-400">Status:</span>
+                                  <span className="text-green-400 font-semibold">{order.status}</span>
+                                </div>
+                                
+                                {/* Price Breakdown */}
+                                <div className="pt-4 border-t border-gray-800 mt-4">
+                                  <div className="flex justify-between">
+                                    <span className="text-gray-400">Subtotal:</span>
+                                    <span className="text-white">${order.subtotal}</span>
+                                  </div>
+                                  {order.discount > 0 && (
+                                    <div className="flex justify-between">
+                                      <span className="text-gray-400">Discount:</span>
+                                      <span className="text-green-400">-${order.discount}</span>
+                                    </div>
+                                  )}
+                                  <div className="flex justify-between font-semibold text-lg pt-2 border-t border-gray-700 mt-2">
+                                    <span className="text-white">Total:</span>
+                                    <span className="text-green-400">${order.total}</span>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                            
+                            {/* Songs & Packages */}
+                            <div>
+                              <h4 className="text-lg font-semibold text-white mb-4">Songs & Packages</h4>
+                              <div className="space-y-3">
+                                {order.items.map((item: any) => (
+                                  <div key={item.id} className="flex items-center space-x-3 p-3 bg-gray-900 rounded-lg">
+                                    <img
+                                      src={item.track.imageUrl || '/auto1.jpg'}
+                                      alt={item.track.title}
+                                      className="w-12 h-12 rounded-lg object-cover"
+                                    />
+                                    <div className="flex-1">
+                                      <div className="font-semibold text-white text-sm">{item.track.title}</div>
+                                      <div className="text-gray-400 text-xs">{item.track.artist}</div>
+                                      <div className="text-green-400 text-xs font-medium">{item.package.name} Package</div>
+                                    </div>
+                                    <div className="text-right">
+                                      {item.isDiscounted ? (
+                                        <div>
+                                          <div className="text-gray-500 text-xs line-through">${item.originalPrice}</div>
+                                          <div className="text-green-400 font-semibold text-sm">${item.discountedPrice}</div>
+                                        </div>
+                                      ) : (
+                                        <div className="text-white font-semibold text-sm">${item.discountedPrice}</div>
+                                      )}
+                                    </div>
+                                  </div>
+                                ))}
+                                
+                                {/* Add-on Items */}
+                                {order.addOnItems && order.addOnItems.length > 0 && (
+                                  <>
+                                    <div className="pt-4 border-t border-gray-800">
+                                      <h5 className="font-semibold text-green-400 mb-3">Add-on Services</h5>
+                                    </div>
+                                    {order.addOnItems.map((item: any, index: number) => (
+                                      <div key={`addon-${index}`} className="flex items-center space-x-3 p-3 bg-gray-900 rounded-lg">
+                                        <div className="w-12 h-12 bg-gradient-to-br from-purple-500/20 to-pink-500/20 rounded-lg flex items-center justify-center text-lg border border-gray-700">
+                                          {item.addon_emoji}
+                                        </div>
+                                        <div className="flex-1">
+                                          <div className="font-semibold text-white text-sm">{item.addon_name.replace(/ \(.*\)/, '')}</div>
+                                          <div className="text-gray-400 text-xs">Additional promotion service</div>
+                                        </div>
+                                        <div className="text-right">
+                                          {item.is_on_sale ? (
+                                            <div>
+                                              <div className="text-gray-500 text-xs line-through">${item.original_price}</div>
+                                              <div className="text-green-400 font-semibold text-sm">${item.sale_price}</div>
+                                            </div>
+                                          ) : (
+                                            <div className="text-white font-semibold text-sm">${item.sale_price}</div>
+                                          )}
+                                        </div>
+                                      </div>
+                                    ))}
+                                  </>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      )}
                     </div>
-                    {/* Status */}
-                    <div className="flex items-center space-x-2">
-                      <span className="relative flex h-3 w-3">
-                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
-                        <span className="relative inline-flex rounded-full h-3 w-3 bg-green-500"></span>
-                      </span>
-                      <span className="text-green-400 font-semibold">Marketing In Progress</span>
-                    </div>
-                  </div>
-                ))}
+                  )
+                })}
               </div>
             )}
           </div>

@@ -22,8 +22,18 @@ interface OrderItem {
   isDiscounted: boolean;
 }
 
+interface AddOnOrderItem {
+  id: string;
+  name: string;
+  emoji: string;
+  price: number;
+  originalPrice: number;
+  isOnSale: boolean;
+}
+
 interface CreateOrderRequest {
   items: OrderItem[];
+  addOnItems?: AddOnOrderItem[];
   subtotal: number;
   discount: number;
   total: number;
@@ -60,6 +70,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const supabase = createClient(req, res);
     const {
       items,
+      addOnItems = [],
       subtotal,
       discount,
       total,
@@ -72,6 +83,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     
     console.log('🔍 CREATE-ORDER: Extracted data:', {
       itemsCount: items?.length,
+      addOnItemsCount: addOnItems?.length,
       subtotal,
       discount,
       total,
@@ -199,6 +211,37 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     }
     
     console.log('🔍 CREATE-ORDER: Order items created successfully');
+
+    // Create add-on items if any exist
+    if (addOnItems && addOnItems.length > 0) {
+      console.log('🔍 CREATE-ORDER: Creating add-on items...');
+      const addOnOrderItems = addOnItems.map(item => ({
+        order_id: order.id,
+        addon_id: item.id,
+        addon_name: item.name,
+        addon_emoji: item.emoji,
+        original_price: item.originalPrice,
+        sale_price: item.price,
+        is_on_sale: item.isOnSale
+      }));
+      
+      console.log('🔍 CREATE-ORDER: Add-on items to insert:', JSON.stringify(addOnOrderItems, null, 2));
+
+      // For now, store add-on items in order metadata (since we don't have add_on_items table yet)
+      const { error: updateError } = await supabase
+        .from('orders')
+        .update({ 
+          addon_items: addOnOrderItems // Store as JSONB in orders table
+        })
+        .eq('id', order.id);
+
+      if (updateError) {
+        console.error('🔍 CREATE-ORDER: Error storing add-on items:', updateError);
+        // Don't fail the entire order if add-on storage fails
+      } else {
+        console.log('🔍 CREATE-ORDER: Add-on items stored successfully');
+      }
+    }
 
     return res.status(200).json({
       success: true,
