@@ -319,41 +319,62 @@ export default function Dashboard({ user }: DashboardProps) {
         </div>
       </div>
 
-      {/* Hero Section & Chart */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-8">
+      {/* Mobile Hero Section - Compact */}
+      <div className="lg:hidden bg-gradient-to-br from-gray-950/90 to-gray-900/90 backdrop-blur-sm rounded-2xl p-4 border border-gray-800/30 mb-4">
+        <div className="text-center">
+          <h2 className="text-xl font-bold text-white mb-2 leading-tight">
+            <span className="text-base">Welcome to</span><br />
+            <span className="bg-gradient-to-r from-green-400 to-blue-500 bg-clip-text text-transparent">
+              FASHO.CO
+            </span>
+          </h2>
+          <p className="text-sm text-gray-300 mb-3">
+            It's time to dominate on Spotify! 🚀
+          </p>
+          <button 
+            onClick={() => router.push('/add')}
+            className="bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white px-4 py-2 rounded-xl text-sm font-semibold transition-all duration-300"
+          >
+            Start New Campaign
+          </button>
+        </div>
+      </div>
+
+      {/* Desktop Hero Section & Chart */}
+      <div className="hidden lg:grid lg:grid-cols-2 gap-8 mb-8">
         {/* Hero Section */}
-        <div className="dashboard-hero-gradient rounded-2xl p-4 lg:p-8 border border-gray-800/30 relative overflow-hidden min-h-[300px] lg:min-h-[400px]">
-          <div className="flex flex-col lg:flex-row items-center justify-between h-full">
-            <div className="relative z-10 flex-1 lg:pr-8 text-center lg:text-left">
-              <h2 className="text-2xl md:text-3xl lg:text-5xl font-bold text-white mb-3 lg:mb-6 leading-tight">
-                <span className="text-lg md:text-xl lg:text-3xl">Welcome to</span><br />
+        <div className="dashboard-hero-gradient rounded-2xl p-8 border border-gray-800/30 relative overflow-hidden min-h-[400px]">
+          <div className="flex flex-row items-center justify-between h-full">
+            <div className="relative z-10 flex-1 pr-8 text-left">
+              <h2 className="text-5xl font-bold text-white mb-6 leading-tight">
+                <span className="text-3xl">Welcome to</span><br />
                 <span className="bg-gradient-to-r from-green-400 to-blue-500 bg-clip-text text-transparent">
                   FASHO.CO
                 </span>
               </h2>
-              <p className="text-base md:text-lg lg:text-2xl text-gray-300 mb-4 lg:mb-8 leading-relaxed">
+              <p className="text-2xl text-gray-300 mb-8 leading-relaxed">
                 It's time to dominate on Spotify! 🚀
               </p>
               <button 
                 onClick={() => router.push('/add')}
-                className="bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white px-4 md:px-6 py-2 md:py-3 rounded-xl text-sm md:text-base font-semibold transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl"
+                className="bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white px-6 py-3 rounded-xl text-base font-semibold transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl"
               >
                 Start New Campaign
               </button>
             </div>
             
             {/* Lottie Animation */}
-            <div className="relative z-10 flex items-center justify-center mt-4 lg:mt-0">
+            <div className="relative z-10 flex items-center justify-center">
               {lottieAnimationData ? (
                 <Lottie 
                   animationData={lottieAnimationData}
                   loop={true}
                   autoplay={true}
-                  className="w-48 h-48 md:w-64 md:h-64 lg:w-96 lg:h-96 xl:w-[420px] xl:h-[420px]"
+                  className="w-96 h-96 xl:w-[420px] xl:h-[420px]"
                   lottieRef={lottieRef}
                 />
               ) : (
-                <div className="w-48 h-48 md:w-64 md:h-64 lg:w-96 lg:h-96 xl:w-[420px] xl:h-[420px] bg-gray-800/50 rounded-lg flex items-center justify-center">
+                <div className="w-96 h-96 xl:w-[420px] xl:h-[420px] bg-gray-800/50 rounded-lg flex items-center justify-center">
                   <div className="text-gray-400">Loading animation...</div>
                 </div>
               )}
@@ -361,33 +382,148 @@ export default function Dashboard({ user }: DashboardProps) {
           </div>
         </div>
 
-        {/* Chart Section */}
-        <div className="bg-gradient-to-br from-gray-950/90 to-gray-900/90 backdrop-blur-sm rounded-2xl p-4 lg:p-6 border border-gray-800/30">
-          <h3 className="text-lg lg:text-xl font-semibold text-white mb-4">Next 30 Days Projected Plays</h3>
+        {/* Desktop Chart Section */}
+        <div className="bg-gradient-to-br from-gray-950/90 to-gray-900/90 backdrop-blur-sm rounded-2xl p-6 border border-gray-800/30">
+          <h3 className="text-xl font-semibold text-white mb-4">Next 30 Days Projected Plays</h3>
           <div className="text-sm text-gray-400 mb-4">
             Total estimated plays: {totalPlays.toLocaleString()}
           </div>
-          <div className="relative h-48 lg:h-64 bg-black/20 rounded-lg p-2 lg:p-4 pl-8 lg:pl-12">
-            {/* Enhanced Chart Visualization */}
-            <svg className="w-full h-full" viewBox="0 0 400 200" style={{ overflow: 'visible' }}>
+          <div className="relative h-64 bg-black/20 rounded-lg p-4">
+            {/* Y-axis labels - positioned absolutely */}
+            <div className="absolute left-2 top-4 h-[calc(100%-2rem)] flex flex-col justify-between text-xs text-gray-400 w-8 text-right pr-1">
+              <span className={`transition-opacity duration-500 ${totalPlays > 0 ? 'opacity-100' : 'opacity-30'}`}>
+                {yAxisLabels[0]}
+              </span>
+              <span className={`transition-opacity duration-500 ${totalPlays > 0 ? 'opacity-100' : 'opacity-30'}`}>
+                {yAxisLabels[1]}
+              </span>
+              <span>{yAxisLabels[2]}</span>
+            </div>
+            
+            {/* Chart area with proper margin for Y-axis */}
+            <div className="ml-10 h-full">
+              <svg className="w-full h-full" viewBox="0 0 400 200">
+                <defs>
+                  <linearGradient id="chartGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                    <stop offset="0%" style={{ stopColor: '#10b981', stopOpacity: 1 }} />
+                    <stop offset="100%" style={{ stopColor: '#3b82f6', stopOpacity: 1 }} />
+                  </linearGradient>
+                  <linearGradient id="areaGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+                    <stop offset="0%" style={{ stopColor: '#10b981', stopOpacity: 0.3 }} />
+                    <stop offset="100%" style={{ stopColor: '#3b82f6', stopOpacity: 0.1 }} />
+                  </linearGradient>
+                  <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
+                    <feGaussianBlur stdDeviation="4" result="coloredBlur"/>
+                    <feMerge> 
+                      <feMergeNode in="coloredBlur"/>
+                      <feMergeNode in="SourceGraphic"/>
+                    </feMerge>
+                  </filter>
+                  <filter id="strongGlow" x="-50%" y="-50%" width="200%" height="200%">
+                    <feGaussianBlur stdDeviation="8" result="coloredBlur"/>
+                    <feMerge> 
+                      <feMergeNode in="coloredBlur"/>
+                      <feMergeNode in="SourceGraphic"/>
+                    </feMerge>
+                  </filter>
+                </defs>
+                
+                {/* Grid Lines */}
+                <g stroke="#374151" strokeWidth="1" opacity="0.3">
+                  <line x1="0" y1="40" x2="400" y2="40" />
+                  <line x1="0" y1="80" x2="400" y2="80" />
+                  <line x1="0" y1="120" x2="400" y2="120" />
+                  <line x1="0" y1="160" x2="400" y2="160" />
+                </g>
+                
+                {/* Area under the curve */}
+                {displayData.length > 0 && (
+                  <path
+                    d={`M 0 200 ${displayData.map((plays, index) => {
+                      const x = (index / (displayData.length - 1)) * 400;
+                      const y = maxPlays > 0 ? 200 - (plays / maxPlays) * 160 : 200;
+                      return `L ${x} ${y}`;
+                    }).join(' ')} L 400 200 Z`}
+                    fill="url(#areaGradient)"
+                  />
+                )}
+                
+                {/* Main Glowing Chart Line */}
+                {displayData.length > 0 && (
+                  <path
+                    d={`M ${displayData.map((plays, index) => {
+                      const x = (index / (displayData.length - 1)) * 400;
+                      const y = maxPlays > 0 ? 200 - (plays / maxPlays) * 160 : 200;
+                      return `${x} ${y}`;
+                    }).join(' L ')}`}
+                    fill="none"
+                    stroke="url(#chartGradient)"
+                    strokeWidth="3"
+                    filter="url(#glow)"
+                  />
+                )}
+                
+                {/* Data Points with Glow */}
+                {displayData.map((plays, index) => {
+                  const x = (index / (displayData.length - 1)) * 400;
+                  const y = maxPlays > 0 ? 200 - (plays / maxPlays) * 160 : 200;
+                  
+                  return (
+                    <circle
+                      key={index}
+                      cx={x}
+                      cy={y}
+                      r="4"
+                      fill="url(#chartGradient)"
+                      filter="url(#glow)"
+                    />
+                  );
+                })}
+              </svg>
+            </div>
+          </div>
+          
+          {/* Chart Labels */}
+          <div className="flex justify-between mt-4 text-sm text-gray-400 ml-10">
+            <span>Day 1</span>
+            <span>Day 15</span>
+            <span>Day 30</span>
+          </div>
+        </div>
+      </div>
+
+      {/* Mobile Chart Section - Compact */}
+      <div className="lg:hidden bg-gradient-to-br from-gray-950/90 to-gray-900/90 backdrop-blur-sm rounded-2xl p-4 border border-gray-800/30">
+        <h3 className="text-lg font-semibold text-white mb-3">Next 30 Days Projected Plays</h3>
+        <div className="text-sm text-gray-400 mb-3">
+          Total estimated plays: {totalPlays.toLocaleString()}
+        </div>
+        <div className="relative h-40 bg-black/20 rounded-lg p-2">
+          {/* Y-axis labels - positioned absolutely */}
+          <div className="absolute left-1 top-2 h-[calc(100%-1rem)] flex flex-col justify-between text-xs text-gray-400 w-6 text-right pr-1">
+            <span className={`transition-opacity duration-500 ${totalPlays > 0 ? 'opacity-100' : 'opacity-30'}`}>
+              {yAxisLabels[0]}
+            </span>
+            <span className={`transition-opacity duration-500 ${totalPlays > 0 ? 'opacity-100' : 'opacity-30'}`}>
+              {yAxisLabels[1]}
+            </span>
+            <span>{yAxisLabels[2]}</span>
+          </div>
+          
+          {/* Chart area with proper margin for Y-axis */}
+          <div className="ml-8 h-full">
+            <svg className="w-full h-full" viewBox="0 0 400 200">
               <defs>
-                <linearGradient id="chartGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                <linearGradient id="chartGradientMobile" x1="0%" y1="0%" x2="100%" y2="0%">
                   <stop offset="0%" style={{ stopColor: '#10b981', stopOpacity: 1 }} />
                   <stop offset="100%" style={{ stopColor: '#3b82f6', stopOpacity: 1 }} />
                 </linearGradient>
-                <linearGradient id="areaGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+                <linearGradient id="areaGradientMobile" x1="0%" y1="0%" x2="0%" y2="100%">
                   <stop offset="0%" style={{ stopColor: '#10b981', stopOpacity: 0.3 }} />
                   <stop offset="100%" style={{ stopColor: '#3b82f6', stopOpacity: 0.1 }} />
                 </linearGradient>
-                <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
-                  <feGaussianBlur stdDeviation="4" result="coloredBlur"/>
-                  <feMerge> 
-                    <feMergeNode in="coloredBlur"/>
-                    <feMergeNode in="SourceGraphic"/>
-                  </feMerge>
-                </filter>
-                <filter id="strongGlow" x="-50%" y="-50%" width="200%" height="200%">
-                  <feGaussianBlur stdDeviation="8" result="coloredBlur"/>
+                <filter id="glowMobile" x="-50%" y="-50%" width="200%" height="200%">
+                  <feGaussianBlur stdDeviation="3" result="coloredBlur"/>
                   <feMerge> 
                     <feMergeNode in="coloredBlur"/>
                     <feMergeNode in="SourceGraphic"/>
@@ -397,25 +533,20 @@ export default function Dashboard({ user }: DashboardProps) {
               
               {/* Grid Lines */}
               <g stroke="#374151" strokeWidth="1" opacity="0.3">
-                <line x1="0" y1="40" x2="400" y2="40" />
-                <line x1="0" y1="80" x2="400" y2="80" />
-                <line x1="0" y1="120" x2="400" y2="120" />
-                <line x1="0" y1="160" x2="400" y2="160" />
+                <line x1="0" y1="50" x2="400" y2="50" />
+                <line x1="0" y1="100" x2="400" y2="100" />
+                <line x1="0" y1="150" x2="400" y2="150" />
               </g>
-              
-              {/* Debug: Vertical line at x=400 to show chart boundary */}
-              <line x1="400" y1="0" x2="400" y2="200" stroke="#ff0000" strokeWidth="1" opacity="0.5" />
               
               {/* Area under the curve */}
               {displayData.length > 0 && (
                 <path
                   d={`M 0 200 ${displayData.map((plays, index) => {
-                    // Ensure last point goes to x=400 by using Math.min to cap at 400
-                    const x = Math.min((index / (displayData.length - 1)) * 400, 400);
+                    const x = (index / (displayData.length - 1)) * 400;
                     const y = maxPlays > 0 ? 200 - (plays / maxPlays) * 160 : 200;
                     return `L ${x} ${y}`;
                   }).join(' ')} L 400 200 Z`}
-                  fill="url(#areaGradient)"
+                  fill="url(#areaGradientMobile)"
                 />
               )}
               
@@ -423,22 +554,20 @@ export default function Dashboard({ user }: DashboardProps) {
               {displayData.length > 0 && (
                 <path
                   d={`M ${displayData.map((plays, index) => {
-                    // Ensure last point goes to x=400 by using Math.min to cap at 400
-                    const x = Math.min((index / (displayData.length - 1)) * 400, 400);
+                    const x = (index / (displayData.length - 1)) * 400;
                     const y = maxPlays > 0 ? 200 - (plays / maxPlays) * 160 : 200;
                     return `${x} ${y}`;
                   }).join(' L ')}`}
                   fill="none"
-                  stroke="url(#chartGradient)"
-                  strokeWidth="3"
-                  filter="url(#glow)"
+                  stroke="url(#chartGradientMobile)"
+                  strokeWidth="2"
+                  filter="url(#glowMobile)"
                 />
               )}
               
               {/* Data Points with Glow */}
               {displayData.map((plays, index) => {
-                // Ensure last point goes to x=400 by using Math.min to cap at 400
-                const x = Math.min((index / (displayData.length - 1)) * 400, 400);
+                const x = (index / (displayData.length - 1)) * 400;
                 const y = maxPlays > 0 ? 200 - (plays / maxPlays) * 160 : 200;
                 
                 return (
@@ -446,32 +575,21 @@ export default function Dashboard({ user }: DashboardProps) {
                     key={index}
                     cx={x}
                     cy={y}
-                    r="4"
-                    fill="url(#chartGradient)"
-                    filter="url(#glow)"
+                    r="3"
+                    fill="url(#chartGradientMobile)"
+                    filter="url(#glowMobile)"
                   />
                 );
               })}
             </svg>
-            
-            {/* Y-axis labels - positioned inside container */}
-            <div className="absolute left-1 lg:left-2 top-0 h-full flex flex-col justify-between text-xs text-gray-400 w-6 lg:w-8 text-right pr-1">
-              <span className={`transition-opacity duration-500 ${totalPlays > 0 ? 'opacity-100' : 'opacity-30'}`}>
-                {yAxisLabels[0]}
-              </span>
-              <span className={`transition-opacity duration-500 ${totalPlays > 0 ? 'opacity-100' : 'opacity-30'}`}>
-                {yAxisLabels[1]}
-              </span>
-              <span>{yAxisLabels[2]}</span>
-            </div>
           </div>
-          
-          {/* Chart Labels */}
-          <div className="flex justify-between mt-4 text-sm text-gray-400 pl-8 lg:pl-12">
-            <span>Day 1</span>
-            <span>Day 15</span>
-            <span>Day 30</span>
-          </div>
+        </div>
+        
+        {/* Chart Labels */}
+        <div className="flex justify-between mt-3 text-sm text-gray-400 ml-8">
+          <span>Day 1</span>
+          <span>Day 15</span>
+          <span>Day 30</span>
         </div>
       </div>
 
