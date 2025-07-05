@@ -1,4 +1,5 @@
 import { GetServerSideProps } from 'next'
+import Head from 'next/head'
 import { createClientSSR } from '../utils/supabase/server'
 import { useState, useEffect, useRef } from 'react'
 import { createClient } from '../utils/supabase/client'
@@ -388,9 +389,9 @@ export default function Dashboard({ user }: DashboardProps) {
           <div className="text-sm text-gray-400 mb-4">
             Total estimated plays: {totalPlays.toLocaleString()}
           </div>
-          <div className="relative h-64 bg-black/20 rounded-lg p-4">
+          <div className="relative h-64 bg-black/20 rounded-lg">
             {/* Y-axis labels - positioned absolutely */}
-            <div className="absolute left-2 top-4 h-[calc(100%-2rem)] flex flex-col justify-between text-xs text-gray-400 w-8 text-right pr-1">
+            <div className="absolute left-2 top-4 h-[calc(100%-2rem)] flex flex-col justify-between text-xs text-gray-400 w-8 text-right pr-1 z-10">
               <span className={`transition-opacity duration-500 ${totalPlays > 0 ? 'opacity-100' : 'opacity-30'}`}>
                 {yAxisLabels[0]}
               </span>
@@ -400,8 +401,8 @@ export default function Dashboard({ user }: DashboardProps) {
               <span>{yAxisLabels[2]}</span>
             </div>
             
-            {/* Chart area with proper margin for Y-axis */}
-            <div className="ml-10 h-full">
+            {/* Chart area fills entire container */}
+            <div className="absolute inset-0 pl-10 pr-0 pt-0 pb-0">
               <svg className="w-full h-full" viewBox="0 0 100 100" preserveAspectRatio="none">
                 <defs>
                   <linearGradient id="chartGradient" x1="0%" y1="0%" x2="100%" y2="0%">
@@ -474,7 +475,7 @@ export default function Dashboard({ user }: DashboardProps) {
                       key={index}
                       cx={x}
                       cy={y}
-                      r="2"
+                      r="0.8"
                       fill="url(#chartGradient)"
                       filter="url(#glow)"
                       vectorEffect="non-scaling-stroke"
@@ -486,7 +487,7 @@ export default function Dashboard({ user }: DashboardProps) {
           </div>
           
           {/* Chart Labels */}
-          <div className="flex justify-between mt-4 text-sm text-gray-400 ml-10">
+          <div className="flex justify-between mt-4 text-sm text-gray-400 pl-10">
             <span>Day 1</span>
             <span>Day 15</span>
             <span>Day 30</span>
@@ -500,9 +501,9 @@ export default function Dashboard({ user }: DashboardProps) {
         <div className="text-sm text-gray-400 mb-3">
           Total estimated plays: {totalPlays.toLocaleString()}
         </div>
-        <div className="relative h-40 bg-black/20 rounded-lg p-2">
+        <div className="relative h-40 bg-black/20 rounded-lg">
           {/* Y-axis labels - positioned absolutely */}
-          <div className="absolute left-1 top-2 h-[calc(100%-1rem)] flex flex-col justify-between text-xs text-gray-400 w-6 text-right pr-1">
+          <div className="absolute left-1 top-2 h-[calc(100%-1rem)] flex flex-col justify-between text-xs text-gray-400 w-6 text-right pr-1 z-10">
             <span className={`transition-opacity duration-500 ${totalPlays > 0 ? 'opacity-100' : 'opacity-30'}`}>
               {yAxisLabels[0]}
             </span>
@@ -512,8 +513,8 @@ export default function Dashboard({ user }: DashboardProps) {
             <span>{yAxisLabels[2]}</span>
           </div>
           
-                     {/* Chart area with proper margin for Y-axis */}
-           <div className="ml-8 h-full">
+          {/* Chart area fills entire container */}
+          <div className="absolute inset-0 pl-8 pr-0 pt-0 pb-0">
              <svg className="w-full h-full" viewBox="0 0 100 100" preserveAspectRatio="none">
                <defs>
                  <linearGradient id="chartGradientMobile" x1="0%" y1="0%" x2="100%" y2="0%">
@@ -578,7 +579,7 @@ export default function Dashboard({ user }: DashboardProps) {
                      key={index}
                      cx={x}
                      cy={y}
-                     r="1.5"
+                     r="0.6"
                      fill="url(#chartGradientMobile)"
                      filter="url(#glowMobile)"
                      vectorEffect="non-scaling-stroke"
@@ -590,7 +591,7 @@ export default function Dashboard({ user }: DashboardProps) {
         </div>
         
         {/* Chart Labels */}
-        <div className="flex justify-between mt-3 text-sm text-gray-400 ml-8">
+        <div className="flex justify-between mt-3 text-sm text-gray-400 pl-8">
           <span>Day 1</span>
           <span>Day 15</span>
           <span>Day 30</span>
@@ -1112,10 +1113,15 @@ export default function Dashboard({ user }: DashboardProps) {
     }
   }
 
-  return (
-    <div className="min-h-screen dashboard-background flex">
-      {/* Desktop Sidebar */}
-      <div className="hidden lg:flex w-64 bg-gradient-to-b from-gray-950/95 to-gray-900/95 backdrop-blur-sm border-r border-gray-800/30 flex-col">
+    return (
+    <>
+      <Head>
+        <title>Dashboard - FASHO</title>
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+      </Head>
+      <div className="min-h-screen dashboard-background flex lg:flex-row flex-col w-full">
+        {/* Desktop Sidebar */}
+        <div className="hidden lg:flex w-64 bg-gradient-to-b from-gray-950/95 to-gray-900/95 backdrop-blur-sm border-r border-gray-800/30 flex-col">
         {/* Logo */}
         <div className="p-6 border-b border-gray-800/30">
           <h1 className="text-2xl font-bold text-white">FASHO.CO</h1>
@@ -1169,7 +1175,7 @@ export default function Dashboard({ user }: DashboardProps) {
       </div>
       
       {/* Main Content */}
-      <div className="flex-1 flex flex-col relative z-10">
+      <div className="flex-1 flex flex-col relative z-10 w-full lg:w-auto min-h-screen lg:min-h-0">
         {/* Header */}
         <header className="bg-gray-950/95 backdrop-blur-sm border-b border-gray-900/30 p-4 lg:p-6 relative z-20">
           <div className="flex items-center justify-between">
@@ -1204,7 +1210,7 @@ export default function Dashboard({ user }: DashboardProps) {
       </div>
       
       {/* Mobile Bottom Navigation */}
-      <div className="lg:hidden fixed bottom-0 left-0 right-0 bg-gray-950/95 backdrop-blur-sm border-t border-gray-800/30 px-4 py-2 z-30">
+      <div className="lg:hidden fixed bottom-0 left-0 right-0 bg-gray-950/95 backdrop-blur-sm border-t border-gray-800/30 px-4 py-2 z-30 safe-area-inset-bottom">
         <div className="flex items-center justify-around">
           {sidebarItems.map((item) => (
             <button
@@ -1234,6 +1240,7 @@ export default function Dashboard({ user }: DashboardProps) {
       {/* Sign Out Modal */}
       {showSignOutModal && renderSignOutModal()}
     </div>
+    </>
   )
 }
 
