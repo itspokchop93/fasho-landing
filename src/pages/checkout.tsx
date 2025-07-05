@@ -709,7 +709,7 @@ export default function CheckoutPage() {
         console.log('🔐 CHECKOUT: About to call supabase.auth.getUser()');
         
         // Try multiple methods to get the user
-        let user = null;
+        let user: any = null;
         let authMethod = 'none';
         
         // Method 1: getUser()
