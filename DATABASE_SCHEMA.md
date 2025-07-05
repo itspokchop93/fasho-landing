@@ -13,10 +13,13 @@ CREATE TABLE orders (
   subtotal DECIMAL(10,2) NOT NULL,
   discount DECIMAL(10,2) DEFAULT 0,
   total DECIMAL(10,2) NOT NULL,
-  status VARCHAR(50) DEFAULT 'completed',
+  status VARCHAR(50) DEFAULT 'processing',
   payment_status VARCHAR(50) DEFAULT 'paid',
   billing_info JSONB NOT NULL,
   payment_data JSONB NOT NULL,
+  admin_notes TEXT,
+  first_viewed_at TIMESTAMP WITH TIME ZONE,
+  viewed_by_admin UUID REFERENCES auth.users(id),
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
@@ -29,6 +32,36 @@ CREATE INDEX idx_orders_user_id ON orders(user_id);
 CREATE INDEX idx_orders_customer_email ON orders(customer_email);
 -- Create index for date sorting
 CREATE INDEX idx_orders_created_at ON orders(created_at DESC);
+-- Create index for status filtering
+CREATE INDEX idx_orders_status ON orders(status);
+
+-- Create updated_at trigger
+CREATE OR REPLACE FUNCTION update_orders_updated_at()
+RETURNS TRIGGER AS $$
+BEGIN
+    NEW.updated_at = NOW();
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER update_orders_updated_at
+    BEFORE UPDATE ON orders
+    FOR EACH ROW
+    EXECUTE FUNCTION update_orders_updated_at();
+
+-- Create function to auto-complete orders after 30 days
+CREATE OR REPLACE FUNCTION auto_complete_old_orders()
+RETURNS void AS $$
+BEGIN
+    UPDATE orders 
+    SET status = 'completed', updated_at = NOW()
+    WHERE status NOT IN ('completed', 'cancelled') 
+    AND created_at < NOW() - INTERVAL '30 days';
+END;
+$$ LANGUAGE plpgsql;
+
+-- Create a scheduled job to run the auto-completion (this would need to be set up in your hosting environment)
+-- SELECT cron.schedule('auto-complete-orders', '0 0 * * *', 'SELECT auto_complete_old_orders();');
 ```
 
 ### 2. Order Items Table
@@ -50,11 +83,18 @@ CREATE TABLE order_items (
   original_price DECIMAL(10,2) NOT NULL,
   discounted_price DECIMAL(10,2) NOT NULL,
   is_discounted BOOLEAN DEFAULT FALSE,
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
 -- Create index for order lookups
 CREATE INDEX idx_order_items_order_id ON order_items(order_id);
+
+-- Create updated_at trigger for order_items
+CREATE TRIGGER update_order_items_updated_at
+    BEFORE UPDATE ON order_items
+    FOR EACH ROW
+    EXECUTE FUNCTION update_orders_updated_at();
 ```
 
 ### 3. Add-on Items Table

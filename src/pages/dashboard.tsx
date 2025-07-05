@@ -225,8 +225,37 @@ export default function Dashboard({ user }: DashboardProps) {
 
   // Calculate stats using the correct field names from API
   const totalCampaigns = orders.length
-  const runningCampaigns = orders.filter(order => order.status === 'marketing in progress').length
+  const runningCampaigns = orders.filter(order => order.status === 'marketing_campaign_running').length
   const completedCampaigns = orders.filter(order => order.status === 'completed').length
+
+  // Status formatting functions (same as admin dashboard)
+  const ORDER_STATUSES = [
+    { value: 'processing', label: 'Processing', color: 'yellow', bgClass: 'bg-yellow-400', textClass: 'text-yellow-400' },
+    { value: 'marketing_campaign_running', label: 'Marketing Campaign Running', color: 'green', bgClass: 'bg-green-400', textClass: 'text-green-400' },
+    { value: 'completed', label: 'Completed', color: 'blue', bgClass: 'bg-blue-400', textClass: 'text-blue-400' },
+    { value: 'order_issue', label: 'Order Issue - Check Email', color: 'orange', bgClass: 'bg-orange-400', textClass: 'text-orange-400' },
+    { value: 'cancelled', label: 'Cancelled', color: 'red', bgClass: 'bg-red-400', textClass: 'text-red-400' }
+  ]
+
+  const getStatusColor = (status: string) => {
+    const statusConfig = ORDER_STATUSES.find(s => s.value === status)
+    return statusConfig?.color || 'gray'
+  }
+
+  const getStatusLabel = (status: string) => {
+    const statusConfig = ORDER_STATUSES.find(s => s.value === status)
+    return statusConfig?.label || status
+  }
+
+  const getStatusBgClass = (status: string) => {
+    const statusConfig = ORDER_STATUSES.find(s => s.value === status)
+    return statusConfig?.bgClass || 'bg-gray-400'
+  }
+
+  const getStatusTextClass = (status: string) => {
+    const statusConfig = ORDER_STATUSES.find(s => s.value === status)
+    return statusConfig?.textClass || 'text-gray-400'
+  }
 
   // Format numbers with K notation for Y-axis labels
   const formatNumberWithK = (num: number): string => {
@@ -703,13 +732,12 @@ export default function Dashboard({ user }: DashboardProps) {
                   </div>
                   
                   <div className="flex items-center space-x-4">
-                    <span className={`px-3 py-1 rounded-full text-sm font-medium ${
-                      order.status === 'completed' ? 'bg-green-500/20 text-green-400' :
-                      order.status === 'marketing in progress' ? 'bg-blue-500/20 text-blue-400' :
-                      'bg-gray-500/20 text-gray-400'
-                    }`}>
-                      {order.status}
-                    </span>
+                    <div className="flex items-center space-x-2">
+                      <div className={`w-3 h-3 rounded-full animate-pulse ${getStatusBgClass(order.status)}`}></div>
+                      <span className={`text-sm font-medium ${getStatusTextClass(order.status)}`}>
+                        {getStatusLabel(order.status)}
+                      </span>
+                    </div>
                     
                     <svg 
                       className={`w-5 h-5 text-gray-400 transition-transform ${
@@ -858,13 +886,12 @@ export default function Dashboard({ user }: DashboardProps) {
                 </div>
                 
                 <div className="flex items-center space-x-4">
-                  <span className={`px-3 py-1 rounded-full text-sm font-medium ${
-                    order.status === 'completed' ? 'bg-green-500/20 text-green-400' :
-                    order.status === 'marketing in progress' ? 'bg-blue-500/20 text-blue-400' :
-                    'bg-gray-500/20 text-gray-400'
-                  }`}>
-                    {order.status}
-                  </span>
+                  <div className="flex items-center space-x-2">
+                    <div className={`w-3 h-3 rounded-full animate-pulse ${getStatusBgClass(order.status)}`}></div>
+                    <span className={`text-sm font-medium ${getStatusTextClass(order.status)}`}>
+                      {getStatusLabel(order.status)}
+                    </span>
+                  </div>
                   
                   <svg 
                     className={`w-5 h-5 text-gray-400 transition-transform ${

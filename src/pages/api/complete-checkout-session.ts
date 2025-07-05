@@ -20,7 +20,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     console.log('Completing checkout session:', sessionId);
 
     // Get session data from global storage
-    const sessionData = global.checkoutSessions?.get(sessionId);
+    const sessionData = (globalThis as any).checkoutSessions?.get(sessionId);
     
     if (sessionData) {
       // Mark session as used
@@ -29,7 +29,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       sessionData.completedAt = new Date();
       
       // Update the session in global storage
-      global.checkoutSessions!.set(sessionId, sessionData);
+      (globalThis as any).checkoutSessions!.set(sessionId, sessionData);
       
       console.log('Successfully marked session as completed:', sessionId);
       

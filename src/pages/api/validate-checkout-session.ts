@@ -20,7 +20,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     console.log('Validating session:', sessionId);
 
     // Get session data from global storage
-    const sessionData = global.checkoutSessions?.get(sessionId);
+    const sessionData = (globalThis as any).checkoutSessions?.get(sessionId);
     
     if (sessionData) {
       // Check if session has already been used

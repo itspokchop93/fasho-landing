@@ -125,7 +125,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           subtotal: subtotal,
           discount: discount,
           total: total,
-          status: 'completed',
+          status: 'processing',
           payment_status: 'paid',
           billing_info: billingInfo,
           payment_data: paymentData,

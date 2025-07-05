@@ -6,8 +6,8 @@ declare global {
   var checkoutSessions: Map<string, any> | undefined;
 }
 
-if (!global.checkoutSessions) {
-  global.checkoutSessions = new Map();
+if (!(globalThis as any).checkoutSessions) {
+  (globalThis as any).checkoutSessions = new Map();
 }
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
@@ -33,7 +33,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const sessionId = uuidv4();
     
     // Store session data globally for development
-    global.checkoutSessions!.set(sessionId, {
+    (globalThis as any).checkoutSessions!.set(sessionId, {
       tracks,
       selectedPackages,
       userId,
