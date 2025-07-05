@@ -321,8 +321,8 @@ export default function Dashboard({ user }: DashboardProps) {
       </div>
 
       {/* Mobile Hero Section - Compact */}
-      <div className="lg:hidden bg-gradient-to-br from-gray-950/90 to-gray-900/90 backdrop-blur-sm rounded-2xl p-4 border border-gray-800/30 mb-4">
-        <div className="text-center">
+      <div className="lg:hidden bg-gradient-to-br from-gray-950/90 to-gray-900/90 backdrop-blur-sm rounded-2xl p-4 border border-gray-800/30 mb-4 relative overflow-hidden">
+        <div className="flex flex-col items-center text-center relative z-10">
           <h2 className="text-xl font-bold text-white mb-2 leading-tight">
             <span className="text-base">Welcome to</span><br />
             <span className="bg-gradient-to-r from-green-400 to-blue-500 bg-clip-text text-transparent">
@@ -332,6 +332,25 @@ export default function Dashboard({ user }: DashboardProps) {
           <p className="text-sm text-gray-300 mb-3">
             It's time to dominate on Spotify! 🚀
           </p>
+          
+          {/* Mobile Lottie Animation - Large with overflow */}
+          <div className="relative w-full h-32 mb-4 overflow-hidden rounded-lg">
+            {lottieAnimationData ? (
+              <Lottie 
+                animationData={lottieAnimationData}
+                loop={true}
+                autoplay={true}
+                className="absolute top-0 left-1/2 transform -translate-x-1/2 w-80 h-80"
+                lottieRef={lottieRef}
+                style={{ marginTop: '-80px' }}
+              />
+            ) : (
+              <div className="w-full h-full bg-gray-800/50 rounded-lg flex items-center justify-center">
+                <div className="text-gray-400 text-sm">Loading animation...</div>
+              </div>
+            )}
+          </div>
+          
           <button 
             onClick={() => router.push('/add')}
             className="bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white px-4 py-2 rounded-xl text-sm font-semibold transition-all duration-300"
@@ -1204,7 +1223,7 @@ export default function Dashboard({ user }: DashboardProps) {
           </header>
           
           {/* Content */}
-          <main className="flex-1 p-4 lg:p-6 overflow-y-auto overflow-x-hidden relative z-20 pb-20 lg:pb-0 w-full">
+          <main className="flex-1 p-4 lg:p-6 pr-6 lg:pr-6 overflow-y-auto overflow-x-hidden relative z-20 pb-20 lg:pb-0 w-full">
             {renderContent()}
           </main>
         </div>
