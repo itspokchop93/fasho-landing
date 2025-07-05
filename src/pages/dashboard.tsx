@@ -321,46 +321,53 @@ export default function Dashboard({ user }: DashboardProps) {
       </div>
 
       {/* Mobile Hero Section - Enhanced */}
-      <div className="lg:hidden relative overflow-hidden rounded-2xl mb-6 h-64 bg-gradient-to-br from-purple-900/20 via-blue-900/20 to-green-900/20 backdrop-blur-sm border border-gray-800/30">
+      <div className="lg:hidden relative overflow-hidden rounded-2xl mb-6 h-64 bg-gradient-to-br from-purple-900/20 via-blue-900/20 to-green-900/20 backdrop-blur-sm border-2 border-gray-900/60">
         {/* Gradient Background Effect */}
         <div className="absolute inset-0 bg-gradient-to-br from-purple-600/10 via-blue-600/10 to-green-600/10 animate-pulse"></div>
         <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent"></div>
         
-        <div className="relative z-10 flex flex-col items-center justify-center text-center h-full px-4 pt-4">
-          <h2 className="text-2xl font-bold text-white mb-1 leading-tight">
-            <span className="text-lg">Welcome to</span><br />
-            <span className="text-4xl bg-gradient-to-r from-green-400 to-blue-500 bg-clip-text text-transparent font-extrabold">
-              FASHO.CO
-            </span>
-          </h2>
-          <p className="text-base text-gray-200 mb-4 font-medium">
-            It's time to dominate on Spotify! 🚀
-          </p>
+        <div className="relative z-10 flex flex-col h-full px-4">
+          {/* Text Content - Top Section */}
+          <div className="flex flex-col items-center text-center pt-4 pb-3">
+            <h2 className="text-2xl font-bold text-white mb-1 leading-tight">
+              <span className="text-lg">Welcome to</span><br />
+              <span className="text-4xl bg-gradient-to-r from-green-400 to-blue-500 bg-clip-text text-transparent font-extrabold">
+                FASHO.CO
+              </span>
+            </h2>
+            <p className="text-base text-gray-200 font-medium">
+              It's time to dominate on Spotify! 🚀
+            </p>
+          </div>
           
-                     {/* Mobile Lottie Animation - Smaller and positioned lower */}
-           <div className="absolute bottom-0 left-1/2 transform -translate-x-1/2 translate-y-8 pointer-events-none">
-             {lottieAnimationData ? (
-               <Lottie
-                 lottieRef={lottieRef}
-                 animationData={lottieAnimationData}
-                 style={{ width: 200, height: 200 }}
-                 loop={true}
-                 autoplay={true}
-               />
-             ) : (
-               <div className="w-48 h-48 bg-gray-800/50 rounded-lg flex items-center justify-center">
-                 <div className="text-gray-400 text-xs">Loading...</div>
-               </div>
-             )}
-           </div>
-           
-           {/* Start Campaign Button */}
-           <button 
-             onClick={() => router.push('/add')}
-             className="bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white px-6 py-3 rounded-xl text-base font-semibold transition-all duration-300 shadow-lg hover:shadow-xl transform hover:scale-105 z-20 relative"
-           >
-             Start New Campaign
-           </button>
+          {/* Button */}
+          <div className="flex justify-center mb-3">
+            <button 
+              onClick={() => router.push('/add')}
+              className="bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white px-6 py-3 rounded-xl text-base font-semibold transition-all duration-300 shadow-lg hover:shadow-xl transform hover:scale-105 border-2 border-gray-900/60"
+            >
+              Start New Campaign
+            </button>
+          </div>
+          
+          {/* Lottie Animation - Bottom Section */}
+          <div className="flex-1 flex items-end justify-center overflow-hidden">
+            <div className="mb-[-20px]">
+              {lottieAnimationData ? (
+                <Lottie
+                  lottieRef={lottieRef}
+                  animationData={lottieAnimationData}
+                  style={{ width: 200, height: 200 }}
+                  loop={true}
+                  autoplay={true}
+                />
+              ) : (
+                <div className="w-48 h-48 bg-gray-800/50 rounded-lg flex items-center justify-center">
+                  <div className="text-gray-400 text-xs">Loading...</div>
+                </div>
+              )}
+            </div>
+          </div>
         </div>
       </div>
 
