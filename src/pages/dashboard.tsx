@@ -320,43 +320,47 @@ export default function Dashboard({ user }: DashboardProps) {
         </div>
       </div>
 
-      {/* Mobile Hero Section - Compact */}
-      <div className="lg:hidden bg-gradient-to-br from-gray-950/90 to-gray-900/90 backdrop-blur-sm rounded-2xl p-4 border border-gray-800/30 mb-4 relative overflow-hidden">
-        <div className="flex flex-col items-center text-center relative z-10">
-          <h2 className="text-xl font-bold text-white mb-2 leading-tight">
-            <span className="text-base">Welcome to</span><br />
-            <span className="bg-gradient-to-r from-green-400 to-blue-500 bg-clip-text text-transparent">
+      {/* Mobile Hero Section - Enhanced */}
+      <div className="lg:hidden relative overflow-hidden rounded-2xl mb-6 h-64 bg-gradient-to-br from-purple-900/20 via-blue-900/20 to-green-900/20 backdrop-blur-sm border border-gray-800/30">
+        {/* Gradient Background Effect */}
+        <div className="absolute inset-0 bg-gradient-to-br from-purple-600/10 via-blue-600/10 to-green-600/10 animate-pulse"></div>
+        <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent"></div>
+        
+        <div className="relative z-10 flex flex-col items-center justify-center text-center h-full px-4 pt-4">
+          <h2 className="text-2xl font-bold text-white mb-1 leading-tight">
+            <span className="text-lg">Welcome to</span><br />
+            <span className="text-4xl bg-gradient-to-r from-green-400 to-blue-500 bg-clip-text text-transparent font-extrabold">
               FASHO.CO
             </span>
           </h2>
-          <p className="text-sm text-gray-300 mb-3">
+          <p className="text-base text-gray-200 mb-4 font-medium">
             It's time to dominate on Spotify! 🚀
           </p>
           
-          {/* Mobile Lottie Animation - Large with overflow */}
-          <div className="relative w-full h-32 mb-4 overflow-hidden rounded-lg">
-            {lottieAnimationData ? (
-              <Lottie 
-                animationData={lottieAnimationData}
-                loop={true}
-                autoplay={true}
-                className="absolute top-0 left-1/2 transform -translate-x-1/2 w-80 h-80"
-                lottieRef={lottieRef}
-                style={{ marginTop: '-80px' }}
-              />
-            ) : (
-              <div className="w-full h-full bg-gray-800/50 rounded-lg flex items-center justify-center">
-                <div className="text-gray-400 text-sm">Loading animation...</div>
-              </div>
-            )}
-          </div>
-          
-          <button 
-            onClick={() => router.push('/add')}
-            className="bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white px-4 py-2 rounded-xl text-sm font-semibold transition-all duration-300"
-          >
-            Start New Campaign
-          </button>
+                     {/* Mobile Lottie Animation - Smaller and positioned lower */}
+           <div className="absolute bottom-0 left-1/2 transform -translate-x-1/2 translate-y-8 pointer-events-none">
+             {lottieAnimationData ? (
+               <Lottie
+                 lottieRef={lottieRef}
+                 animationData={lottieAnimationData}
+                 style={{ width: 200, height: 200 }}
+                 loop={true}
+                 autoplay={true}
+               />
+             ) : (
+               <div className="w-48 h-48 bg-gray-800/50 rounded-lg flex items-center justify-center">
+                 <div className="text-gray-400 text-xs">Loading...</div>
+               </div>
+             )}
+           </div>
+           
+           {/* Start Campaign Button */}
+           <button 
+             onClick={() => router.push('/add')}
+             className="bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white px-6 py-3 rounded-xl text-base font-semibold transition-all duration-300 shadow-lg hover:shadow-xl transform hover:scale-105 z-20 relative"
+           >
+             Start New Campaign
+           </button>
         </div>
       </div>
 
