@@ -22,7 +22,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const offsetNum = parseInt(offset as string, 10);
 
     // Fetch user's orders with items and add-on items
-    const { data: orders, error } = await supabase
+    let query = supabase
       .from('orders')
       .select(`
         *,
@@ -30,8 +30,14 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         add_on_items (*)
       `)
       .eq('user_id', user.id)
-      .order('created_at', { ascending: false })
-      .range(offsetNum, offsetNum + limitNum - 1);
+      .order('created_at', { ascending: false });
+
+    // Apply pagination only if limit is reasonable (not requesting all orders)
+    if (limitNum <= 100) {
+      query = query.range(offsetNum, offsetNum + limitNum - 1);
+    }
+
+    const { data: orders, error } = await query;
 
     if (error) {
       console.error('Error fetching user orders:', error);

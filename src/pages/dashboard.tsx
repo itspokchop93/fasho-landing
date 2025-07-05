@@ -71,7 +71,8 @@ export default function Dashboard({ user }: DashboardProps) {
     async function fetchOrders() {
       setOrdersLoading(true)
       try {
-        const res = await fetch('/api/get-user-orders')
+        // Request all orders by setting a high limit
+        const res = await fetch('/api/get-user-orders?limit=1000')
         const data = await res.json()
         if (data.success) {
           setOrders(data.orders)
