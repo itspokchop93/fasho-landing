@@ -123,7 +123,7 @@ export default function Dashboard({ user }: DashboardProps) {
     
     const dailyData = []
     for (let i = 0; i < 30; i++) {
-      const progress = i / 29
+      const progress = i / 29 // This ensures the last point (i=29) has progress = 1
       const randomVariation = 0.85 + Math.random() * 0.3 // 85-115% of expected
       const dailyPlays = Math.floor(totalPlays * progress * randomVariation)
       dailyData.push(Math.max(0, dailyPlays))
@@ -369,7 +369,7 @@ export default function Dashboard({ user }: DashboardProps) {
           </div>
           <div className="relative h-48 lg:h-64 bg-black/20 rounded-lg p-2 lg:p-4 pl-8 lg:pl-12">
             {/* Enhanced Chart Visualization */}
-            <svg className="w-full h-full" viewBox="0 0 400 200">
+            <svg className="w-full h-full" viewBox="0 0 400 200" style={{ overflow: 'visible' }}>
               <defs>
                 <linearGradient id="chartGradient" x1="0%" y1="0%" x2="100%" y2="0%">
                   <stop offset="0%" style={{ stopColor: '#10b981', stopOpacity: 1 }} />
@@ -403,11 +403,15 @@ export default function Dashboard({ user }: DashboardProps) {
                 <line x1="0" y1="160" x2="400" y2="160" />
               </g>
               
+              {/* Debug: Vertical line at x=400 to show chart boundary */}
+              <line x1="400" y1="0" x2="400" y2="200" stroke="#ff0000" strokeWidth="1" opacity="0.5" />
+              
               {/* Area under the curve */}
               {displayData.length > 0 && (
                 <path
                   d={`M 0 200 ${displayData.map((plays, index) => {
-                    const x = (index / 29) * 400; // Fix: Use 29 instead of (length-1) to extend to full width
+                    // Ensure last point goes to x=400 by using Math.min to cap at 400
+                    const x = Math.min((index / (displayData.length - 1)) * 400, 400);
                     const y = maxPlays > 0 ? 200 - (plays / maxPlays) * 160 : 200;
                     return `L ${x} ${y}`;
                   }).join(' ')} L 400 200 Z`}
@@ -419,7 +423,8 @@ export default function Dashboard({ user }: DashboardProps) {
               {displayData.length > 0 && (
                 <path
                   d={`M ${displayData.map((plays, index) => {
-                    const x = (index / 29) * 400; // Fix: Use 29 instead of (length-1) to extend to full width
+                    // Ensure last point goes to x=400 by using Math.min to cap at 400
+                    const x = Math.min((index / (displayData.length - 1)) * 400, 400);
                     const y = maxPlays > 0 ? 200 - (plays / maxPlays) * 160 : 200;
                     return `${x} ${y}`;
                   }).join(' L ')}`}
@@ -432,7 +437,8 @@ export default function Dashboard({ user }: DashboardProps) {
               
               {/* Data Points with Glow */}
               {displayData.map((plays, index) => {
-                const x = (index / 29) * 400; // Fix: Use 29 instead of (length-1) to extend to full width
+                // Ensure last point goes to x=400 by using Math.min to cap at 400
+                const x = Math.min((index / (displayData.length - 1)) * 400, 400);
                 const y = maxPlays > 0 ? 200 - (plays / maxPlays) * 160 : 200;
                 
                 return (
