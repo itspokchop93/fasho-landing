@@ -268,15 +268,14 @@ async function generateOrderNumber(supabase: any): Promise<string> {
       // Get all order numbers to find the highest one
       const { data: allOrders, error } = await supabase
         .from('orders')
-        .select('order_number')
-        .like('order_number', 'FASHO-%');
+        .select('order_number');
 
       if (error) {
         console.error('🔍 ORDER-NUMBER: Error fetching orders:', error);
         // If we can't fetch, use timestamp-based fallback
         const timestamp = Date.now().toString().slice(-4);
         const random = Math.floor(Math.random() * 100).toString().padStart(2, '0');
-        const fallbackNumber = `FASHO-8${timestamp}${random}`;
+        const fallbackNumber = `8${timestamp}${random}`;
         console.log('🔍 ORDER-NUMBER: Using fallback number:', fallbackNumber);
         return fallbackNumber;
       }
@@ -291,8 +290,10 @@ async function generateOrderNumber(supabase: any): Promise<string> {
         
         for (const order of allOrders) {
           const orderNumber = order.order_number;
-          // Extract the number part (e.g., "FASHO-3005" -> "3005")
-          const numberPart = orderNumber.replace('FASHO-', '');
+          // Handle both old format (FASHO-3005) and new format (3005)
+          const numberPart = orderNumber.startsWith('FASHO-') 
+            ? orderNumber.replace('FASHO-', '') 
+            : orderNumber;
           const orderNum = parseInt(numberPart, 10);
           
           if (!isNaN(orderNum) && orderNum > highestNumber) {
@@ -309,8 +310,7 @@ async function generateOrderNumber(supabase: any): Promise<string> {
       nextNumber += randomOffset;
 
       // Format as 4-digit number with leading zeros if needed
-      const formattedNumber = nextNumber.toString().padStart(4, '0');
-      const proposedOrderNumber = `FASHO-${formattedNumber}`;
+      const proposedOrderNumber = nextNumber.toString();
       
       console.log('🔍 ORDER-NUMBER: Proposed order number:', proposedOrderNumber);
       
@@ -343,7 +343,7 @@ async function generateOrderNumber(supabase: any): Promise<string> {
         // Final fallback - use timestamp with random component
         const timestamp = Date.now().toString().slice(-4);
         const random = Math.floor(Math.random() * 1000).toString().padStart(3, '0');
-        const fallbackNumber = `FASHO-9${timestamp}${random}`;
+        const fallbackNumber = `9${timestamp}${random}`;
         console.log('🔍 ORDER-NUMBER: Using final fallback number:', fallbackNumber);
         return fallbackNumber;
       }
@@ -353,7 +353,7 @@ async function generateOrderNumber(supabase: any): Promise<string> {
   }
   
   // This should never be reached, but just in case
-  const emergencyNumber = `FASHO-${Date.now().toString().slice(-6)}`;
+  const emergencyNumber = Date.now().toString().slice(-6);
   console.log('🔍 ORDER-NUMBER: Using emergency fallback:', emergencyNumber);
   return emergencyNumber;
 } 

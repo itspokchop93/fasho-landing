@@ -343,11 +343,6 @@ export default function ThankYouPage() {
                 <div className="bg-gradient-to-r from-[#59e3a5]/10 to-[#14c0ff]/10 border border-[#59e3a5]/20 rounded-lg p-4 mb-4">
                   <p className="text-[#59e3a5] font-semibold text-lg">Order #{orderData.orderNumber}</p>
                   <p className="text-white/70 text-sm">Keep this number for your records</p>
-                  {timeRemaining > 0 && (
-                    <p className="text-white/50 text-xs mt-1">
-                      ⏰ This page expires in {Math.ceil(timeRemaining / 60000)} minutes
-                    </p>
-                  )}
                 </div>
               )}
               {orderData.newAccountCreated && (
@@ -473,6 +468,15 @@ export default function ThankYouPage() {
               <Link href="/dashboard" className="bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] text-black font-semibold py-4 px-6 rounded-lg hover:opacity-90 transition-opacity">
                 View Dashboard
               </Link>
+            </div>
+            
+            {/* Footer with expiration message */}
+            <div className="text-center mt-12 pb-8">
+              {timeRemaining > 0 && (
+                <p className="text-white/30 text-xs">
+                  ⏰ This page expires in {Math.ceil(timeRemaining / 60000)} minutes
+                </p>
+              )}
             </div>
           </div>
         </div>
