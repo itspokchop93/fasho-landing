@@ -273,45 +273,45 @@ export default function Dashboard({ user }: DashboardProps) {
   ]
 
   const renderDashboardContent = () => (
-    <div className="space-y-8">
+    <div className="space-y-4 lg:space-y-8">
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div className="bg-gradient-to-br from-gray-950/90 to-gray-900/90 backdrop-blur-sm rounded-2xl p-6 border border-gray-800/30">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 lg:gap-6">
+        <div className="bg-gradient-to-br from-gray-950/90 to-gray-900/90 backdrop-blur-sm rounded-2xl p-4 lg:p-6 border border-gray-800/30">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-gray-400 text-sm font-medium">Total Campaigns</p>
-              <p className="text-3xl font-bold text-white mt-2">{totalCampaigns}</p>
+              <p className="text-2xl lg:text-3xl font-bold text-white mt-2">{totalCampaigns}</p>
             </div>
-            <div className="w-12 h-12 bg-gradient-to-br from-green-500 to-green-600 rounded-xl flex items-center justify-center">
-              <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <div className="w-10 h-10 lg:w-12 lg:h-12 bg-gradient-to-br from-green-500 to-green-600 rounded-xl flex items-center justify-center">
+              <svg className="w-5 h-5 lg:w-6 lg:h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3" />
               </svg>
             </div>
           </div>
         </div>
 
-        <div className="bg-gradient-to-br from-gray-950/90 to-gray-900/90 backdrop-blur-sm rounded-2xl p-6 border border-gray-800/30">
+        <div className="bg-gradient-to-br from-gray-950/90 to-gray-900/90 backdrop-blur-sm rounded-2xl p-4 lg:p-6 border border-gray-800/30">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-gray-400 text-sm font-medium">Running Campaigns</p>
-              <p className="text-3xl font-bold text-white mt-2">{runningCampaigns}/{totalCampaigns}</p>
+              <p className="text-2xl lg:text-3xl font-bold text-white mt-2">{runningCampaigns}/{totalCampaigns}</p>
             </div>
-            <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl flex items-center justify-center">
-              <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <div className="w-10 h-10 lg:w-12 lg:h-12 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl flex items-center justify-center">
+              <svg className="w-5 h-5 lg:w-6 lg:h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
               </svg>
             </div>
           </div>
         </div>
 
-        <div className="bg-gradient-to-br from-gray-950/90 to-gray-900/90 backdrop-blur-sm rounded-2xl p-6 border border-gray-800/30">
+        <div className="bg-gradient-to-br from-gray-950/90 to-gray-900/90 backdrop-blur-sm rounded-2xl p-4 lg:p-6 border border-gray-800/30">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-gray-400 text-sm font-medium">Completed Campaigns</p>
-              <p className="text-3xl font-bold text-white mt-2">{completedCampaigns}/{totalCampaigns}</p>
+              <p className="text-2xl lg:text-3xl font-bold text-white mt-2">{completedCampaigns}/{totalCampaigns}</p>
             </div>
-            <div className="w-12 h-12 bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl flex items-center justify-center">
-              <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <div className="w-10 h-10 lg:w-12 lg:h-12 bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl flex items-center justify-center">
+              <svg className="w-5 h-5 lg:w-6 lg:h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
             </div>
@@ -320,40 +320,40 @@ export default function Dashboard({ user }: DashboardProps) {
       </div>
 
       {/* Hero Section & Chart */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-8">
         {/* Hero Section */}
-        <div className="dashboard-hero-gradient rounded-2xl p-4 lg:p-8 border border-gray-800/30 relative overflow-hidden min-h-[400px]">
+        <div className="dashboard-hero-gradient rounded-2xl p-4 lg:p-8 border border-gray-800/30 relative overflow-hidden min-h-[300px] lg:min-h-[400px]">
           <div className="flex flex-col lg:flex-row items-center justify-between h-full">
             <div className="relative z-10 flex-1 lg:pr-8 text-center lg:text-left">
-              <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold text-white mb-4 lg:mb-6 leading-tight">
-                <span className="text-xl md:text-2xl lg:text-3xl">Welcome to</span><br />
+              <h2 className="text-2xl md:text-3xl lg:text-5xl font-bold text-white mb-3 lg:mb-6 leading-tight">
+                <span className="text-lg md:text-xl lg:text-3xl">Welcome to</span><br />
                 <span className="bg-gradient-to-r from-green-400 to-blue-500 bg-clip-text text-transparent">
                   FASHO.CO
                 </span>
               </h2>
-              <p className="text-lg md:text-xl lg:text-2xl text-gray-300 mb-6 lg:mb-8 leading-relaxed">
+              <p className="text-base md:text-lg lg:text-2xl text-gray-300 mb-4 lg:mb-8 leading-relaxed">
                 It's time to dominate on Spotify! 🚀
               </p>
               <button 
                 onClick={() => router.push('/add')}
-                className="bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white px-6 md:px-8 py-3 md:py-4 rounded-xl text-base md:text-lg font-semibold transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl"
+                className="bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white px-4 md:px-6 py-2 md:py-3 rounded-xl text-sm md:text-base font-semibold transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl"
               >
                 Start New Campaign
               </button>
             </div>
             
             {/* Lottie Animation */}
-            <div className="relative z-10 flex items-center justify-center mt-6 lg:mt-0">
+            <div className="relative z-10 flex items-center justify-center mt-4 lg:mt-0">
               {lottieAnimationData ? (
                 <Lottie 
                   animationData={lottieAnimationData}
                   loop={true}
                   autoplay={true}
-                  className="w-64 h-64 md:w-80 md:h-80 lg:w-96 lg:h-96 xl:w-[420px] xl:h-[420px]"
+                  className="w-48 h-48 md:w-64 md:h-64 lg:w-96 lg:h-96 xl:w-[420px] xl:h-[420px]"
                   lottieRef={lottieRef}
                 />
               ) : (
-                <div className="w-64 h-64 md:w-80 md:h-80 lg:w-96 lg:h-96 xl:w-[420px] xl:h-[420px] bg-gray-800/50 rounded-lg flex items-center justify-center">
+                <div className="w-48 h-48 md:w-64 md:h-64 lg:w-96 lg:h-96 xl:w-[420px] xl:h-[420px] bg-gray-800/50 rounded-lg flex items-center justify-center">
                   <div className="text-gray-400">Loading animation...</div>
                 </div>
               )}
@@ -367,7 +367,7 @@ export default function Dashboard({ user }: DashboardProps) {
           <div className="text-sm text-gray-400 mb-4">
             Total estimated plays: {totalPlays.toLocaleString()}
           </div>
-          <div className="relative h-48 lg:h-64 bg-black/20 rounded-lg p-2 lg:p-4 pl-12 lg:pl-16">
+          <div className="relative h-48 lg:h-64 bg-black/20 rounded-lg p-2 lg:p-4 pl-8 lg:pl-12">
             {/* Enhanced Chart Visualization */}
             <svg className="w-full h-full" viewBox="0 0 400 200">
               <defs>
@@ -407,7 +407,7 @@ export default function Dashboard({ user }: DashboardProps) {
               {displayData.length > 0 && (
                 <path
                   d={`M 0 200 ${displayData.map((plays, index) => {
-                    const x = (index / (displayData.length - 1)) * 400;
+                    const x = (index / 29) * 400; // Fix: Use 29 instead of (length-1) to extend to full width
                     const y = maxPlays > 0 ? 200 - (plays / maxPlays) * 160 : 200;
                     return `L ${x} ${y}`;
                   }).join(' ')} L 400 200 Z`}
@@ -419,7 +419,7 @@ export default function Dashboard({ user }: DashboardProps) {
               {displayData.length > 0 && (
                 <path
                   d={`M ${displayData.map((plays, index) => {
-                    const x = (index / (displayData.length - 1)) * 400;
+                    const x = (index / 29) * 400; // Fix: Use 29 instead of (length-1) to extend to full width
                     const y = maxPlays > 0 ? 200 - (plays / maxPlays) * 160 : 200;
                     return `${x} ${y}`;
                   }).join(' L ')}`}
@@ -432,7 +432,7 @@ export default function Dashboard({ user }: DashboardProps) {
               
               {/* Data Points with Glow */}
               {displayData.map((plays, index) => {
-                const x = (index / (displayData.length - 1)) * 400;
+                const x = (index / 29) * 400; // Fix: Use 29 instead of (length-1) to extend to full width
                 const y = maxPlays > 0 ? 200 - (plays / maxPlays) * 160 : 200;
                 
                 return (
@@ -449,7 +449,7 @@ export default function Dashboard({ user }: DashboardProps) {
             </svg>
             
             {/* Y-axis labels - positioned inside container */}
-            <div className="absolute left-1 lg:left-2 top-0 h-full flex flex-col justify-between text-xs text-gray-400 w-8 lg:w-12 text-right pr-1 lg:pr-2">
+            <div className="absolute left-1 lg:left-2 top-0 h-full flex flex-col justify-between text-xs text-gray-400 w-6 lg:w-8 text-right pr-1">
               <span className={`transition-opacity duration-500 ${totalPlays > 0 ? 'opacity-100' : 'opacity-30'}`}>
                 {yAxisLabels[0]}
               </span>
@@ -461,7 +461,7 @@ export default function Dashboard({ user }: DashboardProps) {
           </div>
           
           {/* Chart Labels */}
-          <div className="flex justify-between mt-4 text-sm text-gray-400 pl-12 lg:pl-16">
+          <div className="flex justify-between mt-4 text-sm text-gray-400 pl-8 lg:pl-12">
             <span>Day 1</span>
             <span>Day 15</span>
             <span>Day 30</span>
@@ -471,13 +471,13 @@ export default function Dashboard({ user }: DashboardProps) {
 
       {/* Your Campaigns Section */}
       <div className="bg-gradient-to-br from-gray-950/90 to-gray-900/90 backdrop-blur-sm rounded-2xl p-4 lg:p-8 border border-gray-800/30">
-        <div className="flex items-center justify-between mb-6">
-          <h3 className="text-2xl font-bold text-white">Your Campaigns</h3>
+        <div className="flex items-center justify-between mb-4 lg:mb-6">
+          <h3 className="text-xl lg:text-2xl font-bold text-white">Your Campaigns</h3>
           <button 
             onClick={() => setActiveTab('campaigns')}
-            className="text-green-400 hover:text-green-300 font-medium transition-colors"
+            className="text-green-400 hover:text-green-300 font-medium transition-colors text-sm lg:text-base"
           >
-            View All Campaigns →
+            View All →
           </button>
         </div>
         
