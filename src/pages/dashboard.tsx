@@ -1113,24 +1113,105 @@ export default function Dashboard({ user }: DashboardProps) {
     }
   }
 
-    return (
+  return (
     <>
       <Head>
         <title>Dashboard - FASHO</title>
         <meta name="viewport" content="width=device-width, initial-scale=1" />
       </Head>
-      <div className="min-h-screen dashboard-background flex lg:flex-row flex-col w-full">
+      <div className="min-h-screen dashboard-background flex lg:flex-row flex-col w-full overflow-x-hidden">
         {/* Desktop Sidebar */}
         <div className="hidden lg:flex w-64 bg-gradient-to-b from-gray-950/95 to-gray-900/95 backdrop-blur-sm border-r border-gray-800/30 flex-col">
-        {/* Logo */}
-        <div className="p-6 border-b border-gray-800/30">
-          <h1 className="text-2xl font-bold text-white">FASHO.CO</h1>
-          <p className="text-sm text-gray-400">Music Promotion</p>
+          {/* Logo */}
+          <div className="p-6 border-b border-gray-800/30">
+            <h1 className="text-2xl font-bold text-white">FASHO.CO</h1>
+            <p className="text-sm text-gray-400">Music Promotion</p>
+          </div>
+          
+          {/* Navigation */}
+          <nav className="flex-1 p-4">
+            <div className="space-y-2">
+              {sidebarItems.map((item) => (
+                <button
+                  key={item.id}
+                  onClick={() => {
+                    if (item.id === 'signout') {
+                      setShowSignOutModal(true)
+                    } else {
+                      setActiveTab(item.id)
+                    }
+                  }}
+                  className={`w-full flex items-center space-x-3 px-4 py-3 rounded-xl transition-all duration-300 ${
+                    activeTab === item.id 
+                      ? 'bg-gradient-to-r from-green-500 to-green-600 text-white shadow-lg' 
+                      : 'text-gray-300 hover:bg-gray-800/50 hover:text-white'
+                  }`}
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={item.icon} />
+                  </svg>
+                  <span className="font-medium">{item.label}</span>
+                </button>
+              ))}
+            </div>
+          </nav>
+          
+          {/* User Info */}
+          <div className="p-4 border-t border-gray-800/30">
+            <div className="flex items-center space-x-3">
+              <div className="w-10 h-10 bg-gradient-to-br from-green-500 to-green-600 rounded-full flex items-center justify-center">
+                <span className="text-white font-semibold">
+                  {user.user_metadata?.full_name?.[0] || user.email[0].toUpperCase()}
+                </span>
+              </div>
+              <div>
+                <p className="text-white font-medium text-sm">
+                  {user.user_metadata?.full_name || 'User'}
+                </p>
+                <p className="text-gray-400 text-xs">{user.email}</p>
+              </div>
+            </div>
+          </div>
         </div>
         
-        {/* Navigation */}
-        <nav className="flex-1 p-4">
-          <div className="space-y-2">
+        {/* Main Content */}
+        <div className="flex-1 flex flex-col relative z-10 w-full lg:w-auto min-h-screen lg:min-h-0 overflow-x-hidden">
+          {/* Header */}
+          <header className="bg-gray-950/95 backdrop-blur-sm border-b border-gray-900/30 p-4 lg:p-6 relative z-20 w-full">
+            <div className="flex items-center justify-between w-full">
+              <div className="min-w-0 flex-1">
+                {/* Mobile Logo */}
+                <div className="lg:hidden mb-2">
+                  <h1 className="text-xl font-bold text-white">FASHO.CO</h1>
+                </div>
+                <h2 className="text-xl lg:text-2xl font-bold text-white capitalize">{activeTab}</h2>
+                <p className="text-sm lg:text-base text-gray-400">
+                  {activeTab === 'dashboard' && 'Welcome back! Here\'s your campaign overview.'}
+                  {activeTab === 'campaigns' && 'Manage and monitor all your music campaigns.'}
+                  {activeTab === 'faq' && 'Find answers to common questions.'}
+                  {activeTab === 'contact' && 'Get in touch with our support team.'}
+                </p>
+              </div>
+              {/* Mobile User Avatar */}
+              <div className="lg:hidden flex-shrink-0 ml-2">
+                <div className="w-10 h-10 bg-gradient-to-br from-green-500 to-green-600 rounded-full flex items-center justify-center">
+                  <span className="text-white font-semibold text-sm">
+                    {user.user_metadata?.full_name?.[0] || user.email[0].toUpperCase()}
+                  </span>
+                </div>
+              </div>
+            </div>
+          </header>
+          
+          {/* Content */}
+          <main className="flex-1 p-4 lg:p-6 overflow-y-auto overflow-x-hidden relative z-20 pb-20 lg:pb-0 w-full">
+            {renderContent()}
+          </main>
+        </div>
+        
+        {/* Mobile Bottom Navigation */}
+        <div className="lg:hidden fixed bottom-0 left-0 right-0 bg-gray-950/95 backdrop-blur-sm border-t border-gray-800/30 px-2 py-1 z-30 safe-area-inset-bottom">
+          <div className="flex items-center justify-around max-w-full">
             {sidebarItems.map((item) => (
               <button
                 key={item.id}
@@ -1141,105 +1222,24 @@ export default function Dashboard({ user }: DashboardProps) {
                     setActiveTab(item.id)
                   }
                 }}
-                className={`w-full flex items-center space-x-3 px-4 py-3 rounded-xl transition-all duration-300 ${
+                className={`flex flex-col items-center space-y-1 px-1 py-2 rounded-lg transition-all duration-300 min-w-0 flex-1 ${
                   activeTab === item.id 
-                    ? 'bg-gradient-to-r from-green-500 to-green-600 text-white shadow-lg' 
-                    : 'text-gray-300 hover:bg-gray-800/50 hover:text-white'
+                    ? 'text-green-400' 
+                    : 'text-gray-400 hover:text-white'
                 }`}
               >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={item.icon} />
                 </svg>
-                <span className="font-medium">{item.label}</span>
+                <span className="text-xs font-medium truncate w-full text-center leading-tight">{item.label}</span>
               </button>
             ))}
           </div>
-        </nav>
-        
-        {/* User Info */}
-        <div className="p-4 border-t border-gray-800/30">
-          <div className="flex items-center space-x-3">
-            <div className="w-10 h-10 bg-gradient-to-br from-green-500 to-green-600 rounded-full flex items-center justify-center">
-              <span className="text-white font-semibold">
-                {user.user_metadata?.full_name?.[0] || user.email[0].toUpperCase()}
-              </span>
-            </div>
-            <div>
-              <p className="text-white font-medium text-sm">
-                {user.user_metadata?.full_name || 'User'}
-              </p>
-              <p className="text-gray-400 text-xs">{user.email}</p>
-            </div>
-          </div>
         </div>
-      </div>
-      
-      {/* Main Content */}
-      <div className="flex-1 flex flex-col relative z-10 w-full lg:w-auto min-h-screen lg:min-h-0">
-        {/* Header */}
-        <header className="bg-gray-950/95 backdrop-blur-sm border-b border-gray-900/30 p-4 lg:p-6 relative z-20">
-          <div className="flex items-center justify-between">
-            <div>
-              {/* Mobile Logo */}
-              <div className="lg:hidden mb-2">
-                <h1 className="text-xl font-bold text-white">FASHO.CO</h1>
-              </div>
-              <h2 className="text-xl lg:text-2xl font-bold text-white capitalize">{activeTab}</h2>
-              <p className="text-sm lg:text-base text-gray-400">
-                {activeTab === 'dashboard' && 'Welcome back! Here\'s your campaign overview.'}
-                {activeTab === 'campaigns' && 'Manage and monitor all your music campaigns.'}
-                {activeTab === 'faq' && 'Find answers to common questions.'}
-                {activeTab === 'contact' && 'Get in touch with our support team.'}
-              </p>
-            </div>
-            {/* Mobile User Avatar */}
-            <div className="lg:hidden">
-              <div className="w-10 h-10 bg-gradient-to-br from-green-500 to-green-600 rounded-full flex items-center justify-center">
-                <span className="text-white font-semibold text-sm">
-                  {user.user_metadata?.full_name?.[0] || user.email[0].toUpperCase()}
-                </span>
-              </div>
-            </div>
-          </div>
-        </header>
         
-        {/* Content */}
-        <main className="flex-1 p-4 lg:p-6 overflow-y-auto relative z-20 pb-20 lg:pb-0">
-          {renderContent()}
-        </main>
+        {/* Sign Out Modal */}
+        {showSignOutModal && renderSignOutModal()}
       </div>
-      
-      {/* Mobile Bottom Navigation */}
-      <div className="lg:hidden fixed bottom-0 left-0 right-0 bg-gray-950/95 backdrop-blur-sm border-t border-gray-800/30 px-4 py-2 z-30 safe-area-inset-bottom">
-        <div className="flex items-center justify-around">
-          {sidebarItems.map((item) => (
-            <button
-              key={item.id}
-              onClick={() => {
-                if (item.id === 'signout') {
-                  setShowSignOutModal(true)
-                } else {
-                  setActiveTab(item.id)
-                }
-              }}
-              className={`flex flex-col items-center space-y-1 px-3 py-2 rounded-lg transition-all duration-300 ${
-                activeTab === item.id 
-                  ? 'text-green-400' 
-                  : 'text-gray-400 hover:text-white'
-              }`}
-            >
-              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={item.icon} />
-              </svg>
-              <span className="text-xs font-medium">{item.label}</span>
-            </button>
-          ))}
-        </div>
-      </div>
-      
-      {/* Sign Out Modal */}
-      {showSignOutModal && renderSignOutModal()}
-    </div>
     </>
   )
 }
