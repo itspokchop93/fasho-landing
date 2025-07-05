@@ -402,7 +402,7 @@ export default function Dashboard({ user }: DashboardProps) {
             
             {/* Chart area with proper margin for Y-axis */}
             <div className="ml-10 h-full">
-              <svg className="w-full h-full" viewBox="0 0 400 200">
+              <svg className="w-full h-full" viewBox="0 0 100 100" preserveAspectRatio="none">
                 <defs>
                   <linearGradient id="chartGradient" x1="0%" y1="0%" x2="100%" y2="0%">
                     <stop offset="0%" style={{ stopColor: '#10b981', stopOpacity: 1 }} />
@@ -413,14 +413,14 @@ export default function Dashboard({ user }: DashboardProps) {
                     <stop offset="100%" style={{ stopColor: '#3b82f6', stopOpacity: 0.1 }} />
                   </linearGradient>
                   <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
-                    <feGaussianBlur stdDeviation="4" result="coloredBlur"/>
+                    <feGaussianBlur stdDeviation="2" result="coloredBlur"/>
                     <feMerge> 
                       <feMergeNode in="coloredBlur"/>
                       <feMergeNode in="SourceGraphic"/>
                     </feMerge>
                   </filter>
                   <filter id="strongGlow" x="-50%" y="-50%" width="200%" height="200%">
-                    <feGaussianBlur stdDeviation="8" result="coloredBlur"/>
+                    <feGaussianBlur stdDeviation="4" result="coloredBlur"/>
                     <feMerge> 
                       <feMergeNode in="coloredBlur"/>
                       <feMergeNode in="SourceGraphic"/>
@@ -429,21 +429,21 @@ export default function Dashboard({ user }: DashboardProps) {
                 </defs>
                 
                 {/* Grid Lines */}
-                <g stroke="#374151" strokeWidth="1" opacity="0.3">
-                  <line x1="0" y1="40" x2="400" y2="40" />
-                  <line x1="0" y1="80" x2="400" y2="80" />
-                  <line x1="0" y1="120" x2="400" y2="120" />
-                  <line x1="0" y1="160" x2="400" y2="160" />
+                <g stroke="#374151" strokeWidth="0.5" opacity="0.3" vectorEffect="non-scaling-stroke">
+                  <line x1="0" y1="20" x2="100" y2="20" />
+                  <line x1="0" y1="40" x2="100" y2="40" />
+                  <line x1="0" y1="60" x2="100" y2="60" />
+                  <line x1="0" y1="80" x2="100" y2="80" />
                 </g>
                 
                 {/* Area under the curve */}
                 {displayData.length > 0 && (
                   <path
-                    d={`M 0 200 ${displayData.map((plays, index) => {
-                      const x = (index / (displayData.length - 1)) * 400;
-                      const y = maxPlays > 0 ? 200 - (plays / maxPlays) * 160 : 200;
+                    d={`M 0 100 ${displayData.map((plays, index) => {
+                      const x = (index / (displayData.length - 1)) * 100;
+                      const y = maxPlays > 0 ? 100 - (plays / maxPlays) * 80 : 100;
                       return `L ${x} ${y}`;
-                    }).join(' ')} L 400 200 Z`}
+                    }).join(' ')} L 100 100 Z`}
                     fill="url(#areaGradient)"
                   />
                 )}
@@ -452,30 +452,32 @@ export default function Dashboard({ user }: DashboardProps) {
                 {displayData.length > 0 && (
                   <path
                     d={`M ${displayData.map((plays, index) => {
-                      const x = (index / (displayData.length - 1)) * 400;
-                      const y = maxPlays > 0 ? 200 - (plays / maxPlays) * 160 : 200;
+                      const x = (index / (displayData.length - 1)) * 100;
+                      const y = maxPlays > 0 ? 100 - (plays / maxPlays) * 80 : 100;
                       return `${x} ${y}`;
                     }).join(' L ')}`}
                     fill="none"
                     stroke="url(#chartGradient)"
-                    strokeWidth="3"
+                    strokeWidth="1.5"
                     filter="url(#glow)"
+                    vectorEffect="non-scaling-stroke"
                   />
                 )}
                 
                 {/* Data Points with Glow */}
                 {displayData.map((plays, index) => {
-                  const x = (index / (displayData.length - 1)) * 400;
-                  const y = maxPlays > 0 ? 200 - (plays / maxPlays) * 160 : 200;
+                  const x = (index / (displayData.length - 1)) * 100;
+                  const y = maxPlays > 0 ? 100 - (plays / maxPlays) * 80 : 100;
                   
                   return (
                     <circle
                       key={index}
                       cx={x}
                       cy={y}
-                      r="4"
+                      r="2"
                       fill="url(#chartGradient)"
                       filter="url(#glow)"
+                      vectorEffect="non-scaling-stroke"
                     />
                   );
                 })}
@@ -510,79 +512,81 @@ export default function Dashboard({ user }: DashboardProps) {
             <span>{yAxisLabels[2]}</span>
           </div>
           
-          {/* Chart area with proper margin for Y-axis */}
-          <div className="ml-8 h-full">
-            <svg className="w-full h-full" viewBox="0 0 400 200">
-              <defs>
-                <linearGradient id="chartGradientMobile" x1="0%" y1="0%" x2="100%" y2="0%">
-                  <stop offset="0%" style={{ stopColor: '#10b981', stopOpacity: 1 }} />
-                  <stop offset="100%" style={{ stopColor: '#3b82f6', stopOpacity: 1 }} />
-                </linearGradient>
-                <linearGradient id="areaGradientMobile" x1="0%" y1="0%" x2="0%" y2="100%">
-                  <stop offset="0%" style={{ stopColor: '#10b981', stopOpacity: 0.3 }} />
-                  <stop offset="100%" style={{ stopColor: '#3b82f6', stopOpacity: 0.1 }} />
-                </linearGradient>
-                <filter id="glowMobile" x="-50%" y="-50%" width="200%" height="200%">
-                  <feGaussianBlur stdDeviation="3" result="coloredBlur"/>
-                  <feMerge> 
-                    <feMergeNode in="coloredBlur"/>
-                    <feMergeNode in="SourceGraphic"/>
-                  </feMerge>
-                </filter>
-              </defs>
-              
-              {/* Grid Lines */}
-              <g stroke="#374151" strokeWidth="1" opacity="0.3">
-                <line x1="0" y1="50" x2="400" y2="50" />
-                <line x1="0" y1="100" x2="400" y2="100" />
-                <line x1="0" y1="150" x2="400" y2="150" />
-              </g>
-              
-              {/* Area under the curve */}
-              {displayData.length > 0 && (
-                <path
-                  d={`M 0 200 ${displayData.map((plays, index) => {
-                    const x = (index / (displayData.length - 1)) * 400;
-                    const y = maxPlays > 0 ? 200 - (plays / maxPlays) * 160 : 200;
-                    return `L ${x} ${y}`;
-                  }).join(' ')} L 400 200 Z`}
-                  fill="url(#areaGradientMobile)"
-                />
-              )}
-              
-              {/* Main Glowing Chart Line */}
-              {displayData.length > 0 && (
-                <path
-                  d={`M ${displayData.map((plays, index) => {
-                    const x = (index / (displayData.length - 1)) * 400;
-                    const y = maxPlays > 0 ? 200 - (plays / maxPlays) * 160 : 200;
-                    return `${x} ${y}`;
-                  }).join(' L ')}`}
-                  fill="none"
-                  stroke="url(#chartGradientMobile)"
-                  strokeWidth="2"
-                  filter="url(#glowMobile)"
-                />
-              )}
-              
-              {/* Data Points with Glow */}
-              {displayData.map((plays, index) => {
-                const x = (index / (displayData.length - 1)) * 400;
-                const y = maxPlays > 0 ? 200 - (plays / maxPlays) * 160 : 200;
-                
-                return (
-                  <circle
-                    key={index}
-                    cx={x}
-                    cy={y}
-                    r="3"
-                    fill="url(#chartGradientMobile)"
-                    filter="url(#glowMobile)"
-                  />
-                );
-              })}
-            </svg>
-          </div>
+                     {/* Chart area with proper margin for Y-axis */}
+           <div className="ml-8 h-full">
+             <svg className="w-full h-full" viewBox="0 0 100 100" preserveAspectRatio="none">
+               <defs>
+                 <linearGradient id="chartGradientMobile" x1="0%" y1="0%" x2="100%" y2="0%">
+                   <stop offset="0%" style={{ stopColor: '#10b981', stopOpacity: 1 }} />
+                   <stop offset="100%" style={{ stopColor: '#3b82f6', stopOpacity: 1 }} />
+                 </linearGradient>
+                 <linearGradient id="areaGradientMobile" x1="0%" y1="0%" x2="0%" y2="100%">
+                   <stop offset="0%" style={{ stopColor: '#10b981', stopOpacity: 0.3 }} />
+                   <stop offset="100%" style={{ stopColor: '#3b82f6', stopOpacity: 0.1 }} />
+                 </linearGradient>
+                 <filter id="glowMobile" x="-50%" y="-50%" width="200%" height="200%">
+                   <feGaussianBlur stdDeviation="1.5" result="coloredBlur"/>
+                   <feMerge> 
+                     <feMergeNode in="coloredBlur"/>
+                     <feMergeNode in="SourceGraphic"/>
+                   </feMerge>
+                 </filter>
+               </defs>
+               
+               {/* Grid Lines */}
+               <g stroke="#374151" strokeWidth="0.5" opacity="0.3" vectorEffect="non-scaling-stroke">
+                 <line x1="0" y1="25" x2="100" y2="25" />
+                 <line x1="0" y1="50" x2="100" y2="50" />
+                 <line x1="0" y1="75" x2="100" y2="75" />
+               </g>
+               
+               {/* Area under the curve */}
+               {displayData.length > 0 && (
+                 <path
+                   d={`M 0 100 ${displayData.map((plays, index) => {
+                     const x = (index / (displayData.length - 1)) * 100;
+                     const y = maxPlays > 0 ? 100 - (plays / maxPlays) * 80 : 100;
+                     return `L ${x} ${y}`;
+                   }).join(' ')} L 100 100 Z`}
+                   fill="url(#areaGradientMobile)"
+                 />
+               )}
+               
+               {/* Main Glowing Chart Line */}
+               {displayData.length > 0 && (
+                 <path
+                   d={`M ${displayData.map((plays, index) => {
+                     const x = (index / (displayData.length - 1)) * 100;
+                     const y = maxPlays > 0 ? 100 - (plays / maxPlays) * 80 : 100;
+                     return `${x} ${y}`;
+                   }).join(' L ')}`}
+                   fill="none"
+                   stroke="url(#chartGradientMobile)"
+                   strokeWidth="1.5"
+                   filter="url(#glowMobile)"
+                   vectorEffect="non-scaling-stroke"
+                 />
+               )}
+               
+               {/* Data Points with Glow */}
+               {displayData.map((plays, index) => {
+                 const x = (index / (displayData.length - 1)) * 100;
+                 const y = maxPlays > 0 ? 100 - (plays / maxPlays) * 80 : 100;
+                 
+                 return (
+                   <circle
+                     key={index}
+                     cx={x}
+                     cy={y}
+                     r="1.5"
+                     fill="url(#chartGradientMobile)"
+                     filter="url(#glowMobile)"
+                     vectorEffect="non-scaling-stroke"
+                   />
+                 );
+               })}
+             </svg>
+           </div>
         </div>
         
         {/* Chart Labels */}
