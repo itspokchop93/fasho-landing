@@ -4,6 +4,10 @@ import Head from "next/head";
 import Image from "next/image";
 import { Track } from "../types/track";
 import Header from "../components/Header";
+import dynamic from 'next/dynamic';
+import { createClient } from '../utils/supabase/client';
+
+const Lottie = dynamic(() => import('lottie-react'), { ssr: false });
 
 interface Package {
   id: string;
@@ -52,6 +56,7 @@ const packages: Package[] = [
 export default function PackagesPage() {
   const router = useRouter();
   const { tracks: tracksParam } = router.query;
+  const supabase = createClient();
 
   const [tracks, setTracks] = useState<Track[]>([]);
   const [currentSongIndex, setCurrentSongIndex] = useState(0);
@@ -66,7 +71,13 @@ export default function PackagesPage() {
   const [canScrollLeft, setCanScrollLeft] = useState(false); // Hide left arrow initially
   const [canScrollRight, setCanScrollRight] = useState(true); // Start with right arrow showing
   const [songIndicatorKey, setSongIndicatorKey] = useState(0); // For triggering animation
+  const [confettiAnimation, setConfettiAnimation] = useState<string | null>(null); // Track which package shows confetti
+  const [confettiKey, setConfettiKey] = useState(0);
+  const [confettiData, setConfettiData] = useState<any>(null); // Store the Lottie animation data
+  const [currentUser, setCurrentUser] = useState<any>(null); // Track authentication state
+  const [isAuthLoading, setIsAuthLoading] = useState(true); // Track if auth is still loading
   const carouselRef = useRef<HTMLDivElement>(null);
+  const lottieRef = useRef<any>(null);
 
   useEffect(() => {
     if (!router.isReady) return;
@@ -86,6 +97,64 @@ export default function PackagesPage() {
     }
   }, [router.isReady, tracksParam]);
 
+  // Check for authentication state
+  useEffect(() => {
+    console.log('🔐 PACKAGES: useEffect started - checking auth');
+    
+    const checkUser = async () => {
+      try {
+        console.log('🔐 PACKAGES: About to call supabase.auth.getUser()');
+        const { data: { user }, error } = await supabase.auth.getUser();
+        console.log('🔐 PACKAGES: supabase.auth.getUser() response:', { user: user?.email || null, error });
+        
+        if (error) {
+          console.error('🔐 PACKAGES: Error in getUser:', error);
+        }
+        
+        console.log('🔐 PACKAGES: Setting currentUser to:', user?.email || 'No user');
+        setCurrentUser(user);
+        setIsAuthLoading(false);
+      } catch (err) {
+        console.error('🔐 PACKAGES: Exception in checkUser:', err);
+        setCurrentUser(null);
+        setIsAuthLoading(false);
+      }
+    };
+    
+    checkUser();
+
+    // TEMPORARILY DISABLED: Listen for auth changes
+    console.log('🔐 PACKAGES: SKIPPING onAuthStateChange listener for testing');
+    // const { data: { subscription } } = supabase.auth.onAuthStateChange(
+    //   (event, session) => {
+    //     console.log('🔐 PACKAGES: Auth state changed:', event, session?.user?.email || 'No user');
+    //     console.log('🔐 PACKAGES: Full session object:', session);
+    //     setCurrentUser(session?.user ?? null);
+    //     setIsAuthLoading(false);
+    //   }
+    // );
+
+    return () => {
+      console.log('🔐 PACKAGES: Cleaning up auth listener (none set)');
+      // subscription.unsubscribe();
+    };
+  }, []);
+
+  // Load confetti animation data
+  useEffect(() => {
+    const loadConfettiData = async () => {
+      try {
+        const response = await fetch('https://lottie.host/b8cbac69-4cfa-44c2-8599-4547e60e963d/9Dwil0l2te.json');
+        const data = await response.json();
+        setConfettiData(data);
+      } catch (error) {
+        console.error('Failed to load confetti animation:', error);
+      }
+    };
+    
+    loadConfettiData();
+  }, []);
+
   const currentTrack = tracks[currentSongIndex];
   const isLastSong = currentSongIndex === tracks.length - 1;
   const isOnlySong = tracks.length === 1;
@@ -100,6 +169,18 @@ export default function PackagesPage() {
   const handlePackageSelect = (packageId: string) => {
     // Toggle functionality - if clicking the same package, unselect it
     const newPackageId = selectedPackage === packageId ? "" : packageId;
+    
+    // Only play confetti if actually selecting a package (not deselecting)
+    if (newPackageId !== "") {
+      // Trigger confetti animation over the clicked package
+      setConfettiAnimation(packageId);
+      setConfettiKey(prev => prev + 1); // Force re-render to restart animation
+      
+      // Reset confetti after animation completes (2 seconds)
+      setTimeout(() => {
+        setConfettiAnimation(null);
+      }, 2000);
+    }
     
     setPreviousPackage(selectedPackage);
     setSelectedPackage(newPackageId);
@@ -239,9 +320,41 @@ export default function PackagesPage() {
       return;
     }
 
+    // Don't proceed if auth is still loading
+    if (isAuthLoading) {
+      console.log('🔐 PACKAGES: Auth still loading, waiting...');
+      alert("Please wait while we verify your account...");
+      return;
+    }
+
+    // Double-check authentication state before proceeding
+    console.log('🔐 PACKAGES: handleNext called - performing final auth check');
+    
+    let finalUserId = currentUser?.id || null;
+    
+    // If no current user, do one final check
+    if (!currentUser) {
+      console.log('🔐 PACKAGES: No currentUser found, doing final auth check...');
+      try {
+        const { data: { user }, error } = await supabase.auth.getUser();
+        console.log('🔐 PACKAGES: Final auth check result:', { user: user?.email || null, error });
+        
+        if (user && !error) {
+          finalUserId = user.id;
+          setCurrentUser(user); // Update state for future use
+          console.log('🔐 PACKAGES: Updated currentUser from final check:', user.email);
+        }
+      } catch (err) {
+        console.error('🔐 PACKAGES: Final auth check failed:', err);
+      }
+    }
+
+    console.log('🔐 PACKAGES: Final userId for checkout session:', finalUserId);
+    console.log('🔐 PACKAGES: Final currentUser email:', currentUser?.email || 'none');
+
     if (isLastSong || isOnlySong) {
       try {
-        // Create secure checkout session
+        // Create secure checkout session with user ID if logged in
         const response = await fetch('/api/create-checkout-session', {
           method: 'POST',
           headers: {
@@ -250,7 +363,7 @@ export default function PackagesPage() {
           body: JSON.stringify({
             tracks,
             selectedPackages,
-            userId: null // Can be updated when auth is added
+            userId: finalUserId // Use the final verified user ID
           }),
         });
 
@@ -259,6 +372,9 @@ export default function PackagesPage() {
         }
 
         const { sessionId } = await response.json();
+
+        console.log('🔐 PACKAGES: Created checkout session with userId:', finalUserId);
+        console.log('🔐 PACKAGES: Session ID:', sessionId);
 
         // Go to checkout with session ID
         router.push({
@@ -606,6 +722,27 @@ export default function PackagesPage() {
                       }`}
                       style={{ width: 'calc(50vw - 1rem)' }}
                     >
+                      {/* Confetti Animation Overlay */}
+                      {confettiAnimation === pkg.id && confettiData && (
+                        <div 
+                          key={confettiKey}
+                          className="absolute inset-0 z-50 pointer-events-none rounded-xl overflow-hidden"
+                        >
+                          <Lottie
+                            ref={lottieRef}
+                            animationData={confettiData}
+                            loop={false}
+                            autoplay={true}
+                            style={{
+                              width: '100%',
+                              height: '100%',
+                              position: 'absolute',
+                              top: 0,
+                              left: 0,
+                            }}
+                          />
+                        </div>
+                      )}
                       {/* Lens flare animation for Advanced package */}
                       {pkg.id === 'advanced' && (
                         <>
@@ -781,10 +918,19 @@ export default function PackagesPage() {
             <div className="space-y-4">
               <button
                 onClick={handleNext}
-                disabled={!selectedPackage}
-                className="w-full bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] text-black font-semibold px-8 py-4 rounded-md disabled:opacity-50 hover:opacity-90 hover:-translate-y-1 transition-all duration-300 text-lg"
+                disabled={!selectedPackage || isAuthLoading}
+                className="w-full bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] text-black font-semibold px-8 py-4 rounded-md disabled:opacity-50 hover:opacity-90 hover:-translate-y-1 transition-all duration-300 text-lg flex items-center justify-center gap-2"
               >
-                {isLastSong || isOnlySong ? 'Next Step' : 'Next Song'} →
+                {isAuthLoading ? (
+                  <>
+                    <div className="w-5 h-5 border-2 border-black border-t-transparent rounded-full animate-spin"></div>
+                    Checking account...
+                  </>
+                ) : (
+                  <>
+                    {isLastSong || isOnlySong ? 'Next Step' : 'Next Song'} →
+                  </>
+                )}
               </button>
               <button
                 onClick={handleChangeSong}
@@ -826,6 +972,27 @@ export default function PackagesPage() {
                         : ''
                     }`}
                   >
+                    {/* Confetti Animation Overlay */}
+                    {confettiAnimation === pkg.id && confettiData && (
+                      <div 
+                        key={confettiKey}
+                        className="absolute inset-0 z-50 pointer-events-none rounded-xl overflow-hidden"
+                      >
+                        <Lottie
+                          ref={lottieRef}
+                          animationData={confettiData}
+                          loop={false}
+                          autoplay={true}
+                          style={{
+                            width: '100%',
+                            height: '100%',
+                            position: 'absolute',
+                            top: 0,
+                            left: 0,
+                          }}
+                        />
+                      </div>
+                    )}
                     {/* Lens flare animation for Advanced package */}
                     {pkg.id === 'advanced' && (
                       <>
@@ -1036,10 +1203,19 @@ export default function PackagesPage() {
                <div className="space-y-4">
                  <button
                    onClick={handleNext}
-                   disabled={!selectedPackage}
-                   className="w-full bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] text-black font-semibold px-8 py-4 rounded-md disabled:opacity-50 hover:opacity-90 hover:-translate-y-1 transition-all duration-300 text-lg"
+                   disabled={!selectedPackage || isAuthLoading}
+                   className="w-full bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] text-black font-semibold px-8 py-4 rounded-md disabled:opacity-50 hover:opacity-90 hover:-translate-y-1 transition-all duration-300 text-lg flex items-center justify-center gap-2"
                  >
-                   {isLastSong || isOnlySong ? 'Next Step' : 'Next Song'} →
+                   {isAuthLoading ? (
+                     <>
+                       <div className="w-5 h-5 border-2 border-black border-t-transparent rounded-full animate-spin"></div>
+                       Checking account...
+                     </>
+                   ) : (
+                     <>
+                       {isLastSong || isOnlySong ? 'Next Step' : 'Next Song'} →
+                     </>
+                   )}
                  </button>
                  <button
                    onClick={handleChangeSong}

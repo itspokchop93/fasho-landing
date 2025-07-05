@@ -702,11 +702,110 @@ export default function CheckoutPage() {
 
   // Check if user is already logged in
   useEffect(() => {
+    console.log('🔐 CHECKOUT: Starting authentication check...');
+    
     const checkUser = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      setCurrentUser(user);
+      try {
+        console.log('🔐 CHECKOUT: About to call supabase.auth.getUser()');
+        
+        // Try multiple methods to get the user
+        let user = null;
+        let authMethod = 'none';
+        
+        // Method 1: getUser()
+        try {
+          const { data: { user: userData }, error } = await supabase.auth.getUser();
+          if (userData && !error) {
+            user = userData;
+            authMethod = 'getUser';
+          } else if (error) {
+            console.log('🔐 CHECKOUT: getUser() failed:', error.message);
+          }
+        } catch (err) {
+          console.log('🔐 CHECKOUT: getUser() exception:', err);
+        }
+        
+        // Method 2: getSession() fallback
+        if (!user) {
+          try {
+            const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+            if (session?.user && !sessionError) {
+              user = session.user;
+              authMethod = 'getSession';
+            } else if (sessionError) {
+              console.log('🔐 CHECKOUT: getSession() failed:', sessionError.message);
+            }
+          } catch (err) {
+            console.log('🔐 CHECKOUT: getSession() exception:', err);
+          }
+        }
+        
+        // Method 3: Server-side auth check as final fallback
+        if (!user) {
+          try {
+            const response = await fetch('/api/test-auth', {
+              method: 'GET',
+              credentials: 'include'
+            });
+            const authData = await response.json();
+            if (authData.authenticated && authData.user) {
+              user = authData.user;
+              authMethod = 'serverCheck';
+            } else {
+              console.log('🔐 CHECKOUT: Server auth check failed:', authData.error);
+            }
+          } catch (err) {
+            console.log('🔐 CHECKOUT: Server auth check exception:', err);
+          }
+        }
+        
+        console.log('🔐 CHECKOUT: Final auth result:', {
+          hasUser: !!user,
+          email: user?.email || 'none',
+          method: authMethod
+        });
+        
+        setCurrentUser(user);
+        
+        // If user is found, also update the form email field
+        if (user?.email) {
+          console.log('🔐 CHECKOUT: Pre-filling email field with user email:', user.email);
+          setFormData(prev => ({
+            ...prev,
+            email: user.email || ''
+          }));
+        }
+      } catch (err) {
+        console.error('🔐 CHECKOUT: Exception in checkUser:', err);
+        setCurrentUser(null);
+      }
     };
+    
     checkUser();
+
+    // Listen for auth changes to ensure we detect login/logout events
+    console.log('🔐 CHECKOUT: Setting up onAuthStateChange listener');
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      (event, session) => {
+        console.log('🔐 CHECKOUT: Auth state changed:', event, 'User:', session?.user?.email || 'None');
+        console.log('🔐 CHECKOUT: Full session object:', session);
+        setCurrentUser(session?.user ?? null);
+        
+        // Update email field when user logs in
+        if (session?.user?.email) {
+          console.log('🔐 CHECKOUT: Auth change - updating email field:', session.user.email);
+          setFormData(prev => ({
+            ...prev,
+            email: session.user.email || ''
+          }));
+        }
+      }
+    );
+
+    return () => {
+      console.log('🔐 CHECKOUT: Cleaning up auth listener');
+      subscription.unsubscribe();
+    };
   }, []);
 
   // Listen for iframe communication messages
@@ -1027,9 +1126,9 @@ export default function CheckoutPage() {
       sessionStorage.removeItem('pendingOrder');
       localStorage.removeItem('selectedAddOns');
       
-      console.log('🚀 CHECKOUT: completedOrder stored, redirecting to thank-you');
-      // Redirect to thank you page
-      router.push('/thank-you');
+      console.log('🚀 CHECKOUT: completedOrder stored, redirecting to thank-you with order number');
+      // Redirect to thank you page with order number for persistence
+      router.push(`/thank-you?order=${orderResult.order.orderNumber}`);
     } catch (error) {
       console.error('Error processing successful payment:', error);
       setError('Payment was successful but there was an error processing your order. Please contact support.');

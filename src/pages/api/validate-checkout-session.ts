@@ -43,7 +43,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         isValid: true, 
         sessionData: {
           tracks: sessionData.tracks,
-          selectedPackages: sessionData.selectedPackages
+          selectedPackages: sessionData.selectedPackages,
+          userId: sessionData.userId
         }
       });
     } else {

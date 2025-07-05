@@ -8,9 +8,12 @@ import { Track } from "../types/track";
 import React from "react";
 import GradientTestCard from "../components/GradientTestCard";
 import ShapeDivider from "../components/ShapeDivider";
+import Header from "../components/Header";
+import { createClient } from '../utils/supabase/client';
 
 export default function AddSongsPage() {
   const router = useRouter();
+  const supabase = createClient();
   const { title, artist, imageUrl, id, url } = router.query;
 
   const [tracks, setTracks] = useState<Track[]>([]);
@@ -22,6 +25,12 @@ export default function AddSongsPage() {
   const debounceRef = useRef<NodeJS.Timeout | null>(null);
   const [focused, setFocused] = useState(false);
   const [searchTimeout, setSearchTimeout] = useState<NodeJS.Timeout | null>(null);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [searchResults, setSearchResults] = useState<Track[]>([]);
+  const [isSearching, setIsSearching] = useState(false);
+  const [hasSearched, setHasSearched] = useState(false);
+  const [currentUser, setCurrentUser] = useState<any>(null);
+  const [isAuthLoading, setIsAuthLoading] = useState(true);
 
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -221,6 +230,17 @@ export default function AddSongsPage() {
   };
 
   const promote = async () => {
+    // Don't proceed if auth is still loading
+    if (isAuthLoading) {
+      console.log('🔐 ADD: Auth still loading, waiting...');
+      alert("Please wait while we verify your account...");
+      return;
+    }
+
+    console.log('🔐 ADD: promote called - currentUser:', currentUser);
+    console.log('🔐 ADD: currentUser?.id:', currentUser?.id);
+    console.log('🔐 ADD: isAuthLoading:', isAuthLoading);
+
     // Check if we're coming back from checkout with remaining cart data
     if (typeof window !== "undefined") {
       const checkoutCart = localStorage.getItem("checkoutCart");
@@ -232,7 +252,7 @@ export default function AddSongsPage() {
           // Clear the checkout cart since we're moving forward
           localStorage.removeItem("checkoutCart");
           
-          // Create new session and go to checkout
+          // Create new session and go to checkout with user ID if logged in
           const response = await fetch('/api/create-checkout-session', {
             method: 'POST',
             headers: {
@@ -241,12 +261,13 @@ export default function AddSongsPage() {
             body: JSON.stringify({
               tracks,
               selectedPackages,
-              userId: null
+              userId: currentUser?.id || null // Include user ID if logged in
             }),
           });
 
           if (response.ok) {
             const { sessionId } = await response.json();
+            console.log('🔐 ADD: Created checkout session with user:', currentUser?.email || 'anonymous');
             router.push({
               pathname: "/checkout",
               query: { sessionId }
@@ -271,6 +292,28 @@ export default function AddSongsPage() {
       },
     });
   };
+
+  // Check for authentication state
+  useEffect(() => {
+    const checkUser = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      console.log('🔐 ADD: Auth check:', user?.email || 'No user');
+      setCurrentUser(user);
+      setIsAuthLoading(false);
+    };
+    checkUser();
+
+    // Listen for auth changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      (event, session) => {
+        console.log('🔐 ADD: Auth state changed:', event, session?.user?.email);
+        setCurrentUser(session?.user ?? null);
+        setIsAuthLoading(false);
+      }
+    );
+
+    return () => subscription.unsubscribe();
+  }, []);
 
   return (
     <>
@@ -339,8 +382,6 @@ export default function AddSongsPage() {
             </div>
           )}
         </div>
-
-
 
         <button
           disabled={tracks.length === 0}

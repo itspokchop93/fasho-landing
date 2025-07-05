@@ -274,7 +274,7 @@ export default function Dashboard({ user }: DashboardProps) {
   ]
 
   const renderDashboardContent = () => (
-    <div className="space-y-4 lg:space-y-8">
+    <div className="space-y-4 lg:space-y-8 pb-8">
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 lg:gap-6">
         <div className="bg-gradient-to-br from-gray-950/90 to-gray-900/90 backdrop-blur-sm rounded-2xl p-4 lg:p-6 border border-gray-800/30">
@@ -321,17 +321,17 @@ export default function Dashboard({ user }: DashboardProps) {
       </div>
 
       {/* Mobile Hero Section - Enhanced */}
-      <div className="lg:hidden relative overflow-hidden rounded-2xl mb-6 h-64 bg-gradient-to-br from-purple-900/20 via-blue-900/20 to-green-900/20 backdrop-blur-sm border-2 border-gray-900/60">
+      <div className="lg:hidden relative overflow-hidden rounded-2xl mb-6 h-[28rem] bg-gradient-to-br from-purple-900/20 via-blue-900/20 to-green-900/20 backdrop-blur-sm border-2 border-gray-900/60">
         {/* Gradient Background Effect */}
         <div className="absolute inset-0 bg-gradient-to-br from-purple-600/10 via-blue-600/10 to-green-600/10 animate-pulse"></div>
         <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent"></div>
         
-        <div className="relative z-10 flex flex-col h-full px-4">
+        <div className="relative z-10 flex flex-col h-full px-6 py-6 pb-20">
           {/* Text Content - Top Section */}
-          <div className="flex flex-col items-center text-center pt-4 pb-3">
-            <h2 className="text-2xl font-bold text-white mb-1 leading-tight">
-              <span className="text-lg">Welcome to</span><br />
-              <span className="text-4xl bg-gradient-to-r from-green-400 to-blue-500 bg-clip-text text-transparent font-extrabold">
+          <div className="flex flex-col items-center text-center">
+            <h2 className="text-3xl font-bold text-white mb-2 leading-tight">
+              <span className="text-xl">Welcome to</span><br />
+              <span className="text-5xl bg-gradient-to-r from-green-400 to-blue-500 bg-clip-text text-transparent font-black">
                 FASHO.CO
               </span>
             </h2>
@@ -340,32 +340,30 @@ export default function Dashboard({ user }: DashboardProps) {
             </p>
           </div>
           
-          {/* Button */}
-          <div className="flex justify-center mb-3">
-            <button 
-              onClick={() => router.push('/add')}
-              className="bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white px-6 py-3 rounded-xl text-base font-semibold transition-all duration-300 shadow-lg hover:shadow-xl transform hover:scale-105 border-2 border-gray-900/60"
-            >
-              Start New Campaign
-            </button>
-          </div>
-          
-          {/* Lottie Animation - Bottom Section */}
-          <div className="flex-1 flex items-end justify-center overflow-hidden">
-            <div className="mb-[-20px]">
-              {lottieAnimationData ? (
-                <Lottie
-                  lottieRef={lottieRef}
-                  animationData={lottieAnimationData}
-                  style={{ width: 200, height: 200 }}
-                  loop={true}
-                  autoplay={true}
-                />
-              ) : (
-                <div className="w-48 h-48 bg-gray-800/50 rounded-lg flex items-center justify-center">
-                  <div className="text-gray-400 text-xs">Loading...</div>
-                </div>
-              )}
+          {/* Lottie Animation - Middle Section with proper spacing */}
+          <div className="flex-1 flex items-center justify-center relative" style={{ marginTop: '10px' }}>
+            {lottieAnimationData ? (
+              <Lottie
+                lottieRef={lottieRef}
+                animationData={lottieAnimationData}
+                style={{ width: 300, height: 300 }}
+                loop={true}
+                autoplay={true}
+              />
+            ) : (
+              <div className="w-72 h-72 bg-gray-800/50 rounded-lg flex items-center justify-center">
+                <div className="text-gray-400 text-xs">Loading...</div>
+              </div>
+            )}
+            
+            {/* Button - Overlayed on Lottie */}
+            <div className="absolute bottom-0 left-1/2 transform -translate-x-1/2 mb-8">
+              <button 
+                onClick={() => router.push('/add')}
+                className="bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white px-12 py-4 rounded-xl text-lg font-semibold transition-all duration-300 shadow-lg hover:shadow-xl transform hover:scale-105 border-2 border-gray-900/60 whitespace-nowrap"
+              >
+                Start New Campaign
+              </button>
             </div>
           </div>
         </div>
@@ -698,7 +696,7 @@ export default function Dashboard({ user }: DashboardProps) {
                     <div>
                       <p className="text-white font-semibold">{order.orderNumber}</p>
                       <p className="text-gray-400 text-sm">
-                        ${(order.total / 100).toFixed(2)} • {new Date(order.createdAt).toLocaleDateString()}
+                        ${Math.round(order.total)} • {new Date(order.createdAt).toLocaleDateString()}
                       </p>
                     </div>
                   </div>
@@ -758,17 +756,17 @@ export default function Dashboard({ user }: DashboardProps) {
                       <div className="mt-4 pt-4 border-t border-gray-700/50">
                         <h4 className="text-white font-medium mb-3">Add-ons</h4>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                          {order.addOnItems.map((addon: any, idx: number) => (
-                            <div key={idx} className="flex items-center space-x-3 bg-gray-900/30 rounded-lg p-3 border border-gray-700/30">
-                              <div className="w-8 h-8 bg-gray-800 rounded-full flex items-center justify-center">
-                                <span className="text-sm">{addon.emoji}</span>
-                              </div>
-                              <div className="flex-1">
-                                <p className="text-white text-sm font-medium">{addon.addon_name}</p>
-                                <p className="text-green-400 text-xs">${(addon.discounted_price / 100).toFixed(2)}</p>
-                              </div>
+                                                  {order.addOnItems.map((addon: any, idx: number) => (
+                          <div key={idx} className="flex items-center space-x-3 bg-gray-900/30 rounded-lg p-3 border border-gray-700/30">
+                            <div className="w-8 h-8 bg-gray-800 rounded-full flex items-center justify-center">
+                              <span className="text-sm">{addon.emoji}</span>
                             </div>
-                          ))}
+                            <div className="flex-1">
+                              <p className="text-white text-sm font-medium">{addon.name}</p>
+                              <p className="text-green-400 text-xs">${addon.price >= 600 ? Math.round(addon.price / 100) : addon.price}</p>
+                            </div>
+                          </div>
+                        ))}
                         </div>
                       </div>
                     )}
@@ -783,7 +781,7 @@ export default function Dashboard({ user }: DashboardProps) {
   )
 
   const renderCampaignsContent = () => (
-    <div className="space-y-6">
+    <div className="space-y-6 pb-8">
       <div className="flex items-center justify-between">
         <h2 className="text-2xl font-bold text-white">All Campaigns</h2>
         <button 
@@ -853,7 +851,7 @@ export default function Dashboard({ user }: DashboardProps) {
                   <div>
                     <p className="text-white font-semibold">{order.orderNumber}</p>
                     <p className="text-gray-400 text-sm">
-                      ${(order.total / 100).toFixed(2)} • {new Date(order.createdAt).toLocaleDateString()}
+                      ${Math.round(order.total)} • {new Date(order.createdAt).toLocaleDateString()}
                     </p>
                   </div>
                 </div>
@@ -924,14 +922,14 @@ export default function Dashboard({ user }: DashboardProps) {
                               </div>
                               <div className="flex-1">
                                 <p className="text-white text-sm font-medium">{addon.name}</p>
-                                <p className="text-gray-400 text-xs">
-                                  ${(addon.price / 100).toFixed(2)}
-                                  {addon.isOnSale && addon.originalPrice && (
-                                    <span className="ml-1 line-through text-gray-500">
-                                      ${(addon.originalPrice / 100).toFixed(2)}
-                                    </span>
-                                  )}
-                                </p>
+                                                                  <p className="text-gray-400 text-xs">
+                                    ${addon.price >= 600 ? Math.round(addon.price / 100) : addon.price}
+                                    {addon.isOnSale && addon.originalPrice && (
+                                      <span className="ml-1 line-through text-gray-500">
+                                        ${addon.originalPrice >= 600 ? Math.round(addon.originalPrice / 100) : addon.originalPrice}
+                                      </span>
+                                    )}
+                                  </p>
                               </div>
                             </div>
                           </div>
@@ -953,12 +951,12 @@ export default function Dashboard({ user }: DashboardProps) {
                     {order.discount > 0 && (
                       <div className="flex justify-between items-center text-sm mt-1">
                         <span className="text-gray-400">Discount:</span>
-                        <span className="text-green-400">-${(order.discount / 100).toFixed(2)}</span>
+                        <span className="text-green-400">-${Math.round(order.discount)}</span>
                       </div>
                     )}
                     <div className="flex justify-between items-center text-sm mt-1 pt-2 border-t border-gray-800/50">
                       <span className="text-gray-400">Total:</span>
-                      <span className="text-white font-semibold">${(order.total / 100).toFixed(2)}</span>
+                      <span className="text-white font-semibold">${Math.round(order.total)}</span>
                     </div>
                   </div>
                 </div>
@@ -971,7 +969,7 @@ export default function Dashboard({ user }: DashboardProps) {
   )
 
   const renderFAQContent = () => (
-    <div className="space-y-6">
+    <div className="space-y-6 pb-8">
       <h2 className="text-2xl font-bold text-white">Frequently Asked Questions</h2>
       
       <div className="space-y-4">
@@ -1007,7 +1005,7 @@ export default function Dashboard({ user }: DashboardProps) {
   )
 
   const renderContactContent = () => (
-    <div className="space-y-6">
+    <div className="space-y-6 pb-8">
       <h2 className="text-2xl font-bold text-white">Contact Support</h2>
       
       <div className="grid md:grid-cols-2 gap-8">

@@ -220,8 +220,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         addon_id: item.id,
         addon_name: item.name,
         addon_description: `${item.name} - Premium add-on service`,
-        original_price: item.originalPrice,
-        discounted_price: item.price,
+        original_price: Math.round(item.originalPrice * 100), // Convert dollars to cents
+        discounted_price: Math.round(item.price * 100),       // Convert dollars to cents
         is_discounted: item.isOnSale,
         emoji: item.emoji
       }));

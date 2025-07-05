@@ -14,20 +14,42 @@ export default function Header({ transparent = false, hideSignUp = false }: Head
 
   // Check if user is logged in
   useEffect(() => {
+    console.log('🔐 HEADER: useEffect started - checking auth');
+    
     const checkUser = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      setCurrentUser(user);
+      try {
+        console.log('🔐 HEADER: About to call supabase.auth.getUser()');
+        const { data: { user }, error } = await supabase.auth.getUser();
+        console.log('🔐 HEADER: supabase.auth.getUser() response:', { user: user?.email || null, error });
+        
+        if (error) {
+          console.error('🔐 HEADER: Error in getUser:', error);
+        }
+        
+        console.log('🔐 HEADER: Setting currentUser to:', user?.email || 'No user');
+        setCurrentUser(user);
+      } catch (err) {
+        console.error('🔐 HEADER: Exception in checkUser:', err);
+        setCurrentUser(null);
+      }
     };
+    
     checkUser();
 
     // Listen for auth changes
+    console.log('🔐 HEADER: Setting up onAuthStateChange listener');
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
+        console.log('🔐 HEADER: Auth state changed:', event, session?.user?.email || 'No user');
+        console.log('🔐 HEADER: Full session object:', session);
         setCurrentUser(session?.user ?? null);
       }
     );
 
-    return () => subscription.unsubscribe();
+    return () => {
+      console.log('🔐 HEADER: Cleaning up auth listener');
+      subscription.unsubscribe();
+    };
   }, []);
 
   return (
