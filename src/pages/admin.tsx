@@ -6,6 +6,7 @@ import { createClient } from '../utils/supabase/client'
 import { useRouter } from 'next/router'
 import Lottie from 'lottie-react'
 import AdminOrdersManagement from '../components/AdminOrdersManagement'
+import AdminEmailManagement from '../components/AdminEmailManagement'
 import MonthlyOrdersChart from '../components/MonthlyOrdersChart'
 
 interface AdminDashboardProps {
@@ -74,9 +75,15 @@ export default function AdminDashboard({ user }: AdminDashboardProps) {
   useEffect(() => {
     const handleHashChange = () => {
       const hash = window.location.hash.replace('#', '')
+      console.log('🔄 ADMIN-NAV: Hash changed to:', hash);
       if (hash === 'orders') {
+        console.log('🔄 ADMIN-NAV: Setting active tab to orders');
         setActiveTab('orders')
+      } else if (hash === 'emails') {
+        console.log('🔄 ADMIN-NAV: Setting active tab to emails');
+        setActiveTab('emails')
       } else if (hash === 'dashboard' || !hash) {
+        console.log('🔄 ADMIN-NAV: Setting active tab to dashboard');
         setActiveTab('dashboard')
       }
     }
@@ -278,12 +285,26 @@ export default function AdminDashboard({ user }: AdminDashboardProps) {
     </div>
   )
 
+  const renderEmailsContent = () => {
+    console.log('🚨 ADMIN-RENDER: renderEmailsContent function called - BASIC TEST');
+    console.log('🔄 ADMIN-RENDER: Rendering emails content...');
+    console.log('🔄 ADMIN-RENDER: About to return AdminEmailManagement component');
+    return (
+      <div className="space-y-6">
+        <AdminEmailManagement />
+      </div>
+    )
+  }
+
   const renderContent = () => {
+    console.log('🔄 ADMIN-RENDER: Rendering content for tab:', activeTab);
     switch (activeTab) {
       case 'dashboard':
         return renderDashboardContent()
       case 'orders':
         return renderOrdersContent()
+      case 'emails':
+        return renderEmailsContent()
       default:
         return renderDashboardContent()
     }
@@ -333,6 +354,19 @@ export default function AdminDashboard({ user }: AdminDashboardProps) {
                     }`}
                   >
                     Orders
+                  </button>
+                  <button
+                    onClick={() => {
+                      setActiveTab('emails')
+                      window.location.hash = '#emails'
+                    }}
+                    className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                      activeTab === 'emails'
+                        ? 'bg-indigo-100 text-indigo-700'
+                        : 'text-gray-500 hover:text-gray-700'
+                    }`}
+                  >
+                    Emails
                   </button>
                 </div>
               </div>
