@@ -103,10 +103,14 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     console.log(`🎵 SPOTIFY-API: Track details fetched successfully`);
 
     // Extract track information
+    const primaryArtist = spotifyTrack.artists[0];
+    const artistProfileUrl = primaryArtist?.external_urls?.spotify || '';
+    
     const trackInfo = {
       trackId: spotifyTrack.id,
       title: spotifyTrack.name,
       artist: spotifyTrack.artists.map((artist: any) => artist.name).join(', '),
+      artistProfileUrl: artistProfileUrl,
       album: spotifyTrack.album.name,
       imageUrl: spotifyTrack.album.images[0]?.url || '',
       duration: spotifyTrack.duration_ms,
@@ -120,6 +124,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     console.log(`🎵 SPOTIFY-API: Parsed track info:`, {
       title: trackInfo.title,
       artist: trackInfo.artist,
+      artistProfileUrl: trackInfo.artistProfileUrl,
       album: trackInfo.album,
       hasImage: !!trackInfo.imageUrl
     });
@@ -162,6 +167,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         track_artist: trackInfo.artist,
         track_image_url: trackInfo.imageUrl,
         track_url: trackInfo.url,
+        artist_profile_url: trackInfo.artistProfileUrl,
         updated_at: new Date().toISOString()
       })
       .eq('id', itemId)
@@ -193,6 +199,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         trackId: trackInfo.trackId,
         title: trackInfo.title,
         artist: trackInfo.artist,
+        artistProfileUrl: trackInfo.artistProfileUrl,
         album: trackInfo.album,
         imageUrl: trackInfo.imageUrl,
         duration: trackInfo.duration,
@@ -208,6 +215,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         actions: [
           'Validated Spotify URL format',
           'Fetched track details from Spotify Web API',
+          'Extracted artist profile URL',
           'Updated database with new track information',
           'Ready for dashboard refresh'
         ]

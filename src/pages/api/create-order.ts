@@ -1,5 +1,6 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 import { createClient } from '../../utils/supabase/server';
+import { sendNewOrderEmail, sendAdminNewOrderEmail } from '../../utils/email/emailService';
 
 interface OrderItem {
   track: {
@@ -8,6 +9,7 @@ interface OrderItem {
     artist: string;
     imageUrl: string;
     url: string;
+    artistProfileUrl?: string;
   };
   package: {
     id: string;
@@ -185,6 +187,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       track_artist: item.track.artist,
       track_image_url: item.track.imageUrl,
       track_url: item.track.url,
+      artist_profile_url: item.track.artistProfileUrl,
       package_id: item.package.id,
       package_name: item.package.name,
       package_price: item.package.price,
@@ -195,6 +198,12 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       discounted_price: item.discountedPrice,
       is_discounted: item.isDiscounted
     }));
+    
+    // Log artist profile URLs for debugging
+    orderItems.forEach(item => {
+      console.log(`🎵 CREATE-ORDER: Track "${item.track_title}" by ${item.track_artist}`);
+      console.log(`🎵 CREATE-ORDER: Artist profile URL: ${item.artist_profile_url || 'Not provided'}`);
+    });
     
     console.log('🔍 CREATE-ORDER: Order items to insert:', JSON.stringify(orderItems, null, 2));
 
@@ -239,6 +248,49 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       } else {
         console.log('🔍 CREATE-ORDER: Add-on items created successfully');
       }
+    }
+
+    // CRITICAL: Send email notifications for new order
+    console.log('📧 CREATE-ORDER: Sending new order email notifications...');
+    
+    try {
+      // Send customer confirmation email
+      console.log('📧 CREATE-ORDER: Sending customer confirmation email...');
+      const customerEmailSent = await sendNewOrderEmail({
+        id: order.id,
+        order_number: order.order_number,
+        customer_email: order.customer_email,
+        customer_name: order.customer_name,
+        total: Math.round(order.total * 100), // Convert to cents for email service
+        created_at: order.created_at
+      }, supabase);
+
+      if (customerEmailSent) {
+        console.log('📧 CREATE-ORDER: ✅ Customer confirmation email sent successfully');
+      } else {
+        console.log('📧 CREATE-ORDER: ❌ Customer confirmation email failed or was not sent');
+      }
+
+      // Send admin notification email
+      console.log('📧 CREATE-ORDER: Sending admin notification email...');
+      const adminEmailSent = await sendAdminNewOrderEmail({
+        id: order.id,
+        order_number: order.order_number,
+        customer_email: order.customer_email,
+        customer_name: order.customer_name,
+        total: Math.round(order.total * 100), // Convert to cents for email service
+        created_at: order.created_at
+      }, supabase);
+
+      if (adminEmailSent) {
+        console.log('📧 CREATE-ORDER: ✅ Admin notification email sent successfully');
+      } else {
+        console.log('📧 CREATE-ORDER: ❌ Admin notification email failed or was not sent');
+      }
+
+    } catch (emailError) {
+      console.error('📧 CREATE-ORDER: ❌ Error sending new order email notifications:', emailError);
+      // Don't fail the entire order creation if email fails
     }
 
     return res.status(200).json({

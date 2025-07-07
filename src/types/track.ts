@@ -4,4 +4,5 @@ export interface Track {
   artist: string;
   imageUrl: string;
   url: string;
+  artistProfileUrl?: string; // Spotify artist profile URL
 } 

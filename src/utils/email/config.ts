@@ -1,19 +1,4 @@
-import nodemailer from 'nodemailer';
-
-// MailJet SMTP Configuration
-export const createEmailTransporter = () => {
-  const transporter = nodemailer.createTransport({
-    host: 'in-v3.mailjet.com',
-    port: 587,
-    secure: false, // true for 465, false for other ports
-    auth: {
-      user: process.env.MAILJET_API_KEY,
-      pass: process.env.MAILJET_SECRET_KEY,
-    },
-  });
-
-  return transporter;
-};
+import { sendElasticEmail } from './elasticEmailService';
 
 // Email template types
 export interface EmailTemplate {
@@ -128,48 +113,24 @@ export const DEFAULT_EMAIL_TEMPLATES: Partial<EmailTemplate>[] = [
   }
 ];
 
-// Email sending utility
+// Updated email sending utility - now uses REST API by default
 export const sendEmail = async (
   to: string,
   subject: string,
   htmlContent: string,
   variables?: Record<string, string>
 ) => {
-  try {
-    const transporter = createEmailTransporter();
-    
-    // Replace template variables
-    let processedContent = htmlContent;
-    if (variables) {
-      Object.entries(variables).forEach(([key, value]) => {
-        const placeholder = `{{${key}}}`;
-        processedContent = processedContent.replace(new RegExp(placeholder, 'g'), value);
-      });
-    }
-
-    const mailOptions = {
-      from: `"FASHO" <${process.env.MAILJET_FROM_EMAIL || 'noreply@fasho.co'}>`,
-      to,
-      subject,
-      html: processedContent,
-    };
-
-    const result = await transporter.sendMail(mailOptions);
-    
-    console.log('📧 EMAIL-SENT: Success', {
-      to,
-      subject,
-      messageId: result.messageId
+  // Replace template variables if provided
+  let processedContent = htmlContent;
+  if (variables) {
+    Object.entries(variables).forEach(([key, value]) => {
+      const placeholder = `{{${key}}}`;
+      processedContent = processedContent.replace(new RegExp(placeholder, 'g'), value);
     });
-
-    return { success: true, messageId: result.messageId };
-  } catch (error) {
-    console.error('📧 EMAIL-ERROR: Failed to send email', {
-      to,
-      subject,
-      error: error instanceof Error ? error.message : 'Unknown error'
-    });
-    
-    return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
   }
+  return await sendElasticEmail({
+    to,
+    subject,
+    htmlBody: processedContent
+  });
 }; 

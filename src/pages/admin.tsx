@@ -1,25 +1,20 @@
 import { GetServerSideProps } from 'next'
 import Head from 'next/head'
-import { createClientSSR } from '../utils/supabase/server'
 import { useState, useEffect, useRef } from 'react'
-import { createClient } from '../utils/supabase/client'
 import { useRouter } from 'next/router'
 import Lottie from 'lottie-react'
 import AdminOrdersManagement from '../components/AdminOrdersManagement'
 import AdminEmailManagement from '../components/AdminEmailManagement'
 import MonthlyOrdersChart from '../components/MonthlyOrdersChart'
+import AdminAccessDenied from '../components/AdminAccessDenied'
+import { verifyAdminToken, getAdminTokenFromRequest, AdminUser } from '../utils/admin/auth'
 
 interface AdminDashboardProps {
-  user: {
-    id: string
-    email: string
-    user_metadata?: {
-      full_name?: string
-    }
-  }
+  adminUser: AdminUser | null
+  authError?: string
 }
 
-export default function AdminDashboard({ user }: AdminDashboardProps) {
+export default function AdminDashboard({ adminUser, authError }: AdminDashboardProps) {
   const router = useRouter()
   const [activeTab, setActiveTab] = useState('dashboard')
   const [isLoading, setIsLoading] = useState(false)
@@ -43,7 +38,14 @@ export default function AdminDashboard({ user }: AdminDashboardProps) {
   })
   const [lottieAnimationData, setLottieAnimationData] = useState(null)
   const lottieRef = useRef<any>(null)
-  const supabase = createClient()
+
+  // Show access denied if not authenticated or error occurred
+  if (!adminUser || authError) {
+    return <AdminAccessDenied 
+      title={authError || "Admin Access Required"}
+      message="You need to be logged in as an administrator to access this page."
+    />
+  }
 
   // Fetch Lottie animation data
   useEffect(() => {
@@ -80,9 +82,23 @@ export default function AdminDashboard({ user }: AdminDashboardProps) {
         console.log('🔄 ADMIN-NAV: Setting active tab to orders');
         setActiveTab('orders')
       } else if (hash === 'emails') {
+        // Check if sub-admin trying to access emails (not allowed)
+        if (adminUser.role === 'sub_admin') {
+          console.log('🔄 ADMIN-NAV: Sub-admin cannot access emails tab');
+          setActiveTab('orders') // Redirect to orders
+          window.location.hash = '#orders'
+          return
+        }
         console.log('🔄 ADMIN-NAV: Setting active tab to emails');
         setActiveTab('emails')
       } else if (hash === 'dashboard' || !hash) {
+        // Check if sub-admin trying to access dashboard (not allowed)
+        if (adminUser.role === 'sub_admin') {
+          console.log('🔄 ADMIN-NAV: Sub-admin cannot access dashboard tab');
+          setActiveTab('orders') // Redirect to orders
+          window.location.hash = '#orders'
+          return
+        }
         console.log('🔄 ADMIN-NAV: Setting active tab to dashboard');
         setActiveTab('dashboard')
       }
@@ -97,13 +113,17 @@ export default function AdminDashboard({ user }: AdminDashboardProps) {
     return () => {
       window.removeEventListener('hashchange', handleHashChange)
     }
-  }, [])
+  }, [adminUser.role])
 
-  // Fetch analytics data
+  // Fetch analytics data (only for full admins)
   useEffect(() => {
     const fetchAnalytics = async () => {
+      if (adminUser.role !== 'admin') return // Sub-admins can't see analytics
+      
       try {
-        const res = await fetch('/api/admin/analytics')
+        const res = await fetch('/api/admin/analytics', {
+          credentials: 'include' // Include admin session cookie
+        })
         const data = await res.json()
         if (data.success) {
           setAnalyticsData(data.analytics)
@@ -115,10 +135,10 @@ export default function AdminDashboard({ user }: AdminDashboardProps) {
       }
     }
 
-    if (activeTab === 'dashboard') {
+    if (activeTab === 'dashboard' && adminUser.role === 'admin') {
       fetchAnalytics()
     }
-  }, [activeTab])
+  }, [activeTab, adminUser.role])
 
   // Count-up animation function
   const animateCounters = (targetData: any) => {
@@ -166,10 +186,15 @@ export default function AdminDashboard({ user }: AdminDashboardProps) {
   const handleSignOut = async () => {
     setIsLoading(true)
     try {
-      await supabase.auth.signOut()
-      router.push('/')
+      await fetch('/api/admin/auth/logout', {
+        method: 'POST',
+        credentials: 'include'
+      })
+      router.push('/a-login')
     } catch (error) {
       console.error('Error signing out:', error)
+      // Force redirect even if logout API fails
+      router.push('/a-login')
     } finally {
       setIsLoading(false)
     }
@@ -198,7 +223,7 @@ export default function AdminDashboard({ user }: AdminDashboardProps) {
         </div>
       </div>
 
-      {/* Analytics Cards */}
+      {/* Stats Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         {/* Total Orders */}
         <div className="bg-white rounded-xl p-6 shadow-lg border border-gray-100">
@@ -298,15 +323,21 @@ export default function AdminDashboard({ user }: AdminDashboardProps) {
 
   const renderContent = () => {
     console.log('🔄 ADMIN-RENDER: Rendering content for tab:', activeTab);
+    
+    // Sub-admins can only access orders
+    if (adminUser.role === 'sub_admin' && activeTab !== 'orders') {
+      return renderOrdersContent()
+    }
+    
     switch (activeTab) {
       case 'dashboard':
-        return renderDashboardContent()
+        return adminUser.role === 'admin' ? renderDashboardContent() : renderOrdersContent()
       case 'orders':
         return renderOrdersContent()
       case 'emails':
-        return renderEmailsContent()
+        return adminUser.role === 'admin' ? renderEmailsContent() : renderOrdersContent()
       default:
-        return renderDashboardContent()
+        return adminUser.role === 'admin' ? renderDashboardContent() : renderOrdersContent()
     }
   }
 
@@ -329,19 +360,24 @@ export default function AdminDashboard({ user }: AdminDashboardProps) {
                   <h1 className="text-xl font-bold text-gray-900">Fasho Admin</h1>
                 </div>
                 <div className="flex space-x-8">
-                  <button
-                    onClick={() => {
-                      setActiveTab('dashboard')
-                      window.location.hash = '#dashboard'
-                    }}
-                    className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${
-                      activeTab === 'dashboard'
-                        ? 'bg-indigo-100 text-indigo-700'
-                        : 'text-gray-500 hover:text-gray-700'
-                    }`}
-                  >
-                    Dashboard
-                  </button>
+                  {/* Dashboard Tab - Only for full admins */}
+                  {adminUser.role === 'admin' && (
+                    <button
+                      onClick={() => {
+                        setActiveTab('dashboard')
+                        window.location.hash = '#dashboard'
+                      }}
+                      className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                        activeTab === 'dashboard'
+                          ? 'bg-indigo-100 text-indigo-700'
+                          : 'text-gray-500 hover:text-gray-700'
+                      }`}
+                    >
+                      Dashboard
+                    </button>
+                  )}
+                  
+                  {/* Orders Tab - Available to all admin roles */}
                   <button
                     onClick={() => {
                       setActiveTab('orders')
@@ -355,25 +391,32 @@ export default function AdminDashboard({ user }: AdminDashboardProps) {
                   >
                     Orders
                   </button>
-                  <button
-                    onClick={() => {
-                      setActiveTab('emails')
-                      window.location.hash = '#emails'
-                    }}
-                    className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${
-                      activeTab === 'emails'
-                        ? 'bg-indigo-100 text-indigo-700'
-                        : 'text-gray-500 hover:text-gray-700'
-                    }`}
-                  >
-                    Emails
-                  </button>
+                  
+                  {/* Emails Tab - Only for full admins */}
+                  {adminUser.role === 'admin' && (
+                    <button
+                      onClick={() => {
+                        setActiveTab('emails')
+                        window.location.hash = '#emails'
+                      }}
+                      className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                        activeTab === 'emails'
+                          ? 'bg-indigo-100 text-indigo-700'
+                          : 'text-gray-500 hover:text-gray-700'
+                      }`}
+                    >
+                      Emails
+                    </button>
+                  )}
                 </div>
               </div>
               <div className="flex items-center space-x-4">
-                <span className="text-sm text-gray-500">
-                  {user.user_metadata?.full_name || user.email}
-                </span>
+                <div className="text-right">
+                  <div className="text-sm text-gray-500">{adminUser.email}</div>
+                  <div className="text-xs text-gray-400 capitalize">
+                    {adminUser.role === 'sub_admin' ? 'Sub Admin' : 'Administrator'}
+                  </div>
+                </div>
                 <button
                   onClick={handleSignOut}
                   disabled={isLoading}
@@ -396,38 +439,61 @@ export default function AdminDashboard({ user }: AdminDashboardProps) {
 }
 
 export const getServerSideProps: GetServerSideProps = async (context) => {
-  const supabase = createClientSSR(context)
-  
   try {
-    const { data: { user }, error } = await supabase.auth.getUser()
+    console.log('🔐 ADMIN-SSR: Checking admin authentication...')
     
-    if (error || !user) {
+    // Get admin session token from request
+    const token = getAdminTokenFromRequest(context.req as any)
+    
+    if (!token) {
+      console.log('🔐 ADMIN-SSR: No admin session token found')
       return {
         redirect: {
-          destination: '/signup',
+          destination: '/a-login',
           permanent: false,
         },
       }
     }
 
-    // TODO: Add role-based access control here
-    // For now, we'll allow any authenticated user to access admin
-    // Later we'll check if user.user_metadata.role === 'admin'
+    // Verify admin token
+    const adminUser = verifyAdminToken(token)
+    
+    if (!adminUser) {
+      console.log('🔐 ADMIN-SSR: Invalid admin session token')
+      return {
+        redirect: {
+          destination: '/a-login',
+          permanent: false,
+        },
+      }
+    }
+
+    if (!adminUser.is_active) {
+      console.log('🔐 ADMIN-SSR: Admin account is inactive:', adminUser.email)
+      return {
+        props: {
+          adminUser: null,
+          authError: 'Admin account is inactive'
+        },
+      }
+    }
+
+    console.log('🔐 ADMIN-SSR: Admin authenticated successfully:', adminUser.email, 'role:', adminUser.role)
 
     return {
       props: {
-        user: {
-          id: user.id,
-          email: user.email,
-          user_metadata: user.user_metadata,
+        adminUser: {
+          id: adminUser.id,
+          email: adminUser.email,
+          role: adminUser.role,
         },
       },
     }
   } catch (error) {
-    console.error('Error in getServerSideProps:', error)
+    console.error('🔐 ADMIN-SSR: Authentication error:', error)
     return {
       redirect: {
-        destination: '/signup',
+        destination: '/a-login',
         permanent: false,
       },
     }

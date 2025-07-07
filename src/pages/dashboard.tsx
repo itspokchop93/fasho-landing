@@ -27,8 +27,44 @@ export default function Dashboard({ user }: DashboardProps) {
   const [animatedData, setAnimatedData] = useState<number[]>([])
   const [chartAnimating, setChartAnimating] = useState(false)
   const [lottieAnimationData, setLottieAnimationData] = useState(null)
+  const [showUserDropdown, setShowUserDropdown] = useState(false)
+  const [artistProfile, setArtistProfile] = useState<any>(null)
+  const [artistProfileLoading, setArtistProfileLoading] = useState(true)
+  const [showArtistProfileEditor, setShowArtistProfileEditor] = useState(false)
+  const [artistSearchQuery, setArtistSearchQuery] = useState('')
+  const [artistSearchResults, setArtistSearchResults] = useState<any[]>([])
+  const [artistSearchLoading, setArtistSearchLoading] = useState(false)
+  const [artistTracks, setArtistTracks] = useState<any[]>([])
+  const [artistTracksLoading, setArtistTracksLoading] = useState(false)
   const lottieRef = useRef<any>(null)
+  const dropdownRef = useRef<HTMLDivElement>(null)
   const supabase = createClient()
+
+  // Get user initials
+  const getUserInitials = () => {
+    if (user.user_metadata?.full_name) {
+      const names = user.user_metadata.full_name.split(' ')
+      if (names.length >= 2) {
+        return `${names[0][0]}${names[names.length - 1][0]}`.toUpperCase()
+      }
+      return names[0][0].toUpperCase()
+    }
+    return user.email[0].toUpperCase()
+  }
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setShowUserDropdown(false)
+      }
+    }
+
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside)
+    }
+  }, [])
 
   // Fetch Lottie animation data
   useEffect(() => {
@@ -125,10 +161,20 @@ export default function Dashboard({ user }: DashboardProps) {
     
     const dailyData = []
     for (let i = 0; i < 30; i++) {
-      const progress = i / 29 // This ensures the last point (i=29) has progress = 1
-      const randomVariation = 0.85 + Math.random() * 0.3 // 85-115% of expected
-      const dailyPlays = Math.floor(totalPlays * progress * randomVariation)
-      dailyData.push(Math.max(0, dailyPlays))
+      // Create a more realistic growth curve - starts low, grows exponentially
+      const dayProgress = i / 29 // 0 to 1
+      
+      // Use a smooth exponential curve for more realistic growth
+      // This starts around 20% and grows to 100%
+      const growthFactor = 0.2 + (dayProgress * dayProgress * 0.8) // Exponential curve from 0.2 to 1.0
+      
+      const randomVariation = 0.85 + Math.random() * 0.3 // 85-115% variation
+      const dailyPlays = Math.floor(totalPlays * growthFactor * randomVariation)
+      
+      dailyData.push({
+        day: i + 1,
+        plays: Math.max(Math.floor(totalPlays * 0.1), dailyPlays) // Minimum 10% of total
+      })
     }
     
     return dailyData
@@ -147,8 +193,13 @@ export default function Dashboard({ user }: DashboardProps) {
     let phaseStartTime: number
     let phase: 'down' | 'up' = 'down'
     
-    // Starting values for down animation
-    const startingData = animatedData.length > 0 ? [...animatedData] : new Array(30).fill(0)
+    // Starting values for down animation - convert to objects with .plays property
+    const startingData = animatedData.length > 0 
+      ? animatedData.map((data, index) => ({ 
+          day: index + 1, 
+          plays: typeof data === 'number' ? data : data.plays || 0 
+        }))
+      : new Array(30).fill(0).map((_, index) => ({ day: index + 1, plays: 0 }))
     
     const animate = (timestamp: number) => {
       if (!startTime) startTime = timestamp
@@ -163,10 +214,13 @@ export default function Dashboard({ user }: DashboardProps) {
       
       if (phase === 'down') {
         // Animate down from starting values to zero (right to left)
-        const newAnimatedData = startingData.map((startValue, index) => {
+        const newAnimatedData = startingData.map((startData, index) => {
           const pointDelay = ((29 - index) / 29) * 0.3 // Right to left
           const pointProgress = Math.max(0, Math.min(1, (easeOutCubic - pointDelay) / (1 - pointDelay)))
-          return startValue * (1 - pointProgress)
+          return {
+            day: index + 1,
+            plays: startData.plays * (1 - pointProgress)
+          }
         })
         
         setAnimatedData(newAnimatedData)
@@ -175,14 +229,17 @@ export default function Dashboard({ user }: DashboardProps) {
           // Switch to up phase
           phase = 'up'
           phaseStartTime = timestamp
-          setAnimatedData(new Array(30).fill(0)) // Reset to zeros
+          setAnimatedData(new Array(30).fill(0).map((_, index) => ({ day: index + 1, plays: 0 }))) // Reset to zeros
         }
       } else {
         // Animate up to target values (left to right)
-        const newAnimatedData = targetData.map((targetValue, index) => {
+        const newAnimatedData = targetData.map((targetData, index) => {
           const pointDelay = (index / 29) * 0.3 // Left to right
           const pointProgress = Math.max(0, Math.min(1, (easeOutCubic - pointDelay) / (1 - pointDelay)))
-          return targetValue * pointProgress
+          return {
+            day: index + 1,
+            plays: targetData.plays * pointProgress
+          }
         })
         
         setAnimatedData(newAnimatedData)
@@ -198,7 +255,7 @@ export default function Dashboard({ user }: DashboardProps) {
     
     // Start with zeros if no previous data
     if (animatedData.length === 0) {
-      setAnimatedData(new Array(30).fill(0))
+      setAnimatedData(new Array(30).fill(0).map((_, index) => ({ day: index + 1, plays: 0 })))
       phase = 'up'
     }
     
@@ -289,10 +346,133 @@ export default function Dashboard({ user }: DashboardProps) {
     return [formatNumberWithK(topValue), formatNumberWithK(midValue), '0']
   }
 
+  // Artist Profile Functions
+  const fetchArtistProfile = async () => {
+    try {
+      setArtistProfileLoading(true)
+      const response = await fetch('/api/user-artist-profile')
+      const data = await response.json()
+      
+      if (data.profile) {
+        setArtistProfile(data.profile)
+        // Fetch artist tracks when profile is loaded
+        await fetchArtistTracks(data.profile.spotify_artist_id)
+      }
+    } catch (error) {
+      console.error('Failed to fetch artist profile:', error)
+    } finally {
+      setArtistProfileLoading(false)
+    }
+  }
+
+  const fetchArtistTracks = async (artistId: string) => {
+    try {
+      setArtistTracksLoading(true)
+      const response = await fetch(`/api/spotify/artist?artistId=${artistId}&includeAlbums=true`)
+      const data = await response.json()
+      
+      if (data.topTracks) {
+        setArtistTracks(data.topTracks)
+      }
+    } catch (error) {
+      console.error('Failed to fetch artist tracks:', error)
+    } finally {
+      setArtistTracksLoading(false)
+    }
+  }
+
+  const searchArtists = async (query: string) => {
+    if (!query.trim()) {
+      setArtistSearchResults([])
+      return
+    }
+
+    try {
+      setArtistSearchLoading(true)
+      const response = await fetch('/api/spotify/artist-search', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ query: query.trim() })
+      })
+      const data = await response.json()
+      
+      if (data.artists) {
+        setArtistSearchResults(data.artists)
+      }
+    } catch (error) {
+      console.error('Failed to search artists:', error)
+      setArtistSearchResults([])
+    } finally {
+      setArtistSearchLoading(false)
+    }
+  }
+
+  const saveArtistProfile = async (selectedArtist: any) => {
+    try {
+      const method = artistProfile ? 'PUT' : 'POST'
+      const response = await fetch('/api/user-artist-profile', {
+        method,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          spotify_artist_id: selectedArtist.id,
+          artist_name: selectedArtist.name,
+          artist_image_url: selectedArtist.imageUrl,
+          spotify_artist_url: selectedArtist.spotifyUrl,
+          followers_count: selectedArtist.followersCount,
+          genres: selectedArtist.genres
+        })
+      })
+
+      if (response.ok) {
+        setShowArtistProfileEditor(false)
+        setArtistSearchQuery('')
+        setArtistSearchResults([])
+        await fetchArtistProfile() // Refresh profile data
+      }
+    } catch (error) {
+      console.error('Failed to save artist profile:', error)
+    }
+  }
+
+  const handlePromoteTrack = (track: any) => {
+    // Create track object in the format expected by /add page
+    const trackData = {
+      id: track.id,
+      title: track.name,
+      artist: artistProfile?.artist_name || '',
+      imageUrl: track.imageUrl,
+      url: track.spotifyUrl
+    }
+
+    // Navigate to /add page with track data
+    const trackParams = new URLSearchParams({
+      tracks: JSON.stringify([trackData])
+    })
+    router.push(`/add?${trackParams.toString()}`)
+  }
+
+  // Fetch artist profile on component mount
+  useEffect(() => {
+    fetchArtistProfile()
+  }, [])
+
+  // Debounced artist search
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (artistSearchQuery) {
+        searchArtists(artistSearchQuery)
+      }
+    }, 300)
+
+    return () => clearTimeout(timer)
+  }, [artistSearchQuery])
+
   const totalPlays = calculateTotalPlays()
   const chartData = generateChartData()
   const displayData = animatedData.length > 0 ? animatedData : chartData
-  const maxPlays = Math.max(...chartData, 1)
+  const actualMaxPlays = Math.max(...chartData.map(d => d.plays), 1)
+  // Add 17% headroom to prevent data points from hitting the top
+  const maxPlays = actualMaxPlays * 1.17
   const yAxisLabels = getYAxisLabels(maxPlays)
 
   const sidebarItems = [
@@ -307,7 +487,7 @@ export default function Dashboard({ user }: DashboardProps) {
     <div className="space-y-4 lg:space-y-8 pb-8">
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 lg:gap-6">
-        <div className="bg-gradient-to-br from-gray-950/90 to-gray-900/90 backdrop-blur-sm rounded-2xl p-4 lg:p-6 border border-gray-800/30">
+        <div className="bg-gradient-to-br from-gray-950/90 to-gray-900/90 backdrop-blur-sm rounded-2xl p-4 lg:p-6 border border-gray-800/30 relative z-10">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-gray-400 text-sm font-medium">Total Campaigns</p>
@@ -321,7 +501,7 @@ export default function Dashboard({ user }: DashboardProps) {
           </div>
         </div>
 
-        <div className="bg-gradient-to-br from-gray-950/90 to-gray-900/90 backdrop-blur-sm rounded-2xl p-4 lg:p-6 border border-gray-800/30">
+        <div className="bg-gradient-to-br from-gray-950/90 to-gray-900/90 backdrop-blur-sm rounded-2xl p-4 lg:p-6 border border-gray-800/30 relative z-10">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-gray-400 text-sm font-medium">Running Campaigns</p>
@@ -335,7 +515,7 @@ export default function Dashboard({ user }: DashboardProps) {
           </div>
         </div>
 
-        <div className="bg-gradient-to-br from-gray-950/90 to-gray-900/90 backdrop-blur-sm rounded-2xl p-4 lg:p-6 border border-gray-800/30">
+        <div className="bg-gradient-to-br from-gray-950/90 to-gray-900/90 backdrop-blur-sm rounded-2xl p-4 lg:p-6 border border-gray-800/30 relative z-10">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-gray-400 text-sm font-medium">Completed Campaigns</p>
@@ -351,7 +531,7 @@ export default function Dashboard({ user }: DashboardProps) {
       </div>
 
       {/* Mobile Hero Section - Enhanced */}
-      <div className="lg:hidden relative overflow-hidden rounded-2xl mb-6 h-[28rem] bg-gradient-to-br from-purple-900/20 via-blue-900/20 to-green-900/20 backdrop-blur-sm border-2 border-gray-900/60">
+      <div className="lg:hidden relative overflow-hidden rounded-2xl mb-6 h-[28rem] bg-gradient-to-br from-purple-900/20 via-blue-900/20 to-green-900/20 backdrop-blur-sm border-2 border-gray-900/60 z-10">
         {/* Gradient Background Effect */}
         <div className="absolute inset-0 bg-gradient-to-br from-purple-600/10 via-blue-600/10 to-green-600/10 animate-pulse"></div>
         <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent"></div>
@@ -399,10 +579,279 @@ export default function Dashboard({ user }: DashboardProps) {
         </div>
       </div>
 
-      {/* Desktop Hero Section & Chart */}
+      {/* Mobile Artist Profile Section */}
+      <div className="lg:hidden mb-6">
+        <div className="bg-gradient-to-br from-purple-900/20 via-pink-900/20 to-orange-900/20 backdrop-blur-sm rounded-2xl p-6 border border-gray-800/30 relative z-10 overflow-hidden">
+          {/* Background gradient overlay */}
+          <div className="absolute inset-0 bg-gradient-to-br from-purple-600/5 via-pink-600/5 to-orange-600/5 animate-pulse"></div>
+          
+          <div className="relative z-10">
+            {/* Header with title and change button */}
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-lg font-semibold text-white">Your Artist Profile</h3>
+              <button
+                onClick={() => setShowArtistProfileEditor(!showArtistProfileEditor)}
+                className="text-xs text-gray-400 hover:text-white transition-colors"
+              >
+                Change Artist Profile
+              </button>
+            </div>
+
+            {artistProfileLoading ? (
+              <div className="flex items-center justify-center h-32">
+                <div className="text-gray-400 text-sm">Loading artist profile...</div>
+              </div>
+            ) : artistProfile ? (
+              <div className="space-y-4">
+                {/* Artist Info */}
+                <div className="flex flex-col items-center text-center">
+                  <div className="w-20 h-20 rounded-full overflow-hidden mb-3 border-2 border-gray-700">
+                    <img 
+                      src={artistProfile.artist_image_url || '/default-artist.jpg'} 
+                      alt={artistProfile.artist_name}
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+                  <h4 className="text-xl font-bold text-white mb-1">{artistProfile.artist_name}</h4>
+                  <p className="text-sm text-gray-400">{artistProfile.followers_count?.toLocaleString()} followers</p>
+                </div>
+
+                {/* Artist Tracks */}
+                <div className="space-y-3">
+                  <h5 className="text-base font-semibold text-white text-center">Your Top Tracks</h5>
+                  {artistTracksLoading ? (
+                    <div className="text-center text-gray-400 text-sm">Loading tracks...</div>
+                  ) : (
+                    <div className="relative">
+                      {/* Left Arrow */}
+                      <button
+                        onClick={() => {
+                          const container = document.getElementById('mobile-tracks-container');
+                          if (container) {
+                            container.scrollBy({ left: -150, behavior: 'smooth' });
+                          }
+                        }}
+                        className="absolute left-0 top-1/2 transform -translate-y-1/2 z-10 bg-black/50 hover:bg-black/70 text-white p-1.5 rounded-full transition-all duration-300 hover:scale-110"
+                        style={{ marginLeft: '-8px' }}
+                      >
+                        <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                        </svg>
+                      </button>
+
+                      {/* Right Arrow */}
+                      <button
+                        onClick={() => {
+                          const container = document.getElementById('mobile-tracks-container');
+                          if (container) {
+                            container.scrollBy({ left: 150, behavior: 'smooth' });
+                          }
+                        }}
+                        className="absolute right-0 top-1/2 transform -translate-y-1/2 z-10 bg-black/50 hover:bg-black/70 text-white p-1.5 rounded-full transition-all duration-300 hover:scale-110"
+                        style={{ marginRight: '-8px' }}
+                      >
+                        <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                        </svg>
+                      </button>
+
+                      {/* Tracks Container */}
+                      <div
+                        id="mobile-tracks-container"
+                        className="flex gap-3 overflow-x-auto mobile-tracks-scrollbar pb-2"
+                        style={{ scrollbarWidth: 'thin', scrollbarColor: '#10b981 transparent' }}
+                      >
+                        {artistTracks.map((track, index) => (
+                          <div key={index} className="flex-shrink-0 w-32 bg-gray-800/30 rounded-lg p-3 hover:bg-gray-800/50 transition-colors">
+                            <div className="w-20 h-20 rounded-lg overflow-hidden mb-2 mx-auto">
+                              <img 
+                                src={track.imageUrl || '/default-track.jpg'} 
+                                alt={track.name}
+                                className="w-full h-full object-cover"
+                              />
+                            </div>
+                            <div className="text-center">
+                              <div className="text-white text-xs font-medium mb-1 truncate" title={track.name}>
+                                {track.name}
+                              </div>
+                              <button
+                                onClick={() => handlePromoteTrack(track)}
+                                className="bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white px-2 py-1 rounded text-xs font-medium transition-all duration-300 transform hover:scale-105 w-full"
+                              >
+                                Promote
+                              </button>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            ) : (
+              <div className="flex flex-col items-center justify-center h-40 text-center">
+                <div className="w-12 h-12 bg-purple-500/20 rounded-full flex items-center justify-center mb-3">
+                  <svg className="w-6 h-6 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                  </svg>
+                </div>
+                <div className="text-gray-400 mb-2 font-medium text-sm">No Artist Profile Found</div>
+                <div className="text-gray-500 text-xs mb-3 max-w-xs">
+                  Your artist profile will be automatically set when you create your first campaign.
+                </div>
+                <button
+                  onClick={() => setShowArtistProfileEditor(true)}
+                  className="bg-gradient-to-r from-purple-500 to-pink-600 hover:from-purple-600 hover:to-pink-700 text-white px-4 py-2 rounded-lg font-semibold transition-all duration-300 transform hover:scale-105 text-sm"
+                >
+                  Set Artist Profile
+                </button>
+              </div>
+            )}
+
+            {/* Artist Profile Editor */}
+            {showArtistProfileEditor && (
+              <div className="absolute inset-0 bg-black/80 backdrop-blur-sm rounded-2xl p-4 z-20">
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <h4 className="text-base font-semibold text-white">Set Artist Profile</h4>
+                    <button
+                      onClick={() => setShowArtistProfileEditor(false)}
+                      className="text-gray-400 hover:text-white"
+                    >
+                      ✕
+                    </button>
+                  </div>
+                  
+                  <div className="space-y-3">
+                    <input
+                      type="text"
+                      placeholder="Search artist name or paste Spotify artist URL"
+                      value={artistSearchQuery}
+                      onChange={(e) => setArtistSearchQuery(e.target.value)}
+                      className="w-full px-3 py-2.5 bg-gray-800/50 border border-gray-700 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-purple-500 text-sm"
+                    />
+                    
+                    {artistSearchLoading && (
+                      <div className="text-center text-gray-400 text-sm">Searching...</div>
+                    )}
+                    
+                    {artistSearchResults.length > 0 && (
+                      <div className="space-y-2 max-h-32 overflow-y-auto">
+                        {artistSearchResults.map((artist, index) => (
+                          <div key={index} className="flex items-center gap-2 p-2 bg-gray-800/30 rounded-lg hover:bg-gray-800/50 transition-colors">
+                            <img 
+                              src={artist.imageUrl || '/default-artist.jpg'} 
+                              alt={artist.name}
+                              className="w-8 h-8 rounded-full object-cover"
+                            />
+                            <div className="flex-1 min-w-0">
+                              <div className="text-white font-medium text-xs truncate">{artist.name}</div>
+                              <div className="text-gray-400 text-xs">{artist.followersCount?.toLocaleString()} followers</div>
+                            </div>
+                            <button
+                              onClick={() => saveArtistProfile(artist)}
+                              className="bg-gradient-to-r from-purple-500 to-pink-600 hover:from-purple-600 hover:to-pink-700 text-white px-3 py-1.5 rounded text-xs font-semibold transition-all duration-300"
+                            >
+                              Save
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* Mobile Projected Plays Chart Section */}
+      <div className="lg:hidden mb-6">
+        <div className="bg-gradient-to-br from-gray-950/90 to-gray-900/90 backdrop-blur-sm rounded-2xl p-4 border border-gray-800/30 relative z-10">
+          <h3 className="text-lg font-semibold text-white mb-3">Next 30 Days Projected Plays</h3>
+          <div className="text-xs text-gray-400 mb-3">
+            Total estimated plays: {totalPlays.toLocaleString()}
+          </div>
+          <div className="relative h-48 bg-black/20 rounded-lg">
+            {/* Y-axis labels - positioned absolutely */}
+            <div className="absolute left-1 top-2 h-[calc(100%-1rem)] flex flex-col justify-between text-xs text-gray-400 w-6 text-right pr-1 z-10">
+              <span className={`transition-opacity duration-500 ${totalPlays > 0 ? 'opacity-100' : 'opacity-30'} text-xs`}>
+                {yAxisLabels[0]}
+              </span>
+              <span className={`transition-opacity duration-500 ${totalPlays > 0 ? 'opacity-100' : 'opacity-30'} text-xs`}>
+                {yAxisLabels[1]}
+              </span>
+              <span className="text-xs">{yAxisLabels[2]}</span>
+            </div>
+            
+            {/* Chart area with proper padding for Y-axis labels and no right margin */}
+            <div className="absolute inset-0 pl-8 pr-0">
+              <svg className="w-full h-full" viewBox="0 0 120 40" preserveAspectRatio="none">
+                <defs>
+                  <linearGradient id="mobileChartGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                    <stop offset="0%" style={{ stopColor: '#10b981', stopOpacity: 1 }} />
+                    <stop offset="100%" style={{ stopColor: '#3b82f6', stopOpacity: 1 }} />
+                  </linearGradient>
+                  <linearGradient id="mobileAreaGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+                    <stop offset="0%" style={{ stopColor: '#10b981', stopOpacity: 0.3 }} />
+                    <stop offset="100%" style={{ stopColor: '#10b981', stopOpacity: 0.1 }} />
+                  </linearGradient>
+                </defs>
+                
+                {/* Grid lines */}
+                <g stroke="#374151" strokeWidth="0.5" opacity="0.3">
+                  <line x1="0" y1="8" x2="120" y2="8" />
+                  <line x1="0" y1="20" x2="120" y2="20" />
+                  <line x1="0" y1="32" x2="120" y2="32" />
+                </g>
+                
+                {/* Area under curve */}
+                <path
+                  d={`M ${displayData.map((point, index) => 
+                    `${(index / (displayData.length - 1)) * 120},${5 + (1 - point.plays / maxPlays) * 30}`
+                  ).join(' L ')} L 120,35 L 0,35 Z`}
+                  fill="url(#mobileAreaGradient)"
+                />
+                
+                {/* Main chart line */}
+                <path
+                  d={`M ${displayData.map((point, index) => 
+                    `${(index / (displayData.length - 1)) * 120},${5 + (1 - point.plays / maxPlays) * 30}`
+                  ).join(' L ')}`}
+                  stroke="url(#mobileChartGradient)"
+                  strokeWidth="1"
+                  fill="none"
+                />
+                
+                {/* Data points */}
+                {displayData.map((point, index) => (
+                  <circle
+                    key={index}
+                    cx={(index / (displayData.length - 1)) * 120}
+                    cy={5 + (1 - point.plays / maxPlays) * 30}
+                    r="0.7"
+                    fill="url(#mobileChartGradient)"
+                    className="drop-shadow-sm"
+                  />
+                ))}
+              </svg>
+            </div>
+          </div>
+          
+          {/* Chart Labels */}
+          <div className="flex justify-between mt-3 text-xs text-gray-400 pl-6">
+            <span>Day 1</span>
+            <span>Day 15</span>
+            <span>Day 30</span>
+          </div>
+        </div>
+      </div>
+
+      {/* Desktop Hero Section & Artist Profile */}
       <div className="hidden lg:grid lg:grid-cols-2 gap-8 mb-8">
         {/* Hero Section */}
-        <div className="dashboard-hero-gradient rounded-2xl p-8 border border-gray-800/30 relative overflow-hidden min-h-[400px]">
+        <div className="dashboard-hero-gradient rounded-2xl p-8 border border-gray-800/30 relative overflow-hidden min-h-[400px] z-10">
           <div className="flex flex-row items-center justify-between h-full">
             <div className="relative z-10 flex-1 pr-8 text-left">
               <h2 className="text-5xl font-bold text-white mb-6 leading-tight">
@@ -441,8 +890,224 @@ export default function Dashboard({ user }: DashboardProps) {
           </div>
         </div>
 
-        {/* Desktop Chart Section */}
-        <div className="bg-gradient-to-br from-gray-950/90 to-gray-900/90 backdrop-blur-sm rounded-2xl p-6 border border-gray-800/30">
+        {/* Artist Profile Section */}
+        <div className="bg-gradient-to-br from-purple-900/20 via-pink-900/20 to-orange-900/20 backdrop-blur-sm rounded-2xl p-6 border border-gray-800/30 relative z-10 overflow-hidden">
+          {/* Background gradient overlay */}
+          <div className="absolute inset-0 bg-gradient-to-br from-purple-600/5 via-pink-600/5 to-orange-600/5 animate-pulse"></div>
+          
+          <div className="relative z-10">
+            {/* Header with title and change button */}
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-xl font-semibold text-white">Your Artist Profile</h3>
+              <button
+                onClick={() => setShowArtistProfileEditor(!showArtistProfileEditor)}
+                className="text-xs text-gray-400 hover:text-white transition-colors"
+              >
+                Change Artist Profile
+              </button>
+            </div>
+
+            {artistProfileLoading ? (
+              <div className="flex items-center justify-center h-64">
+                <div className="text-gray-400">Loading artist profile...</div>
+              </div>
+            ) : artistProfile ? (
+              <div className="space-y-6">
+                {/* Artist Info */}
+                <div className="flex flex-col items-center text-center">
+                  <div className="w-24 h-24 rounded-full overflow-hidden mb-4 border-2 border-gray-700">
+                    <img 
+                      src={artistProfile.artist_image_url || '/default-artist.jpg'} 
+                      alt={artistProfile.artist_name}
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+                  <h4 className="text-2xl font-bold text-white mb-2">{artistProfile.artist_name}</h4>
+                  <p className="text-sm text-gray-400">{artistProfile.followers_count?.toLocaleString()} followers</p>
+                </div>
+
+                {/* Artist Tracks */}
+                <div className="space-y-4">
+                  <h5 className="text-lg font-semibold text-white">Your Top Tracks</h5>
+                  {artistTracksLoading ? (
+                    <div className="text-center text-gray-400">Loading tracks...</div>
+                  ) : (
+                    <div className="relative">
+                      {/* Left Arrow */}
+                      <button
+                        onClick={() => {
+                          const container = document.getElementById('tracks-container');
+                          if (container) {
+                            container.scrollBy({ left: -200, behavior: 'smooth' });
+                          }
+                        }}
+                        className="absolute left-0 top-1/2 transform -translate-y-1/2 z-10 bg-black/50 hover:bg-black/70 text-white p-2 rounded-full transition-all duration-300 hover:scale-110"
+                        style={{ marginLeft: '-12px' }}
+                      >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                        </svg>
+                      </button>
+
+                      {/* Right Arrow */}
+                      <button
+                        onClick={() => {
+                          const container = document.getElementById('tracks-container');
+                          if (container) {
+                            container.scrollBy({ left: 200, behavior: 'smooth' });
+                          }
+                        }}
+                        className="absolute right-0 top-1/2 transform -translate-y-1/2 z-10 bg-black/50 hover:bg-black/70 text-white p-2 rounded-full transition-all duration-300 hover:scale-110"
+                        style={{ marginRight: '-12px' }}
+                      >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                        </svg>
+                      </button>
+
+                      {/* Horizontal Scrolling Container */}
+                      <div 
+                        id="tracks-container"
+                        className="flex gap-3 overflow-x-auto pb-2 px-2"
+                        style={{
+                          scrollbarWidth: 'thin',
+                          scrollbarColor: '#6B7280 #1F2937'
+                        }}
+                      >
+                        <style jsx>{`
+                          #tracks-container::-webkit-scrollbar {
+                            height: 6px;
+                          }
+                          #tracks-container::-webkit-scrollbar-track {
+                            background: #1F2937;
+                            border-radius: 3px;
+                          }
+                          #tracks-container::-webkit-scrollbar-thumb {
+                            background: #6B7280;
+                            border-radius: 3px;
+                          }
+                          #tracks-container::-webkit-scrollbar-thumb:hover {
+                            background: #9CA3AF;
+                          }
+                        `}</style>
+                        
+                        {artistTracks.map((track, index) => (
+                          <div 
+                            key={index} 
+                            className="flex-shrink-0 w-40 h-56 bg-black/20 rounded-lg hover:bg-black/30 transition-colors p-3 flex flex-col justify-between"
+                          >
+                            {/* Track Image */}
+                            <div className="w-full h-32 rounded-md overflow-hidden mb-3">
+                              <img 
+                                src={track.imageUrl || '/default-track.jpg'} 
+                                alt={track.name}
+                                className="w-full h-full object-cover"
+                              />
+                            </div>
+                            
+                            {/* Track Info */}
+                            <div className="flex-1 flex flex-col justify-between">
+                              <div className="mb-3">
+                                <div className="text-white font-medium text-sm truncate mb-1">{track.name}</div>
+                                <div className="text-gray-400 text-xs truncate">{artistProfile.artist_name}</div>
+                              </div>
+                              
+                              {/* Promote Button */}
+                              <button
+                                onClick={() => handlePromoteTrack(track)}
+                                className="w-full bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white py-2 rounded-lg text-xs font-semibold transition-all duration-300 transform hover:scale-105"
+                              >
+                                Promote
+                              </button>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            ) : (
+              <div className="flex flex-col items-center justify-center h-64 text-center">
+                <div className="w-16 h-16 bg-purple-500/20 rounded-full flex items-center justify-center mb-4">
+                  <svg className="w-8 h-8 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                  </svg>
+                </div>
+                <div className="text-gray-400 mb-2 font-medium">No Artist Profile Found</div>
+                <div className="text-gray-500 text-sm mb-4 max-w-xs">
+                  Your artist profile will be automatically set when you create your first campaign. Or you can set it manually below.
+                </div>
+                <button
+                  onClick={() => setShowArtistProfileEditor(true)}
+                  className="bg-gradient-to-r from-purple-500 to-pink-600 hover:from-purple-600 hover:to-pink-700 text-white px-6 py-3 rounded-xl font-semibold transition-all duration-300 transform hover:scale-105"
+                >
+                  Set Artist Profile
+                </button>
+              </div>
+            )}
+
+            {/* Artist Profile Editor */}
+            {showArtistProfileEditor && (
+              <div className="absolute inset-0 bg-black/80 backdrop-blur-sm rounded-2xl p-6 z-20">
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <h4 className="text-lg font-semibold text-white">Set Artist Profile</h4>
+                    <button
+                      onClick={() => setShowArtistProfileEditor(false)}
+                      className="text-gray-400 hover:text-white"
+                    >
+                      ✕
+                    </button>
+                  </div>
+                  
+                  <div className="space-y-4">
+                    <input
+                      type="text"
+                      placeholder="Search artist name or paste Spotify artist URL"
+                      value={artistSearchQuery}
+                      onChange={(e) => setArtistSearchQuery(e.target.value)}
+                      className="w-full px-4 py-3 bg-gray-800/50 border border-gray-700 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-purple-500"
+                    />
+                    
+                    {artistSearchLoading && (
+                      <div className="text-center text-gray-400">Searching...</div>
+                    )}
+                    
+                    {artistSearchResults.length > 0 && (
+                      <div className="space-y-2 max-h-48 overflow-y-auto">
+                        {artistSearchResults.map((artist, index) => (
+                          <div key={index} className="flex items-center gap-3 p-3 bg-gray-800/30 rounded-lg hover:bg-gray-800/50 transition-colors">
+                            <img 
+                              src={artist.imageUrl || '/default-artist.jpg'} 
+                              alt={artist.name}
+                              className="w-12 h-12 rounded-full object-cover"
+                            />
+                            <div className="flex-1">
+                              <div className="text-white font-medium text-sm">{artist.name}</div>
+                              <div className="text-gray-400 text-xs">{artist.followersCount?.toLocaleString()} followers</div>
+                            </div>
+                            <button
+                              onClick={() => saveArtistProfile(artist)}
+                              className="bg-gradient-to-r from-purple-500 to-pink-600 hover:from-purple-600 hover:to-pink-700 text-white px-4 py-2 rounded-lg text-xs font-semibold transition-all duration-300"
+                            >
+                              Save
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* Full Width Chart Section - Above Your Campaigns */}
+      <div className="hidden lg:block mb-8">
+        <div className="bg-gradient-to-br from-gray-950/90 to-gray-900/90 backdrop-blur-sm rounded-2xl p-6 border border-gray-800/30 relative z-10">
           <h3 className="text-xl font-semibold text-white mb-4">Next 30 Days Projected Plays</h3>
           <div className="text-sm text-gray-400 mb-4">
             Total estimated plays: {totalPlays.toLocaleString()}
@@ -459,9 +1124,9 @@ export default function Dashboard({ user }: DashboardProps) {
               <span>{yAxisLabels[2]}</span>
             </div>
             
-            {/* Chart area fills entire container */}
-            <div className="absolute inset-0 pl-10 pr-0 pt-0 pb-0">
-              <svg className="w-full h-full" viewBox="0 0 100 100" preserveAspectRatio="none">
+            {/* Chart area with proper padding for Y-axis labels and no right margin */}
+            <div className="absolute inset-0 pl-12 pr-0">
+              <svg className="w-full h-full" viewBox="0 0 120 40" preserveAspectRatio="none">
                 <defs>
                   <linearGradient id="chartGradient" x1="0%" y1="0%" x2="100%" y2="0%">
                     <stop offset="0%" style={{ stopColor: '#10b981', stopOpacity: 1 }} />
@@ -469,77 +1134,46 @@ export default function Dashboard({ user }: DashboardProps) {
                   </linearGradient>
                   <linearGradient id="areaGradient" x1="0%" y1="0%" x2="0%" y2="100%">
                     <stop offset="0%" style={{ stopColor: '#10b981', stopOpacity: 0.3 }} />
-                    <stop offset="100%" style={{ stopColor: '#3b82f6', stopOpacity: 0.1 }} />
+                    <stop offset="100%" style={{ stopColor: '#10b981', stopOpacity: 0.1 }} />
                   </linearGradient>
-                  <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
-                    <feGaussianBlur stdDeviation="2" result="coloredBlur"/>
-                    <feMerge> 
-                      <feMergeNode in="coloredBlur"/>
-                      <feMergeNode in="SourceGraphic"/>
-                    </feMerge>
-                  </filter>
-                  <filter id="strongGlow" x="-50%" y="-50%" width="200%" height="200%">
-                    <feGaussianBlur stdDeviation="4" result="coloredBlur"/>
-                    <feMerge> 
-                      <feMergeNode in="coloredBlur"/>
-                      <feMergeNode in="SourceGraphic"/>
-                    </feMerge>
-                  </filter>
                 </defs>
                 
-                {/* Grid Lines */}
-                <g stroke="#374151" strokeWidth="0.5" opacity="0.3" vectorEffect="non-scaling-stroke">
-                  <line x1="0" y1="20" x2="100" y2="20" />
-                  <line x1="0" y1="40" x2="100" y2="40" />
-                  <line x1="0" y1="60" x2="100" y2="60" />
-                  <line x1="0" y1="80" x2="100" y2="80" />
+                {/* Grid lines */}
+                <g stroke="#374151" strokeWidth="0.5" opacity="0.3">
+                  <line x1="0" y1="8" x2="120" y2="8" />
+                  <line x1="0" y1="20" x2="120" y2="20" />
+                  <line x1="0" y1="32" x2="120" y2="32" />
                 </g>
                 
-                {/* Area under the curve */}
-                {displayData.length > 0 && (
-                  <path
-                    d={`M 0 100 ${displayData.map((plays, index) => {
-                      const x = (index / (displayData.length - 1)) * 100;
-                      const y = maxPlays > 0 ? 100 - (plays / maxPlays) * 80 : 100;
-                      return `L ${x} ${y}`;
-                    }).join(' ')} L 100 100 Z`}
-                    fill="url(#areaGradient)"
-                  />
-                )}
+                {/* Area under curve */}
+                <path
+                  d={`M ${displayData.map((point, index) => 
+                    `${(index / (displayData.length - 1)) * 120},${5 + (1 - point.plays / maxPlays) * 30}`
+                  ).join(' L ')} L 120,35 L 0,35 Z`}
+                  fill="url(#areaGradient)"
+                />
                 
-                {/* Main Glowing Chart Line */}
-                {displayData.length > 0 && (
-                  <path
-                    d={`M ${displayData.map((plays, index) => {
-                      const x = (index / (displayData.length - 1)) * 100;
-                      const y = maxPlays > 0 ? 100 - (plays / maxPlays) * 80 : 100;
-                      return `${x} ${y}`;
-                    }).join(' L ')}`}
-                    fill="none"
-                    stroke="url(#chartGradient)"
-                    strokeWidth="1.5"
-                    filter="url(#glow)"
-                    vectorEffect="non-scaling-stroke"
-                  />
-                )}
+                {/* Main chart line */}
+                <path
+                  d={`M ${displayData.map((point, index) => 
+                    `${(index / (displayData.length - 1)) * 120},${5 + (1 - point.plays / maxPlays) * 30}`
+                  ).join(' L ')}`}
+                  stroke="url(#chartGradient)"
+                  strokeWidth="1"
+                  fill="none"
+                />
                 
-                {/* Data Points with Glow */}
-                {displayData.map((plays, index) => {
-                  const x = (index / (displayData.length - 1)) * 100;
-                  const y = maxPlays > 0 ? 100 - (plays / maxPlays) * 80 : 100;
-                  
-                  return (
-                    <circle
-                      key={index}
-                      cx={x}
-                      cy={y}
-                      r="0.8"
-                      fill="url(#chartGradient)"
-                      filter="url(#glow)"
-                      vectorEffect="non-scaling-stroke"
-                    />
-                  );
-                })}
+                {/* Data points */}
+                {displayData.map((point, index) => (
+                  <circle
+                    key={index}
+                    cx={(index / (displayData.length - 1)) * 120}
+                    cy={5 + (1 - point.plays / maxPlays) * 30}
+                    r="0.7"
+                    fill="url(#chartGradient)"
+                    className="drop-shadow-sm"
+                  />
+                ))}
               </svg>
             </div>
           </div>
@@ -550,109 +1184,6 @@ export default function Dashboard({ user }: DashboardProps) {
             <span>Day 15</span>
             <span>Day 30</span>
           </div>
-        </div>
-      </div>
-
-      {/* Mobile Chart Section - Compact */}
-      <div className="lg:hidden bg-gradient-to-br from-gray-950/90 to-gray-900/90 backdrop-blur-sm rounded-2xl p-4 border border-gray-800/30">
-        <h3 className="text-lg font-semibold text-white mb-3">Next 30 Days Projected Plays</h3>
-        <div className="text-sm text-gray-400 mb-3">
-          Total estimated plays: {totalPlays.toLocaleString()}
-        </div>
-        <div className="relative h-40 bg-black/20 rounded-lg">
-          {/* Y-axis labels - positioned absolutely */}
-          <div className="absolute left-1 top-2 h-[calc(100%-1rem)] flex flex-col justify-between text-xs text-gray-400 w-6 text-right pr-1 z-10">
-            <span className={`transition-opacity duration-500 ${totalPlays > 0 ? 'opacity-100' : 'opacity-30'}`}>
-              {yAxisLabels[0]}
-            </span>
-            <span className={`transition-opacity duration-500 ${totalPlays > 0 ? 'opacity-100' : 'opacity-30'}`}>
-              {yAxisLabels[1]}
-            </span>
-            <span>{yAxisLabels[2]}</span>
-          </div>
-          
-          {/* Chart area fills entire container */}
-          <div className="absolute inset-0 pl-8 pr-0 pt-0 pb-0">
-             <svg className="w-full h-full" viewBox="0 0 100 100" preserveAspectRatio="none">
-               <defs>
-                 <linearGradient id="chartGradientMobile" x1="0%" y1="0%" x2="100%" y2="0%">
-                   <stop offset="0%" style={{ stopColor: '#10b981', stopOpacity: 1 }} />
-                   <stop offset="100%" style={{ stopColor: '#3b82f6', stopOpacity: 1 }} />
-                 </linearGradient>
-                 <linearGradient id="areaGradientMobile" x1="0%" y1="0%" x2="0%" y2="100%">
-                   <stop offset="0%" style={{ stopColor: '#10b981', stopOpacity: 0.3 }} />
-                   <stop offset="100%" style={{ stopColor: '#3b82f6', stopOpacity: 0.1 }} />
-                 </linearGradient>
-                 <filter id="glowMobile" x="-50%" y="-50%" width="200%" height="200%">
-                   <feGaussianBlur stdDeviation="1.5" result="coloredBlur"/>
-                   <feMerge> 
-                     <feMergeNode in="coloredBlur"/>
-                     <feMergeNode in="SourceGraphic"/>
-                   </feMerge>
-                 </filter>
-               </defs>
-               
-               {/* Grid Lines */}
-               <g stroke="#374151" strokeWidth="0.5" opacity="0.3" vectorEffect="non-scaling-stroke">
-                 <line x1="0" y1="25" x2="100" y2="25" />
-                 <line x1="0" y1="50" x2="100" y2="50" />
-                 <line x1="0" y1="75" x2="100" y2="75" />
-               </g>
-               
-               {/* Area under the curve */}
-               {displayData.length > 0 && (
-                 <path
-                   d={`M 0 100 ${displayData.map((plays, index) => {
-                     const x = (index / (displayData.length - 1)) * 100;
-                     const y = maxPlays > 0 ? 100 - (plays / maxPlays) * 80 : 100;
-                     return `L ${x} ${y}`;
-                   }).join(' ')} L 100 100 Z`}
-                   fill="url(#areaGradientMobile)"
-                 />
-               )}
-               
-               {/* Main Glowing Chart Line */}
-               {displayData.length > 0 && (
-                 <path
-                   d={`M ${displayData.map((plays, index) => {
-                     const x = (index / (displayData.length - 1)) * 100;
-                     const y = maxPlays > 0 ? 100 - (plays / maxPlays) * 80 : 100;
-                     return `${x} ${y}`;
-                   }).join(' L ')}`}
-                   fill="none"
-                   stroke="url(#chartGradientMobile)"
-                   strokeWidth="1.5"
-                   filter="url(#glowMobile)"
-                   vectorEffect="non-scaling-stroke"
-                 />
-               )}
-               
-               {/* Data Points with Glow */}
-               {displayData.map((plays, index) => {
-                 const x = (index / (displayData.length - 1)) * 100;
-                 const y = maxPlays > 0 ? 100 - (plays / maxPlays) * 80 : 100;
-                 
-                 return (
-                   <circle
-                     key={index}
-                     cx={x}
-                     cy={y}
-                     r="0.6"
-                     fill="url(#chartGradientMobile)"
-                     filter="url(#glowMobile)"
-                     vectorEffect="non-scaling-stroke"
-                   />
-                 );
-               })}
-             </svg>
-           </div>
-        </div>
-        
-        {/* Chart Labels */}
-        <div className="flex justify-between mt-3 text-sm text-gray-400 pl-8">
-          <span>Day 1</span>
-          <span>Day 15</span>
-          <span>Day 30</span>
         </div>
       </div>
 
@@ -1129,6 +1660,56 @@ export default function Dashboard({ user }: DashboardProps) {
     </div>
   )
 
+  const renderUserDropdown = () => (
+    <div className="relative" ref={dropdownRef}>
+      <button
+        onClick={() => setShowUserDropdown(!showUserDropdown)}
+        className="w-10 h-10 bg-gradient-to-br from-green-500 to-green-600 rounded-full flex items-center justify-center transition-all duration-200 hover:scale-105 focus:outline-none focus:ring-2 focus:ring-green-400 focus:ring-offset-2 focus:ring-offset-gray-900"
+      >
+        <span className="text-white font-semibold text-sm">
+          {getUserInitials()}
+        </span>
+      </button>
+      
+      {showUserDropdown && (
+        <div className="fixed top-16 right-4 lg:top-20 lg:right-6 w-64 bg-gray-900/95 backdrop-blur-sm rounded-xl border border-gray-700/50 shadow-xl z-[9999]">
+          {/* User Info Section */}
+          <div className="p-4 border-b border-gray-700/50">
+            <div className="flex items-center space-x-3">
+              <div className="w-10 h-10 bg-gradient-to-br from-green-500 to-green-600 rounded-full flex items-center justify-center">
+                <span className="text-white font-semibold text-sm">
+                  {getUserInitials()}
+                </span>
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-white font-medium text-sm truncate">
+                  {user.user_metadata?.full_name || 'User'}
+                </p>
+                <p className="text-gray-400 text-xs truncate">{user.email}</p>
+              </div>
+            </div>
+          </div>
+          
+          {/* Menu Items */}
+          <div className="p-2">
+            <button
+              onClick={() => {
+                setShowUserDropdown(false)
+                setShowSignOutModal(true)
+              }}
+              className="w-full flex items-center space-x-3 px-3 py-2 rounded-lg text-gray-300 hover:bg-gray-800/50 hover:text-white transition-colors"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+              </svg>
+              <span className="text-sm font-medium">Sign Out</span>
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  )
+
   const renderSignOutModal = () => (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
       <div className="bg-gray-900 rounded-2xl p-8 border border-gray-700 max-w-md w-full mx-4">
@@ -1211,29 +1792,12 @@ export default function Dashboard({ user }: DashboardProps) {
               ))}
             </div>
           </nav>
-          
-          {/* User Info */}
-          <div className="p-4 border-t border-gray-800/30">
-            <div className="flex items-center space-x-3">
-              <div className="w-10 h-10 bg-gradient-to-br from-green-500 to-green-600 rounded-full flex items-center justify-center">
-                <span className="text-white font-semibold">
-                  {user.user_metadata?.full_name?.[0] || user.email[0].toUpperCase()}
-                </span>
-              </div>
-              <div>
-                <p className="text-white font-medium text-sm">
-                  {user.user_metadata?.full_name || 'User'}
-                </p>
-                <p className="text-gray-400 text-xs">{user.email}</p>
-              </div>
-            </div>
-          </div>
         </div>
         
         {/* Main Content */}
         <div className="flex-1 flex flex-col relative z-10 w-full lg:w-auto min-h-screen lg:min-h-0 overflow-x-hidden">
           {/* Header */}
-          <header className="bg-gray-950/95 backdrop-blur-sm border-b border-gray-900/30 p-4 lg:p-6 relative z-20 w-full">
+          <header className="bg-gray-950/95 backdrop-blur-sm border-b border-gray-900/30 p-4 lg:p-6 relative z-50 w-full">
             <div className="flex items-center justify-between w-full">
               <div className="min-w-0 flex-1">
                 {/* Mobile Logo */}
@@ -1248,19 +1812,15 @@ export default function Dashboard({ user }: DashboardProps) {
                   {activeTab === 'contact' && 'Get in touch with our support team.'}
                 </p>
               </div>
-              {/* Mobile User Avatar */}
-              <div className="lg:hidden flex-shrink-0 ml-2">
-                <div className="w-10 h-10 bg-gradient-to-br from-green-500 to-green-600 rounded-full flex items-center justify-center">
-                  <span className="text-white font-semibold text-sm">
-                    {user.user_metadata?.full_name?.[0] || user.email[0].toUpperCase()}
-                  </span>
-                </div>
+              {/* User Profile Dropdown - Top Right */}
+              <div className="flex-shrink-0 ml-4">
+                {renderUserDropdown()}
               </div>
             </div>
           </header>
           
           {/* Content */}
-          <main className="flex-1 p-4 lg:p-6 pr-6 lg:pr-6 overflow-y-auto overflow-x-hidden relative z-20 pb-20 lg:pb-0 w-full">
+          <main className="flex-1 p-4 lg:p-6 pr-6 lg:pr-6 overflow-y-auto overflow-x-hidden relative z-10 pb-20 lg:pb-0 w-full">
             {renderContent()}
           </main>
         </div>

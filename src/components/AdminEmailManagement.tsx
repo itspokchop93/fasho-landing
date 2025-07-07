@@ -22,15 +22,26 @@ interface EmailNotificationSetting {
   updated_at: string;
 }
 
+interface AdminSettings {
+  admin_notification_email: string;
+}
+
 export default function AdminEmailManagement() {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [emailTemplates, setEmailTemplates] = useState<EmailTemplate[]>([]);
   const [emailSettings, setEmailSettings] = useState<EmailNotificationSetting[]>([]);
+  const [adminSettings, setAdminSettings] = useState<AdminSettings>({ admin_notification_email: '' });
+  const [adminEmailSaving, setAdminEmailSaving] = useState(false);
 
-  // Email notification types
-  const emailNotificationTypes = [
+  // Customer email notification types
+  const customerEmailNotificationTypes = [
+    {
+      trigger: 'new_order',
+      name: 'New Order',
+      description: 'Sent when a new order is created'
+    },
     {
       trigger: 'order_status_processing',
       name: 'Order Status: Processing',
@@ -55,6 +66,20 @@ export default function AdminEmailManagement() {
       trigger: 'order_status_cancelled',
       name: 'Order Status: Cancelled',
       description: 'Sent when an order status changes to Cancelled'
+    },
+    {
+      trigger: 'order_cancellation',
+      name: 'Order Cancellation',
+      description: 'Sent when an order is cancelled by customer or admin'
+    }
+  ];
+
+  // Admin email notification types
+  const adminEmailNotificationTypes = [
+    {
+      trigger: 'admin_new_order',
+      name: 'Admin: New Order',
+      description: 'Notify admin when a new order is created'
     }
   ];
 
@@ -69,8 +94,8 @@ export default function AdminEmailManagement() {
       
       console.log('📧 ADMIN-EMAIL: Fetching email data...');
 
-      // Fetch templates and settings in parallel
-      const [templatesResponse, settingsResponse] = await Promise.all([
+      // Fetch templates, settings, and admin settings in parallel
+      const [templatesResponse, settingsResponse, adminSettingsResponse] = await Promise.all([
         fetch('/api/admin/email-templates', {
           method: 'GET',
           credentials: 'include',
@@ -84,12 +109,20 @@ export default function AdminEmailManagement() {
           headers: {
             'Content-Type': 'application/json',
           },
+        }),
+        fetch('/api/admin/admin-settings', {
+          method: 'GET',
+          credentials: 'include',
+          headers: {
+            'Content-Type': 'application/json',
+          },
         })
       ]);
 
       console.log('📧 ADMIN-EMAIL: API responses:', {
         templatesStatus: templatesResponse.status,
-        settingsStatus: settingsResponse.status
+        settingsStatus: settingsResponse.status,
+        adminSettingsStatus: adminSettingsResponse.status
       });
 
       // Handle templates response
@@ -106,18 +139,26 @@ export default function AdminEmailManagement() {
         throw new Error(`Settings API Error (${settingsResponse.status}): ${settingsError}`);
       }
 
+      // Handle admin settings response
+      if (!adminSettingsResponse.ok) {
+        const adminSettingsError = await adminSettingsResponse.text();
+        console.error('📧 ADMIN-EMAIL: Admin Settings API error:', adminSettingsError);
+        throw new Error(`Admin Settings API Error (${adminSettingsResponse.status}): ${adminSettingsError}`);
+      }
+
       const templatesData = await templatesResponse.json();
       const settingsData = await settingsResponse.json();
+      const adminSettingsData = await adminSettingsResponse.json();
 
       console.log('📧 ADMIN-EMAIL: Parsed data:', {
         templatesCount: templatesData.templates?.length || 0,
         settingsCount: settingsData.settings?.length || 0,
-        templatesData: templatesData.templates?.map((t: any) => ({ id: t.id, trigger_type: t.trigger_type, is_active: t.is_active })),
-        settingsData: settingsData.settings?.map((s: any) => ({ trigger_type: s.trigger_type, is_active: s.is_active }))
+        adminSettings: adminSettingsData.settings
       });
 
       setEmailTemplates(templatesData.templates || []);
       setEmailSettings(settingsData.settings || []);
+      setAdminSettings(adminSettingsData.settings || { admin_notification_email: '' });
 
       console.log('📧 ADMIN-EMAIL: Successfully loaded email data');
     } catch (err: any) {
@@ -192,6 +233,49 @@ export default function AdminEmailManagement() {
     }
   };
 
+  const saveAdminEmail = async () => {
+    try {
+      setAdminEmailSaving(true);
+      console.log('📧 ADMIN-EMAIL: Saving admin email:', adminSettings.admin_notification_email);
+
+      const response = await fetch('/api/admin/admin-settings', {
+        method: 'PUT',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          setting_key: 'admin_notification_email',
+          setting_value: adminSettings.admin_notification_email
+        })
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('📧 ADMIN-EMAIL: Save admin email error:', errorText);
+        throw new Error(`Failed to save admin email: ${errorText}`);
+      }
+
+      const result = await response.json();
+      console.log('📧 ADMIN-EMAIL: Admin email saved successfully:', result);
+
+      // Show success message briefly
+      const successMessage = document.createElement('div');
+      successMessage.className = 'fixed top-4 right-4 bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded z-50';
+      successMessage.textContent = 'Admin email saved successfully!';
+      document.body.appendChild(successMessage);
+      setTimeout(() => {
+        document.body.removeChild(successMessage);
+      }, 3000);
+
+    } catch (err: any) {
+      console.error('📧 ADMIN-EMAIL: Error saving admin email:', err);
+      setError(err.message || 'Failed to save admin email');
+    } finally {
+      setAdminEmailSaving(false);
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center p-8">
@@ -235,7 +319,7 @@ export default function AdminEmailManagement() {
         <div className="sm:flex-auto">
           <h1 className="text-xl font-semibold text-gray-900">Email Notifications</h1>
           <p className="mt-2 text-sm text-gray-700">
-            Configure email notifications for different order status changes.
+            Configure email notifications for customers and admin alerts.
           </p>
         </div>
         <div className="mt-4 sm:mt-0 sm:ml-16 sm:flex-none">
@@ -248,14 +332,107 @@ export default function AdminEmailManagement() {
         </div>
       </div>
 
+      {/* Admin Notifications Section */}
       <div className="bg-white shadow overflow-hidden sm:rounded-md">
         <div className="px-4 py-5 sm:p-6">
           <h3 className="text-lg leading-6 font-medium text-gray-900 mb-4">
-            Email Notification Settings
+            Admin Notifications
+          </h3>
+          
+          {/* Admin Email Configuration */}
+          <div className="mb-6 p-4 bg-blue-50 rounded-lg border border-blue-200">
+            <h4 className="text-sm font-medium text-blue-900 mb-2">
+              Admin Notification Email
+            </h4>
+            <p className="text-sm text-blue-700 mb-3">
+              Enter the email address where admin notifications should be sent.
+            </p>
+            <div className="flex items-center space-x-3">
+              <input
+                type="email"
+                value={adminSettings.admin_notification_email}
+                onChange={(e) => setAdminSettings(prev => ({ ...prev, admin_notification_email: e.target.value }))}
+                placeholder="admin@example.com"
+                className="flex-1 min-w-0 rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+              />
+              <button
+                onClick={saveAdminEmail}
+                disabled={adminEmailSaving}
+                className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {adminEmailSaving ? 'Saving...' : 'Save'}
+              </button>
+            </div>
+          </div>
+
+          {/* Admin Notification Types */}
+          <div className="space-y-4">
+            {adminEmailNotificationTypes.map((notificationType) => {
+              // Find template and setting for this notification type
+              const template = emailTemplates.find(t => t.trigger_type === notificationType.trigger);
+              const setting = emailSettings.find(s => s.trigger_type === notificationType.trigger);
+              
+              // Determine if this notification is active
+              const isActive = template?.is_active || setting?.is_active || false;
+              
+              return (
+                <div key={notificationType.trigger} className="flex items-center justify-between py-4 border-b border-gray-200 last:border-b-0">
+                  <div className="flex-1">
+                    <h4 className="text-sm font-medium text-gray-900">
+                      {notificationType.name}
+                    </h4>
+                    <p className="text-sm text-gray-500 mt-1">
+                      {notificationType.description}
+                    </p>
+                    {template && (
+                      <p className="text-xs text-gray-400 mt-1">
+                        Template: {template.subject}
+                      </p>
+                    )}
+                    {!adminSettings.admin_notification_email && (
+                      <p className="text-xs text-orange-600 mt-1">
+                        ⚠️ Admin email not configured
+                      </p>
+                    )}
+                  </div>
+                  
+                  <div className="flex items-center space-x-4">
+                    <div className="flex items-center">
+                      <input
+                        type="checkbox"
+                        checked={isActive}
+                        onChange={(e) => toggleNotificationActive(notificationType.trigger, e.target.checked)}
+                        disabled={!adminSettings.admin_notification_email}
+                        className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded disabled:opacity-50"
+                      />
+                      <span className="ml-2 text-sm text-gray-700">
+                        {isActive ? 'Active' : 'Inactive'}
+                      </span>
+                    </div>
+                    
+                    <button
+                      onClick={() => router.push(`/admin/emails/edit/${notificationType.trigger}`)}
+                      className="text-blue-600 hover:text-blue-800 text-sm font-medium"
+                    >
+                      {template ? 'Edit' : 'Create'} Template
+                    </button>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </div>
+
+      {/* Customer Notifications Section */}
+      <div className="bg-white shadow overflow-hidden sm:rounded-md">
+        <div className="px-4 py-5 sm:p-6">
+          <h3 className="text-lg leading-6 font-medium text-gray-900 mb-4">
+            Customer Notifications
           </h3>
           
           <div className="space-y-4">
-            {emailNotificationTypes.map((notificationType) => {
+            {customerEmailNotificationTypes.map((notificationType) => {
               // Find template and setting for this notification type
               const template = emailTemplates.find(t => t.trigger_type === notificationType.trigger);
               const setting = emailSettings.find(s => s.trigger_type === notificationType.trigger);
@@ -318,6 +495,10 @@ export default function AdminEmailManagement() {
             <div>
               <strong>Settings ({emailSettings.length}):</strong>
               <pre className="mt-1 text-xs">{JSON.stringify(emailSettings.map(s => ({ trigger_type: s.trigger_type, is_active: s.is_active, template_id: s.template_id })), null, 2)}</pre>
+            </div>
+            <div>
+              <strong>Admin Settings:</strong>
+              <pre className="mt-1 text-xs">{JSON.stringify(adminSettings, null, 2)}</pre>
             </div>
           </div>
         </details>

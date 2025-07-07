@@ -1,5 +1,6 @@
 import { NextApiRequest, NextApiResponse } from 'next';
 import { createClient } from '../../../../utils/supabase/server';
+import { sendOrderStatusChangeEmail } from '../../../../utils/email/emailService';
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   const { orderId } = req.query;
@@ -119,6 +120,18 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         hasTrackUpdates: !!track_updates && track_updates.length > 0
       });
 
+      // First, get the current order data for email notification
+      const { data: currentOrder, error: fetchError } = await supabase
+        .from('orders')
+        .select('*')
+        .eq('id', orderId)
+        .single();
+
+      if (fetchError) {
+        console.error('🔍 ADMIN-ORDER-UPDATE: Error fetching current order:', fetchError);
+        return res.status(500).json({ error: 'Failed to fetch current order' });
+      }
+
       // Update order status and notes
       const updateData: any = {
         updated_at: new Date().toISOString()
@@ -140,6 +153,25 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       if (orderUpdateError) {
         console.error('🔍 ADMIN-ORDER-UPDATE: Error updating order:', orderUpdateError);
         return res.status(500).json({ error: 'Failed to update order' });
+      }
+
+      // CRITICAL: Send email notification if status changed
+      if (status && status !== currentOrder.status) {
+        console.log(`📧 ADMIN-ORDER-UPDATE: Status changed from ${currentOrder.status} to ${status}, sending email notification...`);
+        
+        try {
+          // Pass the server-side Supabase client to the email service
+          const emailSent = await sendOrderStatusChangeEmail(currentOrder, status, supabase);
+          
+          if (emailSent) {
+            console.log(`📧 ADMIN-ORDER-UPDATE: ✅ Email notification sent successfully for order ${orderId}`);
+          } else {
+            console.log(`📧 ADMIN-ORDER-UPDATE: ❌ Email notification failed for order ${orderId}`);
+          }
+        } catch (emailError) {
+          console.error(`📧 ADMIN-ORDER-UPDATE: ❌ Error sending email notification for order ${orderId}:`, emailError);
+          // Don't fail the entire request if email fails
+        }
       }
 
       // Update track URLs if provided

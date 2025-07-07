@@ -670,8 +670,8 @@ export default function PackagesPage() {
               </div>
               
               <div className="mt-6 mb-8">
-                <h2 className="text-xl font-bold mb-2">{currentTrack.title}</h2>
-                <p className="text-lg text-white/70">{currentTrack.artist}</p>
+                <h2 className="text-2xl font-black mb-2">{currentTrack.title}</h2>
+                <p className="text-sm text-white/60">{currentTrack.artist}</p>
               </div>
             </div>
 
@@ -1195,8 +1195,8 @@ export default function PackagesPage() {
               </div>
               
                              <div className="mt-4 mb-6">
-                 <h2 className="text-2xl font-bold mb-2">{currentTrack.title}</h2>
-                 <p className="text-xl text-white/70">{currentTrack.artist}</p>
+                 <h2 className="text-3xl font-black mb-2">{currentTrack.title}</h2>
+                 <p className="text-base text-white/60">{currentTrack.artist}</p>
                </div>
 
                {/* Action buttons */}

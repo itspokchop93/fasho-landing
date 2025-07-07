@@ -675,3 +675,27 @@ input:-webkit-autofill:active {
     transform: translate3d(-15px, -25px, 10px) rotateX(18deg) rotateY(-8deg) scale(1.05);
   }
 } 
+/* Mobile tracks scrollbar styling */
+.mobile-tracks-scrollbar {
+  /* Firefox */
+  scrollbar-width: thin;
+  scrollbar-color: #10b981 transparent;
+}
+
+/* WebKit browsers (Chrome, Safari, Edge) */
+.mobile-tracks-scrollbar::-webkit-scrollbar {
+  height: 2px; /* Very thin scrollbar */
+}
+
+.mobile-tracks-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.mobile-tracks-scrollbar::-webkit-scrollbar-thumb {
+  background: linear-gradient(90deg, #10b981, #14c0ff);
+  border-radius: 1px;
+}
+
+.mobile-tracks-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(90deg, #059669, #0ea5e9);
+}

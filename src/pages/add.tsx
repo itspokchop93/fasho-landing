@@ -31,8 +31,39 @@ export default function AddSongsPage() {
   const [hasSearched, setHasSearched] = useState(false);
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [isAuthLoading, setIsAuthLoading] = useState(true);
+  const [showSearchResults, setShowSearchResults] = useState(false);
+  const [isSpotifyUrl, setIsSpotifyUrl] = useState(false);
 
   const inputRef = useRef<HTMLInputElement>(null);
+  const tracksContainerRef = useRef<HTMLDivElement>(null);
+
+  // Function to scroll to newly added track on mobile
+  const scrollToNewTrack = (trackIndex: number) => {
+    // Only scroll on mobile devices
+    if (window.innerWidth <= 768 && tracksContainerRef.current) {
+      setTimeout(() => {
+        const container = tracksContainerRef.current;
+        if (container) {
+          // Get all track cards in the container
+          const trackCards = container.querySelectorAll('[data-track-card]');
+          const targetCard = trackCards[trackIndex];
+          
+          if (targetCard) {
+            // Calculate the position to scroll to
+            const containerTop = container.offsetTop;
+            const cardTop = (targetCard as HTMLElement).offsetTop;
+            const scrollPosition = containerTop + cardTop - 100; // 100px offset from top
+            
+            // Smooth scroll to the new track card
+            window.scrollTo({
+              top: scrollPosition,
+              behavior: 'smooth'
+            });
+          }
+        }
+      }, 100); // Small delay to ensure DOM is updated
+    }
+  };
 
   // init first track from query (once router is ready)
   useEffect(() => {
@@ -40,6 +71,21 @@ export default function AddSongsPage() {
 
     // If tracks already initialized, skip
     if (tracks.length > 0) return;
+
+    // Check for track data from URL parameters (from promote button)
+    const { tracks: tracksParam } = router.query;
+    if (tracksParam && typeof tracksParam === 'string') {
+      try {
+        const trackData = JSON.parse(tracksParam);
+        if (Array.isArray(trackData) && trackData.length > 0) {
+          console.log('🎵 ADD-PAGE: Loading track from promote button:', trackData[0]);
+          setTracks(trackData);
+          return;
+        }
+      } catch (error) {
+        console.error('🎵 ADD-PAGE: Failed to parse track data from URL:', error);
+      }
+    }
 
     // Check if we're coming back from checkout with remaining tracks
     if (typeof window !== "undefined") {
@@ -86,7 +132,12 @@ export default function AddSongsPage() {
         } catch {}
       }
     }
-  }, [router.isReady, title, artist, imageUrl, id, url]);
+  }, [router.isReady, title, artist, imageUrl, id, url, router.query.tracks]);
+
+  // Check if input is a Spotify URL
+  const isSpotifyUrlCheck = (url: string): boolean => {
+    return url.toLowerCase().includes('spotify.com/track/');
+  };
 
   // Validate Spotify URL format
   const validateSpotifyUrl = (url: string): string | null => {
@@ -110,81 +161,159 @@ export default function AddSongsPage() {
     return null; // Valid
   };
 
+  // Search Spotify tracks
+  const searchSpotifyTracks = async (query: string) => {
+    if (!query.trim() || query.trim().length < 2) {
+      setSearchResults([]);
+      setShowSearchResults(false);
+      return;
+    }
+
+    setIsSearching(true);
+    setError(null);
+
+    try {
+      const response = await fetch('/api/spotify/search', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ query: query.trim(), limit: 8 }),
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        setSearchResults(data.tracks);
+        setShowSearchResults(true);
+        setHasSearched(true);
+      } else {
+        setError(data.error || 'Failed to search tracks');
+        setSearchResults([]);
+        setShowSearchResults(false);
+      }
+    } catch (err) {
+      setError('Failed to search tracks. Please try again.');
+      setSearchResults([]);
+      setShowSearchResults(false);
+    } finally {
+      setIsSearching(false);
+    }
+  };
+
+  // Handle track selection from search results
+  const selectTrackFromSearch = (track: Track) => {
+    // Log artist profile URL for testing
+    console.log(`🎵 TRACK-SELECTED: "${track.title}" by ${track.artist}`);
+    console.log(`🎵 TRACK-URL: ${track.url}`);
+    console.log(`🎵 ARTIST-PROFILE-URL: ${track.artistProfileUrl || 'Not available'}`);
+    
+    // Show success message with artist profile URL for testing
+    if (track.artistProfileUrl) {
+      console.log(`✅ ARTIST-PROFILE-CAPTURED: Successfully captured artist profile URL for ${track.artist}`);
+      // You can uncomment the line below to show an alert for testing
+      // alert(`✅ Artist profile captured! ${track.artist}: ${track.artistProfileUrl}`);
+    } else {
+      console.warn(`⚠️ ARTIST-PROFILE-MISSING: No artist profile URL found for ${track.artist}`);
+    }
+    
+    const newTracks = [...tracks, track];
+    setTracks(newTracks);
+    setInput("");
+    setSearchResults([]);
+    setShowSearchResults(false);
+    setPreviewTrack(null);
+    setHasSearched(false);
+    scrollToNewTrack(newTracks.length - 1);
+  };
+
   // debounce search when input changes
   useEffect(() => {
     if (debounceRef.current) clearTimeout(debounceRef.current);
     if (searchTimeout) clearTimeout(searchTimeout);
 
-    // Clear all previous states when input changes (this enables auto-restart)
+    // Clear all previous states when input changes
     setError(null);
     setValidationError(null);
     setPreviewTrack(null);
 
     if (!input) {
       setLoading(false);
+      setSearchResults([]);
+      setShowSearchResults(false);
+      setIsSpotifyUrl(false);
       return;
     }
 
-    // First validate the URL format
-    const validationErr = validateSpotifyUrl(input);
-    if (validationErr) {
-      setValidationError(validationErr);
-      setLoading(false);
-      return;
-    }
+    // Check if input is a Spotify URL
+    const isUrl = isSpotifyUrlCheck(input);
+    setIsSpotifyUrl(isUrl);
 
-    debounceRef.current = setTimeout(async () => {
-      setLoading(true);
-      setError(null);
-      let isRequestActive = true;
+    if (isUrl) {
+      // Handle Spotify URL input (existing logic)
+      const validationErr = validateSpotifyUrl(input);
+      if (validationErr) {
+        setValidationError(validationErr);
+        setLoading(false);
+        setShowSearchResults(false);
+        return;
+      }
 
-      // Set a timeout for search results
-      const timeout = setTimeout(() => {
-        if (isRequestActive && loading) {
-          setError("We can't find your song! Make sure you entered the Spotify track link correctly.");
-          setLoading(false);
-          isRequestActive = false;
-        }
-      }, 8000); // 8 second timeout
+      debounceRef.current = setTimeout(async () => {
+        setLoading(true);
+        setError(null);
+        let isRequestActive = true;
 
-      setSearchTimeout(timeout);
+        const timeout = setTimeout(() => {
+          if (isRequestActive && loading) {
+            setError("We can't find your song! Make sure you entered the Spotify track link correctly.");
+            setLoading(false);
+            isRequestActive = false;
+          }
+        }, 8000);
 
-      try {
-        const res = await fetch("/api/track", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({ url: input }),
-        });
-        const data = await res.json();
-        
-        // Clear the timeout since we got a response
-        clearTimeout(timeout);
-        
-        if (!isRequestActive) return; // Request was cancelled by timeout
-        
-        if (!data.success) {
-          // Transform API errors into user-friendly messages
+        setSearchTimeout(timeout);
+
+        try {
+          const res = await fetch("/api/track", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({ url: input }),
+          });
+          const data = await res.json();
+          
+          clearTimeout(timeout);
+          
+          if (!isRequestActive) return;
+          
+          if (!data.success) {
+            setError("Sorry! We can't find this song on Spotify. Make sure you entered the link correctly and try again.");
+            setPreviewTrack(null);
+          } else {
+            setPreviewTrack(data.track as Track);
+          }
+        } catch (err: any) {
+          clearTimeout(timeout);
+          
+          if (!isRequestActive) return;
+          
           setError("Sorry! We can't find this song on Spotify. Make sure you entered the link correctly and try again.");
           setPreviewTrack(null);
-        } else {
-          setPreviewTrack(data.track as Track);
+        } finally {
+          if (isRequestActive) {
+            setLoading(false);
+          }
         }
-      } catch (err: any) {
-        clearTimeout(timeout);
-        
-        if (!isRequestActive) return; // Request was cancelled by timeout
-        
-        // Transform any API/network errors into user-friendly messages
-        setError("Sorry! We can't find this song on Spotify. Make sure you entered the link correctly and try again.");
-        setPreviewTrack(null);
-      } finally {
-        if (isRequestActive) {
-          setLoading(false);
-        }
-      }
-    }, 500);
+      }, 500);
+    } else {
+      // Handle search input (new logic)
+      setShowSearchResults(false);
+      debounceRef.current = setTimeout(() => {
+        searchSpotifyTracks(input);
+      }, 300);
+    }
 
     return () => {
       if (debounceRef.current) clearTimeout(debounceRef.current);
@@ -199,26 +328,10 @@ export default function AddSongsPage() {
     setTracks(newTracks);
     setPreviewTrack(null);
     setInput("");
-
-    // Check if we were replacing a song and should return to packages
-    if (typeof window !== "undefined") {
-      const wasReplacing = sessionStorage.getItem("replacingSongIndex");
-      if (wasReplacing) {
-        sessionStorage.removeItem("replacingSongIndex");
-        // Go back to packages page with updated tracks
-        setTimeout(() => {
-          router.push({
-            pathname: "/packages",
-            query: {
-              tracks: JSON.stringify(newTracks),
-            },
-          });
-        }, 100);
-      }
-    }
+    setHasSearched(false);
+    scrollToNewTrack(newTracks.length - 1);
   };
 
-  // Remove a track from the lineup
   const removeTrack = (indexToRemove: number) => {
     const newTracks = tracks.filter((_, index) => index !== indexToRemove);
     setTracks(newTracks);
@@ -230,59 +343,10 @@ export default function AddSongsPage() {
   };
 
   const promote = async () => {
-    // Don't proceed if auth is still loading
-    if (isAuthLoading) {
-      console.log('🔐 ADD: Auth still loading, waiting...');
-      alert("Please wait while we verify your account...");
-      return;
-    }
-
-    console.log('🔐 ADD: promote called - currentUser:', currentUser);
-    console.log('🔐 ADD: currentUser?.id:', currentUser?.id);
-    console.log('🔐 ADD: isAuthLoading:', isAuthLoading);
-
-    // Check if we're coming back from checkout with remaining cart data
-    if (typeof window !== "undefined") {
-      const checkoutCart = localStorage.getItem("checkoutCart");
-      if (checkoutCart) {
-        try {
-          const cartData = JSON.parse(checkoutCart);
-          const selectedPackages = JSON.parse(cartData.selectedPackages);
-          
-          // Clear the checkout cart since we're moving forward
-          localStorage.removeItem("checkoutCart");
-          
-          // Create new session and go to checkout with user ID if logged in
-          const response = await fetch('/api/create-checkout-session', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-              tracks,
-              selectedPackages,
-              userId: currentUser?.id || null // Include user ID if logged in
-            }),
-          });
-
-          if (response.ok) {
-            const { sessionId } = await response.json();
-            console.log('🔐 ADD: Created checkout session with user:', currentUser?.email || 'anonymous');
-            router.push({
-              pathname: "/checkout",
-              query: { sessionId }
-            });
-            return;
-          } else {
-            console.error('Failed to create checkout session');
-            // Fall back to normal packages flow
-          }
-        } catch (error) {
-          console.error('Failed to create checkout session:', error);
-          // Fall back to normal packages flow
-        }
-      }
-    }
+    if (tracks.length === 0) return;
+    
+    // Save tracks to session storage for potential return
+    sessionStorage.setItem("selectedTracks", JSON.stringify(tracks));
 
     // Normal flow - go to packages page
     router.push({
@@ -326,14 +390,16 @@ export default function AddSongsPage() {
         </h1>
 
         {/* cards */}
-        <div className="flex gap-6 mb-10 flex-wrap justify-center items-center">
+        <div className="flex gap-6 mb-10 flex-wrap justify-center items-center" ref={tracksContainerRef}>
           {tracks.map((t, idx) => (
             <React.Fragment key={idx}>
-              <SelectedTrackCard 
-                track={t} 
-                showDiscount={idx > 0} 
-                onRemove={() => removeTrack(idx)}
-              />
+              <div data-track-card>
+                <SelectedTrackCard 
+                  track={t} 
+                  showDiscount={idx > 0} 
+                  onRemove={() => removeTrack(idx)}
+                />
+              </div>
               <span className="text-5xl text-white/50 mx-4 flex items-center w-full sm:w-auto justify-center basis-full sm:basis-auto">+</span>
             </React.Fragment>
           ))}
@@ -344,23 +410,56 @@ export default function AddSongsPage() {
         {/* search input */}
         <div className="w-full max-w-xl relative mb-8">
           <label className="block text-white/80 text-sm font-medium mb-2">
-            Enter a Spotify track link:
+            Search for a song or paste a Spotify track link:
           </label>
           <input
             ref={inputRef}
-            type="url"
-            placeholder="https://open.spotify.com/track/0FIDCN..."
+            type="text"
+            placeholder="Search: 'Bad Bunny Titi Me Pregunto' or paste: https://open.spotify.com/track/..."
             value={input}
             onFocus={() => setFocused(true)}
-            onBlur={() => setFocused(false)}
+            onBlur={() => {
+              // Delay hiding search results to allow for clicks
+              setTimeout(() => setFocused(false), 200);
+            }}
             onChange={(e) => setInput(e.target.value)}
             className="w-full rounded-md px-4 py-3 text-gray-900 focus:outline-none"
           />
-          {(focused || previewTrack || loading || validationError || error) && (
-            <div className="absolute left-0 right-0 mt-2 z-50 w-full border border-white/20 rounded-lg bg-gray-900">
-              {previewTrack ? (
+          {(focused || previewTrack || loading || validationError || error || showSearchResults) && (
+            <div className="absolute left-0 right-0 mt-2 z-50 w-full border border-white/20 rounded-lg bg-gray-900 max-h-96 overflow-y-auto">
+              {/* Show preview track for Spotify URLs */}
+              {previewTrack && isSpotifyUrl ? (
                 <TrackCard track={previewTrack} onConfirm={confirmPreview} dark />
-              ) : validationError ? (
+              ) : 
+              /* Show search results for search queries */
+              showSearchResults && searchResults.length > 0 ? (
+                <div className="p-2">
+                  <div className="text-white/60 text-sm font-medium mb-2 px-2">
+                    Search Results:
+                  </div>
+                  {searchResults.map((track, index) => (
+                    <div key={track.id} className="flex items-center p-3 hover:bg-gray-800/50 rounded-lg transition-colors">
+                      <img 
+                        src={track.imageUrl} 
+                        alt={track.title}
+                        className="w-12 h-12 rounded-md object-cover mr-3"
+                      />
+                      <div className="flex-1 min-w-0">
+                        <div className="text-white font-medium text-sm truncate">{track.title}</div>
+                        <div className="text-gray-400 text-xs truncate">{track.artist}</div>
+                      </div>
+                      <button
+                        onClick={() => selectTrackFromSearch(track)}
+                        className="ml-3 bg-gradient-to-r from-green-500 to-green-600 text-white px-4 py-2 rounded-md text-sm font-semibold hover:from-green-600 hover:to-green-700 transition-all duration-200 flex-shrink-0"
+                      >
+                        ADD
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              ) : 
+              /* Show validation/error messages */
+              validationError ? (
                 <div className="p-4 bg-red-900/50 border border-red-500/50 rounded-lg">
                   <p className="text-red-200 font-medium">{validationError}</p>
                 </div>
@@ -368,14 +467,28 @@ export default function AddSongsPage() {
                 <div className="p-4 bg-red-900/50 border border-red-500/50 rounded-lg">
                   <p className="text-red-200 font-medium">{error}</p>
                 </div>
-              ) : (
+              ) : 
+              /* Show loading state */
+              (loading || isSearching) ? (
                 <div className="flex items-center justify-center py-6 gap-3">
                   <svg className="animate-spin h-6 w-6 text-white/70" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                     <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                     <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path>
                   </svg>
                   <span className="text-white/70 font-semibold">
-                    {loading ? "Searching..." : "Waiting For Song Link..."}
+                    {isSearching ? "Searching..." : "Loading..."}
+                  </span>
+                </div>
+              ) : 
+              /* Show empty state when no results */
+              hasSearched && searchResults.length === 0 && !isSpotifyUrl ? (
+                <div className="p-4 text-center">
+                  <p className="text-white/60 text-sm">No songs found. Try a different search term.</p>
+                </div>
+              ) : (
+                <div className="flex items-center justify-center py-6 gap-3">
+                  <span className="text-white/70 font-semibold">
+                    {isSpotifyUrl ? "Paste a Spotify link or search for a song..." : "Type to search for songs..."}
                   </span>
                 </div>
               )}

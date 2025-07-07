@@ -1219,7 +1219,7 @@ export default function CheckoutPage() {
         discount,
         total,
         customerEmail: currentUser ? currentUser.email : formData.email,
-        customerName: currentUser ? (currentUser.user_metadata?.full_name || currentUser.email) : `${billingData.firstName} ${billingData.lastName}`,
+        customerName: `${billingData.firstName} ${billingData.lastName}`,
         billingInfo: billingData,
         createdAt: new Date().toISOString(),
         paymentToken: data.token

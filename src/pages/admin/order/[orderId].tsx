@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
 import { GetServerSideProps } from 'next';
-import { createClientSSR } from '../../../utils/supabase/server';
+import { verifyAdminToken, getAdminTokenFromRequest } from '../../../utils/admin/auth';
+import AdminAccessDenied from '../../../components/AdminAccessDenied';
 
 interface OrderItem {
   id: string;
@@ -56,7 +57,11 @@ interface Order {
 }
 
 interface OrderDetailPageProps {
-  user: any;
+  adminSession: {
+    email: string;
+    role: 'admin' | 'sub_admin';
+  } | null;
+  accessDenied?: boolean;
 }
 
 const ORDER_STATUSES = [
@@ -67,9 +72,14 @@ const ORDER_STATUSES = [
   { value: 'cancelled', label: 'Cancelled', color: 'bg-red-500', textColor: 'text-red-800', bgColor: 'bg-red-100' }
 ];
 
-export default function OrderDetailPage({ user }: OrderDetailPageProps) {
+export default function OrderDetailPage({ adminSession, accessDenied }: OrderDetailPageProps) {
   const router = useRouter();
   const { orderId } = router.query;
+  
+  // Admin access control
+  if (accessDenied || !adminSession) {
+    return <AdminAccessDenied />;
+  }
   
   const [order, setOrder] = useState<Order | null>(null);
   const [loading, setLoading] = useState(true);
@@ -793,32 +803,52 @@ export default function OrderDetailPage({ user }: OrderDetailPageProps) {
 }
 
 export const getServerSideProps: GetServerSideProps = async (context) => {
-  const supabase = createClientSSR(context);
-
   try {
-    const { data: { user }, error } = await supabase.auth.getUser();
-
-    if (error || !user) {
+    console.log('🔐 ORDER-DETAIL: Checking admin authentication...')
+    
+    // Get admin session token from request
+    const token = getAdminTokenFromRequest(context.req as any)
+    
+    if (!token) {
+      console.log('🔐 ORDER-DETAIL: No admin session token found')
       return {
-        redirect: {
-          destination: '/signup',
-          permanent: false,
+        props: {
+          adminSession: null,
+          accessDenied: true,
         },
-      };
+      }
     }
-
+    
+    // Verify the admin token
+    const adminSession = await verifyAdminToken(token)
+    
+    if (!adminSession) {
+      console.log('🔐 ORDER-DETAIL: Invalid admin session token')
+      return {
+        props: {
+          adminSession: null,
+          accessDenied: true,
+        },
+      }
+    }
+    
+    console.log('🔐 ORDER-DETAIL: Admin authentication successful:', adminSession.email)
+    
     return {
       props: {
-        user,
+        adminSession: {
+          email: adminSession.email,
+          role: adminSession.role,
+        },
       },
-    };
+    }
   } catch (error) {
-    console.error('Auth error:', error);
+    console.error('🔐 ORDER-DETAIL: Admin auth error:', error)
     return {
-      redirect: {
-        destination: '/signup',
-        permanent: false,
+      props: {
+        adminSession: null,
+        accessDenied: true,
       },
-    };
+    }
   }
 }; 

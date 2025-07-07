@@ -2,7 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
 import Head from 'next/head';
 import { GetServerSideProps } from 'next';
-import { createClientSSR } from '../../../../utils/supabase/server';
+import { verifyAdminToken, getAdminTokenFromRequest } from '../../../../utils/admin/auth';
+import AdminAccessDenied from '../../../../components/AdminAccessDenied';
 
 interface EmailTemplate {
   id: string;
@@ -16,18 +17,21 @@ interface EmailTemplate {
 }
 
 interface EmailEditorProps {
-  user: {
-    id: string;
+  adminSession: {
     email: string;
-    user_metadata?: {
-      full_name?: string;
-    };
-  };
+    role: 'admin' | 'sub_admin';
+  } | null;
+  accessDenied?: boolean;
 }
 
-export default function EmailEditor({ user }: EmailEditorProps) {
+export default function EmailEditor({ adminSession, accessDenied }: EmailEditorProps) {
   const router = useRouter();
   const { trigger } = router.query;
+  
+  // Admin access control - only full admins can access email management
+  if (accessDenied || !adminSession || adminSession.role !== 'admin') {
+    return <AdminAccessDenied />;
+  }
   
   const [template, setTemplate] = useState<EmailTemplate | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -45,6 +49,10 @@ export default function EmailEditor({ user }: EmailEditorProps) {
 
   // Email notification type mapping
   const emailNotificationTypes: { [key: string]: { name: string; description: string } } = {
+    'new_order': {
+      name: 'New Order',
+      description: 'Sent when a new order is created'
+    },
     'order_status_processing': {
       name: 'Order Status: Processing',
       description: 'Sent when an order status changes to Processing'
@@ -64,6 +72,14 @@ export default function EmailEditor({ user }: EmailEditorProps) {
     'order_status_cancelled': {
       name: 'Order Status: Cancelled',
       description: 'Sent when an order status changes to Cancelled'
+    },
+    'order_cancellation': {
+      name: 'Order Cancellation',
+      description: 'Sent when an order is cancelled by customer or admin'
+    },
+    'admin_new_order': {
+      name: 'Admin: New Order',
+      description: 'Notify admin when a new order is created'
     }
   };
 
@@ -113,6 +129,36 @@ export default function EmailEditor({ user }: EmailEditorProps) {
 
   const getDefaultEmailTemplate = (triggerType: string): string => {
     const templates: { [key: string]: string } = {
+      'new_order': `
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Order Confirmation - Thank You!</title>
+</head>
+<body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
+    <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
+        <h2 style="color: #10B981;">Thank You for Your Order!</h2>
+        <p>Hi {{customer_name}},</p>
+        <p>Thank you for choosing FASHO! We've received your order <strong>{{order_number}}</strong> and we're excited to help promote your music.</p>
+        <p>Your order is now being processed and you'll receive updates as it progresses through our system.</p>
+        <p>Order Details:</p>
+        <ul>
+            <li>Order Number: {{order_number}}</li>
+            <li>Total: {{order_total}}</li>
+            <li>Order Date: {{order_date}}</li>
+        </ul>
+        <p>What happens next:</p>
+        <ol>
+            <li>We'll review your order details</li>
+            <li>Your marketing campaign will be set up</li>
+            <li>You'll receive an update when your campaign goes live</li>
+        </ol>
+        <p>If you have any questions, feel free to contact our support team.</p>
+        <p>Best regards,<br>The FASHO Team</p>
+    </div>
+</body>
+</html>`,
       'order_status_processing': `
 <!DOCTYPE html>
 <html>
@@ -230,6 +276,66 @@ export default function EmailEditor({ user }: EmailEditorProps) {
         </ul>
         <p>Thank you for your understanding.</p>
         <p>Best regards,<br>The Fasho Team</p>
+    </div>
+</body>
+</html>`,
+      'order_cancellation': `
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Order Cancellation Confirmation</title>
+</head>
+<body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
+    <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
+        <h2 style="color: #F59E0B;">Order Cancellation Confirmed</h2>
+        <p>Hi {{customer_name}},</p>
+        <p>We've processed your cancellation request for order <strong>{{order_number}}</strong>.</p>
+        <p>Your order has been successfully cancelled and any applicable refunds will be processed according to our refund policy.</p>
+        <p>Cancellation Details:</p>
+        <ul>
+            <li>Order Number: {{order_number}}</li>
+            <li>Original Total: {{order_total}}</li>
+            <li>Cancellation Date: {{order_date}}</li>
+            <li>Refund Status: {{refund_status}}</li>
+        </ul>
+        <p>If you have any questions about this cancellation or need assistance with a new order, please don't hesitate to contact our support team.</p>
+        <p>We hope to serve you again in the future!</p>
+        <p>Best regards,<br>The FASHO Team</p>
+    </div>
+</body>
+</html>`,
+      'admin_new_order': `
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>New Order Notification</title>
+</head>
+<body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
+    <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
+        <h2 style="color: #DC2626;">🚨 New Order Alert</h2>
+        <p>A new order has been received!</p>
+        <p><strong>Order Details:</strong></p>
+        <ul>
+            <li>Order Number: {{order_number}}</li>
+            <li>Customer: {{customer_name}}</li>
+            <li>Email: {{customer_email}}</li>
+            <li>Total: {{order_total}}</li>
+            <li>Order Date: {{order_date}}</li>
+        </ul>
+        <p><strong>Order Items:</strong></p>
+        <p>{{order_items}}</p>
+        <p><strong>Next Steps:</strong></p>
+        <ol>
+            <li>Review order details in admin dashboard</li>
+            <li>Process the order and update status</li>
+            <li>Customer will receive status updates automatically</li>
+        </ol>
+        <p>
+            <a href="{{admin_order_url}}" style="background-color: #3B82F6; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; display: inline-block;">View Order in Admin</a>
+        </p>
+        <p>Best regards,<br>FASHO Admin System</p>
     </div>
 </body>
 </html>`
@@ -376,7 +482,7 @@ export default function EmailEditor({ user }: EmailEditorProps) {
               </div>
               <div className="flex items-center space-x-4">
                 <span className="text-sm text-gray-500">
-                  {user.user_metadata?.full_name || user.email}
+                  {adminSession?.email}
                 </span>
               </div>
             </div>
@@ -535,36 +641,73 @@ export default function EmailEditor({ user }: EmailEditorProps) {
 }
 
 export const getServerSideProps: GetServerSideProps = async (context) => {
-  const supabase = createClientSSR(context);
-  
   try {
-    const { data: { user }, error } = await supabase.auth.getUser();
+    console.log('🔐 EMAIL-EDITOR: Checking admin authentication...')
     
-    if (error || !user) {
+    // Get admin session token from request
+    const token = getAdminTokenFromRequest(context.req as any)
+    
+    if (!token) {
+      console.log('🔐 EMAIL-EDITOR: No admin session token found')
       return {
         redirect: {
-          destination: '/signup',
+          destination: '/a-login',
           permanent: false,
         },
-      };
+      }
     }
+
+    // Verify admin token
+    const adminUser = verifyAdminToken(token)
+    
+    if (!adminUser) {
+      console.log('🔐 EMAIL-EDITOR: Invalid admin session token')
+      return {
+        redirect: {
+          destination: '/a-login',
+          permanent: false,
+        },
+      }
+    }
+
+    if (!adminUser.is_active) {
+      console.log('🔐 EMAIL-EDITOR: Admin account is inactive:', adminUser.email)
+      return {
+        props: {
+          adminSession: null,
+          accessDenied: true
+        },
+      }
+    }
+
+    // Only full admins can access email management
+    if (adminUser.role !== 'admin') {
+      console.log('🔐 EMAIL-EDITOR: Sub-admin trying to access email management:', adminUser.email)
+      return {
+        props: {
+          adminSession: null,
+          accessDenied: true
+        },
+      }
+    }
+
+    console.log('🔐 EMAIL-EDITOR: Admin authenticated successfully:', adminUser.email, 'role:', adminUser.role)
 
     return {
       props: {
-        user: {
-          id: user.id,
-          email: user.email,
-          user_metadata: user.user_metadata,
+        adminSession: {
+          email: adminUser.email,
+          role: adminUser.role,
         },
       },
-    };
+    }
   } catch (error) {
-    console.error('Error in getServerSideProps:', error);
+    console.error('🔐 EMAIL-EDITOR: Authentication error:', error)
     return {
       redirect: {
-        destination: '/signup',
+        destination: '/a-login',
         permanent: false,
       },
-    };
+    }
   }
 }; 
