@@ -7,6 +7,7 @@ import TrackCard from "../components/TrackCard";
 import { Track } from "../types/track";
 import { createClient } from '../utils/supabase/client';
 import HeroParticles from '../components/HeroParticles';
+import Player from 'lottie-react';
 
 export default function Home() {
   const [showSuccessBanner, setShowSuccessBanner] = useState(false);
@@ -27,6 +28,8 @@ export default function Home() {
   const router = useRouter();
   const [dropdownPosition, setDropdownPosition] = useState({ top: 0, left: 0, width: 0 });
   const [isMounted, setIsMounted] = useState(false);
+  const [lottieData, setLottieData] = useState<any>(null);
+  const [musicNotesLottie, setMusicNotesLottie] = useState<any>(null);
 
   // Check for success query parameter on component mount
   useEffect(() => {
@@ -289,6 +292,17 @@ export default function Home() {
     }
   }, [focused, showSearchResults]);
 
+  useEffect(() => {
+    fetch('https://lottie.host/4e0a756c-18e1-43d6-8e24-a8d87d055629/jkbtAckwsK.json')
+      .then(res => res.json())
+      .then(setLottieData)
+      .catch(() => setLottieData(null));
+    fetch('https://lottie.host/c10f7e98-ed41-4450-bd5d-e57601e608cd/1PggLaUa9m.json')
+      .then(res => res.json())
+      .then(setMusicNotesLottie)
+      .catch(() => setMusicNotesLottie(null));
+  }, []);
+
   return (
     <>
       <Head>
@@ -372,9 +386,8 @@ export default function Home() {
                 </h1>
 
                 {/* Subtitle */}
-                <p className="text-xl md:text-2xl text-gray-300 mb-16 max-w-3xl mx-auto leading-relaxed">
-                  Professional music marketing that gets your tracks heard by the right audience. 
-                  Scale your reach with our proven promotion strategies.
+                <p className="text-xl md:text-2xl text-gray-300 mb-16 max-w-3xl mx-auto leading-relaxed" style={{ paddingBottom: '45px' }}>
+                  Stop watching other artists blow up while your tracks collect dust. It's time to get the plays, fans, and recognition you deserve.
                 </p>
 
                 {/* Menu Anchor for Track Input */}
@@ -382,12 +395,50 @@ export default function Home() {
 
                 {/* Track Input Section - Enhanced Design with increased bottom padding and 10px top padding */}
                 <div className="mt-16 mb-12 relative pb-10 pt-2.5">
-                  {/* Background glow effect - moved outside campaign container for natural fade */}
+                  {/* Lottie Animation Behind Input Field */}
+                  <div className="absolute left-1/2 -top-12 -translate-x-1/2 z-0 w-full flex justify-center pointer-events-none" style={{height: '70px'}}>
+                    <div className="w-[90%] max-w-4xl">
+                      {lottieData && (
+                        <Player
+                          autoplay
+                          loop
+                          animationData={lottieData}
+                          style={{ width: '100%', height: '70px', marginTop: 0 }}
+                          rendererSettings={{ preserveAspectRatio: 'xMidYMin slice' }}
+                        />
+                      )}
+                    </div>
+                  </div>
+                  {/* Background glow effect - original subtle value restored */}
                   <div className="pointer-events-none absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[85%] h-[114%] z-0" style={{ top: '50%', filter: 'blur(24px)' }}>
-                    <div className="w-full h-full bg-gradient-to-r from-[#59e3a5]/20 via-[#14c0ff]/20 to-[#8b5cf6]/20 rounded-full opacity-10 animate-pulse"></div>
+                    <div className="w-full h-full bg-gradient-to-r from-[#59e3a5]/20 via-[#14c0ff]/20 to-[#8b5cf6]/20 rounded-full opacity-5"></div>
+                  </div>
+                  {/* Lottie Music Notes Animation - Top Right Corner */}
+                  <div className="absolute top-0 right-0 z-0 pointer-events-none" style={{ width: '149px', height: '149px', transform: 'translate(30%, -50%)' }}>
+                    {musicNotesLottie && (
+                      <Player
+                        autoplay
+                        loop
+                        animationData={musicNotesLottie}
+                        style={{ width: '100%', height: '100%' }}
+                        rendererSettings={{ preserveAspectRatio: 'xMidYMid slice' }}
+                      />
+                    )}
+                  </div>
+                  {/* Lottie Music Notes Animation - Top Left Corner (Flipped) */}
+                  <div className="absolute top-0 left-0 z-0 pointer-events-none" style={{ width: '149px', height: '149px', transform: 'translate(-30%, -50%) scaleX(-1)' }}>
+                    {musicNotesLottie && (
+                      <Player
+                        autoplay
+                        loop
+                        animationData={musicNotesLottie}
+                        style={{ width: '100%', height: '100%' }}
+                        rendererSettings={{ preserveAspectRatio: 'xMidYMid slice' }}
+                      />
+                    )}
                   </div>
                   {/* Main container with enhanced styling */}
-                  <div className="relative z-10 bg-gradient-to-br from-white/10 to-white/5 backdrop-blur-xl rounded-3xl p-8 border border-white/20 shadow-2xl">
+                  <div className="relative z-20 bg-gradient-to-br from-white/10 to-white/5 backdrop-blur-xl rounded-3xl p-8 border border-white/20 shadow-[0_12px_40px_0_rgba(20,192,255,0.45)]">
                     {/* Static border gradient */}
                     <div className="absolute inset-0 rounded-3xl bg-gradient-to-r from-[#59e3a5] via-[#14c0ff] to-[#8b5cf6] p-[2px]">
                       <div className="h-full w-full rounded-3xl bg-black/80 backdrop-blur-xl"></div>
@@ -401,7 +452,7 @@ export default function Home() {
                           🚀 Start Your Campaign
                         </h2>
                         <p className="text-lg text-gray-300 mb-8">
-                          Search for your Spotify song or Enter your track link
+                          Search For Your Spotify Song or Enter Your Track Link
                         </p>
                       </div>
 
@@ -412,7 +463,7 @@ export default function Home() {
                             <input
                               ref={inputRef}
                               type="text"
-                              placeholder="Search: 'Bad Bunny Titi Me Pregunto' or paste: https://open.spotify.com/track/..."
+                              placeholder="Enter Your Song Name or Track Link"
                               value={url}
                               onFocus={handleInputFocus}
                               onChange={(e) => setUrl(e.target.value)}
@@ -467,6 +518,106 @@ export default function Home() {
               </div>
             </div>
           </section>
+
+          {/* PAS Framework Section */}
+          <div className="max-w-6xl mx-auto px-6 py-20" style={{ lineHeight: '1.8' }}>
+            {/* Problem Section */}
+            <div className="text-center mb-20 animate-fade-in-up">
+              <h2 className="text-4xl md:text-5xl lg:text-6xl font-bold mb-2 pb-2 bg-gradient-to-b from-white via-white to-gray-600 bg-clip-text text-transparent drop-shadow-lg" style={{ lineHeight: '1.3' }}>
+                Your Music Is Fire,
+              </h2>
+              <h2 className="text-4xl md:text-5xl lg:text-6xl font-bold mb-8 pb-2 bg-gradient-to-b from-white via-white to-gray-600 bg-clip-text text-transparent drop-shadow-lg" style={{ lineHeight: '1.3' }}>
+                But <span className="bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] bg-clip-text text-transparent">Nobody's</span> Hearing It….
+              </h2>
+              <p className="text-xl md:text-2xl text-gray-300 mb-8 pb-2 max-w-4xl mx-auto font-medium animate-fade-in-up animation-delay-200" style={{ lineHeight: '1.8' }}>
+                You spent weeks perfecting that track. Mixed it 47 times. Your homies say it slaps harder than Will Smith at the Oscars. But your Spotify still says "&lt;1,000" plays.
+              </p>
+              <p className="text-2xl md:text-3xl font-bold text-white mb-6 pb-2 max-w-3xl mx-auto animate-fade-in-up animation-delay-400" style={{ lineHeight: '1.6' }}>
+                Meanwhile, some dude who recorded on his iPhone just hit 2 million streams.
+              </p>
+              <p className="text-3xl md:text-4xl font-bold mb-8 pb-2 max-w-4xl mx-auto bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] bg-clip-text text-transparent animate-fade-in-up animation-delay-600" style={{ lineHeight: '1.5' }}>
+                What gives?
+              </p>
+              <p className="text-xl md:text-2xl text-gray-300 max-w-4xl mx-auto pb-2 font-medium animate-fade-in-up animation-delay-800" style={{ lineHeight: '1.8' }}>
+                The harsh reality? Talent doesn't guarantee success on Spotify. The algorithm is basically playing favorites, and spoiler alert - you're not invited to the party.
+              </p>
+            </div>
+
+            {/* Agitation Section */}
+            <div className="text-center mb-20 animate-fade-in-up animation-delay-1000">
+              <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold mb-12 pb-2 bg-gradient-to-b from-white via-white to-gray-600 bg-clip-text text-transparent drop-shadow-lg" style={{ lineHeight: '1.3' }}>
+                It Gets Worse... <span className="bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] bg-clip-text text-transparent">Way Worse</span>
+              </h2>
+              
+              {/* Icon List */}
+              <div className="grid md:grid-cols-1 gap-8 max-w-4xl mx-auto">
+                <div className="flex items-start space-x-4 text-left animate-fade-in-up animation-delay-1200">
+                  <div className="flex-shrink-0 w-16 h-16 flex items-center justify-center mt-1">
+                    <span className="bg-gradient-to-r from-red-500 via-red-400 to-red-500 bg-clip-text text-transparent font-bold text-4xl">✗</span>
+                  </div>
+                  <p className="text-2xl text-gray-300 font-medium pb-2" style={{ lineHeight: '1.7' }}>
+                    <strong className="text-white">60,000 songs drop on Spotify DAILY</strong> (yeah, you're competing with all of them)
+                  </p>
+                </div>
+                
+                <div className="flex items-start space-x-4 text-left animate-fade-in-up animation-delay-1400">
+                  <div className="flex-shrink-0 w-16 h-16 flex items-center justify-center mt-1">
+                    <span className="bg-gradient-to-r from-red-500 via-red-400 to-red-500 bg-clip-text text-transparent font-bold text-4xl">✗</span>
+                  </div>
+                  <p className="text-2xl text-gray-300 font-medium pb-2" style={{ lineHeight: '1.7' }}>
+                    Without playlist placements, your music is basically <strong className="text-white">invisible</strong>
+                  </p>
+                </div>
+                
+                <div className="flex items-start space-x-4 text-left animate-fade-in-up animation-delay-1600">
+                  <div className="flex-shrink-0 w-16 h-16 flex items-center justify-center mt-1">
+                    <span className="bg-gradient-to-r from-red-500 via-red-400 to-red-500 bg-clip-text text-transparent font-bold text-4xl">✗</span>
+                  </div>
+                  <p className="text-2xl text-gray-300 font-medium pb-2" style={{ lineHeight: '1.7' }}>
+                    You're posting <strong className="text-white">"LINK IN BIO"</strong> everyday but nobody's clicking
+                  </p>
+                </div>
+                
+                <div className="flex items-start space-x-4 text-left animate-fade-in-up animation-delay-1800">
+                  <div className="flex-shrink-0 w-16 h-16 flex items-center justify-center mt-1">
+                    <span className="bg-gradient-to-r from-red-500 via-red-400 to-red-500 bg-clip-text text-transparent font-bold text-4xl">✗</span>
+                  </div>
+                  <p className="text-2xl text-gray-300 font-medium pb-2" style={{ lineHeight: '1.7' }}>
+                    The "organic growth" everyone talks about? That's code for <strong className="text-white">"wait 10 years and pray"</strong>
+                  </p>
+                </div>
+                
+                <div className="flex items-start space-x-4 text-left animate-fade-in-up animation-delay-2000">
+                  <div className="flex-shrink-0 w-16 h-16 flex items-center justify-center mt-1">
+                    <span className="bg-gradient-to-r from-red-500 via-red-400 to-red-500 bg-clip-text text-transparent font-bold text-4xl">✗</span>
+                  </div>
+                  <p className="text-2xl text-gray-300 font-medium pb-2" style={{ lineHeight: '1.7' }}>
+                    Other artists with half your talent are going viral because they <strong className="text-white">cracked the playlist code</strong>
+                  </p>
+                </div>
+              </div>
+              
+              <p className="text-2xl md:text-3xl font-bold text-white mt-12 pb-2 max-w-4xl mx-auto animate-fade-in-up animation-delay-2200" style={{ lineHeight: '1.6' }}>
+                But you? You're still out here hoping the algorithm fairy will bless you someday.
+              </p>
+            </div>
+
+            {/* Solution Tease Section */}
+            <div className="text-center animate-fade-in-up animation-delay-2400">
+              <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold mb-8 pb-2 bg-gradient-to-b from-white via-white to-gray-600 bg-clip-text text-transparent drop-shadow-lg" style={{ lineHeight: '1.3' }}>
+                And The Cherry On Top? 🍒
+              </h2>
+              <p className="text-xl md:text-2xl text-gray-300 mb-8 pb-2 max-w-4xl mx-auto font-medium animate-fade-in-up animation-delay-2600" style={{ lineHeight: '1.8' }}>
+                Those sketchy "Spotify promo" companies sliding in your DMs? They're selling you 50k bot plays from Kazakhstan. Congrats, you just paid $200 to potentially get your account banned.
+              </p>
+              <p className="text-xl md:text-2xl text-gray-300 mb-8 pb-2 max-w-4xl mx-auto font-medium animate-fade-in-up animation-delay-2800" style={{ lineHeight: '1.8' }}>
+                The few legit companies out there? They'll take your money and throw your song on their cousin's 500-follower "Underground Bangers 2024" playlist.
+              </p>
+              <p className="text-2xl md:text-3xl font-bold text-white pb-2 max-w-4xl mx-auto animate-fade-in-up animation-delay-3000" style={{ lineHeight: '1.6' }}>
+                No cap - finding real Spotify marketing is harder than finding a PS5 to buy during COVID.
+              </p>
+            </div>
+          </div>
 
           {/* Promotion Section - ENFORCED LOW Z-INDEX */}
           <section className="pt-8 pb-20 px-4 relative z-0">
