@@ -72,13 +72,32 @@ export default function AddSongsPage() {
     // If tracks already initialized, skip
     if (tracks.length > 0) return;
 
-    // Check for track data from URL parameters (from promote button)
-    const { tracks: tracksParam } = router.query;
+    // 1. NEW: Check for selectedTrack param from homepage
+    const { selectedTrack, tracks: tracksParam } = router.query;
+    if (selectedTrack && typeof selectedTrack === 'string') {
+      try {
+        const track = JSON.parse(decodeURIComponent(selectedTrack));
+        if (track && track.id) {
+          // Clear all previous session/localStorage
+          if (typeof window !== 'undefined') {
+            sessionStorage.removeItem('selectedTracks');
+            sessionStorage.removeItem('remainingTracks');
+            sessionStorage.removeItem('replacingSongIndex');
+            localStorage.removeItem('checkoutCart');
+          }
+          setTracks([track]);
+          return;
+        }
+      } catch (error) {
+        console.error('🎵 ADD-PAGE: Failed to parse selectedTrack from URL:', error);
+      }
+    }
+
+    // 2. Check for track data from URL parameters (from promote button)
     if (tracksParam && typeof tracksParam === 'string') {
       try {
         const trackData = JSON.parse(tracksParam);
         if (Array.isArray(trackData) && trackData.length > 0) {
-          console.log('🎵 ADD-PAGE: Loading track from promote button:', trackData[0]);
           setTracks(trackData);
           return;
         }

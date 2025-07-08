@@ -16,6 +16,60 @@ body {
   .animate-spin-slow {
     animation: spin-slow 4s linear infinite;
   }
+  
+  .bg-gradient-radial {
+    background: radial-gradient(circle, var(--tw-gradient-stops));
+  }
+  
+  .animation-delay-200 {
+    animation-delay: 200ms;
+  }
+  
+  .animation-delay-400 {
+    animation-delay: 400ms;
+  }
+  
+  .animation-delay-600 {
+    animation-delay: 600ms;
+  }
+  
+  /* Floating animation for particles */
+  @keyframes float {
+    0%, 100% { transform: translateY(0px); }
+    50% { transform: translateY(-10px); }
+  }
+  
+  .animate-float {
+    animation: float 3s ease-in-out infinite;
+  }
+  
+  /* Subtle pulse animation for buttons */
+  @keyframes subtle-pulse {
+    0%, 100% { 
+      opacity: 1;
+      transform: scale(1);
+    }
+    50% { 
+      opacity: 0.9;
+      transform: scale(1.02);
+    }
+  }
+  
+  .animate-pulse {
+    animation: subtle-pulse 2s ease-in-out infinite;
+  }
+  
+  /* Shimmer effect */
+  @keyframes shimmer {
+    0% { background-position: -200% 0; }
+    100% { background-position: 200% 0; }
+  }
+  
+  .animate-shimmer {
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+    background-size: 200% 100%;
+    animation: shimmer 2s infinite;
+  }
 }
 
 /* 3D Album Warp Effect */
@@ -530,8 +584,6 @@ input:-webkit-autofill:active {
   z-index: 0;
 }
 
-
-
 @keyframes gradientShift {
   0% {
     background-position: 0% 50%;
@@ -698,4 +750,23 @@ input:-webkit-autofill:active {
 
 .mobile-tracks-scrollbar::-webkit-scrollbar-thumb:hover {
   background: linear-gradient(90deg, #059669, #0ea5e9);
+}
+
+@keyframes popdown {
+  0% {
+    opacity: 0;
+    transform: translateY(-24px) scale(0.98);
+  }
+  60% {
+    opacity: 1;
+    transform: translateY(8px) scale(1.03);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.animate-popdown {
+  animation: popdown 0.45s cubic-bezier(0.22, 1, 0.36, 1);
 }
