@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 const PARTICLE_COUNT = 18;
 const COLORS = [
@@ -25,14 +25,28 @@ function randomBetween(a: number, b: number): number {
 export default function HeroParticles() {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const particles = useRef<Particle[]>([]);
+  const [canvasSize, setCanvasSize] = useState({ width: 1920, height: 600 });
+
+  useEffect(() => {
+    function updateSize() {
+      const width = window.innerWidth;
+      const height = Math.max(window.innerHeight * 0.6, 500);
+      setCanvasSize({ width, height });
+    }
+    updateSize();
+    window.addEventListener('resize', updateSize);
+    return () => window.removeEventListener('resize', updateSize);
+  }, []);
 
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
-    let width = (canvas.width = window.innerWidth);
-    let height = (canvas.height = Math.max(window.innerHeight * 0.6, 500));
+    let width = canvasSize.width;
+    let height = canvasSize.height;
+    canvas.width = width;
+    canvas.height = height;
 
     // Initialize particles
     particles.current = Array.from({ length: PARTICLE_COUNT }, () => ({
@@ -74,18 +88,10 @@ export default function HeroParticles() {
     }
     animate();
 
-    function handleResize() {
-      if (!canvas) return;
-      width = canvas.width = window.innerWidth;
-      height = canvas.height = Math.max(window.innerHeight * 0.6, 500);
-    }
-    window.addEventListener('resize', handleResize);
-
     return () => {
       cancelAnimationFrame(animationId);
-      window.removeEventListener('resize', handleResize);
     };
-  }, []);
+  }, [canvasSize]);
 
   return (
     <canvas
@@ -100,8 +106,8 @@ export default function HeroParticles() {
         zIndex: 1,
         opacity: 0.7,
       }}
-      width={typeof window !== 'undefined' ? window.innerWidth : 1920}
-      height={typeof window !== 'undefined' ? Math.max(window.innerHeight * 0.6, 500) : 600}
+      width={canvasSize.width}
+      height={canvasSize.height}
       aria-hidden="true"
     />
   );
