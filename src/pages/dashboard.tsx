@@ -24,7 +24,7 @@ export default function Dashboard({ user }: DashboardProps) {
   const [expandedOrders, setExpandedOrders] = useState<Set<string>>(new Set())
   const [activeTab, setActiveTab] = useState('dashboard')
   const [showSignOutModal, setShowSignOutModal] = useState(false)
-  const [animatedData, setAnimatedData] = useState<number[]>([])
+  const [animatedData, setAnimatedData] = useState<{ day: number; plays: number }[]>([])
   const [chartAnimating, setChartAnimating] = useState(false)
   const [lottieAnimationData, setLottieAnimationData] = useState(null)
   const [showUserDropdown, setShowUserDropdown] = useState(false)

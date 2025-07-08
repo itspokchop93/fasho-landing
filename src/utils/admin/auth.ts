@@ -120,7 +120,8 @@ export function verifyAdminToken(token: string): AdminUser | null {
     };
     
   } catch (error) {
-    console.log('🔐 ADMIN-AUTH: Token verification failed:', error.message);
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    console.log('🔐 ADMIN-AUTH: Token verification failed:', errorMessage);
     return null;
   }
 }

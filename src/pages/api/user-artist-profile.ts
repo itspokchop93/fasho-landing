@@ -1,5 +1,5 @@
 import { NextApiRequest, NextApiResponse } from 'next';
-import { createClientSSR } from '../../utils/supabase/server';
+import { createClient } from '../../utils/supabase/server';
 
 // Helper function to get Spotify access token
 async function getSpotifyAccessToken(): Promise<string> {
@@ -59,7 +59,7 @@ async function fetchSpotifyArtist(artistId: string) {
 }
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
-  const supabase = createClientSSR({ req, res });
+  const supabase = createClient(req, res);
 
   // Check authentication
   const { data: { user }, error: authError } = await supabase.auth.getUser();
