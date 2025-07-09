@@ -394,7 +394,7 @@ export default function Home() {
                 <div id="track-input-section"></div>
 
                 {/* Track Input Section - Enhanced Design with increased bottom padding and 10px top padding */}
-                <div className="mt-16 mb-12 relative pb-10 pt-2.5">
+                <div className="mt-16 mb-[18px] -mb-[55px] relative pb-10 pt-2.5">
                   {/* Lottie Animation Behind Input Field */}
                   <div className="absolute left-1/2 -top-12 -translate-x-1/2 z-0 w-full flex justify-center pointer-events-none" style={{height: '70px'}}>
                     <div className="w-[90%] max-w-4xl">
@@ -520,103 +520,146 @@ export default function Home() {
           </section>
 
           {/* PAS Framework Section */}
-          <div className="max-w-6xl mx-auto px-6 py-20" style={{ lineHeight: '1.8' }}>
-            {/* Problem Section */}
+          <div className="max-w-4xl mx-auto px-6 py-20" style={{ lineHeight: '1.8' }}>
+            {/* PAS Final Draft Section - User Provided */}
             <div className="text-center mb-20 animate-fade-in-up">
-              <h2 className="text-4xl md:text-5xl lg:text-6xl font-bold mb-2 pb-2 bg-gradient-to-b from-white via-white to-gray-600 bg-clip-text text-transparent drop-shadow-lg" style={{ lineHeight: '1.3' }}>
+              <h2 className="text-4xl md:text-5xl lg:text-6xl font-bold mb-0 pb-2 -mt-8 bg-gradient-to-b from-white via-white to-gray-600 bg-clip-text text-transparent drop-shadow-lg animate-fade-in-up animation-delay-100" style={{ lineHeight: '1.3' }}>
                 Your Music Is Fire,
               </h2>
-              <h2 className="text-4xl md:text-5xl lg:text-6xl font-bold mb-8 pb-2 bg-gradient-to-b from-white via-white to-gray-600 bg-clip-text text-transparent drop-shadow-lg" style={{ lineHeight: '1.3' }}>
+              <h2 className="text-4xl md:text-5xl lg:text-6xl font-bold mb-8 pb-6 bg-gradient-to-b from-white via-white to-gray-600 bg-clip-text text-transparent drop-shadow-lg animate-fade-in-up animation-delay-200" style={{ lineHeight: '1.3' }}>
                 But <span className="bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] bg-clip-text text-transparent">Nobody's</span> Hearing It….
               </h2>
-              <p className="text-xl md:text-2xl text-gray-300 mb-8 pb-2 max-w-4xl mx-auto font-medium animate-fade-in-up animation-delay-200" style={{ lineHeight: '1.8' }}>
-                You spent weeks perfecting that track. Mixed it 47 times. Your homies say it slaps harder than Will Smith at the Oscars. But your Spotify still says "&lt;1,000" plays.
+              <p className="text-xl md:text-2xl text-gray-300 pb-12 font-medium animate-fade-in-up animation-delay-300" style={{ lineHeight: '1.8' }}>
+                You spent days making the best song of your life. Created the dopest cover art for it. All your friends said it slaps harder than Will Smith at the Oscars.
               </p>
-              <p className="text-2xl md:text-3xl font-bold text-white mb-6 pb-2 max-w-3xl mx-auto animate-fade-in-up animation-delay-400" style={{ lineHeight: '1.6' }}>
-                Meanwhile, some dude who recorded on his iPhone just hit 2 million streams.
+              <p className="text-2xl md:text-3xl font-bold pb-12 animate-fade-in-up animation-delay-400" style={{ lineHeight: '1.6' }}>
+                But your Spotify still says <span className="bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] bg-clip-text text-transparent">" &lt; 1,000 "</span> plays…
               </p>
-              <p className="text-3xl md:text-4xl font-bold mb-8 pb-2 max-w-4xl mx-auto bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] bg-clip-text text-transparent animate-fade-in-up animation-delay-600" style={{ lineHeight: '1.5' }}>
-                What gives?
+              <p className="text-xl md:text-2xl text-gray-300 pb-12 font-medium animate-fade-in-up animation-delay-500" style={{ lineHeight: '1.8' }}>
+                Meanwhile, some dude who recorded his whole album on an iPhone just hit 2 million streams and got signed.
               </p>
-              <p className="text-xl md:text-2xl text-gray-300 max-w-4xl mx-auto pb-2 font-medium animate-fade-in-up animation-delay-800" style={{ lineHeight: '1.8' }}>
-                The harsh reality? Talent doesn't guarantee success on Spotify. The algorithm is basically playing favorites, and spoiler alert - you're not invited to the party.
+              <p className="text-4xl md:text-5xl font-black pb-6 bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] bg-clip-text text-transparent animate-fade-in-up animation-delay-600" style={{ lineHeight: '1.5' }}>
+                Damn…
               </p>
-            </div>
-
-            {/* Agitation Section */}
-            <div className="text-center mb-20 animate-fade-in-up animation-delay-1000">
-              <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold mb-12 pb-2 bg-gradient-to-b from-white via-white to-gray-600 bg-clip-text text-transparent drop-shadow-lg" style={{ lineHeight: '1.3' }}>
-                It Gets Worse... <span className="bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] bg-clip-text text-transparent">Way Worse</span>
+              <p className="text-3xl md:text-4xl font-black text-white pb-12 animate-fade-in-up animation-delay-700" style={{ lineHeight: '1.5' }}>
+                Ready to know the truth?
+              </p>
+              <p className="text-xl md:text-2xl text-gray-300 pb-12 font-medium animate-fade-in-up animation-delay-800" style={{ lineHeight: '1.8' }}>
+                <b>Talent and hard work DOES NOT guarantee success on Spotify.</b> The platform only pushes artists who already have momentum. Big streams, high engagement, and playlist placements. If you've got them, Spotify's algorithm LOVES you. But if you don't? You're invisible.
+              </p>
+              <p className="text-3xl md:text-4xl font-black text-white pb-12 animate-fade-in-up animation-delay-900" style={{ lineHeight: '1.5' }}>
+                Here's the <span className="bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] bg-clip-text text-transparent">CATCH</span> that's <span className="bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] bg-clip-text text-transparent">KILLING</span> independent artists…
+              </p>
+              <p className="text-xl md:text-2xl text-gray-300 pb-12 font-medium animate-fade-in-up animation-delay-1000" style={{ lineHeight: '1.8' }}>
+                Spotify's algorithm won't promote you WITHOUT streams. But you can't get streams if Spotify WON'T promote you! You're trapped in a death loop where the only way to win is to <i><b><span className="bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] bg-clip-text text-transparent">ALREADY</span></b></i> be winning.
+              </p>
+              <p className="text-2xl md:text-3xl font-bold text-white pb-12 animate-fade-in-up animation-delay-1100" style={{ lineHeight: '1.6' }}>
+                Trust us, we know the struggle.
+              </p>
+              <h2 className="text-4xl md:text-5xl lg:text-6xl font-black pb-3 bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] bg-clip-text text-transparent animate-fade-in-up animation-delay-1200" style={{ lineHeight: '1.3' }}>
+                But it gets worse….
               </h2>
-              
-              {/* Icon List */}
-              <div className="grid md:grid-cols-1 gap-8 max-w-4xl mx-auto">
-                <div className="flex items-start space-x-4 text-left animate-fade-in-up animation-delay-1200">
-                  <div className="flex-shrink-0 w-16 h-16 flex items-center justify-center mt-1">
-                    <span className="bg-gradient-to-r from-red-500 via-red-400 to-red-500 bg-clip-text text-transparent font-bold text-4xl">✗</span>
-                  </div>
-                  <p className="text-2xl text-gray-300 font-medium pb-2" style={{ lineHeight: '1.7' }}>
-                    <strong className="text-white">60,000 songs drop on Spotify DAILY</strong> (yeah, you're competing with all of them)
-                  </p>
+            </div>
+            {/* New Icon List */}
+            <div className="grid md:grid-cols-1 gap-8 mb-16 animate-fade-in-up animation-delay-1250">
+              <div className="flex items-start space-x-4 text-left animate-fade-in-up animation-delay-1300">
+                <div className="flex-shrink-0 w-16 h-16 flex items-center justify-center mt-1">
+                  <span className="bg-gradient-to-r from-red-500 via-red-400 to-red-500 bg-clip-text text-transparent font-bold text-5xl">✗</span>
                 </div>
-                
-                <div className="flex items-start space-x-4 text-left animate-fade-in-up animation-delay-1400">
-                  <div className="flex-shrink-0 w-16 h-16 flex items-center justify-center mt-1">
-                    <span className="bg-gradient-to-r from-red-500 via-red-400 to-red-500 bg-clip-text text-transparent font-bold text-4xl">✗</span>
-                  </div>
-                  <p className="text-2xl text-gray-300 font-medium pb-2" style={{ lineHeight: '1.7' }}>
-                    Without playlist placements, your music is basically <strong className="text-white">invisible</strong>
-                  </p>
-                </div>
-                
-                <div className="flex items-start space-x-4 text-left animate-fade-in-up animation-delay-1600">
-                  <div className="flex-shrink-0 w-16 h-16 flex items-center justify-center mt-1">
-                    <span className="bg-gradient-to-r from-red-500 via-red-400 to-red-500 bg-clip-text text-transparent font-bold text-4xl">✗</span>
-                  </div>
-                  <p className="text-2xl text-gray-300 font-medium pb-2" style={{ lineHeight: '1.7' }}>
-                    You're posting <strong className="text-white">"LINK IN BIO"</strong> everyday but nobody's clicking
-                  </p>
-                </div>
-                
-                <div className="flex items-start space-x-4 text-left animate-fade-in-up animation-delay-1800">
-                  <div className="flex-shrink-0 w-16 h-16 flex items-center justify-center mt-1">
-                    <span className="bg-gradient-to-r from-red-500 via-red-400 to-red-500 bg-clip-text text-transparent font-bold text-4xl">✗</span>
-                  </div>
-                  <p className="text-2xl text-gray-300 font-medium pb-2" style={{ lineHeight: '1.7' }}>
-                    The "organic growth" everyone talks about? That's code for <strong className="text-white">"wait 10 years and pray"</strong>
-                  </p>
-                </div>
-                
-                <div className="flex items-start space-x-4 text-left animate-fade-in-up animation-delay-2000">
-                  <div className="flex-shrink-0 w-16 h-16 flex items-center justify-center mt-1">
-                    <span className="bg-gradient-to-r from-red-500 via-red-400 to-red-500 bg-clip-text text-transparent font-bold text-4xl">✗</span>
-                  </div>
-                  <p className="text-2xl text-gray-300 font-medium pb-2" style={{ lineHeight: '1.7' }}>
-                    Other artists with half your talent are going viral because they <strong className="text-white">cracked the playlist code</strong>
-                  </p>
-                </div>
+                <p className="text-2xl text-white font-medium" style={{ lineHeight: '1.7' }}>
+                  <b>60,000 new songs drop on Spotify EVERY single day</b> - and you're competing against ALL of them (42 new songs were uploaded in the time it took you to read this sentence)
+                </p>
               </div>
-              
-              <p className="text-2xl md:text-3xl font-bold text-white mt-12 pb-2 max-w-4xl mx-auto animate-fade-in-up animation-delay-2200" style={{ lineHeight: '1.6' }}>
-                But you? You're still out here hoping the algorithm fairy will bless you someday.
-              </p>
+              <div className="flex items-start space-x-4 text-left animate-fade-in-up animation-delay-1400">
+                <div className="flex-shrink-0 w-16 h-16 flex items-center justify-center mt-1">
+                  <span className="bg-gradient-to-r from-red-500 via-red-400 to-red-500 bg-clip-text text-transparent font-bold text-5xl">✗</span>
+                </div>
+                <p className="text-2xl text-white font-medium" style={{ lineHeight: '1.7' }}>
+                  Without getting placed on the <b>RIGHT</b> playlists, you're <b>INVISIBLE</b> to Spotify's algorithm (and everyone else)
+                </p>
+              </div>
+              <div className="flex items-start space-x-4 text-left animate-fade-in-up animation-delay-1500">
+                <div className="flex-shrink-0 w-16 h-16 flex items-center justify-center mt-1">
+                  <span className="bg-gradient-to-r from-red-500 via-red-400 to-red-500 bg-clip-text text-transparent font-bold text-5xl">✗</span>
+                </div>
+                <p className="text-2xl text-white font-medium" style={{ lineHeight: '1.7' }}>
+                  It's not 2019 anymore - posting <b>"LINK IN BIO"</b> on Instagram works just as bad as buying an Ad in the newspaper
+                </p>
+              </div>
+              <div className="flex items-start space-x-4 text-left animate-fade-in-up animation-delay-1600">
+                <div className="flex-shrink-0 w-16 h-16 flex items-center justify-center mt-1">
+                  <span className="bg-gradient-to-r from-red-500 via-red-400 to-red-500 bg-clip-text text-transparent font-bold text-5xl">✗</span>
+                </div>
+                <p className="text-2xl text-white font-medium" style={{ lineHeight: '1.7' }}>
+                  It takes the average artist <b>4.7 YEARS</b> of trial and error to finally break into the industry (and most quit after year 2)
+                </p>
+              </div>
+              <div className="flex items-start space-x-4 text-left animate-fade-in-up animation-delay-1700">
+                <div className="flex-shrink-0 w-16 h-16 flex items-center justify-center mt-1">
+                  <span className="bg-gradient-to-r from-red-500 via-red-400 to-red-500 bg-clip-text text-transparent font-bold text-5xl">✗</span>
+                </div>
+                <p className="text-2xl text-white font-medium" style={{ lineHeight: '1.7' }}>
+                  Artists with <b>HALF your talent</b> are going viral DAILY because they learned how to work <b>SMARTER</b> than everyone else
+                </p>
+              </div>
             </div>
-
-            {/* Solution Tease Section */}
-            <div className="text-center animate-fade-in-up animation-delay-2400">
-              <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold mb-8 pb-2 bg-gradient-to-b from-white via-white to-gray-600 bg-clip-text text-transparent drop-shadow-lg" style={{ lineHeight: '1.3' }}>
-                And The Cherry On Top? 🍒
-              </h2>
-              <p className="text-xl md:text-2xl text-gray-300 mb-8 pb-2 max-w-4xl mx-auto font-medium animate-fade-in-up animation-delay-2600" style={{ lineHeight: '1.8' }}>
-                Those sketchy "Spotify promo" companies sliding in your DMs? They're selling you 50k bot plays from Kazakhstan. Congrats, you just paid $200 to potentially get your account banned.
-              </p>
-              <p className="text-xl md:text-2xl text-gray-300 mb-8 pb-2 max-w-4xl mx-auto font-medium animate-fade-in-up animation-delay-2800" style={{ lineHeight: '1.8' }}>
-                The few legit companies out there? They'll take your money and throw your song on their cousin's 500-follower "Underground Bangers 2024" playlist.
-              </p>
-              <p className="text-2xl md:text-3xl font-bold text-white pb-2 max-w-4xl mx-auto animate-fade-in-up animation-delay-3000" style={{ lineHeight: '1.6' }}>
-                No cap - finding real Spotify marketing is harder than finding a PS5 to buy during COVID.
-              </p>
+            <p className="text-2xl md:text-3xl font-bold text-white pb-12 animate-fade-in-up animation-delay-1800" style={{ lineHeight: '1.6' }}>
+              And while you're still wondering if playlist placements are "worth it," other artists are collecting streaming revenue and booking their first tours.
+            </p>
+            <h2 className="text-4xl md:text-5xl lg:text-6xl font-black pb-12 bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] bg-clip-text text-transparent text-center animate-fade-in-up animation-delay-1900" style={{ lineHeight: '1.3' }}>
+              But The WORST Part Is...
+            </h2>
+            <p className="text-2xl md:text-3xl font-bold text-white pb-12 animate-fade-in-up animation-delay-2000" style={{ lineHeight: '1.6' }}>
+              REAL Spotify growth is trapped behind a field of landmines.
+            </p>
+            <p className="text-xl md:text-2xl text-gray-300 pb-12 font-medium animate-fade-in-up animation-delay-2100" style={{ lineHeight: '1.8' }}>
+              Fake agencies charging $99 for bot plays from Kazakstan. Scammers in your DMs with "PROMO 4 SALE" messages. Snake oil companies on Google who put you on handmade playlists with only 52 followers.
+            </p>
+            <p className="text-2xl md:text-3xl font-bold text-white pb-12 animate-fade-in-up animation-delay-2200" style={{ lineHeight: '1.6' }}>
+              No Cap - Finding <span className="bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] bg-clip-text text-transparent">REAL</span> Spotify Marketing is Harder Than Finding a PS5 to Buy During COVID
+            </p>
+            <h2 className="text-4xl md:text-5xl font-black pb-12 bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] bg-clip-text text-transparent text-center animate-fade-in-up animation-delay-2300" style={{ lineHeight: '1.3' }}>
+              That's Why Over 25K Creators Use…
+            </h2>
+            <div className="flex justify-center items-center pb-12 animate-fade-in-up animation-delay-2350">
+              <img src="/fasho-logo-wide.png" alt="Fasho Logo" className="w-[480px] max-w-full h-auto" />
             </div>
+            <p className="text-2xl md:text-3xl font-bold text-white pb-12 animate-fade-in-up animation-delay-2400" style={{ lineHeight: '1.6' }}>
+              The ONLY Spotify marketing service with DIRECT access to curators of the world's BIGGEST playlists.
+            </p>
+            <p className="text-xl md:text-2xl text-gray-300 pb-12 font-medium animate-fade-in-up animation-delay-2500" style={{ lineHeight: '1.8' }}>
+              We don't mess with bots. We don't own sketchy playlists. We don't make empty promises.
+            </p>
+            <p className="text-xl md:text-2xl text-gray-300 pb-12 font-medium animate-fade-in-up animation-delay-2600" style={{ lineHeight: '1.8' }}>
+              We get your music directly in front of playlist curators who control MILLIONS of real listeners.
+            </p>
+            <p className="text-xl md:text-2xl text-gray-300 pb-12 font-medium animate-fade-in-up animation-delay-2700" style={{ lineHeight: '1.8' }}>
+              <span className="font-bold text-white">RapCaviar. Today's Top Hits. Viva Latino. The playlists that actually move the needle on careers.</span>
+            </p>
+            <p className="text-xl md:text-2xl text-gray-300 pb-12 font-medium animate-fade-in-up animation-delay-2800" style={{ lineHeight: '1.8' }}>
+              While other companies are cold emailing random curators hoping for a response, we're on first name basis with the people who matter. We've spent 10 years building these relationships so you don't have to.
+            </p>
+            <p className="text-xl md:text-2xl text-gray-300 pb-12 font-medium animate-fade-in-up animation-delay-2900" style={{ lineHeight: '1.8' }}>
+              Our team is stacked with former directors and executives from labels like Universal, Sony, RCA, Atlantic, and Roc Nation. The same people who built marketing campaigns for Beyonce, Justin Bieber, Billie Eilish, and Kendrick Lamar now work for YOU.
+            </p>
+            <p className="text-xl md:text-2xl text-gray-300 pb-12 font-medium animate-fade-in-up animation-delay-3000" style={{ lineHeight: '1.8' }}>
+              We got tired of watching talented artists get chewed up and spit out by an industry that only cares about who you know. Gatekeepers controlling everything. Labels taking 80% of your revenue. The game was rigged from the start.
+            </p>
+            <p className="text-xl md:text-2xl text-gray-300 pb-12 font-medium animate-fade-in-up animation-delay-3100" style={{ lineHeight: '1.8' }}>
+              So we built FASHO.co to flip the script. To give independent artists direct access to the same tools and connections that major labels pay millions for.
+            </p>
+            <h2 className="text-2xl md:text-3xl font-black pb-12 bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] bg-clip-text text-transparent text-center animate-fade-in-up animation-delay-3200" style={{ lineHeight: '1.3' }}>
+              The Results Speak For Themselves…
+            </h2>
+            <p className="text-xl md:text-2xl text-gray-300 pb-12 font-medium animate-fade-in-up animation-delay-3300" style={{ lineHeight: '1.8' }}>
+              With a 100% success rate, our campaigns start delivering within 48 hours. Not weeks. Not "maybe soon"…  Two days.
+            </p>
+            <p className="text-xl md:text-2xl text-gray-300 pb-12 font-medium animate-fade-in-up animation-delay-3400" style={{ lineHeight: '1.8' }}>
+              Our playlist network drives MILLIONS of engaged listeners to our clients every single week. Real people who save songs, follow artists, and actually show up to shows.
+            </p>
+            <p className="text-2xl md:text-3xl font-bold text-white pb-12 animate-fade-in-up animation-delay-3500" style={{ lineHeight: '1.6' }}>
+              This isn't hope. It's a guarantee. Your music, on major playlists, reaching massive audiences, starting TODAY.
+            </p>
           </div>
 
           {/* Promotion Section - ENFORCED LOW Z-INDEX */}
