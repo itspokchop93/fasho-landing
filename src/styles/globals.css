@@ -848,6 +848,30 @@ input:-webkit-autofill:active {
   animation-delay: 3.0s;
 }
 
+@keyframes slideUpIn {
+  from {
+    opacity: 0;
+    transform: translateY(40px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-slide-up {
+  opacity: 0;
+  transform: translateY(40px);
+  animation: slideUpIn 0.8s ease-out forwards;
+  animation-delay: 600ms;
+}
+
+.animate-slide-up-no-delay {
+  opacity: 0;
+  transform: translateY(40px);
+  animation: slideUpIn 0.8s ease-out forwards;
+}
+
 /* Spectacular bounce animation for logo */
 @keyframes bounce-in-spectacular {
   0% {
@@ -876,7 +900,216 @@ input:-webkit-autofill:active {
 }
 
 .animate-bounce-in-spectacular {
-  animation: bounce-in-spectacular 1s ease-out forwards;
-  animation-delay: 700ms;
-  opacity: 0; /* Ensure element stays invisible until animation starts */
+  animation: bounce-in-spectacular 1.4s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
 }
+
+/* Phone Mockup Typing Animation */
+@keyframes typing {
+  0% { 
+    width: 0; 
+  }
+  25% { 
+    width: 100%; 
+  }
+  75% { 
+    width: 100%; 
+  }
+  100% { 
+    width: 0; 
+  }
+}
+
+@keyframes cursor-blink {
+  0%, 50% { opacity: 1; }
+  51%, 100% { opacity: 0; }
+}
+
+@keyframes search-results-slide-down {
+  0% { 
+    opacity: 0; 
+    transform: translateY(-20px);
+    max-height: 0;
+  }
+  10% { 
+    opacity: 0; 
+    transform: translateY(-20px);
+    max-height: 0;
+  }
+  20% {
+    opacity: 1;
+    transform: translateY(0);
+    max-height: 200px;
+  }
+  75% {
+    opacity: 1;
+    transform: translateY(0);
+    max-height: 200px;
+  }
+  100% { 
+    opacity: 0; 
+    transform: translateY(-10px);
+    max-height: 0;
+  }
+}
+
+@keyframes search-result-click {
+  0% { 
+    border-color: rgba(255, 255, 255, 0.05);
+    transform: scale(1);
+  }
+  25% { 
+    border-color: rgba(255, 255, 255, 0.05);
+    transform: scale(1);
+  }
+  35% {
+    border-color: #59e3a5;
+    transform: scale(0.995);
+  }
+  37% {
+    border-color: #59e3a5;
+    transform: scale(1.005);
+  }
+  40% {
+    border-color: #59e3a5;
+    transform: scale(1);
+  }
+  75% {
+    border-color: #59e3a5;
+    transform: scale(1);
+  }
+  100% { 
+    border-color: rgba(255, 255, 255, 0.05);
+    transform: scale(1);
+  }
+}
+
+@keyframes checkmark-appear {
+  0% { 
+    opacity: 0;
+    transform: scale(0);
+  }
+  35% { 
+    opacity: 0;
+    transform: scale(0);
+  }
+  40% {
+    opacity: 1;
+    transform: scale(1.2);
+  }
+  42% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  75% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  100% { 
+    opacity: 0;
+    transform: scale(0);
+  }
+}
+
+/* Apply animations to elements */
+.typing-animation {
+  animation: typing 8s ease-in-out infinite;
+  white-space: nowrap;
+  overflow: hidden;
+  max-width: 100px; /* Back to original position */
+}
+
+.cursor-blink {
+  animation: cursor-blink 1s infinite;
+}
+
+.search-results {
+  animation: search-results-slide-down 8s ease-in-out infinite;
+  overflow: visible;
+}
+
+.result-item:nth-child(1) {
+  animation-delay: 0.1s;
+}
+
+.result-item:nth-child(2) {
+  animation-delay: 0.2s;
+}
+
+.result-item {
+  transition: all 0.3s ease;
+}
+
+.result-card-clickable {
+  animation: search-result-click 8s ease-in-out infinite;
+  position: relative;
+  overflow: visible;
+}
+
+.result-checkmark {
+  animation: checkmark-appear 8s ease-in-out infinite;
+}
+
+@keyframes package-card-click {
+  0% { 
+    border-color: rgba(255, 255, 255, 0.1);
+    transform: scale(1);
+  }
+  25% { 
+    border-color: rgba(255, 255, 255, 0.1);
+    transform: scale(1);
+  }
+  35% {
+    border-color: #59e3a5;
+    transform: scale(0.995);
+  }
+  37% {
+    border-color: #59e3a5;
+    transform: scale(1.005);
+  }
+  40% {
+    border-color: #59e3a5;
+    transform: scale(1);
+  }
+  75% {
+    border-color: #59e3a5;
+    transform: scale(1);
+  }
+  100% { 
+    border-color: rgba(255, 255, 255, 0.1);
+    transform: scale(1);
+  }
+}
+
+@keyframes package-checkmark-appear {
+  0% { 
+    opacity: 0;
+    transform: scale(0);
+  }
+  35% { 
+    opacity: 0;
+    transform: scale(0);
+  }
+  40% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  75% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  100% { 
+    opacity: 0;
+    transform: scale(0);
+  }
+}
+
+.package-card-clickable {
+  animation: package-card-click 8s ease-in-out infinite;
+  overflow: visible;
+}
+
+.package-checkmark {
+  animation: package-checkmark-appear 8s ease-in-out infinite;
+}
+
+
