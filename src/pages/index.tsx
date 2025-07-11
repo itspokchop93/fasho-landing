@@ -1002,7 +1002,7 @@ export default function Home() {
           </section>
 
           {/* Flowing Shape Divider - Curves on Both Sides */}
-          <div className="relative z-30 pb-32" style={{ height: '200px', width: '110vw', left: '-5vw', position: 'relative', transform: 'rotate(-3deg)', background: 'transparent' }}>
+          <div className="relative z-30" style={{ height: '200px', width: '110vw', left: '-5vw', transform: 'rotate(-3deg)', background: 'transparent', marginTop: '-35px' }}>
             {/* Background foundation */}
             <div className="absolute inset-0 z-30" style={{ background: 'transparent' }}></div>
             
@@ -1153,10 +1153,6 @@ export default function Home() {
                 <path d="M0,-1.9 L0.55,-0.55 L1.9,0 L0.55,0.55 L0,1.9 L-0.55,0.55 L-1.9,0 L-0.55,-0.55 Z" fill="#ffffff" />
               </g>
             </svg>
-
-            {/* Subtle atmospheric glow */}
-            <div className="absolute inset-0 bg-gradient-to-r from-[#59e3a5]/8 via-[#14c0ff]/12 to-[#8b5cf6]/8 blur-[12px] opacity-40 z-40"></div>
-            <div className="absolute inset-0 bg-gradient-to-b from-transparent via-[#14c0ff]/4 to-transparent blur-[6px] opacity-40 z-40"></div>
 
             {/* Top Layer Sparkles - High Z-Index */}
             <svg
@@ -1382,17 +1378,16 @@ export default function Home() {
             <p ref={playlistNetworkRef} className={`text-gray-300 pb-12 font-medium text-center transition-all duration-700 ${playlistNetworkInView ? 'animate-fade-in-up' : 'opacity-0 translate-y-8'}`} style={{ fontSize: '1.6rem', lineHeight: '1.8' }}>
               Our playlist network drives <b>MILLIONS</b> of engaged listeners to our clients <b>every single week.</b> Real people who <b>save songs, follow artists, and actually show up to shows.</b>
             </p>
-            <p ref={isntHopeRef} className={`text-2xl md:text-3xl font-bold text-white pb-12 text-center transition-all duration-700 ${isntHopeInView ? 'animate-fade-in-up' : 'opacity-0 translate-y-8'}`} style={{ lineHeight: '1.6' }}>
+            <p ref={isntHopeRef} className={`text-2xl md:text-3xl font-bold text-white pb-32 text-center transition-all duration-700 ${isntHopeInView ? 'animate-fade-in-up' : 'opacity-0 translate-y-8'}`} style={{ lineHeight: '1.6' }}>
               This isn't hope. It's a guarantee. Your music, on major playlists, reaching massive audiences, starting TODAY.
             </p>
             </div>
           </div>
 
           {/* Shape Divider */}
-          <div className="relative z-30 pb-32 pb-48" style={{ height: '200px', width: '110vw', left: '-5vw', position: 'relative', transform: 'rotate(8deg)', background: 'transparent' }}>
-            {/* Extended gradient overlay that flows into next section */}
-            <div className="absolute inset-0 bg-gradient-to-b from-[#18192a] via-[#16213e] to-[#0a0a13] -z-10"></div>
-            <div className="absolute bottom-0 left-0 right-0 h-64 bg-gradient-to-b from-transparent to-[#0a0a13] -z-5"></div>
+          <div className="relative z-30 pb-32 pb-48" style={{ height: '200px', width: '110vw', left: '-5vw', position: 'relative', transform: 'rotate(8deg)', background: 'transparent', marginTop: '-60px', marginBottom: '85px' }}>
+            {/* All background elements removed for full transparency */}
+            
             {/* Background foundation */}
             <div className="absolute inset-0 z-30" style={{ background: 'transparent' }}></div>
             
@@ -1544,10 +1539,6 @@ export default function Home() {
               </g>
             </svg>
 
-            {/* Subtle atmospheric glow */}
-            <div className="absolute inset-0 bg-gradient-to-r from-[#59e3a5]/8 via-[#14c0ff]/12 to-[#8b5cf6]/8 blur-[12px] opacity-40 z-40"></div>
-            <div className="absolute inset-0 bg-gradient-to-b from-transparent via-[#14c0ff]/4 to-transparent blur-[6px] opacity-40 z-40"></div>
-
             {/* Top Layer Sparkles - High Z-Index */}
             <svg
               className="absolute inset-0 w-full h-full z-50 pointer-events-none"
@@ -1610,7 +1601,7 @@ export default function Home() {
           </div>
 
           {/* Phone Mockup Section */}
-          <section id={PHONE_SECTION_ID} ref={phoneSectionRef} className="py-20 px-4 relative z-20 -mt-24">
+          <section id={PHONE_SECTION_ID} ref={phoneSectionRef} className="py-20 px-4 relative z-20 -mt-24" style={{ marginTop: '50px' }}>
             <div className="max-w-7xl mx-auto">
               <div className="grid lg:grid-cols-2 gap-16 items-center">
                 {/* Left Column - All 4 Steps, animated by scroll progress */}
@@ -2341,11 +2332,242 @@ phoneScrollProgress < 4 ? 'Watch Your Success' :
             </div>
           </section>
 
+          {/* Shape Divider - Copy of the one under Start Your Campaign */}
+          <div className="relative z-30 pb-16" style={{ height: '200px', width: '110vw', left: '-5vw', position: 'relative', transform: 'rotate(-8deg) translateY(-280px)', background: 'transparent' }}>
+            {/* All background elements removed for full transparency */}
+            
+            {/* Base layer - darkest */}
+            <svg
+              className="absolute inset-0 w-full h-full z-40"
+              viewBox="0 0 1440 200"
+              preserveAspectRatio="none"
+              style={{ filter: 'drop-shadow(0 4px 20px rgba(20, 192, 255, 0.4))' }}
+            >
+              <defs>
+                <linearGradient id="genreShapeGradient1" x1="0%" y1="0%" x2="100%" y2="0%">
+                  <stop offset="0%" stopColor="#59e3a5" stopOpacity="0.9" />
+                  <stop offset="50%" stopColor="#14c0ff" stopOpacity="0.95" />
+                  <stop offset="100%" stopColor="#8b5cf6" stopOpacity="0.9" />
+                </linearGradient>
+              </defs>
+              <path
+                d="M-200,30 C100,120 300,10 500,90 C700,170 900,20 1100,100 C1300,180 1500,15 1640,70 L1640,150 C1500,120 1300,160 1100,140 C900,120 700,180 500,160 C300,140 100,190 -200,170 Z"
+                fill="url(#genreShapeGradient1)"
+              />
+            </svg>
+
+            {/* Middle layer */}
+            <svg
+              className="absolute inset-0 w-full h-full z-40"
+              viewBox="0 0 1440 200"
+              preserveAspectRatio="none"
+              style={{ filter: 'drop-shadow(0 4px 16px rgba(89, 227, 165, 0.4))' }}
+            >
+              <defs>
+                <linearGradient id="genreShapeGradient2" x1="0%" y1="0%" x2="100%" y2="0%">
+                  <stop offset="0%" stopColor="#59e3a5" stopOpacity="0.85" />
+                  <stop offset="50%" stopColor="#14c0ff" stopOpacity="0.9" />
+                  <stop offset="100%" stopColor="#8b5cf6" stopOpacity="0.85" />
+                </linearGradient>
+              </defs>
+              <path
+                d="M-200,45 C150,140 400,15 650,110 C900,190 1150,25 1400,125 C1550,165 1640,55 1640,55 L1640,145 C1550,115 1400,185 1150,125 C900,75 650,195 400,145 C150,95 -200,195 -200,195 Z"
+                fill="url(#genreShapeGradient2)"
+              />
+            </svg>
+
+            {/* Top layer - brightest */}
+            <svg
+              className="absolute inset-0 w-full h-full z-40"
+              viewBox="0 0 1440 200"
+              preserveAspectRatio="none"
+              style={{ filter: 'drop-shadow(0 2px 12px rgba(139, 92, 246, 0.5))' }}
+            >
+              <defs>
+                <linearGradient id="genreShapeGradient3" x1="0%" y1="0%" x2="100%" y2="0%">
+                  <stop offset="0%" stopColor="#59e3a5" stopOpacity="0.8" />
+                  <stop offset="50%" stopColor="#14c0ff" stopOpacity="0.85" />
+                  <stop offset="100%" stopColor="#8b5cf6" stopOpacity="0.8" />
+                </linearGradient>
+              </defs>
+              <path
+                d="M-200,65 C200,155 450,20 700,120 C950,185 1200,30 1450,135 C1600,175 1640,70 1640,70 L1640,125 C1600,95 1450,180 1200,125 C950,55 700,185 450,135 C200,75 -200,75 -200,75 Z"
+                fill="url(#genreShapeGradient3)"
+              />
+            </svg>
+
+            {/* Additional accent layer */}
+            <svg
+              className="absolute inset-0 w-full h-full z-40"
+              viewBox="0 0 1440 200"
+              preserveAspectRatio="none"
+              style={{ filter: 'drop-shadow(0 1px 8px rgba(89, 227, 165, 0.3))' }}
+            >
+              <defs>
+                <linearGradient id="genreShapeGradient4" x1="0%" y1="0%" x2="100%" y2="0%">
+                  <stop offset="0%" stopColor="#8b5cf6" stopOpacity="0.82" />
+                  <stop offset="50%" stopColor="#59e3a5" stopOpacity="0.88" />
+                  <stop offset="100%" stopColor="#14c0ff" stopOpacity="0.82" />
+                </linearGradient>
+              </defs>
+              <path
+                d="M-200,55 C120,15 280,150 440,65 C600,20 760,165 920,75 C1080,25 1240,145 1400,85 C1520,55 1640,115 1640,115 L1640,165 C1520,135 1400,185 1240,165 C1080,135 920,195 760,175 C600,155 440,195 280,175 C120,155 -200,185 -200,185 Z"
+                fill="url(#genreShapeGradient4)"
+              />
+            </svg>
+
+            {/* Enhanced sparkles layer - bright white/silver sparkles */}
+            <svg
+              className="absolute inset-0 w-full h-full z-41"
+              viewBox="0 0 1440 200"
+              preserveAspectRatio="none"
+            >
+              {/* Inner sparkle dots - bright white/silver */}
+              <circle cx="180" cy="95" r="1.5" fill="#ffffff" opacity="0.9" />
+              <circle cx="280" cy="80" r="1.2" fill="#f0f0f0" opacity="0.85" />
+              <circle cx="485" cy="105" r="1.5" fill="#ffffff" opacity="0.95" />
+              <circle cx="780" cy="115" r="1.6" fill="#ffffff" opacity="0.9" />
+              <circle cx="1080" cy="100" r="1.4" fill="#ffffff" opacity="0.9" />
+              <circle cx="1220" cy="90" r="1.1" fill="#e0e0e0" opacity="0.8" />
+              <circle cx="1350" cy="110" r="1.7" fill="#ffffff" opacity="0.95" />
+              
+              {/* Additional inner sparkles */}
+              <circle cx="320" cy="130" r="1.1" fill="#ffffff" opacity="0.8" />
+              <circle cx="420" cy="60" r="0.9" fill="#f8f8f8" opacity="0.75" />
+              <circle cx="550" cy="135" r="1.2" fill="#ffffff" opacity="0.85" />
+              <circle cx="720" cy="55" r="0.9" fill="#f0f0f0" opacity="0.75" />
+              <circle cx="880" cy="140" r="1.1" fill="#ffffff" opacity="0.9" />
+              <circle cx="1180" cy="145" r="1.3" fill="#ffffff" opacity="0.8" />
+              
+              {/* Top exterior sparkles - above the shape */}
+              <circle cx="250" cy="18" r="1.3" fill="#ffffff" opacity="0.85" />
+              <circle cx="380" cy="25" r="1.1" fill="#f0f0f0" opacity="0.8" />
+              <circle cx="520" cy="10" r="1.8" fill="#ffffff" opacity="0.9" />
+              <circle cx="900" cy="5" r="1.6" fill="#ffffff" opacity="0.85" />
+              <circle cx="1300" cy="12" r="1.4" fill="#ffffff" opacity="0.9" />
+              
+              {/* Bottom exterior sparkles - below the shape */}
+              <circle cx="200" cy="188" r="1.4" fill="#ffffff" opacity="0.8" />
+              <circle cx="350" cy="185" r="1.2" fill="#f5f5f5" opacity="0.75" />
+              <circle cx="640" cy="180" r="1.7" fill="#ffffff" opacity="0.85" />
+              <circle cx="1040" cy="175" r="1.5" fill="#ffffff" opacity="0.9" />
+              <circle cx="1380" cy="182" r="1.6" fill="#ffffff" opacity="0.85" />
+              
+              {/* Bright star sparkles - within shape */}
+              <g transform="translate(240,110)" opacity="0.85">
+                <path d="M0,-1.8 L0.5,-0.5 L1.8,0 L0.5,0.5 L0,1.8 L-0.5,0.5 L-1.8,0 L-0.5,-0.5 Z" fill="#ffffff" />
+              </g>
+              <g transform="translate(360,85)" opacity="0.8">
+                <path d="M0,-1.6 L0.45,-0.45 L1.6,0 L0.45,0.45 L0,1.6 L-0.45,0.45 L-1.6,0 L-0.45,-0.45 Z" fill="#f0f0f0" />
+              </g>
+              <g transform="translate(680,125)" opacity="0.9">
+                <path d="M0,-2.2 L0.65,-0.65 L2.2,0 L0.65,0.65 L0,2.2 L-0.65,0.65 L-2.2,0 L-0.65,-0.65 Z" fill="#ffffff" />
+              </g>
+              <g transform="translate(1050,135)" opacity="0.9">
+                <path d="M0,-2.3 L0.7,-0.7 L2.3,0 L0.7,0.7 L0,2.3 L-0.7,0.7 L-2.3,0 L-0.7,-0.7 Z" fill="#ffffff" />
+              </g>
+              
+              {/* Star sparkles on exterior - top */}
+              <g transform="translate(160,8)" opacity="0.8">
+                <path d="M0,-1.4 L0.4,-0.4 L1.4,0 L0.4,0.4 L0,1.4 L-0.4,0.4 L-1.4,0 L-0.4,-0.4 Z" fill="#ffffff" />
+              </g>
+              <g transform="translate(1000,22)" opacity="0.85">
+                <path d="M0,-1.6 L0.45,-0.45 L1.6,0 L0.45,0.45 L0,1.6 L-0.45,0.45 L-1.6,0 L-0.45,-0.45 Z" fill="#ffffff" />
+              </g>
+              
+              {/* Star sparkles on exterior - bottom */}
+              <g transform="translate(150,192)" opacity="0.75">
+                <path d="M0,-1.5 L0.4,-0.4 L1.5,0 L0.4,0.4 L0,1.5 L-0.4,0.4 L-1.5,0 L-0.4,-0.4 Z" fill="#ffffff" />
+              </g>
+              <g transform="translate(1160,194)" opacity="0.85">
+                <path d="M0,-1.9 L0.55,-0.55 L1.9,0 L0.55,0.55 L0,1.9 L-0.55,0.55 L-1.9,0 L-0.55,-0.55 Z" fill="#ffffff" />
+              </g>
+            </svg>
+
+            {/* Top Layer Sparkles - High Z-Index */}
+            <svg
+              className="absolute inset-0 w-full h-full z-50 pointer-events-none"
+              viewBox="0 0 1440 200"
+              preserveAspectRatio="none"
+            >
+              {/* Large bright sparkle dots - on top of shape (reduced by 30%) */}
+              <circle cx="380" cy="95" r="1.8" fill="#f0f0f0" opacity="0.59">
+                <animate attributeName="opacity" values="0.59;0.33;0.59" dur="2.5s" repeatCount="indefinite" />
+              </circle>
+              <circle cx="820" cy="90" r="1.9" fill="#ffffff" opacity="0.57">
+                <animate attributeName="opacity" values="0.57;0.33;0.57" dur="2.8s" repeatCount="indefinite" />
+              </circle>
+              <circle cx="1080" cy="110" r="2.1" fill="#ffffff" opacity="0.6">
+                <animate attributeName="opacity" values="0.6;0.39;0.6" dur="3.5s" repeatCount="indefinite" />
+              </circle>
+              <circle cx="1280" cy="95" r="1.7" fill="#f8f8f8" opacity="0.55">
+                <animate attributeName="opacity" values="0.55;0.26;0.55" dur="2.2s" repeatCount="indefinite" />
+              </circle>
+
+              {/* Medium sparkle dots (reduced by 30%) */}
+              <circle cx="480" cy="75" r="1.2" fill="#f0f0f0" opacity="0.49">
+                <animate attributeName="opacity" values="0.49;0.2;0.49" dur="3.1s" repeatCount="indefinite" />
+              </circle>
+              <circle cx="920" cy="70" r="1.3" fill="#f5f5f5" opacity="0.51">
+                <animate attributeName="opacity" values="0.51;0.23;0.51" dur="2.4s" repeatCount="indefinite" />
+              </circle>
+              <circle cx="1180" cy="130" r="1.6" fill="#ffffff" opacity="0.56">
+                <animate attributeName="opacity" values="0.56;0.29;0.56" dur="3.3s" repeatCount="indefinite" />
+              </circle>
+
+              {/* Animated star sparkles - on top of shape (reduced by 30%) */}
+              <g transform="translate(520,90)" opacity="0.55">
+                <path d="M0,-2.2 L0.6,-0.6 L2.2,0 L0.6,0.6 L0,2.2 L-0.6,0.6 L-2.2,0 L-0.6,-0.6 Z" fill="#f0f0f0">
+                  <animateTransform attributeName="transform" type="rotate" values="360;0" dur="10s" repeatCount="indefinite" />
+                  <animate attributeName="opacity" values="0.55;0.23;0.55" dur="3.4s" repeatCount="indefinite" />
+                </path>
+              </g>
+              <g transform="translate(1020,85)" opacity="0.57">
+                <path d="M0,-2.5 L0.7,-0.7 L2.5,0 L0.7,0.7 L0,2.5 L-0.7,0.7 L-2.5,0 L-0.7,-0.7 Z" fill="#ffffff">
+                  <animateTransform attributeName="transform" type="rotate" values="0;360" dur="12s" repeatCount="indefinite" />
+                  <animate attributeName="opacity" values="0.57;0.26;0.57" dur="2.9s" repeatCount="indefinite" />
+                </path>
+              </g>
+              <g transform="translate(1380,125)" opacity="0.53">
+                <path d="M0,-2.1 L0.6,-0.6 L2.1,0 L0.6,0.6 L0,2.1 L-0.6,0.6 L-2.1,0 L-0.6,-0.6 Z" fill="#f8f8f8">
+                  <animateTransform attributeName="transform" type="rotate" values="360;0" dur="8s" repeatCount="indefinite" />
+                  <animate attributeName="opacity" values="0.53;0.2;0.53" dur="3.7s" repeatCount="indefinite" />
+                </path>
+              </g>
+
+              {/* Animated star sparkles - exterior locations (reduced by 30%) */}
+              <g transform="translate(120,25)" opacity="0.49">
+                <path d="M0,-1.9 L0.55,-0.55 L1.9,0 L0.55,0.55 L0,1.9 L-0.55,0.55 L-1.9,0 L-0.55,-0.55 Z" fill="#f0f0f0">
+                  <animateTransform attributeName="transform" type="rotate" values="0;360" dur="15s" repeatCount="indefinite" />
+                  <animate attributeName="opacity" values="0.49;0.14;0.49" dur="4.2s" repeatCount="indefinite" />
+                </path>
+              </g>
+              <g transform="translate(1450,35)" opacity="0.51">
+                <path d="M0,-2.0 L0.6,-0.6 L2.0,0 L0.6,0.6 L0,2.0 L-0.6,0.6 L-2.0,0 L-0.6,-0.6 Z" fill="#ffffff">
+                  <animateTransform attributeName="transform" type="rotate" values="360;0" dur="11s" repeatCount="indefinite" />
+                  <animate attributeName="opacity" values="0.51;0.17;0.51" dur="3.8s" repeatCount="indefinite" />
+                </path>
+              </g>
+              <g transform="translate(80,185)" opacity="0.47">
+                <path d="M0,-1.7 L0.5,-0.5 L1.7,0 L0.5,0.5 L0,1.7 L-0.5,0.5 L-1.7,0 L-0.5,-0.5 Z" fill="#f5f5f5">
+                  <animateTransform attributeName="transform" type="rotate" values="0;360" dur="13s" repeatCount="indefinite" />
+                  <animate attributeName="opacity" values="0.47;0.11;0.47" dur="4.5s" repeatCount="indefinite" />
+                </path>
+              </g>
+              <g transform="translate(1380,190)" opacity="0.5">
+                <path d="M0,-2.1 L0.6,-0.6 L2.1,0 L0.6,0.6 L0,2.1 L-0.6,0.6 L-2.1,0 L-0.6,-0.6 Z" fill="#ffffff">
+                  <animateTransform attributeName="transform" type="rotate" values="360;0" dur="9s" repeatCount="indefinite" />
+                  <animate attributeName="opacity" values="0.5;0.2;0.5" dur="3.1s" repeatCount="indefinite" />
+                </path>
+              </g>
+            </svg>
+          </div>
+
           {/* Genre Coverage Section */}
-          <section className="py-24 px-4 relative z-20 -mt-24" style={{ background: 'transparent' }}>
+          <section className="pt-6 pb-24 px-4 relative z-20 -mt-24" style={{ background: 'transparent', marginTop: '-140px' }}>
             <div className="max-w-7xl mx-auto">
               {/* Section Header */}
-              <div className="text-center mb-16">
+              <div className="text-center mb-8">
                 <h2 
                   ref={genreHeadingRef}
                   className={`text-3xl md:text-4xl lg:text-5xl font-black mb-8 bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] bg-clip-text text-transparent transition-all duration-700 ${genreHeadingInView ? 'animate-fade-in-up' : 'opacity-0 translate-y-8'}`} 
@@ -2511,13 +2733,13 @@ phoneScrollProgress < 4 ? 'Watch Your Success' :
                   <div className="text-center mb-12">
                     <p 
                       ref={authenticityIntroRef}
-                      className={`text-xl md:text-2xl text-gray-300 leading-relaxed mb-8 transition-all duration-700 ${authenticityIntroInView ? 'animate-fade-in-up' : 'opacity-0 translate-y-8'}`}
+                      className={`text-xl md:text-2xl text-gray-300 leading-relaxed mb-8 font-bold transition-all duration-700 ${authenticityIntroInView ? 'animate-fade-in-up' : 'opacity-0 translate-y-8'}`}
                     >
                       The Spotify marketing world is full of companies running bot farms from their mom's basement. They promise millions, deliver garbage, and disappear with your money.
                     </p>
                     <p 
                       ref={authenticityOperatesRef}
-                      className={`text-2xl md:text-3xl font-black text-white leading-relaxed transition-all duration-700 ${authenticityOperatesInView ? 'animate-fade-in-up' : 'opacity-0 translate-y-8'}`}
+                      className={`text-3xl md:text-4xl font-black text-white leading-relaxed transition-all duration-700 ${authenticityOperatesInView ? 'animate-fade-in-up' : 'opacity-0 translate-y-8'}`}
                     >
                       FASHO.co operates differently:
                     </p>
@@ -2529,20 +2751,20 @@ phoneScrollProgress < 4 ? 'Watch Your Success' :
                     className={`grid md:grid-cols-2 gap-8 mb-12 transition-all duration-700 ${authenticityListInView ? 'animate-fade-in-up' : 'opacity-0 translate-y-8'}`}
                   >
                     {[
-                      'REAL playlist curators who we\'ve worked with for years',
-                      'REAL listeners who actually save and replay your music',
-                      'REAL growth that Spotify\'s algorithm recognizes and rewards',
-                      'REAL results you can verify in your Spotify for Artists app'
+                      { text: 'playlist curators who we\'ve worked with for years', real: 'REAL' },
+                      { text: 'listeners who actually save and replay your music', real: 'REAL' },
+                      { text: 'growth that Spotify\'s algorithm recognizes and rewards', real: 'REAL' },
+                      { text: 'results you can verify in your Spotify for Artists app', real: 'REAL' }
                     ].map((item, index) => (
-                      <div key={index} className="flex items-start space-x-4 p-6 rounded-xl bg-gradient-to-br from-white/5 to-white/2 border border-white/10 backdrop-blur-sm hover:from-white/10 hover:to-white/5 transition-all duration-300 group">
+                      <div key={index} className="flex items-center space-x-4 p-6 rounded-xl bg-gradient-to-br from-white/5 to-white/2 border border-white/10 backdrop-blur-sm hover:from-white/10 hover:to-white/5 transition-all duration-300 group">
                         {/* Animated Check Icon */}
                         <div className="w-8 h-8 bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] rounded-full flex items-center justify-center flex-shrink-0 drop-shadow-[0_4px_8px_rgba(89,227,165,0.3)] group-hover:scale-110 transition-transform duration-300">
                           <svg className="w-5 h-5 text-white drop-shadow-[0_2px_4px_rgba(0,0,0,0.6)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
                           </svg>
                         </div>
-                        <span className="text-white text-lg font-medium leading-relaxed drop-shadow-[0_2px_4px_rgba(0,0,0,0.6)] group-hover:text-[#59e3a5] transition-colors duration-300">
-                          {item}
+                        <span className="text-white text-2xl font-bold leading-relaxed drop-shadow-[0_2px_4px_rgba(0,0,0,0.6)] group-hover:text-[#59e3a5] transition-colors duration-300">
+                          <span className="font-black bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] bg-clip-text text-transparent">{item.real}</span> {item.text}
                         </span>
                       </div>
                     ))}
@@ -2552,29 +2774,22 @@ phoneScrollProgress < 4 ? 'Watch Your Success' :
                   <div className="text-center space-y-8">
                     <p 
                       ref={authenticityClosingRef}
-                      className={`text-xl md:text-2xl text-gray-300 leading-relaxed transition-all duration-700 ${authenticityClosingInView ? 'animate-fade-in-up' : 'opacity-0 translate-y-8'}`}
+                      className={`text-xl md:text-2xl text-gray-300 leading-relaxed font-bold transition-all duration-700 ${authenticityClosingInView ? 'animate-fade-in-up' : 'opacity-0 translate-y-8'}`}
                     >
-                      No bots. No fake streams. No sketchy tactics that risk your account.
+                      NO bots. NO fake streams. NO sketchy tactics that risk your account.
                     </p>
                     
-                    <div 
+                    <p 
                       ref={authenticityHighlightRef}
-                      className={`relative transition-all duration-700 ${authenticityHighlightInView ? 'animate-fade-in-up' : 'opacity-0 translate-y-8'}`}
+                      className={`text-xl md:text-2xl text-gray-300 leading-relaxed font-bold transition-all duration-700 ${authenticityHighlightInView ? 'animate-fade-in-up' : 'opacity-0 translate-y-8'}`}
                     >
-                      {/* Highlight Box */}
-                      <div className="bg-gradient-to-r from-[#59e3a5]/10 via-[#14c0ff]/15 to-[#8b5cf6]/10 rounded-2xl p-8 border border-[#14c0ff]/30 backdrop-blur-sm">
-                        <p className="text-xl md:text-2xl text-white leading-relaxed mb-4">
-                          Just legitimate playlist placements that put your music in front of people who actually want to hear it. The same way every major artist built their career - through authentic exposure to the right audience.
-                        </p>
-                        <p className="text-lg md:text-xl text-[#59e3a5] font-semibold leading-relaxed">
-                          Your account stays safe. Your growth stays permanent. Your music reaches real fans.
-                        </p>
-                      </div>
-                    </div>
+                      Just legitimate playlist placements that put your music in front of people who actually want to hear it. The same way every major artist built their career - through authentic exposure to the right audience.
+                      Your account stays safe. Your growth stays permanent. Your music reaches real fans.
+                    </p>
 
                     <p 
                       ref={authenticityGuaranteeRef}
-                      className={`text-2xl md:text-3xl font-black text-white leading-relaxed transition-all duration-700 ${authenticityGuaranteeInView ? 'animate-fade-in-up' : 'opacity-0 translate-y-8'}`}
+                      className={`text-3xl md:text-4xl font-black text-white leading-relaxed transition-all duration-700 ${authenticityGuaranteeInView ? 'animate-fade-in-up' : 'opacity-0 translate-y-8'}`}
                     >
                       That's not marketing speak. That's a guarantee.
                     </p>
@@ -2582,8 +2797,9 @@ phoneScrollProgress < 4 ? 'Watch Your Success' :
                 </div>
 
                 {/* Decorative Elements */}
-                <div className="absolute -top-4 -right-4 w-16 h-16 bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] rounded-full opacity-20 animate-pulse"></div>
+                <div className="absolute bottom-1/2 -right-4 w-16 h-16 bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] rounded-full opacity-20 animate-pulse"></div>
                 <div className="absolute -bottom-4 -left-4 w-12 h-12 bg-gradient-to-r from-[#8b5cf6] to-[#59e3a5] rounded-full opacity-20 animate-pulse" style={{ animationDelay: '1s' }}></div>
+                <div className="absolute -top-4 -left-4 w-10 h-10 bg-gradient-to-r from-[#14c0ff] to-[#8b5cf6] rounded-full opacity-20 animate-pulse" style={{ animationDelay: '2.5s' }}></div>
                 
                 {/* Floating Sparkles */}
                 <div className="absolute top-8 left-8 w-2 h-2 bg-white rounded-full opacity-60 animate-ping"></div>
