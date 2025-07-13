@@ -78,6 +78,9 @@ export default function Home() {
   const [confettiLottie, setConfettiLottie] = useState<any>(null);
   const [showConfetti, setShowConfetti] = useState(false);
 
+  // Green checkmark animation for selected track
+  const [checkmarkLottie, setCheckmarkLottie] = useState<any>(null);
+
   // Viewport animation hooks for PAS section
   const [heading1Ref, heading1InView] = useInView();
   const [heading2Ref, heading2InView] = useInView();
@@ -147,299 +150,273 @@ export default function Home() {
   const [authenticityGuaranteeRef, authenticityGuaranteeInView] = useInView({ threshold: 0.3 });
 
   const phoneSectionRef = useRef<HTMLDivElement>(null);
-  const [phoneScrollProgress, setPhoneScrollProgress] = useState(0); // 0 = Step 1, 1 = Step 2, 2 = Step 3, 3 = Step 4, 4 = Exit
-  const [isPhoneScrollLocked, setIsPhoneScrollLocked] = useState(false);
-  const [hasCompletedStep4, setHasCompletedStep4] = useState(false);
+  const [currentStep, setCurrentStep] = useState(0); // 0=Step1, 1=Step2, 2=Step3, 3=Step4
+  const [stepProgress, setStepProgress] = useState(0); // 0-1 progress within current step
+  const [isStepSectionPinned, setIsStepSectionPinned] = useState(false);
 
-  // --- Scroll lock with proper exit conditions ---
+    // ScrollMagic-style Step Section Animation System
   useEffect(() => {
     const section = phoneSectionRef.current;
     if (!section) return;
 
-    let lastTouchY = 0;
-    let isTouching = false;
-    
-    // Track accumulated scroll that would exit the section
-    let pendingScrollUp = 0;
-    let pendingScrollDown = 0;
-    const EXIT_THRESHOLD = 150; // pixels needed to exit
-    
-    // Cooldown to prevent immediate re-lock after exit
-    let exitCooldown = false;
-    let lastExitTime = 0;
-
-    function handleScrollEvent(e: WheelEvent) {
-      if (!isPhoneScrollLocked) return;
-      e.preventDefault();
+    // ScrollMagic-style Scene Controller
+    class StepSceneController {
+      private section: HTMLElement;
+      private currentStep: number = 0;
+      private stepProgress: number = 0;
+      private isPinned: boolean = false;
+      private totalScrollAccumulated: number = 0;
+      private stepDuration: number = 640; // Pixels of scroll per step - increased for slower transitions
+      private lastTouchY: number = 0;
       
-      const delta = e.deltaY;
-      
-      setPhoneScrollProgress(prev => {
-        let next = prev + delta / 1800; // Increased from 1200 to 1800 for longer scroll range across 4 steps
-        
-        // Handle exit conditions based on scroll progress boundaries
-        if (next <= 0 && delta < 0) {
-          // User is scrolling up from Step 1 - wants to exit upward
-          pendingScrollUp += Math.abs(delta);
-          pendingScrollDown = 0; // Reset opposite direction
-          
-          if (pendingScrollUp >= EXIT_THRESHOLD) {
-            // Release lock and scroll up to actually exit the section
-            setIsPhoneScrollLocked(false);
-            setHasCompletedStep4(false); // Reset completion state when exiting upward
-            exitCooldown = true;
-            lastExitTime = Date.now();
-            
-            // Use accumulated scroll to push user past the section
-            setTimeout(() => {
-              const section = phoneSectionRef.current;
-              if (section) {
-                const rect = section.getBoundingClientRect();
-                const scrollAmount = Math.min(300, pendingScrollUp + 100); // Increased to ensure we're far enough
-                window.scrollTo({
-                  top: window.scrollY - scrollAmount,
-                  behavior: 'instant'
-                });
-              }
-            }, 10);
-            return 0;
-          }
-          // Reset completed state if user goes back to Step 1
-          if (prev >= 3) {
-            setHasCompletedStep4(false);
-          }
-          return 0; // Stay at Step 1
-        } 
-        else if (next >= 4 && delta > 0) {
-          // User is scrolling down from Step 4 - wants to exit downward
-          pendingScrollDown += delta;
-          pendingScrollUp = 0; // Reset opposite direction
-          
-          if (pendingScrollDown >= EXIT_THRESHOLD) {
-            // Release lock and scroll down to actually exit the section
-            setIsPhoneScrollLocked(false);
-            setHasCompletedStep4(true); // Mark that user has completed Step 4
-            exitCooldown = true;
-            lastExitTime = Date.now();
-            
-            // Use accumulated scroll to push user past the section
-            setTimeout(() => {
-              const section = phoneSectionRef.current;
-              if (section) {
-                const rect = section.getBoundingClientRect();
-                const scrollAmount = Math.min(300, pendingScrollDown + 100); // Increased to ensure we're far enough
-                window.scrollTo({
-                  top: window.scrollY + scrollAmount,
-                  behavior: 'instant'
-                });
-              }
-            }, 10);
-            return 4;
-          }
-          return Math.min(next, 4); // Stay at Step 4 max, but allow progression within step
-        }
-        else {
-          // Normal scrolling within bounds - reset exit counters
-          pendingScrollUp = 0;
-          pendingScrollDown = 0;
-          
-          // Clamp to valid range
-          if (next > 4) next = 4;
-          if (next < 0) next = 0;
-          return next;
-        }
-      });
-    }
-
-    function handleTouchStart(e: TouchEvent) {
-      isTouching = true;
-      lastTouchY = e.touches[0].clientY;
-    }
-    
-    function handleTouchMove(e: TouchEvent) {
-      if (!isPhoneScrollLocked || !isTouching) return;
-      e.preventDefault();
-      
-      const touchY = e.touches[0].clientY;
-      const delta = lastTouchY - touchY;
-      lastTouchY = touchY;
-      
-      setPhoneScrollProgress(prev => {
-        let next = prev + delta / 1350; // Increased from 900 to 1350 for longer scroll range on touch across 4 steps
-        
-        // Handle exit conditions for touch
-        if (next <= 0 && delta < 0) {
-          // Swiping down (scrolling up) from Step 1 - wants to exit upward
-          pendingScrollUp += Math.abs(delta);
-          pendingScrollDown = 0;
-          
-          if (pendingScrollUp >= EXIT_THRESHOLD) {
-            setIsPhoneScrollLocked(false);
-            setHasCompletedStep4(false); // Reset completion state when exiting upward
-            exitCooldown = true;
-            lastExitTime = Date.now();
-            
-            // Use accumulated scroll to push user past the section
-            setTimeout(() => {
-              const section = phoneSectionRef.current;
-              if (section) {
-                const scrollAmount = Math.min(300, (pendingScrollUp * 3) + 100); // Touch multiplier + extra distance
-                window.scrollTo({
-                  top: window.scrollY - scrollAmount,
-                  behavior: 'instant'
-                });
-              }
-            }, 10);
-            return 0;
-          }
-          // Reset completed state if user goes back to Step 1
-          if (prev >= 3) {
-            setHasCompletedStep4(false);
-          }
-          return 0;
-        } 
-        else if (next >= 4 && delta > 0) {
-          // Swiping up (scrolling down) from Step 4 - wants to exit downward
-          pendingScrollDown += delta;
-          pendingScrollUp = 0;
-          
-          if (pendingScrollDown >= EXIT_THRESHOLD) {
-            setIsPhoneScrollLocked(false);
-            setHasCompletedStep4(true); // Mark that user has completed Step 4
-            exitCooldown = true;
-            lastExitTime = Date.now();
-            
-            // Use accumulated scroll to push user past the section
-            setTimeout(() => {
-              const section = phoneSectionRef.current;
-              if (section) {
-                const scrollAmount = Math.min(300, (pendingScrollDown * 3) + 100); // Touch multiplier + extra distance
-                window.scrollTo({
-                  top: window.scrollY + scrollAmount,
-                  behavior: 'instant'
-                });
-              }
-            }, 10);
-            return 4;
-          }
-          return Math.min(next, 4);
-        }
-        else {
-          // Normal movement within bounds
-          pendingScrollUp = 0;
-          pendingScrollDown = 0;
-          
-          if (next > 4) next = 4;
-          if (next < 0) next = 0;
-          return next;
-        }
-      });
-    }
-    
-    function handleTouchEnd() {
-      isTouching = false;
-    }
-
-    // --- Section boundary detection ---
-    function checkSectionStatus() {
-      if (!section) return;
-      
-      // Check cooldown to prevent immediate re-lock after exit
-      const timeSinceExit = Date.now() - lastExitTime;
-      if (exitCooldown && timeSinceExit < 1000) { // 1 second cooldown
-        return; // Don't check for re-lock during cooldown
-      } else if (exitCooldown && timeSinceExit >= 1000) {
-        exitCooldown = false; // Reset cooldown
+      constructor(sectionElement: HTMLElement) {
+        this.section = sectionElement;
+        this.bindEvents();
       }
-      
-      const rect = section.getBoundingClientRect();
-      
-      // Different trigger points for scrolling up vs down
-      const scrollDownTriggerPoint = window.innerHeight * 0.10; // 10% from top (perfect for scroll down)
-      const scrollUpTriggerPoint = window.innerHeight * 0.40; // 40% from top (higher up for scroll up)
-      
-      // Determine which trigger point to use based on section position
-      let triggerPoint, triggerZone;
-      if (rect.top >= 0) {
-        // Section is below viewport top (scrolling down approach)
-        triggerPoint = scrollDownTriggerPoint;
-        triggerZone = 50; // Tight trigger zone for scroll down
-      } else {
-        // Section is above viewport top (scrolling up approach)  
-        triggerPoint = scrollUpTriggerPoint;
-        triggerZone = 200; // Large trigger zone for scroll up
+
+      private bindEvents() {
+        window.addEventListener('scroll', this.handleScroll, { passive: true });
+        window.addEventListener('wheel', this.handleWheel, { passive: false });
+        window.addEventListener('touchstart', this.handleTouchStart, { passive: false });
+        window.addEventListener('touchmove', this.handleTouchMove, { passive: false });
+        window.addEventListener('touchend', this.handleTouchEnd, { passive: false });
       }
-      
-      const distanceFromTrigger = rect.top - triggerPoint;
-      const isInTriggerZone = Math.abs(distanceFromTrigger) <= triggerZone;
-      
-      if (isInTriggerZone && !isPhoneScrollLocked && !exitCooldown) {
-        // Enter scroll lock - preserve current progress or determine initial position
-        setIsPhoneScrollLocked(true);
+
+      private handleScroll = () => {
+        this.updateSceneProgress();
+      };
+
+      private handleWheel = (e: WheelEvent) => {
+        if (this.isPinned) {
+      e.preventDefault();
+          this.processScrollDelta(e.deltaY);
+        }
+      };
+
+      private handleTouchStart = (e: TouchEvent) => {
+        if (this.isPinned) {
+          e.preventDefault();
+          this.lastTouchY = e.touches[0].clientY;
+        }
+      };
+
+      private handleTouchMove = (e: TouchEvent) => {
+        if (this.isPinned) {
+          e.preventDefault();
+          const deltaY = this.lastTouchY - e.touches[0].clientY;
+          this.lastTouchY = e.touches[0].clientY;
+          this.processScrollDelta(deltaY * 1.5); // Touch sensitivity multiplier
+        }
+      };
+
+      private handleTouchEnd = (e: TouchEvent) => {
+        if (this.isPinned) {
+          e.preventDefault();
+        }
+      };
+
+      private processScrollDelta(deltaY: number) {
+        this.totalScrollAccumulated += deltaY;
         
-        // Only set starting position if we don't have a current progress state
-        // This preserves the state when re-entering after unlock
-        setPhoneScrollProgress(prev => {
-          // If user has completed Step 4 and is approaching from below, show Step 4
-          if (hasCompletedStep4) {
-            return 4;
-          }
-          // If we already have a valid progress, keep it
-          if (prev >= 0 && prev <= 4) {
-            return prev;
-          }
-          // Otherwise, determine starting position based on section position and scroll direction
-          const sectionTop = rect.top;
-          // If section is above the scroll-down trigger point (user scrolling up), start at beginning (Step 1)
-          // If section is below the scroll-down trigger point (user scrolling down), start at end (Step 4)
-          return sectionTop < scrollDownTriggerPoint ? 0 : 0; // Always start at Step 1 unless already completed
+        // Calculate step and progress based on accumulated scroll
+        const totalProgress = this.totalScrollAccumulated / this.stepDuration;
+        
+        // Handle exit conditions - more precise exit logic
+        if (totalProgress <= 0) {
+          this.exitSection('up');
+          return;
+        }
+        
+        // Exit immediately when Step 4 is completed (totalProgress >= 3.8)
+        if (totalProgress >= 3.8) {
+          this.exitSection('down');
+          return;
+        }
+        
+        // Update step and progress
+        this.currentStep = Math.floor(totalProgress);
+        this.stepProgress = totalProgress - this.currentStep;
+        
+        // Clamp values - ensure we don't go beyond step 3
+        this.currentStep = Math.max(0, Math.min(3, this.currentStep));
+        this.stepProgress = Math.max(0, Math.min(1, this.stepProgress));
+        
+        // If we're at step 3 and progress is near completion, prepare for exit
+        if (this.currentStep === 3 && this.stepProgress >= 0.8) {
+          this.currentStep = 3;
+          this.stepProgress = 1;
+        }
+        
+        this.updateStepDisplay();
+      }
+
+      private updateSceneProgress() {
+        if (this.isPinned) {
+          // If already pinned, don't check for re-pinning
+          return;
+        }
+        
+        const rect = this.section.getBoundingClientRect();
+        const viewportHeight = window.innerHeight;
+        const triggerPoint = viewportHeight * 0.5; // 50% viewport height (ScrollMagic default)
+        
+        // More precise trigger detection - section center should be near trigger point
+        const sectionCenter = rect.top + (rect.height / 2);
+        const distanceFromTrigger = Math.abs(sectionCenter - triggerPoint);
+        const triggerThreshold = 50; // Reduced to 50px for more precision
+        
+        // Check if section should be pinned - more strict conditions
+        const shouldPin = distanceFromTrigger <= triggerThreshold && 
+                         rect.top <= triggerPoint + 50 && 
+                         rect.bottom >= triggerPoint - 50 &&
+                         rect.top > -rect.height * 0.3 && // Not too far up
+                         rect.bottom < viewportHeight + rect.height * 0.3; // Not too far down
+        
+        if (shouldPin && !this.isPinned) {
+          this.enterPinMode();
+        }
+      }
+
+      private enterPinMode() {
+        this.isPinned = true;
+        setIsStepSectionPinned(true);
+        document.body.style.overflow = 'hidden';
+        
+        // Store original position and styling
+        const rect = this.section.getBoundingClientRect();
+        this.originalTop = window.scrollY + rect.top;
+        this.originalPosition = this.section.style.position || 'relative';
+        this.originalTransform = this.section.style.transform || '';
+        this.originalZIndex = this.section.style.zIndex || 'auto';
+        
+        // Create a robust placeholder to maintain layout space
+        this.placeholder = document.createElement('div');
+        this.placeholder.style.height = `${this.section.offsetHeight + 150}px`; // Add extra space to prevent text from coming up during pinning
+        this.placeholder.style.width = '100%';
+        this.placeholder.style.visibility = 'hidden';
+        this.placeholder.style.pointerEvents = 'none';
+        this.placeholder.style.position = 'relative';
+        this.placeholder.style.zIndex = '1';
+        this.placeholder.style.background = 'transparent';
+        this.section.parentNode?.insertBefore(this.placeholder, this.section);
+        
+        // ScrollMagic-style pin positioning
+        this.section.style.position = 'fixed';
+        this.section.style.top = '50%';
+        this.section.style.left = '0';
+        this.section.style.right = '0';
+        this.section.style.transform = 'translateY(-50%)';
+        this.section.style.zIndex = '1000';
+        this.section.style.width = '100%';
+        
+        // Reset scroll accumulation when entering
+        this.totalScrollAccumulated = this.currentStep * this.stepDuration;
+      }
+
+      private originalTop: number = 0;
+      private originalPosition: string = '';
+      private originalTransform: string = '';
+      private originalZIndex: string = '';
+      private placeholder: HTMLElement | null = null;
+
+      private exitPinMode() {
+        if (!this.isPinned) return; // Prevent double exit
+        
+        this.isPinned = false;
+        setIsStepSectionPinned(false);
+        document.body.style.overflow = '';
+        
+        // Remove placeholder immediately
+        if (this.placeholder && this.placeholder.parentNode) {
+          this.placeholder.parentNode.removeChild(this.placeholder);
+          this.placeholder = null;
+        }
+        
+        // Restore original positioning completely
+        this.section.style.position = this.originalPosition;
+        this.section.style.top = '';
+        this.section.style.left = '';
+        this.section.style.right = '';
+        this.section.style.transform = this.originalTransform;
+        this.section.style.zIndex = this.originalZIndex;
+        this.section.style.width = '';
+        
+        // Force a layout recalculation to prevent sticky behavior
+        this.section.offsetHeight;
+      }
+
+      private exitSection(direction: 'up' | 'down') {
+        // Immediate exit to prevent sticky behavior
+        this.exitPinMode();
+        
+        // Reset step states based on direction
+        if (direction === 'up') {
+          this.currentStep = 0;
+          this.stepProgress = 0;
+          this.totalScrollAccumulated = 0;
+        } else {
+          // For down direction, complete step 4 and exit
+          this.currentStep = 3;
+          this.stepProgress = 1;
+          this.totalScrollAccumulated = 4 * this.stepDuration;
+        }
+        
+        this.updateStepDisplay();
+        
+        // Immediate momentum scroll without animation to prevent sticking
+        requestAnimationFrame(() => {
+          const scrollAmount = direction === 'up' ? -200 : 200;
+          window.scrollBy(0, scrollAmount);
         });
+      }
+
+      private updateStepDisplay() {
+        setCurrentStep(this.currentStep);
+        setStepProgress(this.stepProgress);
+      }
+
+      public destroy() {
+        window.removeEventListener('scroll', this.handleScroll);
+        window.removeEventListener('wheel', this.handleWheel);
+        window.removeEventListener('touchstart', this.handleTouchStart);
+        window.removeEventListener('touchmove', this.handleTouchMove);
+        window.removeEventListener('touchend', this.handleTouchEnd);
         
-        pendingScrollUp = 0;
-        pendingScrollDown = 0;
-      } else if (!isInTriggerZone && isPhoneScrollLocked) {
-        // Section moved out of trigger zone - unlock (fallback safety)
-        setIsPhoneScrollLocked(false);
+        // Force exit pin mode if still pinned
+        if (this.isPinned) {
+          this.exitPinMode();
+        }
+        
+        // Complete cleanup - remove any residual styling
+        this.section.style.position = '';
+        this.section.style.top = '';
+        this.section.style.left = '';
+        this.section.style.right = '';
+        this.section.style.transform = '';
+        this.section.style.zIndex = '';
+        this.section.style.width = '';
+        
+        // Reset body overflow
+        document.body.style.overflow = '';
+        
+        // Reset states
+        this.currentStep = 0;
+        this.stepProgress = 0;
+        this.totalScrollAccumulated = 0;
+        setCurrentStep(0);
+        setStepProgress(0);
+        setIsStepSectionPinned(false);
       }
     }
 
-    // Add listeners
-    if (isPhoneScrollLocked) {
-      document.body.style.overflow = "hidden";
-      window.addEventListener("wheel", handleScrollEvent, { passive: false });
-      window.addEventListener("touchstart", handleTouchStart, { passive: false });
-      window.addEventListener("touchmove", handleTouchMove, { passive: false });
-      window.addEventListener("touchend", handleTouchEnd, { passive: false });
-    } else {
-      document.body.style.overflow = "";
-      window.removeEventListener("wheel", handleScrollEvent);
-      window.removeEventListener("touchstart", handleTouchStart);
-      window.removeEventListener("touchmove", handleTouchMove);
-      window.removeEventListener("touchend", handleTouchEnd);
-    }
+    // Initialize the controller
+    const controller = new StepSceneController(section);
 
-    // Always monitor section position
-    window.addEventListener('scroll', checkSectionStatus, { passive: true });
-    window.addEventListener('resize', checkSectionStatus);
-    checkSectionStatus(); // Initial check
-    
-    return () => {
       // Cleanup
-      document.body.style.overflow = "";
-      window.removeEventListener("wheel", handleScrollEvent);
-      window.removeEventListener("touchstart", handleTouchStart);
-      window.removeEventListener("touchmove", handleTouchMove);
-      window.removeEventListener("touchend", handleTouchEnd);
-      window.removeEventListener('scroll', checkSectionStatus);
-      window.removeEventListener('resize', checkSectionStatus);
+    return () => {
+      controller.destroy();
     };
-  }, [isPhoneScrollLocked]);
-
-  // Clamp phoneScrollProgress between 0 and 3 for animation rendering
-  useEffect(() => {
-    if (phoneScrollProgress < 0) setPhoneScrollProgress(0);
-    if (phoneScrollProgress > 4) setPhoneScrollProgress(4);
-  }, [phoneScrollProgress]);
+  }, []);
 
   // Check for success query parameter on component mount
   useEffect(() => {
@@ -735,6 +712,12 @@ export default function Home() {
       .then(res => res.json())
       .then(setConfettiLottie)
       .catch(() => setConfettiLottie(null));
+    
+    // Fetch green checkmark animation for selected track
+    fetch('https://lottie.host/ba779d58-538c-4ebc-b3d1-672141860dfb/KOnR9jV5wA.json')
+      .then(res => res.json())
+      .then(setCheckmarkLottie)
+      .catch(() => setCheckmarkLottie(null));
   }, []);
 
   useEffect(() => {
@@ -980,16 +963,28 @@ export default function Home() {
                       {previewTrack && isSpotifyUrlCheck(url) && (
                         <div className="w-full max-w-4xl mx-auto mb-2 animate-popdown">
                           <div className="bg-gradient-to-r from-[#59e3a5] via-[#14c0ff] to-[#8b5cf6] p-[1px] rounded-2xl shadow-[0_8px_32px_0_rgba(20,192,255,0.35)]">
-                            <div className="flex items-center w-full bg-gradient-to-r from-[#23272f] to-[#1a1a2e] rounded-2xl p-4 gap-4">
+                            <div className="flex items-center w-full bg-gradient-to-r from-[#23272f] to-[#1a1a2e] rounded-2xl p-4 gap-4 overflow-hidden">
                               <img
                                 src={previewTrack.imageUrl}
                                 alt={previewTrack.title}
                                 className="w-20 h-20 rounded-xl object-cover shadow-md border border-white/10 flex-shrink-0"
                               />
-                              <div className="flex-1 min-w-0">
-                                <div className="font-bold text-white truncate text-left" style={{ fontSize: '1.625rem' }}>{previewTrack.title}</div>
-                                <div className="text-gray-300 truncate text-left" style={{ fontSize: '1.125rem' }}>{previewTrack.artist}</div>
+                              <div className="flex-1 min-w-0 overflow-hidden">
+                                <div className="font-bold text-white truncate text-left" style={{ fontSize: '1.15rem' }}>{previewTrack.title}</div>
+                                <div className="text-gray-300 truncate text-left" style={{ fontSize: '1.00rem' }}>{previewTrack.artist}</div>
                               </div>
+                              {/* Green checkmark Lottie animation */}
+                              {checkmarkLottie && (
+                                <div className="flex items-center justify-center w-10 h-10 flex-shrink-0">
+                                  <Lottie
+                                    autoplay
+                                    loop={false}
+                                    animationData={checkmarkLottie}
+                                    style={{ width: '40px', height: '40px' }}
+                                    rendererSettings={{ preserveAspectRatio: 'xMidYMid meet' }}
+                                  />
+                                </div>
+                              )}
                             </div>
                           </div>
                         </div>
@@ -1229,7 +1224,7 @@ export default function Home() {
                 You spent days making the best song of your life. Created the dopest cover art for it. All your friends said it slaps harder than Will Smith at the Oscars....
               </p>
               <p ref={text2Ref} className={`text-2xl md:text-3xl font-bold pb-12 text-center transition-all duration-700 ${text2InView ? 'animate-fade-in-up' : 'opacity-0 translate-y-8'}`} style={{ lineHeight: '1.6' }}>
-                But your Spotify still says <span className="bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] bg-clip-text text-transparent">" &lt; 1,000 "</span> plays
+                But your Spotify still says " &lt; 1,000 "<span className="bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] bg-clip-text text-transparent"></span> plays
               </p>
               <p ref={text3Ref} className={`text-gray-300 pb-12 font-medium text-center transition-all duration-700 ${text3InView ? 'animate-fade-in-up' : 'opacity-0 translate-y-8'}`} style={{ fontSize: '1.6rem', lineHeight: '1.8' }}>
                 Meanwhile, some dude who recorded his whole album <b>on an iPhone</b> just hit <b>2 million</b> streams and <b>got signed.</b>
@@ -1612,9 +1607,9 @@ export default function Home() {
                     top: -100,
                     left: 0,
                     right: 0,
-                    opacity: phoneScrollProgress < 1 ? 1 - (phoneScrollProgress * 1) : 0,
-                    transform: `translateY(${phoneScrollProgress < 1 ? phoneScrollProgress * -40 : -40}px)`,
-                    pointerEvents: phoneScrollProgress < 0.5 ? 'auto' : 'none',
+                    opacity: currentStep === 0 ? 1 - stepProgress : 0,
+                    transform: `translateY(${currentStep === 0 ? stepProgress * -40 : -40}px)`,
+                    pointerEvents: currentStep === 0 && stepProgress < 0.5 ? 'auto' : 'none',
                     transition: 'opacity 0.3s, transform 0.3s',
                   }}>
                   <h2 className="text-4xl md:text-5xl lg:text-6xl font-black bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] bg-clip-text text-transparent mb-1" style={{ lineHeight: '1.2' }}>
@@ -1634,9 +1629,9 @@ export default function Home() {
                     top: -100,
                     left: 0,
                     right: 0,
-                    opacity: phoneScrollProgress >= 1 && phoneScrollProgress < 2 ? (phoneScrollProgress - 1) : 0,
-                    transform: `translateY(${phoneScrollProgress >= 1 && phoneScrollProgress < 2 ? 40 - ((phoneScrollProgress - 1) * 40) : 40}px)`,
-                    pointerEvents: phoneScrollProgress >= 1 && phoneScrollProgress < 1.5 ? 'auto' : 'none',
+                    opacity: currentStep === 1 ? stepProgress : 0,
+                    transform: `translateY(${currentStep === 1 ? 40 - (stepProgress * 40) : 40}px)`,
+                    pointerEvents: currentStep === 1 && stepProgress < 0.5 ? 'auto' : 'none',
                     transition: 'opacity 0.3s, transform 0.3s',
                   }}>
                     <h2 className="text-4xl md:text-5xl lg:text-6xl font-black bg-gradient-to-r from-[#14c0ff] to-[#8b5cf6] bg-clip-text text-transparent mb-1" style={{ lineHeight: '1.2' }}>
@@ -1656,9 +1651,9 @@ export default function Home() {
                     top: -100,
                     left: 0,
                     right: 0,
-                    opacity: phoneScrollProgress >= 2 && phoneScrollProgress < 3 ? (phoneScrollProgress - 2) : 0,
-                    transform: `translateY(${phoneScrollProgress >= 2 && phoneScrollProgress < 3 ? 40 - ((phoneScrollProgress - 2) * 40) : 40}px)`,
-                    pointerEvents: phoneScrollProgress >= 2 && phoneScrollProgress < 2.5 ? 'auto' : 'none',
+                    opacity: currentStep === 2 ? stepProgress : 0,
+                    transform: `translateY(${currentStep === 2 ? 40 - (stepProgress * 40) : 40}px)`,
+                    pointerEvents: currentStep === 2 && stepProgress < 0.5 ? 'auto' : 'none',
                     transition: 'opacity 0.3s, transform 0.3s',
                   }}>
                     <h2 className="text-4xl md:text-5xl lg:text-6xl font-black bg-gradient-to-r from-[#8b5cf6] to-[#59e3a5] bg-clip-text text-transparent mb-1" style={{ lineHeight: '1.2' }}>
@@ -1678,9 +1673,9 @@ export default function Home() {
                     top: -100,
                     left: 0,
                     right: 0,
-                                    opacity: phoneScrollProgress >= 3 && phoneScrollProgress < 4 ? (phoneScrollProgress - 3) : (phoneScrollProgress >= 4 ? 1 : 0),
-                transform: `translateY(${phoneScrollProgress >= 3 && phoneScrollProgress < 4 ? 40 - ((phoneScrollProgress - 3) * 40) : (phoneScrollProgress >= 4 ? 0 : 40)}px)`,
-                pointerEvents: phoneScrollProgress >= 3 && phoneScrollProgress < 3.5 ? 'auto' : 'none',
+                                    opacity: currentStep === 3 ? stepProgress : 0,
+                transform: `translateY(${currentStep === 3 ? 40 - (stepProgress * 40) : 40}px)`,
+                pointerEvents: currentStep === 3 && stepProgress < 0.5 ? 'auto' : 'none',
                     transition: 'opacity 0.3s, transform 0.3s',
                   }}>
                     <h2 className="text-4xl md:text-5xl lg:text-6xl font-black bg-gradient-to-r from-[#59e3a5] to-[#8b5cf6] bg-clip-text text-transparent mb-1" style={{ lineHeight: '1.2' }}>
@@ -1727,10 +1722,9 @@ export default function Home() {
                           <div className="flex items-center space-x-3">
                             <img src="/fasho-logo-wide.png" alt="Fasho" className="w-10 h-auto" />
                           <h3 className="text-white font-bold text-lg">
-                            {phoneScrollProgress < 1 ? 'Find Your Song' : 
-                             phoneScrollProgress < 2 ? 'Build Your Package' :
-                             phoneScrollProgress < 3 ? 'Let\'s Get You Placed' :
-phoneScrollProgress < 4 ? 'Watch Your Success' :
+                            {currentStep === 0 ? 'Find Your Song' : 
+                             currentStep === 1 ? 'Build Your Package' :
+                             currentStep === 2 ? 'Let\'s Get You Placed' :
 'Watch Your Success'}
                           </h3>
                           </div>
@@ -1744,9 +1738,9 @@ phoneScrollProgress < 4 ? 'Watch Your Success' :
                           left: 0,
                           right: 0,
                           bottom: 0,
-                          opacity: phoneScrollProgress < 1 ? 1 - (phoneScrollProgress * 1) : 0,
-                          pointerEvents: phoneScrollProgress < 0.5 ? 'auto' : 'none',
-                          transform: `translateY(${phoneScrollProgress < 1 ? phoneScrollProgress * -40 : -40}px)`,
+                          opacity: currentStep === 0 ? 1 - stepProgress : 0,
+                          pointerEvents: currentStep === 0 && stepProgress < 0.5 ? 'auto' : 'none',
+                          transform: `translateY(${currentStep === 0 ? stepProgress * -40 : -40}px)`,
                           transition: 'opacity 0.3s, transform 0.3s',
                         }}>
                         {/* Search Input Mockup */}
@@ -1805,9 +1799,9 @@ phoneScrollProgress < 4 ? 'Watch Your Success' :
                           left: 0,
                           right: 0,
                           bottom: 0,
-                          opacity: phoneScrollProgress >= 1 && phoneScrollProgress < 2 ? (phoneScrollProgress - 1) : 0,
-                          pointerEvents: phoneScrollProgress >= 1 && phoneScrollProgress < 1.5 ? 'auto' : 'none',
-                          transform: `translateY(${phoneScrollProgress >= 1 && phoneScrollProgress < 2 ? 40 - ((phoneScrollProgress - 1) * 40) : 40}px)`,
+                          opacity: currentStep === 1 ? stepProgress : 0,
+                          pointerEvents: currentStep === 1 && stepProgress < 0.5 ? 'auto' : 'none',
+                          transform: `translateY(${currentStep === 1 ? 40 - (stepProgress * 40) : 40}px)`,
                           transition: 'opacity 0.3s, transform 0.3s',
                         }}>
                           {/* Step 2 Mockup Content */}
@@ -1860,9 +1854,9 @@ phoneScrollProgress < 4 ? 'Watch Your Success' :
                           left: 0,
                           right: 0,
                           bottom: 0,
-                          opacity: phoneScrollProgress >= 2 && phoneScrollProgress < 3 ? (phoneScrollProgress - 2) : 0,
-                          pointerEvents: phoneScrollProgress >= 2 && phoneScrollProgress < 2.5 ? 'auto' : 'none',
-                          transform: `translateY(${phoneScrollProgress >= 2 && phoneScrollProgress < 3 ? 40 - ((phoneScrollProgress - 2) * 40) : 40}px)`,
+                          opacity: currentStep === 2 ? stepProgress : 0,
+                          pointerEvents: currentStep === 2 && stepProgress < 0.5 ? 'auto' : 'none',
+                          transform: `translateY(${currentStep === 2 ? 40 - (stepProgress * 40) : 40}px)`,
                           transition: 'opacity 0.3s, transform 0.3s',
                         }}>
                           {/* Step 3 Mockup Content - Lottie Animation */}
@@ -1896,9 +1890,9 @@ phoneScrollProgress < 4 ? 'Watch Your Success' :
                           left: 0,
                           right: 0,
                           bottom: 0,
-                                          opacity: phoneScrollProgress >= 3 && phoneScrollProgress < 4 ? (phoneScrollProgress - 3) : (phoneScrollProgress >= 4 ? 1 : 0),
-                pointerEvents: phoneScrollProgress >= 3 && phoneScrollProgress < 3.5 ? 'auto' : 'none',
-                transform: `translateY(${phoneScrollProgress >= 3 && phoneScrollProgress < 4 ? 40 - ((phoneScrollProgress - 3) * 40) : (phoneScrollProgress >= 4 ? 0 : 40)}px)`,
+                                          opacity: currentStep === 3 ? stepProgress : 0,
+                pointerEvents: currentStep === 3 && stepProgress < 0.5 ? 'auto' : 'none',
+                transform: `translateY(${currentStep === 3 ? 40 - (stepProgress * 40) : 40}px)`,
                           transition: 'opacity 0.3s, transform 0.3s',
                         }}>
                           {/* Step 4 Mockup Content - Lottie Animation and Chat Message */}
@@ -1953,7 +1947,7 @@ phoneScrollProgress < 4 ? 'Watch Your Success' :
           </section>
 
           {/* Track Your Success Section */}
-          <section className="pt-20 pb-24 px-4 relative z-10 -mt-16">
+          <section className={`pb-24 px-4 relative z-10 transition-all duration-500 ${isStepSectionPinned ? 'pt-32 mt-16' : 'pt-20 -mt-16'}`}>
             <div className="max-w-7xl mx-auto">
               <div className="text-center mb-20">
                 <h3 

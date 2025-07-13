@@ -1,0 +1,23 @@
+header.wp-block-template-part {
+    position: sticky;
+    top: 0;
+    z-index: 9;
+    border-bottom: 1px solid #eee;
+    width: 100%;
+}
+
+main.wp-block-group > .wp-block-group:first-child {
+	display: none;
+}
+:where(.wp-site-blocks) > *, .entry-content.wp-block-post-content {
+    margin-block-start: 0;
+    margin-block-end: 0;
+}
+
+.scrollmagic-container {
+  margin-top: 0!important
+}
+
+body {
+  overflow-x: hidden!important
+}
