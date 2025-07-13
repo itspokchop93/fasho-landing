@@ -903,14 +903,14 @@ export default function Home() {
                     )}
                   </div>
                   {/* Main container with enhanced styling */}
-                  <div className="relative z-20 bg-gradient-to-br from-white/10 to-white/5 backdrop-blur-xl rounded-3xl p-8 border border-white/20 shadow-[0_12px_40px_0_rgba(20,192,255,0.45)]">
+                  <div className="relative z-20 bg-gradient-to-br from-white/10 to-white/5 backdrop-blur-xl rounded-3xl p-8 border border-white/20 shadow-[0_12px_40px_0_rgba(20,192,255,0.45)]" style={{ width: '896px', maxWidth: '90vw', margin: '0 auto' }}>
                     {/* Static border gradient */}
                     <div className="absolute inset-0 rounded-3xl bg-gradient-to-r from-[#59e3a5] via-[#14c0ff] to-[#8b5cf6] p-[2px]">
                       <div className="h-full w-full rounded-3xl bg-black/80 backdrop-blur-xl"></div>
                     </div>
                     
                     {/* Content */}
-                    <div className="relative z-10">
+                    <div className="relative z-10" style={{ width: '100%', maxWidth: '832px', margin: '0 auto' }}>
                       {/* Campaign Start Text - Reduced by 10px and added gradient text with reduced shadow */}
                       <div className="text-center mb-8">
                         <h2 className="text-3xl md:text-4xl font-black bg-gradient-to-b from-white to-gray-400 bg-clip-text text-transparent drop-shadow-[0_8px_16px_rgba(0,0,0,0.6)] mb-4">
@@ -922,8 +922,8 @@ export default function Home() {
                       </div>
 
                       {/* Input and Button Layout - Responsive - SEARCH CONTAINER WITH ESCAPE POSITIONING */}
-                      <div className="w-full max-w-4xl mx-auto relative mb-8">
-                        <div className="flex flex-col md:flex-row gap-4 items-stretch md:items-center">
+                      <div className="relative mb-8" style={{ width: '100%' }}>
+                        <div className="flex flex-col md:flex-row gap-4 items-stretch md:items-center" style={{ width: '100%', maxWidth: '832px' }}>
                           <div className="flex-1 relative">
                             <input
                               ref={inputRef}
@@ -961,17 +961,17 @@ export default function Home() {
                       </div>
                       {/* Song card directly below input/button row, INSIDE the campaign container */}
                       {previewTrack && isSpotifyUrlCheck(url) && (
-                        <div className="w-full max-w-4xl mx-auto mb-2 animate-popdown">
+                        <div className="mb-2 animate-popdown" style={{ width: '100%', maxWidth: '832px' }}>
                           <div className="bg-gradient-to-r from-[#59e3a5] via-[#14c0ff] to-[#8b5cf6] p-[1px] rounded-2xl shadow-[0_8px_32px_0_rgba(20,192,255,0.35)]">
-                            <div className="flex items-center w-full bg-gradient-to-r from-[#23272f] to-[#1a1a2e] rounded-2xl p-4 gap-4 overflow-hidden">
+                            <div className="flex items-center bg-gradient-to-r from-[#23272f] to-[#1a1a2e] rounded-2xl p-4 gap-4" style={{ width: '100%', maxWidth: '100%', overflow: 'hidden' }}>
                               <img
                                 src={previewTrack.imageUrl}
                                 alt={previewTrack.title}
                                 className="w-20 h-20 rounded-xl object-cover shadow-md border border-white/10 flex-shrink-0"
                               />
                               <div className="flex-1 min-w-0 overflow-hidden">
-                                <div className="font-bold text-white truncate text-left" style={{ fontSize: '1.15rem' }}>{previewTrack.title}</div>
-                                <div className="text-gray-300 truncate text-left" style={{ fontSize: '1.00rem' }}>{previewTrack.artist}</div>
+                                <div className="font-bold text-white text-left truncate" style={{ fontSize: '1.15rem' }}>{previewTrack.title}</div>
+                                <div className="text-gray-300 text-left truncate" style={{ fontSize: '1.00rem' }}>{previewTrack.artist}</div>
                               </div>
                               {/* Green checkmark Lottie animation */}
                               {checkmarkLottie && (

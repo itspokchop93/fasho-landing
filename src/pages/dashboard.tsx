@@ -5,6 +5,7 @@ import { useState, useEffect, useRef } from 'react'
 import { createClient } from '../utils/supabase/client'
 import { useRouter } from 'next/router'
 import Lottie from 'lottie-react'
+import CampaignProgressBar from '../components/CampaignProgressBar'
 
 interface DashboardProps {
   user: {
@@ -324,6 +325,14 @@ export default function Dashboard({ user }: DashboardProps) {
     }
     return num.toString()
   }
+
+  const getArtworkSize = (itemCount: number) => {
+    if (itemCount === 1) {
+      return 'w-full h-full'; // Single image takes full grid space
+    } else {
+      return 'w-full h-full'; // Multiple images each take 1 grid square
+    }
+  };
 
   // Get Y-axis labels for the chart with K notation
   const getYAxisLabels = (maxValue: number) => {
@@ -1217,75 +1226,91 @@ export default function Dashboard({ user }: DashboardProps) {
         ) : (
           <div className="space-y-4">
             {orders.slice(0, 3).map((order) => (
-              <div key={order.id} className="bg-gray-800/50 rounded-xl border border-gray-700/50 overflow-hidden">
-                {/* Collapsed Order Row */}
-                <div 
-                  className="flex items-center justify-between p-4 cursor-pointer hover:bg-gray-700/50 transition-colors"
-                  onClick={() => toggleOrderExpansion(order.id)}
-                >
-                  <div className="flex items-center space-x-4">
-                    {/* Album Artwork Thumbnails */}
-                    <div className="flex items-center space-x-2">
+              <div key={order.id}>
+                {/* Main Campaign Container with Gradient Border */}
+                <div className="bg-gradient-to-r from-gray-600/30 via-gray-500/20 to-gray-600/30 p-[1px] rounded-xl">
+                  <div className="bg-gray-800/50 rounded-xl overflow-hidden">
+                  {/* Collapsed Order Row - Column Layout */}
+                  <div 
+                    className="grid grid-cols-12 gap-4 p-4 cursor-pointer hover:bg-gray-700/50 transition-colors items-center"
+                    onClick={() => toggleOrderExpansion(order.id)}
+                  >
+                    {/* Column 1: Album Artwork Thumbnails (2x2 Grid) */}
+                    <div className="col-span-2 flex justify-center items-center" style={{ width: '110px', height: '110px' }}>
                       {order.items && order.items.length > 0 ? (
-                        order.items.map((item: any, idx: number) => (
-                          <div key={idx} className="w-10 h-10 rounded-lg overflow-hidden bg-gray-800 flex-shrink-0">
-                            <img 
-                              src={item.track.imageUrl} 
-                              alt={item.track.title}
-                              className="w-full h-full object-cover"
-                            />
-                          </div>
-                        ))
-                      ) : (
-                        <div className="w-10 h-10 bg-gray-800 rounded-lg flex items-center justify-center">
-                          <span className="text-gray-400 text-xs">🎵</span>
-                        </div>
-                      )}
-                      
-                      {/* Add-on Emoji Thumbnails */}
-                      {order.addOnItems && order.addOnItems.length > 0 && (
-                        <div className="flex items-center space-x-1 ml-2">
-                          {order.addOnItems.map((addon: any, idx: number) => (
-                            <div key={idx} className="w-8 h-8 bg-gray-800 rounded-full flex items-center justify-center">
-                              <span className="text-sm">{addon.emoji}</span>
+                        <div className={`w-full h-full ${order.items.length === 1 ? '' : 'grid grid-cols-2 grid-rows-2 gap-1'}`}>
+                          {order.items.map((item: any, idx: number) => (
+                            <div key={idx} className={`${getArtworkSize(order.items.length)} rounded-lg overflow-hidden bg-gray-800`}>
+                              <img 
+                                src={item.track.imageUrl} 
+                                alt={item.track.title}
+                                className="w-full h-full object-cover"
+                              />
                             </div>
                           ))}
                         </div>
+                      ) : (
+                        <div className="w-full h-full bg-gray-800 rounded-lg flex items-center justify-center">
+                          <span className="text-gray-400 text-xs">🎵</span>
+                        </div>
                       )}
                     </div>
                     
-                    <div>
-                      <p className="text-white font-semibold">{order.orderNumber}</p>
-                      <p className="text-gray-400 text-sm">
-                        ${Math.round(order.total)} • {new Date(order.createdAt).toLocaleDateString()}
+                    {/* Column 2: Order Info & Progress Bar (Flexible Width) */}
+                    <div className="col-span-6">
+                      <p className="text-white font-semibold mb-2 text-lg">
+                        Order #{order.orderNumber} • <span className="text-gray-400 font-normal text-xs">${Math.round(order.total)} • {new Date(order.createdAt).toLocaleDateString()}</span>
                       </p>
-                    </div>
-                  </div>
-                  
-                  <div className="flex items-center space-x-4">
-                    <div className="flex items-center space-x-2">
-                      <div className={`w-3 h-3 rounded-full animate-pulse ${getStatusBgClass(order.status)}`}></div>
-                      <span className={`text-sm font-medium ${getStatusTextClass(order.status)}`}>
-                        {getStatusLabel(order.status)}
-                      </span>
+                      {/* Campaign Progress Bar Container - Small size for collapsed view */}
+                      <div className="bg-gray-800/30 rounded-lg p-3 mt-2 border border-gray-700/30 md:block hidden" style={{ width: '500px', maxWidth: '100%' }}>
+                        <CampaignProgressBar 
+                          orderCreatedAt={order.createdAt}
+                          orderStatus={order.status}
+                          showMessage={true}
+                          size="small"
+                          className="w-full"
+                        />
+                      </div>
                     </div>
                     
-                    <svg 
-                      className={`w-5 h-5 text-gray-400 transition-transform ${
-                        expandedOrders.has(order.id) ? 'rotate-180' : ''
-                      }`}
-                      fill="none" 
-                      stroke="currentColor" 
-                      viewBox="0 0 24 24"
-                    >
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                    </svg>
+                    {/* Column 3: Status & Expand Button (Fixed Width) */}
+                    <div className="col-span-4 flex items-center justify-end space-x-4">
+                      <div className="flex items-center space-x-2">
+                        <div className={`w-3 h-3 rounded-full animate-pulse ${getStatusBgClass(order.status)}`} 
+                             style={{
+                               animation: 'glow 2s infinite',
+                               filter: 'drop-shadow(0 0 4px currentColor)',
+                             }}></div>
+                        <span className={`text-sm font-medium ${getStatusTextClass(order.status)}`}>
+                          {getStatusLabel(order.status)}
+                        </span>
+                      </div>
+                      
+                      <svg 
+                        className={`w-5 h-5 text-gray-400 transition-transform ${
+                          expandedOrders.has(order.id) ? 'rotate-180' : ''
+                        }`}
+                        fill="none" 
+                        stroke="currentColor" 
+                        viewBox="0 0 24 24"
+                      >
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                      </svg>
+                    </div>
                   </div>
-                </div>
                 
                 {/* Expanded Order Details */}
                 {expandedOrders.has(order.id) && (
                   <div className="border-t border-gray-700/50 p-4 bg-gray-800/30">
+                    {/* Campaign Progress Bar - Medium size for expanded view */}
+                    <div className="mb-6" style={{ width: '500px', maxWidth: '100%' }}>
+                      <CampaignProgressBar 
+                        orderCreatedAt={order.createdAt}
+                        orderStatus={order.status}
+                        showMessage={true}
+                        size="medium"
+                      />
+                    </div>
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                       {/* Song Cards */}
                       {order.items && order.items.map((item: any, idx: number) => (
@@ -1332,6 +1357,23 @@ export default function Dashboard({ user }: DashboardProps) {
                     )}
                   </div>
                 )}
+                  </div>
+                </div>
+                
+                {/* Mobile version - Bottom border extension with add-on styling */}
+                {!expandedOrders.has(order.id) && (
+                  <div className="md:hidden">
+                    <div className="bg-gray-800/40 rounded-b-lg p-3 border border-gray-700/40 border-t-0 -mt-1">
+                      <CampaignProgressBar 
+                        orderCreatedAt={order.createdAt}
+                        orderStatus={order.status}
+                        showMessage={true}
+                        size="small"
+                        className="w-full"
+                      />
+                    </div>
+                  </div>
+                )}
               </div>
             ))}
           </div>
@@ -1371,75 +1413,91 @@ export default function Dashboard({ user }: DashboardProps) {
       ) : (
         <div className="space-y-4">
           {orders.map((order) => (
-            <div key={order.id} className="bg-gray-900/95 backdrop-blur-sm rounded-2xl border border-gray-800/50 overflow-hidden">
-              {/* Collapsed Order Row */}
-              <div 
-                className="flex items-center justify-between p-4 cursor-pointer hover:bg-gray-800/50 transition-colors"
-                onClick={() => toggleOrderExpansion(order.id)}
-              >
-                <div className="flex items-center space-x-4">
-                  {/* Album Artwork Thumbnails */}
-                  <div className="flex items-center space-x-2">
+            <div key={order.id}>
+              {/* Main Campaign Container with Gradient Border */}
+              <div className="bg-gradient-to-r from-gray-600/30 via-gray-500/20 to-gray-600/30 p-[1px] rounded-2xl">
+                <div className="bg-gray-900/95 backdrop-blur-sm rounded-2xl overflow-hidden">
+                {/* Collapsed Order Row - Column Layout */}
+                <div 
+                  className="grid grid-cols-12 gap-4 p-4 cursor-pointer hover:bg-gray-800/50 transition-colors items-center"
+                  onClick={() => toggleOrderExpansion(order.id)}
+                >
+                  {/* Column 1: Album Artwork Thumbnails (2x2 Grid) */}
+                  <div className="col-span-2 flex justify-center items-center" style={{ width: '110px', height: '110px' }}>
                     {order.items && order.items.length > 0 ? (
-                      order.items.map((item: any, idx: number) => (
-                        <div key={idx} className="w-10 h-10 rounded-lg overflow-hidden bg-gray-800 flex-shrink-0">
-                          <img 
-                            src={item.track.imageUrl} 
-                            alt={item.track.title}
-                            className="w-full h-full object-cover"
-                          />
-                        </div>
-                      ))
-                    ) : (
-                      <div className="w-10 h-10 bg-gray-800 rounded-lg flex items-center justify-center">
-                        <span className="text-gray-400 text-xs">🎵</span>
-                      </div>
-                    )}
-                    
-                    {/* Add-on Emoji Thumbnails */}
-                    {order.addOnItems && order.addOnItems.length > 0 && (
-                      <div className="flex items-center space-x-1 ml-2">
-                        {order.addOnItems.map((addon: any, idx: number) => (
-                          <div key={idx} className="w-8 h-8 bg-gray-800 rounded-full flex items-center justify-center">
-                            <span className="text-sm">{addon.emoji}</span>
+                      <div className={`w-full h-full ${order.items.length === 1 ? '' : 'grid grid-cols-2 grid-rows-2 gap-1'}`}>
+                        {order.items.map((item: any, idx: number) => (
+                          <div key={idx} className={`${getArtworkSize(order.items.length)} rounded-lg overflow-hidden bg-gray-800`}>
+                            <img 
+                              src={item.track.imageUrl} 
+                              alt={item.track.title}
+                              className="w-full h-full object-cover"
+                            />
                           </div>
                         ))}
                       </div>
+                    ) : (
+                      <div className="w-full h-full bg-gray-800 rounded-lg flex items-center justify-center">
+                        <span className="text-gray-400 text-xs">🎵</span>
+                      </div>
                     )}
                   </div>
                   
-                  <div>
-                    <p className="text-white font-semibold">{order.orderNumber}</p>
-                    <p className="text-gray-400 text-sm">
-                      ${Math.round(order.total)} • {new Date(order.createdAt).toLocaleDateString()}
+                  {/* Column 2: Order Info & Progress Bar (Flexible Width) */}
+                  <div className="col-span-6">
+                    <p className="text-white font-semibold mb-2 text-lg">
+                      Order #{order.orderNumber} • <span className="text-gray-400 font-normal text-xs">${Math.round(order.total)} • {new Date(order.createdAt).toLocaleDateString()}</span>
                     </p>
-                  </div>
-                </div>
-                
-                <div className="flex items-center space-x-4">
-                  <div className="flex items-center space-x-2">
-                    <div className={`w-3 h-3 rounded-full animate-pulse ${getStatusBgClass(order.status)}`}></div>
-                    <span className={`text-sm font-medium ${getStatusTextClass(order.status)}`}>
-                      {getStatusLabel(order.status)}
-                    </span>
+                    {/* Campaign Progress Bar Container - Small size for collapsed view */}
+                    <div className="bg-gray-800/30 rounded-lg p-3 mt-2 border border-gray-700/30 md:block hidden" style={{ width: '500px', maxWidth: '100%' }}>
+                      <CampaignProgressBar 
+                        orderCreatedAt={order.createdAt}
+                        orderStatus={order.status}
+                        showMessage={true}
+                        size="small"
+                        className="w-full"
+                      />
+                    </div>
                   </div>
                   
-                  <svg 
-                    className={`w-5 h-5 text-gray-400 transition-transform ${
-                      expandedOrders.has(order.id) ? 'rotate-180' : ''
-                    }`} 
-                    fill="none" 
-                    stroke="currentColor" 
-                    viewBox="0 0 24 24"
-                  >
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                  </svg>
+                  {/* Column 3: Status & Expand Button (Fixed Width) */}
+                  <div className="col-span-4 flex items-center justify-end space-x-4">
+                    <div className="flex items-center space-x-2">
+                      <div className={`w-3 h-3 rounded-full animate-pulse ${getStatusBgClass(order.status)}`} 
+                           style={{
+                             animation: 'glow 2s infinite',
+                             filter: 'drop-shadow(0 0 4px currentColor)',
+                           }}></div>
+                      <span className={`text-sm font-medium ${getStatusTextClass(order.status)}`}>
+                        {getStatusLabel(order.status)}
+                      </span>
+                    </div>
+                    
+                    <svg 
+                      className={`w-5 h-5 text-gray-400 transition-transform ${
+                        expandedOrders.has(order.id) ? 'rotate-180' : ''
+                      }`} 
+                      fill="none" 
+                      stroke="currentColor" 
+                      viewBox="0 0 24 24"
+                    >
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                    </svg>
+                  </div>
                 </div>
-              </div>
               
               {/* Expanded Order Details */}
               {expandedOrders.has(order.id) && (
                 <div className="border-t border-gray-800/50 p-4 bg-gray-950/50">
+                  {/* Campaign Progress Bar - Medium size for expanded view */}
+                  <div className="mb-6" style={{ width: '500px', maxWidth: '100%' }}>
+                    <CampaignProgressBar 
+                      orderCreatedAt={order.createdAt}
+                      orderStatus={order.status}
+                      showMessage={true}
+                      size="medium"
+                    />
+                  </div>
                   <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4">
                     {/* Song Cards */}
                     {order.items && order.items.length > 0 && order.items.map((item: any, idx: number) => (
@@ -1517,6 +1575,23 @@ export default function Dashboard({ user }: DashboardProps) {
                       <span className="text-gray-400">Total:</span>
                       <span className="text-white font-semibold">${Math.round(order.total)}</span>
                     </div>
+                  </div>
+                </div>
+              )}
+                </div>
+              </div>
+              
+              {/* Mobile version - Bottom border extension with add-on styling */}
+              {!expandedOrders.has(order.id) && (
+                <div className="md:hidden">
+                  <div className="bg-gray-800/40 rounded-b-lg p-3 border border-gray-700/40 border-t-0 -mt-1">
+                    <CampaignProgressBar 
+                      orderCreatedAt={order.createdAt}
+                      orderStatus={order.status}
+                      showMessage={true}
+                      size="small"
+                      className="w-full"
+                    />
                   </div>
                 </div>
               )}
