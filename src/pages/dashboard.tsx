@@ -41,7 +41,17 @@ export default function Dashboard({ user }: DashboardProps) {
   const dropdownRef = useRef<HTMLDivElement>(null)
   const supabase = createClient()
 
-  // Get user initials
+  // Contact form state
+  const [contactForm, setContactForm] = useState({
+    name: user.user_metadata?.full_name || '',
+    email: user.email || '',
+    subject: 'General Inquiry',
+    message: ''
+  })
+  const [contactFormLoading, setContactFormLoading] = useState(false)
+  const [contactFormMessage, setContactFormMessage] = useState<{type: 'success' | 'error', text: string} | null>(null)
+
+  // Get user initials or profile image
   const getUserInitials = () => {
     if (user.user_metadata?.full_name) {
       const names = user.user_metadata.full_name.split(' ')
@@ -51,6 +61,45 @@ export default function Dashboard({ user }: DashboardProps) {
       return names[0][0].toUpperCase()
     }
     return user.email[0].toUpperCase()
+  }
+
+  // Get user profile image (artist image if available)
+  const getUserProfileImage = () => {
+    if (artistProfile?.artist_image_url) {
+      return artistProfile.artist_image_url
+    }
+    return null
+  }
+
+  // Render profile avatar (image or initials)
+  const renderProfileAvatar = (size: 'small' | 'medium' = 'medium') => {
+    const profileImage = getUserProfileImage()
+    const sizeClasses = size === 'small' ? 'w-8 h-8' : 'w-10 h-10'
+    const textSizeClasses = size === 'small' ? 'text-xs' : 'text-sm'
+    
+    if (profileImage) {
+      return (
+        <img
+          src={profileImage}
+          alt="Profile"
+          className={`${sizeClasses} rounded-full object-cover border-2 border-green-500/50`}
+          onError={(e) => {
+            // Fallback to initials if image fails to load
+            const target = e.target as HTMLImageElement
+            target.style.display = 'none'
+            target.nextElementSibling?.classList.remove('hidden')
+          }}
+        />
+      )
+    }
+    
+    return (
+      <div className={`${sizeClasses} bg-gradient-to-br from-green-500 to-green-600 rounded-full flex items-center justify-center`}>
+        <span className={`text-white font-semibold ${textSizeClasses}`}>
+          {getUserInitials()}
+        </span>
+      </div>
+    )
   }
 
   // Close dropdown when clicking outside
@@ -881,17 +930,17 @@ export default function Dashboard({ user }: DashboardProps) {
             </div>
             
             {/* Lottie Animation */}
-            <div className="relative z-10 flex items-center justify-center">
+            <div className="relative z-10 flex items-center justify-start ml-0 mr-8" style={{ transform: 'translateX(-45px)' }}>
               {lottieAnimationData ? (
                 <Lottie 
                   animationData={lottieAnimationData}
                   loop={true}
                   autoplay={true}
-                  className="w-96 h-96 xl:w-[420px] xl:h-[420px]"
+                  className="w-[442px] h-[442px] xl:w-[483px] xl:h-[483px]"
                   lottieRef={lottieRef}
                 />
               ) : (
-                <div className="w-96 h-96 xl:w-[420px] xl:h-[420px] bg-gray-800/50 rounded-lg flex items-center justify-center">
+                <div className="w-[442px] h-[442px] xl:w-[483px] xl:h-[483px] bg-gray-800/50 rounded-lg flex items-center justify-center">
                   <div className="text-gray-400">Loading animation...</div>
                 </div>
               )}
@@ -1233,20 +1282,20 @@ export default function Dashboard({ user }: DashboardProps) {
                   {/* Collapsed Order Row - Column Layout */}
                   <div 
                     className="grid grid-cols-12 gap-4 p-4 cursor-pointer hover:bg-gray-700/50 transition-colors items-center"
-                    onClick={() => toggleOrderExpansion(order.id)}
-                  >
+                  onClick={() => toggleOrderExpansion(order.id)}
+                >
                     {/* Column 1: Album Artwork Thumbnails (2x2 Grid) */}
                     <div className="col-span-2 flex justify-center items-center" style={{ width: '110px', height: '110px' }}>
                       {order.items && order.items.length > 0 ? (
                         <div className={`w-full h-full ${order.items.length === 1 ? '' : 'grid grid-cols-2 grid-rows-2 gap-1'}`}>
                           {order.items.map((item: any, idx: number) => (
                             <div key={idx} className={`${getArtworkSize(order.items.length)} rounded-lg overflow-hidden bg-gray-800`}>
-                              <img 
-                                src={item.track.imageUrl} 
-                                alt={item.track.title}
-                                className="w-full h-full object-cover"
-                              />
-                            </div>
+                            <img 
+                              src={item.track.imageUrl} 
+                              alt={item.track.title}
+                              className="w-full h-full object-cover"
+                            />
+                          </div>
                           ))}
                         </div>
                       ) : (
@@ -1270,34 +1319,34 @@ export default function Dashboard({ user }: DashboardProps) {
                           size="small"
                           className="w-full"
                         />
-                      </div>
                     </div>
-                    
+                  </div>
+                  
                     {/* Column 3: Status & Expand Button (Fixed Width) */}
                     <div className="col-span-4 flex items-center justify-end space-x-4">
-                      <div className="flex items-center space-x-2">
+                    <div className="flex items-center space-x-2">
                         <div className={`w-3 h-3 rounded-full animate-pulse ${getStatusBgClass(order.status)}`} 
                              style={{
                                animation: 'glow 2s infinite',
                                filter: 'drop-shadow(0 0 4px currentColor)',
                              }}></div>
-                        <span className={`text-sm font-medium ${getStatusTextClass(order.status)}`}>
-                          {getStatusLabel(order.status)}
-                        </span>
-                      </div>
-                      
-                      <svg 
-                        className={`w-5 h-5 text-gray-400 transition-transform ${
-                          expandedOrders.has(order.id) ? 'rotate-180' : ''
-                        }`}
-                        fill="none" 
-                        stroke="currentColor" 
-                        viewBox="0 0 24 24"
-                      >
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                      </svg>
+                      <span className={`text-sm font-medium ${getStatusTextClass(order.status)}`}>
+                        {getStatusLabel(order.status)}
+                      </span>
                     </div>
+                    
+                    <svg 
+                      className={`w-5 h-5 text-gray-400 transition-transform ${
+                        expandedOrders.has(order.id) ? 'rotate-180' : ''
+                      }`}
+                      fill="none" 
+                      stroke="currentColor" 
+                      viewBox="0 0 24 24"
+                    >
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                    </svg>
                   </div>
+                </div>
                 
                 {/* Expanded Order Details */}
                 {expandedOrders.has(order.id) && (
@@ -1420,20 +1469,20 @@ export default function Dashboard({ user }: DashboardProps) {
                 {/* Collapsed Order Row - Column Layout */}
                 <div 
                   className="grid grid-cols-12 gap-4 p-4 cursor-pointer hover:bg-gray-800/50 transition-colors items-center"
-                  onClick={() => toggleOrderExpansion(order.id)}
-                >
+                onClick={() => toggleOrderExpansion(order.id)}
+              >
                   {/* Column 1: Album Artwork Thumbnails (2x2 Grid) */}
                   <div className="col-span-2 flex justify-center items-center" style={{ width: '110px', height: '110px' }}>
                     {order.items && order.items.length > 0 ? (
                       <div className={`w-full h-full ${order.items.length === 1 ? '' : 'grid grid-cols-2 grid-rows-2 gap-1'}`}>
                         {order.items.map((item: any, idx: number) => (
                           <div key={idx} className={`${getArtworkSize(order.items.length)} rounded-lg overflow-hidden bg-gray-800`}>
-                            <img 
-                              src={item.track.imageUrl} 
-                              alt={item.track.title}
-                              className="w-full h-full object-cover"
-                            />
-                          </div>
+                          <img 
+                            src={item.track.imageUrl} 
+                            alt={item.track.title}
+                            className="w-full h-full object-cover"
+                          />
+                        </div>
                         ))}
                       </div>
                     ) : (
@@ -1457,34 +1506,34 @@ export default function Dashboard({ user }: DashboardProps) {
                         size="small"
                         className="w-full"
                       />
-                    </div>
                   </div>
-                  
+                </div>
+                
                   {/* Column 3: Status & Expand Button (Fixed Width) */}
                   <div className="col-span-4 flex items-center justify-end space-x-4">
-                    <div className="flex items-center space-x-2">
+                  <div className="flex items-center space-x-2">
                       <div className={`w-3 h-3 rounded-full animate-pulse ${getStatusBgClass(order.status)}`} 
                            style={{
                              animation: 'glow 2s infinite',
                              filter: 'drop-shadow(0 0 4px currentColor)',
                            }}></div>
-                      <span className={`text-sm font-medium ${getStatusTextClass(order.status)}`}>
-                        {getStatusLabel(order.status)}
-                      </span>
-                    </div>
-                    
-                    <svg 
-                      className={`w-5 h-5 text-gray-400 transition-transform ${
-                        expandedOrders.has(order.id) ? 'rotate-180' : ''
-                      }`} 
-                      fill="none" 
-                      stroke="currentColor" 
-                      viewBox="0 0 24 24"
-                    >
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                    </svg>
+                    <span className={`text-sm font-medium ${getStatusTextClass(order.status)}`}>
+                      {getStatusLabel(order.status)}
+                    </span>
                   </div>
+                  
+                  <svg 
+                    className={`w-5 h-5 text-gray-400 transition-transform ${
+                      expandedOrders.has(order.id) ? 'rotate-180' : ''
+                    }`} 
+                    fill="none" 
+                    stroke="currentColor" 
+                    viewBox="0 0 24 24"
+                  >
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                  </svg>
                 </div>
+              </div>
               
               {/* Expanded Order Details */}
               {expandedOrders.has(order.id) && (
@@ -1609,24 +1658,48 @@ export default function Dashboard({ user }: DashboardProps) {
       <div className="space-y-4">
         {[
           {
-            question: "How long does it take to see results?",
-            answer: "Most campaigns start showing results within 24-48 hours. Full campaign completion typically takes 7-14 days depending on the package selected."
+            question: "⏱️ How quickly will my music be placed on playlists?",
+            answer: "Your campaign begins within 24 hours of purchase, and your first playlist placements typically occur within 48-72 hours from then. Timing can vary depending on curator availability and your specific genre. Most placements happen even faster, while some very rare cases may take up to a week as we ensure proper targeting."
           },
           {
-            question: "What platforms do you promote on?",
-            answer: "We promote your music on Spotify, Apple Music, and other major streaming platforms through our network of playlist curators and influencers."
+            question: "📈 When will I start seeing streams from playlist placements?",
+            answer: "Streams begin immediately once your track is added to a playlist. The volume depends on the playlist size and listener activity, but you should see streaming data appear in your Spotify for Artists dashboard within 24-48 hours of placement."
           },
           {
-            question: "Can I track my campaign progress?",
-            answer: "Yes! Your dashboard provides real-time updates on your campaign progress, including plays, playlist additions, and audience growth."
+            question: "📋 How do you submit music to playlists?",
+            answer: "We use a personalized outreach approach, contacting each curator individually through phone, email, or direct messaging. Our team has established relationships with playlist curators built over 10+ years in the industry. This personal approach results in higher acceptance rates compared to mass submission methods."
           },
           {
-            question: "What happens if I'm not satisfied with results?",
-            answer: "We offer a satisfaction guarantee. If your campaign doesn't meet the promised deliverables, we'll work with you to make it right."
+            question: "📊 How can I track my playlist placements?",
+            answer: "We recommend all of our clients use the Spotify for Artists (free app/web platform) to monitor which playlists have added your music. This tool shows playlist names, follower counts, and streaming data."
           },
           {
-            question: "Can I promote multiple songs at once?",
-            answer: "Absolutely! You can create campaigns for multiple tracks simultaneously. We offer bundle discounts for multiple song promotions."
+            question: "🌍 Do you work with international artists?",
+            answer: "Yes, we work with artists, podcasters, and record labels worldwide. Our playlist network includes curators from multiple countries and regions, covering both local and international playlists."
+          },
+          {
+            question: "🎼 What genres do you support?",
+            answer: "We work with all music genres and sub-genres. Our curator network spans hip-hop, pop, rock, electronic, country, jazz, classical, indie, metal, folk, reggae, Latin, world music, and more. We match your music with genre-appropriate playlists."
+          },
+          {
+            question: "💰 Will I earn royalties from the streams?",
+            answer: "Yes, all streams generated from playlist placements count as regular Spotify streams and generate royalties through your normal distribution service (DistroKid, CD Baby, etc.). Royalty rates follow Spotify's standard payment structure."
+          },
+          {
+            question: "🛡️ Is this service safe for my Spotify account?",
+            answer: "Yes, our service complies with Spotify's terms of service. We work exclusively with legitimate playlists managed by real curators - no bots, artificial streams, or policy violations. All placements are organic and curator-driven."
+          },
+          {
+            question: "🎧 Do you work with podcasts too?",
+            answer: "Yes, we have curators who specialize in podcast playlists across various topics and formats. The same process applies - we'll match your podcast with relevant playlist curators in your niche."
+          },
+          {
+            question: "⏰ How long does the campaign last?",
+            answer: "All of our marketing campaigns run in 30-day cycles. We will continue to market your material until it reaches the estimated plays included in your package tier, and then marketing will cease. We guarantee you'll reach the estimated amount of streams by the end of the 30-day cycle. But almost all campaigns are completed within only 7-10 days with all streams delivered and clients seeing their full results."
+          },
+          {
+            question: "📞 How do I contact support?",
+            answer: "Email support@fasho.co for any questions or account issues. Our team typically responds within 24 hours during business days (M-F)."
           }
         ].map((faq, index) => (
           <div key={index} className="bg-gradient-to-br from-gray-950/90 to-gray-900/90 backdrop-blur-sm rounded-2xl p-6 border border-gray-800/30">
@@ -1646,13 +1719,28 @@ export default function Dashboard({ user }: DashboardProps) {
         <div className="bg-gradient-to-br from-gray-950/90 to-gray-900/90 backdrop-blur-sm rounded-2xl p-6 border border-gray-800/30">
           <h3 className="text-xl font-semibold text-white mb-6">Get in Touch</h3>
           
-          <form className="space-y-4">
+          {/* Success/Error Message */}
+          {contactFormMessage && (
+            <div className={`mb-6 p-4 rounded-xl border ${
+              contactFormMessage.type === 'success' 
+                ? 'bg-green-500/10 border-green-500/30 text-green-400' 
+                : 'bg-red-500/10 border-red-500/30 text-red-400'
+            }`}>
+              <p className="text-sm">{contactFormMessage.text}</p>
+            </div>
+          )}
+          
+          <form onSubmit={handleContactFormSubmit} className="space-y-4">
             <div>
               <label className="block text-gray-300 text-sm font-medium mb-2">Name</label>
               <input 
                 type="text" 
+                value={contactForm.name}
+                onChange={(e) => handleContactFormChange('name', e.target.value)}
                 className="w-full bg-gray-800 border border-gray-700 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-green-500 transition-colors"
                 placeholder="Your full name"
+                required
+                disabled={contactFormLoading}
               />
             </div>
             
@@ -1660,19 +1748,28 @@ export default function Dashboard({ user }: DashboardProps) {
               <label className="block text-gray-300 text-sm font-medium mb-2">Email</label>
               <input 
                 type="email" 
+                value={contactForm.email}
+                onChange={(e) => handleContactFormChange('email', e.target.value)}
                 className="w-full bg-gray-800 border border-gray-700 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-green-500 transition-colors"
                 placeholder="your@email.com"
-                defaultValue={user.email}
+                required
+                disabled={contactFormLoading}
               />
             </div>
             
             <div>
               <label className="block text-gray-300 text-sm font-medium mb-2">Subject</label>
-              <select className="w-full bg-gray-800 border border-gray-700 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-green-500 transition-colors">
-                <option>Campaign Support</option>
-                <option>Billing Question</option>
-                <option>Technical Issue</option>
-                <option>General Inquiry</option>
+              <select 
+                value={contactForm.subject}
+                onChange={(e) => handleContactFormChange('subject', e.target.value)}
+                className="w-full bg-gray-800 border border-gray-700 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-green-500 transition-colors"
+                required
+                disabled={contactFormLoading}
+              >
+                <option value="Campaign Support">Campaign Support</option>
+                <option value="Billing Question">Billing Question</option>
+                <option value="Technical Issue">Technical Issue</option>
+                <option value="General Inquiry">General Inquiry</option>
               </select>
             </div>
             
@@ -1680,16 +1777,31 @@ export default function Dashboard({ user }: DashboardProps) {
               <label className="block text-gray-300 text-sm font-medium mb-2">Message</label>
               <textarea 
                 rows={4}
-                className="w-full bg-gray-800 border border-gray-700 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-green-500 transition-colors"
+                value={contactForm.message}
+                onChange={(e) => handleContactFormChange('message', e.target.value)}
+                className="w-full bg-gray-800 border border-gray-700 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-green-500 transition-colors resize-none"
                 placeholder="How can we help you?"
+                required
+                disabled={contactFormLoading}
               ></textarea>
             </div>
             
             <button 
               type="submit"
-              className="w-full bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white py-3 rounded-xl font-semibold transition-all duration-300"
+              disabled={contactFormLoading}
+              className="w-full bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 disabled:from-gray-600 disabled:to-gray-700 disabled:cursor-not-allowed text-white py-3 rounded-xl font-semibold transition-all duration-300 flex items-center justify-center"
             >
-              Send Message
+              {contactFormLoading ? (
+                <>
+                  <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                  Submitting...
+                </>
+              ) : (
+                'Send Message'
+              )}
             </button>
           </form>
         </div>
@@ -1703,12 +1815,8 @@ export default function Dashboard({ user }: DashboardProps) {
                 <span className="text-gray-300">support@fasho.co</span>
               </div>
               <div className="flex items-center space-x-3">
-                <span className="text-2xl">💬</span>
-                <span className="text-gray-300">Live Chat Available</span>
-              </div>
-              <div className="flex items-center space-x-3">
                 <span className="text-2xl">⏰</span>
-                <span className="text-gray-300">24/7 Support</span>
+                <span className="text-gray-300">Monday to Friday 9am to 7pm PST</span>
               </div>
             </div>
           </div>
@@ -1716,18 +1824,7 @@ export default function Dashboard({ user }: DashboardProps) {
           <div className="bg-gradient-to-br from-gray-950/90 to-gray-900/90 backdrop-blur-sm rounded-2xl p-6 border border-gray-800/30">
             <h4 className="text-lg font-semibold text-white mb-4">Response Times</h4>
             <div className="space-y-3">
-              <div className="flex justify-between">
-                <span className="text-gray-400">General Inquiries:</span>
-                <span className="text-green-400">&lt; 2 hours</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-gray-400">Technical Issues:</span>
-                <span className="text-green-400">&lt; 1 hour</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-gray-400">Urgent Matters:</span>
-                <span className="text-green-400">&lt; 30 minutes</span>
-              </div>
+              <p className="text-gray-300">We generally respond to all support ticket requests within 24hrs during the business week.</p>
             </div>
           </div>
         </div>
@@ -1739,11 +1836,19 @@ export default function Dashboard({ user }: DashboardProps) {
     <div className="relative" ref={dropdownRef}>
       <button
         onClick={() => setShowUserDropdown(!showUserDropdown)}
-        className="w-10 h-10 bg-gradient-to-br from-green-500 to-green-600 rounded-full flex items-center justify-center transition-all duration-200 hover:scale-105 focus:outline-none focus:ring-2 focus:ring-green-400 focus:ring-offset-2 focus:ring-offset-gray-900"
+        className="flex items-center space-x-3 transition-all duration-200 hover:scale-105 focus:outline-none focus:ring-2 focus:ring-green-400 focus:ring-offset-2 focus:ring-offset-gray-900 rounded-full"
       >
-        <span className="text-white font-semibold text-sm">
-          {getUserInitials()}
-        </span>
+        {renderProfileAvatar('medium')}
+        <div className="text-right">
+          <p className="text-white font-medium text-sm truncate">
+            {user.user_metadata?.full_name || 'User'}
+          </p>
+          {artistProfile && (
+            <p className="text-green-400 text-xs truncate">
+              {artistProfile.name}
+            </p>
+          )}
+        </div>
       </button>
       
       {showUserDropdown && (
@@ -1751,16 +1856,17 @@ export default function Dashboard({ user }: DashboardProps) {
           {/* User Info Section */}
           <div className="p-4 border-b border-gray-700/50">
             <div className="flex items-center space-x-3">
-              <div className="w-10 h-10 bg-gradient-to-br from-green-500 to-green-600 rounded-full flex items-center justify-center">
-                <span className="text-white font-semibold text-sm">
-                  {getUserInitials()}
-                </span>
-              </div>
+              {renderProfileAvatar('medium')}
               <div className="flex-1 min-w-0">
                 <p className="text-white font-medium text-sm truncate">
                   {user.user_metadata?.full_name || 'User'}
                 </p>
                 <p className="text-gray-400 text-xs truncate">{user.email}</p>
+                {artistProfile && (
+                  <p className="text-green-400 text-xs truncate">
+                    {artistProfile.name}
+                  </p>
+                )}
               </div>
             </div>
           </div>
@@ -1825,6 +1931,82 @@ export default function Dashboard({ user }: DashboardProps) {
     }
   }
 
+  // Contact form handlers
+  const handleContactFormChange = (field: string, value: string) => {
+    setContactForm(prev => ({
+      ...prev,
+      [field]: value
+    }))
+    
+    // Clear any existing messages when user starts typing
+    if (contactFormMessage) {
+      setContactFormMessage(null)
+    }
+  }
+
+  const handleContactFormSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setContactFormLoading(true)
+    setContactFormMessage(null)
+
+    try {
+      // Validate form
+      if (!contactForm.name.trim() || !contactForm.email.trim() || !contactForm.subject.trim() || !contactForm.message.trim()) {
+        setContactFormMessage({
+          type: 'error',
+          text: 'Please fill in all fields before submitting.'
+        })
+        setContactFormLoading(false)
+        return
+      }
+
+      console.log('📞 DASHBOARD: Submitting contact form:', {
+        name: contactForm.name,
+        email: contactForm.email,
+        subject: contactForm.subject,
+        messageLength: contactForm.message.length
+      })
+
+      const response = await fetch('/api/contact-support', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(contactForm)
+      })
+
+      const data = await response.json()
+
+      if (!response.ok || !data.success) {
+        throw new Error(data.error || 'Failed to submit support request')
+      }
+
+      console.log('✅ DASHBOARD: Contact form submitted successfully:', data.ticketId)
+
+      setContactFormMessage({
+        type: 'success',
+        text: `Your support request has been submitted successfully! Ticket ID: #${data.ticketId}. Our team will respond within 24 hours.`
+      })
+
+      // Reset form
+      setContactForm({
+        name: user.user_metadata?.full_name || '',
+        email: user.email || '',
+        subject: 'General Inquiry',
+        message: ''
+      })
+
+    } catch (error) {
+      console.error('🚨 DASHBOARD: Contact form submission error:', error)
+      setContactFormMessage({
+        type: 'error',
+        text: error instanceof Error ? error.message : 'Failed to submit support request. Please try again or email support@fasho.co directly.'
+      })
+    } finally {
+      setContactFormLoading(false)
+    }
+  }
+
   return (
     <>
       <Head>
@@ -1836,8 +2018,12 @@ export default function Dashboard({ user }: DashboardProps) {
         <div className="hidden lg:flex w-64 bg-gradient-to-b from-gray-950/95 to-gray-900/95 backdrop-blur-sm border-r border-gray-800/30 flex-col">
           {/* Logo */}
           <div className="p-6 border-b border-gray-800/30">
-            <h1 className="text-2xl font-bold text-white">FASHO.CO</h1>
-            <p className="text-sm text-gray-400">Music Promotion</p>
+            <img 
+              src="/fasho-logo-wide.png" 
+              alt="FASHO" 
+              className="w-full h-auto max-w-[144px]"
+            />
+            <p className="text-sm text-gray-400 mt-2">Music Promotion</p>
           </div>
           
           {/* Navigation */}
@@ -1877,13 +2063,22 @@ export default function Dashboard({ user }: DashboardProps) {
               <div className="min-w-0 flex-1">
                 {/* Mobile Logo */}
                 <div className="lg:hidden mb-2">
-                  <h1 className="text-xl font-bold text-white">FASHO.CO</h1>
+                  <img 
+                    src="/fasho-logo-wide.png" 
+                    alt="FASHO" 
+                    className="h-6 w-auto"
+                  />
                 </div>
-                <h2 className="text-xl lg:text-2xl font-bold text-white capitalize">{activeTab}</h2>
+                <h2 className="text-xl lg:text-2xl font-bold text-white">
+                  {activeTab === 'dashboard' && 'Dashboard'}
+                  {activeTab === 'campaigns' && 'Campaigns'}
+                  {activeTab === 'faq' && 'Frequently Asked Questions'}
+                  {activeTab === 'contact' && 'Contact'}
+                </h2>
                 <p className="text-sm lg:text-base text-gray-400">
                   {activeTab === 'dashboard' && 'Welcome back! Here\'s your campaign overview.'}
                   {activeTab === 'campaigns' && 'Manage and monitor all your music campaigns.'}
-                  {activeTab === 'faq' && 'Find answers to common questions.'}
+                  {activeTab === 'faq' && 'Get the answers that you need, when you need them.'}
                   {activeTab === 'contact' && 'Get in touch with our support team.'}
                 </p>
               </div>
