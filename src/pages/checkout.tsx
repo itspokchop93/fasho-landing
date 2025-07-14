@@ -5,6 +5,7 @@ import Image from 'next/image';
 import { Track } from '../types/track';
 import Header from '../components/Header';
 import { createClient } from '../utils/supabase/client';
+import { userProfileService, UserProfileData, ArtistProfile } from '../utils/userProfile';
 
 interface Package {
   id: string;
@@ -123,6 +124,7 @@ export default function CheckoutPage() {
   const [resendLoading, setResendLoading] = useState(false);
   const [resendError, setResendError] = useState<string | null>(null);
   const [lastSessionId, setLastSessionId] = useState<string>('');
+  const [artistProfile, setArtistProfile] = useState<ArtistProfile | null>(null);
 
   // Form state
   const [formData, setFormData] = useState({
@@ -142,6 +144,74 @@ export default function CheckoutPage() {
     zip: '',
     country: 'US' // 2-letter code only
   });
+
+  // Helper functions for profile avatar
+  const getUserInitials = (user: any) => {
+    if (user?.user_metadata?.full_name) {
+      const names = user.user_metadata.full_name.split(' ')
+      if (names.length >= 2) {
+        return `${names[0][0]}${names[names.length - 1][0]}`.toUpperCase()
+      }
+      return names[0][0].toUpperCase()
+    }
+    return user?.email ? user.email.substring(0, 2).toUpperCase() : 'U'
+  }
+
+  const getUserProfileImage = () => {
+    if (artistProfile?.artist_image_url) {
+      return artistProfile.artist_image_url
+    }
+    return null
+  }
+
+  const renderProfileAvatar = () => {
+    const profileImage = getUserProfileImage()
+    
+    if (profileImage) {
+      return (
+        <div className="relative">
+          <img
+            src={profileImage}
+            alt="Profile"
+            className="w-12 h-12 rounded-full object-cover border-2 border-green-500/50"
+            onError={(e) => {
+              // Fallback to initials if image fails to load
+              const target = e.target as HTMLImageElement
+              target.style.display = 'none'
+              const fallback = target.nextElementSibling as HTMLElement
+              if (fallback) fallback.style.display = 'flex'
+            }}
+          />
+          <div className="w-12 h-12 bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] rounded-full flex items-center justify-center absolute top-0 left-0 hidden">
+            <span className="text-black font-bold text-lg">
+              {getUserInitials(currentUser)}
+            </span>
+          </div>
+        </div>
+      )
+    }
+    
+    return (
+      <div className="w-12 h-12 bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] rounded-full flex items-center justify-center">
+        <span className="text-black font-bold text-lg">
+          {getUserInitials(currentUser)}
+        </span>
+      </div>
+    )
+  }
+
+  // Fetch artist profile for current user
+  const fetchArtistProfile = async (user?: any) => {
+    const userToUse = user || currentUser
+    if (!userToUse?.id) return
+    
+    try {
+      const profile = await userProfileService.fetchArtistProfile(userToUse.id)
+      setArtistProfile(profile)
+    } catch (error) {
+      console.error('Failed to fetch artist profile:', error)
+    }
+  }
 
   // Password validation function (same as signup page)
   const validatePassword = (password: string) => {
@@ -767,6 +837,11 @@ export default function CheckoutPage() {
         
         setCurrentUser(user);
         
+        // Fetch artist profile if user is authenticated
+        if (user?.id) {
+          fetchArtistProfile(user);
+        }
+        
         // If user is found, also update the form email field
         if (user?.email) {
           console.log('🔐 CHECKOUT: Pre-filling email field with user email:', user.email);
@@ -791,6 +866,11 @@ export default function CheckoutPage() {
         console.log('🔐 CHECKOUT: Full session object:', session);
         setCurrentUser(session?.user ?? null);
         
+        // Fetch artist profile if user is authenticated
+        if (session?.user?.id) {
+          fetchArtistProfile(session.user);
+        }
+        
         // Update email field when user logs in
         if (session?.user?.email) {
           console.log('🔐 CHECKOUT: Auth change - updating email field:', session.user.email);
@@ -807,6 +887,15 @@ export default function CheckoutPage() {
       subscription.unsubscribe();
     };
   }, []);
+
+  // Fetch artist profile when user changes
+  useEffect(() => {
+    if (currentUser) {
+      fetchArtistProfile();
+    } else {
+      setArtistProfile(null);
+    }
+  }, [currentUser]);
 
   // Listen for iframe communication messages
   useEffect(() => {
@@ -988,12 +1077,34 @@ export default function CheckoutPage() {
       };
       localStorage.setItem('checkoutCart', JSON.stringify(cartData));
 
+      // Get current sessionId to preserve it after logout
+      const { sessionId: currentSessionId } = router.query;
+
+      // Call server-side sign-out API first for comprehensive logout
+      await fetch('/api/auth/signout', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      // Client-side logout
       await supabase.auth.signOut();
       
-      // Refresh page to show logged out state
-      window.location.reload();
+      // Clear any cached user data
+      localStorage.removeItem('userProfileImage');
+      sessionStorage.clear();
+      
+      // Preserve sessionId in URL and refresh to show logged out state
+      if (currentSessionId) {
+        window.location.href = `/checkout?sessionId=${currentSessionId}`;
+      } else {
+        window.location.reload();
+      }
     } catch (error) {
       console.error('Logout error:', error);
+      // Fallback: still try to reload even if logout fails
+      window.location.reload();
     }
   };
 
@@ -1446,10 +1557,13 @@ export default function CheckoutPage() {
                       </button>
                     </div>
                     <div className="flex items-center space-x-4">
-                      <div className="w-12 h-12 bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] rounded-full flex items-center justify-center">
-                        <span className="text-black font-bold text-lg">
-                          {currentUser.email.substring(0, 2).toUpperCase()}
-                        </span>
+                      {renderProfileAvatar()}
+                      <div className="hidden">
+                        <div className="w-12 h-12 bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] rounded-full flex items-center justify-center">
+                          <span className="text-black font-bold text-lg">
+                            {getUserInitials(currentUser)}
+                          </span>
+                        </div>
                       </div>
                       <div>
                         <p className="text-white font-medium">You are currently signed in</p>

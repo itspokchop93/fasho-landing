@@ -174,6 +174,35 @@ export default function Dashboard({ user }: DashboardProps) {
     fetchOrders()
   }, [])
 
+  // Handle hash navigation for tab switching
+  useEffect(() => {
+    const handleHashChange = () => {
+      const hash = window.location.hash.slice(1) // Remove the '#' character
+      if (hash === 'campaigns') {
+        setActiveTab('campaigns')
+      } else if (hash === 'contact') {
+        setActiveTab('contact')
+      } else if (hash === 'faq') {
+        setActiveTab('faq')
+      } else if (hash === 'help') {
+        setActiveTab('contact') // 'help' maps to 'contact' tab
+      } else if (hash === '' || hash === 'dashboard') {
+        setActiveTab('dashboard')
+      }
+    }
+
+    // Check hash on initial load
+    handleHashChange()
+
+    // Listen for hash changes
+    window.addEventListener('hashchange', handleHashChange)
+
+    // Cleanup listener
+    return () => {
+      window.removeEventListener('hashchange', handleHashChange)
+    }
+  }, [])
+
   // Calculate total estimated plays from orders in the last 30 days
   const calculateTotalPlays = () => {
     const thirtyDaysAgo = new Date()
@@ -320,13 +349,65 @@ export default function Dashboard({ user }: DashboardProps) {
 
   const handleSignOut = async () => {
     setIsLoading(true)
+    
+    try {
+      // Call server-side sign out endpoint first
+      const response = await fetch('/api/auth/signout', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      })
+      
+      if (!response.ok) {
+        console.error('Server-side sign out failed')
+      }
+      
+      // Clear client-side session
     const { error } = await supabase.auth.signOut()
     
-    if (!error) {
+      if (error) {
+        console.error('Client-side sign out error:', error.message)
+      }
+      
+      // Clear any cached user data
+      setArtistProfile(null)
+      setOrders([])
+      
+      // Clear local storage and session storage
+      if (typeof window !== 'undefined') {
+        // Clear all possible auth-related storage
+        localStorage.removeItem('userProfileImage')
+        localStorage.removeItem('supabase.auth.token')
+        localStorage.removeItem('sb-auth-token')
+        localStorage.removeItem('sb-refresh-token')
+        sessionStorage.clear()
+        
+        // Clear all localStorage items that might contain auth data
+        Object.keys(localStorage).forEach(key => {
+          if (key.includes('supabase') || key.includes('auth')) {
+            localStorage.removeItem(key)
+          }
+        })
+      }
+      
+      // Force a hard redirect to signup page to ensure clean state
+      if (typeof window !== 'undefined') {
+        window.location.href = '/signup'
+      } else {
       router.push('/signup')
+      }
+      
+    } catch (error) {
+      console.error('Error during sign out:', error)
+      // Even if there's an error, force redirect to signup
+      if (typeof window !== 'undefined') {
+        window.location.href = '/signup'
     } else {
-      console.error('Error signing out:', error.message)
+        router.push('/signup')
     }
+    }
+    
     setIsLoading(false)
   }
 
@@ -492,6 +573,8 @@ export default function Dashboard({ user }: DashboardProps) {
     }
   }
 
+
+
   const handlePromoteTrack = (track: any) => {
     // Create track object in the format expected by /add page
     const trackData = {
@@ -647,12 +730,21 @@ export default function Dashboard({ user }: DashboardProps) {
             {/* Header with title and change button */}
             <div className="flex items-center justify-between mb-6">
               <h3 className="text-lg font-semibold text-white">Your Artist Profile</h3>
-              <button
-                onClick={() => setShowArtistProfileEditor(!showArtistProfileEditor)}
-                className="text-xs text-gray-400 hover:text-white transition-colors"
-              >
-                Change Artist Profile
-              </button>
+              {artistProfile ? (
+                <button
+                  onClick={() => setShowArtistProfileEditor(!showArtistProfileEditor)}
+                  className="text-xs text-gray-400 hover:text-white transition-colors"
+                >
+                  Change Artist Profile
+                </button>
+              ) : (
+                <button
+                  onClick={() => setShowArtistProfileEditor(!showArtistProfileEditor)}
+                  className="text-xs text-gray-400 hover:text-white transition-colors"
+                >
+                  Change Artist Profile
+                </button>
+              )}
             </div>
 
             {artistProfileLoading ? (
@@ -957,12 +1049,21 @@ export default function Dashboard({ user }: DashboardProps) {
             {/* Header with title and change button */}
             <div className="flex items-center justify-between mb-6">
               <h3 className="text-xl font-semibold text-white">Your Artist Profile</h3>
-              <button
-                onClick={() => setShowArtistProfileEditor(!showArtistProfileEditor)}
-                className="text-xs text-gray-400 hover:text-white transition-colors"
-              >
-                Change Artist Profile
-              </button>
+              {artistProfile ? (
+                <button
+                  onClick={() => setShowArtistProfileEditor(!showArtistProfileEditor)}
+                  className="text-xs text-gray-400 hover:text-white transition-colors"
+                >
+                  Change Artist Profile
+                </button>
+              ) : (
+                <button
+                  onClick={() => setShowArtistProfileEditor(!showArtistProfileEditor)}
+                  className="text-xs text-gray-400 hover:text-white transition-colors"
+                >
+                  Change Artist Profile
+                </button>
+              )}
             </div>
 
             {artistProfileLoading ? (
@@ -1825,7 +1926,7 @@ export default function Dashboard({ user }: DashboardProps) {
             <h4 className="text-lg font-semibold text-white mb-4">Response Times</h4>
             <div className="space-y-3">
               <p className="text-gray-300">We generally respond to all support ticket requests within 24hrs during the business week.</p>
-            </div>
+              </div>
           </div>
         </div>
       </div>

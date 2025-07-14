@@ -5,9 +5,13 @@ import Head from "next/head";
 import Header from "../components/Header";
 import TrackCard from "../components/TrackCard";
 import ShapeDivider from "../components/ShapeDivider";
+import SplitText from "../components/SplitText";
+import ScrollFloat from "../components/ScrollFloat";
+import Particles from "../components/Particles";
 import { Track } from "../types/track";
 import { createClient } from '../utils/supabase/client';
 import HeroParticles from '../components/HeroParticles';
+import GlareHover from '../components/GlareHover';
 import Lottie from 'lottie-react';
 
 // Custom hook for viewport intersection
@@ -81,9 +85,105 @@ export default function Home() {
   // Green checkmark animation for selected track
   const [checkmarkLottie, setCheckmarkLottie] = useState<any>(null);
 
+  // Testimonial carousel state
+  const [currentTestimonialIndex, setCurrentTestimonialIndex] = useState(0);
+
+  // Testimonial data
+  const testimonials = [
+    {
+      name: "Lil Tecca",
+      title: "Hip-Hop Artist",
+      image: "/tecca.jpeg",
+      quote: "FASHO.co hit different fr. Been dealing with majors my whole career but these guys actually move faster than my label. Track was live on hundreds of major playlists in 48 hours no cap.",
+      gradient: "from-[#59e3a5]/30 via-[#14c0ff]/40 to-[#8b5cf6]/30",
+      border: "border-[#14c0ff]/50",
+      starGradient: "from-[#59e3a5] to-[#14c0ff]"
+    },
+    {
+      name: "Jelly Roll",
+      title: "Country/Hip-Hop Artist",
+      image: "/jelly.jpg",
+      quote: "Before the world knew my name, FASHO had me on all the major playlists. Started using them when I was still grinding in Nashville and they believed in the vision. My team was so impressed we've used them for every release since. These guys been real from day one.",
+      gradient: "from-[#8b5cf6]/30 via-[#59e3a5]/40 to-[#14c0ff]/30",
+      border: "border-[#59e3a5]/50",
+      starGradient: "from-[#8b5cf6] to-[#59e3a5]"
+    },
+    {
+      name: "Lin-Manuel Miranda",
+      title: "Creator of Hamilton",
+      image: "/lin.jpg",
+      quote: "I've worked with every major platform launching Hamilton's music, and FASHO's execution stands out. They understood that musical theater on Spotify requires a completely different approach. The precision of their playlist targeting was remarkable - reaching both Broadway enthusiasts and hip-hop fans simultaneously. Quite simply, they delivered on every promise.",
+      gradient: "from-[#14c0ff]/30 via-[#8b5cf6]/40 to-[#59e3a5]/30",
+      border: "border-[#8b5cf6]/50",
+      starGradient: "from-[#14c0ff] to-[#8b5cf6]"
+    },
+    {
+      name: "Sarah's True Crime Obsession",
+      title: "True Crime Podcaster",
+      image: "/sarah.jpg",
+      quote: "I'm a skeptic by nature - occupational hazard when you investigate murders for a living. But FASHO delivered exactly what they promised. Top 100 podcasts chart within 2 months. This is the real deal.",
+      gradient: "from-[#14c0ff]/30 via-[#8b5cf6]/40 to-[#59e3a5]/30",
+      border: "border-[#8b5cf6]/50",
+      starGradient: "from-[#14c0ff] to-[#8b5cf6]"
+    },
+    {
+      name: "Miguel",
+      title: "R&B Artist",
+      image: "/miguel.jpg",
+      quote: "10 years in this industry taught me one thing - everybody talks, few deliver. These dudes just handle business. Clean dashboard, transparent process, and my streaming revenue finally makes sense.",
+      gradient: "from-[#8b5cf6]/30 via-[#59e3a5]/40 to-[#14c0ff]/30",
+      border: "border-[#59e3a5]/50",
+      starGradient: "from-[#8b5cf6] to-[#59e3a5]"
+    },
+    {
+      name: "Chase Atlantic",
+      title: "Alternative Rock Band",
+      image: "/chaseatlantic.jpg",
+      quote: "Literally spent $10K last year on three different 'marketing agencies' that delivered absolutely nothing. My agent told me about FASHO.co and within a month my phone was receiving calls from A&Rs. Do the math on that ROI.",
+      gradient: "from-[#14c0ff]/30 via-[#59e3a5]/40 to-[#8b5cf6]/30",
+      border: "border-[#14c0ff]/50",
+      starGradient: "from-[#14c0ff] to-[#59e3a5]"
+    }
+  ];
+
+  // Auto-scroll carousel effect with proper infinite loop
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setCurrentTestimonialIndex((prevIndex) => {
+        const nextIndex = prevIndex + 1;
+        // Continue through all testimonials including duplicates
+        if (nextIndex >= testimonials.length * 2) {
+          return 0;
+        }
+        return nextIndex;
+      });
+    }, 3000); // 2000ms transition + 1000ms pause = 3000ms total
+
+    return () => clearInterval(interval);
+  }, [testimonials.length]);
+
+  // Handle seamless reset when we reach the duplicate testimonials
+  useEffect(() => {
+    if (currentTestimonialIndex === testimonials.length) {
+      // When we reach the first duplicate, reset to beginning after transition
+      const timer = setTimeout(() => {
+        // Temporarily disable transitions and reset to equivalent position
+        const carouselElement = document.querySelector('.testimonial-carousel');
+        if (carouselElement) {
+          (carouselElement as HTMLElement).style.transition = 'none';
+          setCurrentTestimonialIndex(0);
+          // Re-enable transitions after a brief delay
+          setTimeout(() => {
+            (carouselElement as HTMLElement).style.transition = 'transform 2000ms ease-in-out';
+          }, 50);
+        }
+      }, 2000); // Wait for transition to complete
+      return () => clearTimeout(timer);
+    }
+  }, [currentTestimonialIndex, testimonials.length]);
+
   // Viewport animation hooks for PAS section
-  const [heading1Ref, heading1InView] = useInView();
-  const [heading2Ref, heading2InView] = useInView();
+
   const [text1Ref, text1InView] = useInView();
   const [text2Ref, text2InView] = useInView();
   const [text3Ref, text3InView] = useInView();
@@ -823,7 +923,7 @@ export default function Home() {
       <Header transparent={true} />
 
       {/* Main Content */}
-      <main className="min-h-screen bg-gradient-to-b from-[#18192a] to-[#0a0a13] text-white relative overflow-x-hidden">
+      <main className="min-h-screen bg-gradient-to-b from-[#18192a] to-[#0a0a13] text-white relative overflow-x-hidden overflow-y-visible">
         {/* Subtle, large radial glow behind hero/campaign */}
         <div className="pointer-events-none absolute left-1/2 -top-[10vh] -translate-x-1/2 z-0 w-[96vw] h-[64vh]" style={{ filter: 'blur(60px)' }}>
           <div className="w-full h-full bg-gradient-radial from-[#14c0ff]/30 via-[#59e3a5]/20 to-transparent opacity-60"></div>
@@ -837,23 +937,77 @@ export default function Home() {
             <div className="absolute inset-0 w-full h-full z-0 pointer-events-none">
               <HeroParticles />
             </div>
+            {/* WebGL Particles overlay - higher z-index */}
+            <div className="absolute inset-0 w-full h-full z-5 pointer-events-none">
+              <Particles
+                particleColors={['#ffffff', '#59e3a5', '#14c0ff']}
+                particleCount={700}
+                particleSpread={30}
+                speed={0.1}
+                particleBaseSize={300}
+                moveParticlesOnHover={true}
+                alphaParticles={true}
+                disableRotation={false}
+              />
+            </div>
             <div className="max-w-7xl mx-auto relative z-10">
               <div className="text-center mb-20">
-                {/* Main Heading - Reduced by 15px and added white-to-black gradient text with reduced shadow */}
+                {/* Main Heading with SplitText Animation */}
                 <h1 className="text-6xl md:text-7xl lg:text-8xl font-black mb-8 leading-none">
-                  <span className="bg-gradient-to-r from-[#59e3a5] via-[#14c0ff] to-[#8b5cf6] bg-clip-text text-transparent drop-shadow-[0_8px_16px_rgba(0,0,0,0.6)]">
-                    #1 Spotify
-                  </span>
+                  <SplitText
+                    text="#1 Spotify"
+                    className="block drop-shadow-[0_8px_16px_rgba(0,0,0,0.6)]"
+                    delay={80}
+                    duration={0.8}
+                    ease="power3.out"
+                    splitType="chars"
+                    from={{ opacity: 0, y: 50 }}
+                    to={{ opacity: 1, y: 0 }}
+                    threshold={0.2}
+                    rootMargin="-50px"
+                    textAlign="center"
+                    gradientFrom="#59e3a5"
+                    gradientVia="#14c0ff"
+                    gradientTo="#8b5cf6"
+                    gradientDirection="to-r"
+                  />
                   <br />
-                  <span className="bg-gradient-to-b from-white to-gray-400 bg-clip-text text-transparent drop-shadow-[0_8px_16px_rgba(0,0,0,0.6)]">
-                    Music Promotion
-                  </span>
+                  <SplitText
+                    text="Music Promotion"
+                    className="block drop-shadow-[0_8px_16px_rgba(0,0,0,0.6)]"
+                    delay={80}
+                    duration={0.8}
+                    ease="power3.out"
+                    splitType="chars"
+                    from={{ opacity: 0, y: 50 }}
+                    to={{ opacity: 1, y: 0 }}
+                    threshold={0.2}
+                    rootMargin="-50px"
+                    textAlign="center"
+                    gradientFrom="#ffffff"
+                    gradientTo="#9ca3af"
+                    gradientDirection="to-b"
+                  />
                 </h1>
 
+
+
                 {/* Subtitle */}
-                <p className="text-xl md:text-2xl text-gray-300 mb-16 max-w-3xl mx-auto leading-relaxed" style={{ paddingBottom: '45px' }}>
-                  Stop watching other artists blow up while your tracks collect dust. It's time to get the plays, fans, and recognition you deserve.
-                </p>
+                <div className="text-xl md:text-2xl text-gray-300 mb-16 max-w-3xl mx-auto leading-relaxed" style={{ paddingBottom: '45px' }}>
+                  <SplitText
+                    text="Stop watching other artists blow up while your tracks collect dust. It's time to get the plays, fans, and recognition you deserve."
+                    className="block"
+                    delay={60}
+                    duration={0.6}
+                    ease="power2.out"
+                    splitType="words"
+                    from={{ opacity: 0, y: 30 }}
+                    to={{ opacity: 1, y: 0 }}
+                    threshold={0.3}
+                    rootMargin="-30px"
+                    textAlign="center"
+                  />
+                </div>
 
                 {/* Menu Anchor for Track Input */}
                 <div id="track-input-section"></div>
@@ -1214,12 +1368,31 @@ export default function Home() {
           <div className="max-w-4xl mx-auto px-6 py-20 mt-0" style={{ lineHeight: '1.8', overflow: 'visible', background: 'none', marginTop: '40px' }}>
             {/* PAS Final Draft Section - User Provided */}
             <div className="text-center mb-20">
-              <h2 ref={heading1Ref} className={`text-4xl md:text-5xl lg:text-6xl font-bold mb-0 pb-2 -mt-8 bg-gradient-to-b from-white via-white to-gray-600 bg-clip-text text-transparent drop-shadow-lg transition-all duration-700 ${heading1InView ? 'animate-fade-in-up' : 'opacity-0 translate-y-8'}`} style={{ lineHeight: '1.3' }}>
+              <ScrollFloat
+                animationDuration={1}
+                ease="back.inOut(2)"
+                scrollStart="center bottom+=50%"
+                scrollEnd="bottom bottom-=40%"
+                stagger={0.03}
+                containerClassName="mb-0 pb-2 -mt-8"
+                textClassName="text-4xl md:text-5xl lg:text-6xl font-bold text-white drop-shadow-lg"
+              >
                 Your Music Is Fire,
-              </h2>
-              <h2 ref={heading2Ref} className={`text-4xl md:text-5xl lg:text-6xl font-bold mb-8 pb-6 bg-gradient-to-b from-white via-white to-gray-600 bg-clip-text text-transparent drop-shadow-lg transition-all duration-700 ${heading2InView ? 'animate-fade-in-up' : 'opacity-0 translate-y-8'}`} style={{ lineHeight: '1.3' }}>
-                But <span className="bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] bg-clip-text text-transparent">Nobody's</span> Hearing It….
-              </h2>
+              </ScrollFloat>
+              <ScrollFloat
+                animationDuration={1}
+                ease="back.inOut(2)"
+                scrollStart="center bottom+=50%"
+                scrollEnd="bottom bottom-=40%"
+                stagger={0.03}
+                containerClassName="mb-8 pb-6"
+                textClassName="text-4xl md:text-5xl lg:text-6xl font-bold text-white drop-shadow-lg"
+                gradientWords={["Nobody's"]}
+                gradientFrom="#59e3a5"
+                gradientTo="#14c0ff"
+              >
+                But Nobody's Hearing It….
+              </ScrollFloat>
               <p ref={text1Ref} className={`text-gray-300 pb-12 font-medium text-center transition-all duration-700 ${text1InView ? 'animate-fade-in-up' : 'opacity-0 translate-y-8'}`} style={{ fontSize: '1.6rem', lineHeight: '1.8' }}>
                 You spent days making the best song of your life. Created the dopest cover art for it. All your friends said it slaps harder than Will Smith at the Oscars....
               </p>
@@ -1241,9 +1414,14 @@ export default function Home() {
               <p ref={text6Ref} className={`text-gray-300 pb-12 font-medium text-center transition-all duration-700 ${text6InView ? 'animate-fade-in-up' : 'opacity-0 translate-y-8'}`} style={{ fontSize: '1.6rem', lineHeight: '1.8' }}>
                 The platform only pushes artists who <b><i>ALREADY</i></b> have momentum. Big streams, high engagement, and playlist placements. If you've got them, Spotify's algorithm <b>LOVES</b> you. But if you don't? <b>You're invisible.</b>
               </p>
-              <p ref={text7Ref} className={`text-2xl md:text-3xl font-black text-white pb-12 text-center transition-all duration-700 ${text7InView ? 'animate-fade-in-up' : 'opacity-0 translate-y-8'}`} style={{ lineHeight: '1.5' }}>
-                Here's the <span className="bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] bg-clip-text text-transparent">CATCH</span> that's <span className="bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] bg-clip-text text-transparent">KILLING</span> independent artists…
-              </p>
+              <div ref={text7Ref} className={`text-center pb-12 transition-all duration-700 ${text7InView ? 'animate-fade-in-up' : 'opacity-0 translate-y-8'}`}>
+                <p className="font-black text-white mb-2" style={{ fontSize: 'calc(1.5rem + 0.75rem)', lineHeight: '1.5' }}>
+                  Here's the <span className="bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] bg-clip-text text-transparent">CATCH</span> that's
+                </p>
+                <p className="font-black text-white" style={{ fontSize: 'calc(1.5rem + 0.75rem)', lineHeight: '1.5' }}>
+                  <span className="bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] bg-clip-text text-transparent">KILLING</span> independent artists…
+                </p>
+              </div>
               <p ref={text8Ref} className={`text-gray-300 pb-6 font-medium text-center transition-all duration-700 ${text8InView ? 'animate-fade-in-up' : 'opacity-0 translate-y-8'}`} style={{ fontSize: '1.6rem', lineHeight: '1.8' }}>
                 Spotify won't promote you if you <b><i><u>DON'T</u></i></b> have streams. But you can't get streams if Spotify <b><i><u>WON'T</u></i></b> promote you!
               </p>
@@ -2591,12 +2769,28 @@ export default function Home() {
               {/* Three Column Genre Lists */}
               <div 
                 ref={genreListContainerRef}
-                className={`grid grid-cols-1 md:grid-cols-3 gap-12 mb-16 max-w-6xl mx-auto justify-items-center relative p-8 md:p-12 transition-all duration-700 ${genreListContainerInView ? 'animate-fade-in-up' : 'opacity-0 translate-y-8'}`}
+                className={`mb-16 max-w-6xl mx-auto transition-all duration-700 ${genreListContainerInView ? 'animate-fade-in-up' : 'opacity-0 translate-y-8'}`}
               >
-                {/* Subtle gradient glow behind container */}
-                <div className="absolute inset-0 -m-4 bg-gradient-to-br from-[#59e3a5]/20 via-[#14c0ff]/15 to-[#8b5cf6]/20 rounded-3xl blur-xl -z-20"></div>
-                {/* Dark gradient background container */}
-                <div className="absolute inset-0 bg-gradient-to-br from-black/95 via-gray-900/90 to-black/95 rounded-3xl backdrop-blur-sm border-2 border-white/20 shadow-2xl shadow-black/20 -z-10"></div>
+                <div className="relative">
+                  {/* Subtle gradient glow behind container */}
+                  <div className="absolute inset-0 -m-4 bg-gradient-to-br from-[#59e3a5]/20 via-[#14c0ff]/15 to-[#8b5cf6]/20 rounded-3xl blur-xl -z-20"></div>
+                  
+                  <GlareHover
+                    width="100%"
+                    height="auto"
+                    background="linear-gradient(135deg, rgba(0,0,0,0.95), rgba(55,55,55,0.9), rgba(0,0,0,0.95))"
+                    borderRadius="24px"
+                    borderColor="rgba(255, 255, 255, 0.2)"
+                    glareColor="#59e3a5"
+                    glareOpacity={0.1}
+                    glareAngle={-30}
+                    glareSize={200}
+                    transitionDuration={1000}
+                    playOnce={true}
+                    className="border-2 backdrop-blur-sm shadow-2xl shadow-black/20"
+                    style={{ padding: '3rem' }}
+                  >
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-12 justify-items-center relative ">
                 {/* First Column */}
                 <div className="space-y-6">
                   {[
@@ -2673,6 +2867,9 @@ export default function Home() {
                       <span className="text-white text-2xl font-medium drop-shadow-[0_2px_4px_rgba(0,0,0,0.6)]">{genre}</span>
                     </div>
                   ))}
+                </div>
+                  </div>
+                </GlareHover>
                 </div>
               </div>
 
@@ -3144,7 +3341,7 @@ export default function Home() {
           </section>
 
           {/* Testimonials Section */}
-          <section className="py-24 px-4 relative z-10" style={{ background: 'transparent' }}>
+          <section className="py-64 px-4 relative z-30" style={{ background: 'transparent' }}>
             <div className="max-w-screen-2xl mx-auto">
               {/* Section Header */}
               <div className="text-center mb-20">
@@ -3156,182 +3353,62 @@ export default function Home() {
                 </p>
               </div>
 
-              {/* Baseball Card Style Testimonials Grid */}
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8 mb-16">
-                {/* Testimonial 1 - Lil Tecca */}
-                <div className="relative group max-w-xs mx-auto">
-                  <div className="absolute inset-0 bg-gradient-to-br from-[#59e3a5]/30 via-[#14c0ff]/40 to-[#8b5cf6]/30 rounded-3xl blur-xl opacity-60 group-hover:opacity-90 transition-opacity duration-500"></div>
-                  <div className="relative bg-gradient-to-br from-[#1a1a2e]/95 via-[#16213e]/90 to-[#0a0a13]/95 rounded-3xl p-6 border-2 border-white/10 backdrop-blur-sm hover:border-[#14c0ff]/50 transition-all duration-500 group-hover:transform group-hover:scale-105 shadow-2xl">
-                    {/* Large Profile Image */}
-                    <div className="w-44 h-44 mx-auto mb-6 rounded-2xl overflow-hidden shadow-2xl">
-                      <img 
-                        src="/tecca.jpeg" 
-                        alt="Lil Tecca" 
-                        className="w-full h-full object-cover"
-                      />
-                    </div>
-                    
-                    {/* 5-Star Rating - Gradient with Glow */}
-                    <div className="flex justify-center mb-6 space-x-1">
-                      {[...Array(5)].map((_, i) => (
-                        <div key={i} className="relative">
-                          <div className="absolute inset-0 bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] rounded-full blur-md opacity-60"></div>
-                          <svg className="relative w-6 h-6 fill-current drop-shadow-lg" viewBox="0 0 24 24">
-                            <defs>
-                              <linearGradient id={`starGradient1-${i}`} x1="0%" y1="0%" x2="100%" y2="100%">
-                                <stop offset="0%" stopColor="#59e3a5" />
-                                <stop offset="100%" stopColor="#14c0ff" />
-                              </linearGradient>
-                            </defs>
-                            <path fill={`url(#starGradient1-${i})`} d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
-                          </svg>
+              {/* Testimonials Carousel */}
+              <div className="relative overflow-x-hidden mb-16 pr-8">
+                <div 
+                  className="testimonial-carousel flex transition-transform duration-[2000ms] ease-in-out"
+                  style={{ 
+                    transform: `translateX(-${currentTestimonialIndex * 24.5}vw)`,
+                    width: `${(testimonials.length * 2) * 24.5}vw`
+                  }}
+                >
+                  {/* Render testimonials twice for seamless loop */}
+                  {[...testimonials, ...testimonials].map((testimonial, index) => (
+                    <div key={index} className="flex-shrink-0 px-2" style={{ width: '24.5vw' }}>
+                      <div className="relative group max-w-xs mx-auto">
+                        <div className={`absolute inset-0 bg-gradient-to-br ${testimonial.gradient} rounded-3xl blur-xl opacity-60 group-hover:opacity-90 transition-opacity duration-500`}></div>
+                        <div className={`relative bg-gradient-to-br from-[#1a1a2e]/95 via-[#16213e]/90 to-[#0a0a13]/95 rounded-3xl p-4 border-2 border-white/10 backdrop-blur-sm hover:${testimonial.border} transition-all duration-500 group-hover:transform group-hover:scale-105 shadow-2xl`}>
+                          {/* Large Profile Image */}
+                          <div className="w-32 h-32 mx-auto mb-4 rounded-2xl overflow-hidden shadow-2xl">
+                            <img 
+                              src={testimonial.image}
+                              alt={testimonial.name}
+                              className="w-full h-full object-cover"
+                            />
+                          </div>
+                          
+                          {/* 5-Star Rating - Gradient with Glow */}
+                          <div className="flex justify-center mb-4 space-x-1">
+                            {[...Array(5)].map((_, i) => (
+                              <div key={i} className="relative">
+                                <div className={`absolute inset-0 bg-gradient-to-r ${testimonial.starGradient} rounded-full blur-md opacity-60`}></div>
+                                <svg className="relative w-6 h-6 fill-current drop-shadow-lg" viewBox="0 0 24 24">
+                                  <defs>
+                                    <linearGradient id={`starGradient${index}-${i}`} x1="0%" y1="0%" x2="100%" y2="100%">
+                                      <stop offset="0%" stopColor={testimonial.starGradient.includes('59e3a5') ? '#59e3a5' : testimonial.starGradient.includes('8b5cf6') ? '#8b5cf6' : '#14c0ff'} />
+                                      <stop offset="100%" stopColor={testimonial.starGradient.includes('14c0ff') ? '#14c0ff' : testimonial.starGradient.includes('59e3a5') ? '#59e3a5' : '#8b5cf6'} />
+                                    </linearGradient>
+                                  </defs>
+                                  <path fill={`url(#starGradient${index}-${i})`} d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+                                </svg>
+                              </div>
+                            ))}
+                          </div>
+
+                          {/* Name and Title */}
+                          <div className="text-center mb-6">
+                            <h3 className="text-xl font-bold text-white mb-0.5">{testimonial.name}</h3>
+                            <p className="text-gray-400 text-base">{testimonial.title}</p>
+                          </div>
+
+                          {/* Testimonial */}
+                          <blockquote className="text-gray-300 leading-relaxed text-center italic" style={{ fontSize: '1.07rem' }}>
+                            "{testimonial.quote}"
+                          </blockquote>
                         </div>
-                      ))}
+                      </div>
                     </div>
-
-                    {/* Name and Title */}
-                    <div className="text-center mb-6">
-                      <h3 className="text-xl font-bold text-white mb-0.5">Lil Tecca</h3>
-                      <p className="text-gray-400 text-base">Hip-Hop Artist</p>
-                    </div>
-
-                    {/* Testimonial */}
-                    <blockquote className="text-gray-300 leading-relaxed text-center italic" style={{ fontSize: '1.07rem' }}>
-                      "FASHO.co hit different fr. Been dealing with majors my whole career but these guys actually move faster than my label. Track was live on hundreds of major playlists in 48 hours no cap."
-                    </blockquote>
-                  </div>
-                </div>
-
-                {/* Testimonial 2 - Miguel */}
-                <div className="relative group max-w-xs mx-auto">
-                  <div className="absolute inset-0 bg-gradient-to-br from-[#8b5cf6]/30 via-[#59e3a5]/40 to-[#14c0ff]/30 rounded-3xl blur-xl opacity-60 group-hover:opacity-90 transition-opacity duration-500"></div>
-                  <div className="relative bg-gradient-to-br from-[#1a1a2e]/95 via-[#16213e]/90 to-[#0a0a13]/95 rounded-3xl p-6 border-2 border-white/10 backdrop-blur-sm hover:border-[#59e3a5]/50 transition-all duration-500 group-hover:transform group-hover:scale-105 shadow-2xl">
-                    {/* Large Profile Image */}
-                    <div className="w-44 h-44 mx-auto mb-6 rounded-2xl overflow-hidden shadow-2xl">
-                      <img 
-                        src="/miguel.jpg" 
-                        alt="Miguel" 
-                        className="w-full h-full object-cover"
-                      />
-                    </div>
-                    
-                    {/* 5-Star Rating - Gradient with Glow */}
-                    <div className="flex justify-center mb-6 space-x-1">
-                      {[...Array(5)].map((_, i) => (
-                        <div key={i} className="relative">
-                          <div className="absolute inset-0 bg-gradient-to-r from-[#8b5cf6] to-[#59e3a5] rounded-full blur-md opacity-60"></div>
-                          <svg className="relative w-6 h-6 fill-current drop-shadow-lg" viewBox="0 0 24 24">
-                            <defs>
-                              <linearGradient id={`starGradient2-${i}`} x1="0%" y1="0%" x2="100%" y2="100%">
-                                <stop offset="0%" stopColor="#8b5cf6" />
-                                <stop offset="100%" stopColor="#59e3a5" />
-                              </linearGradient>
-                            </defs>
-                            <path fill={`url(#starGradient2-${i})`} d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
-                          </svg>
-                        </div>
-                      ))}
-                    </div>
-
-                    {/* Name and Title */}
-                    <div className="text-center mb-6">
-                      <h3 className="text-xl font-bold text-white mb-0.5">Miguel</h3>
-                      <p className="text-gray-400 text-base">R&B Artist</p>
-                    </div>
-
-                    {/* Testimonial */}
-                    <blockquote className="text-gray-300 leading-relaxed text-center italic" style={{ fontSize: '1.07rem' }}>
-                      "10 years in this industry taught me one thing - everybody talks, few deliver. These dudes just handle business. Clean dashboard, transparent process, and my streaming revenue finally makes sense."
-                    </blockquote>
-                  </div>
-                </div>
-
-                {/* Testimonial 3 - Sarah's True Crime */}
-                <div className="relative group max-w-xs mx-auto">
-                  <div className="absolute inset-0 bg-gradient-to-br from-[#14c0ff]/30 via-[#8b5cf6]/40 to-[#59e3a5]/30 rounded-3xl blur-xl opacity-60 group-hover:opacity-90 transition-opacity duration-500"></div>
-                  <div className="relative bg-gradient-to-br from-[#1a1a2e]/95 via-[#16213e]/90 to-[#0a0a13]/95 rounded-3xl p-6 border-2 border-white/10 backdrop-blur-sm hover:border-[#8b5cf6]/50 transition-all duration-500 group-hover:transform group-hover:scale-105 shadow-2xl">
-                    {/* Large Profile Image */}
-                    <div className="w-44 h-44 mx-auto mb-6 rounded-2xl overflow-hidden shadow-2xl">
-                      <img 
-                        src="/sarah.jpg" 
-                        alt="Sarah's True Crime Obsession" 
-                        className="w-full h-full object-cover"
-                      />
-                    </div>
-                    
-                    {/* 5-Star Rating - Gradient with Glow */}
-                    <div className="flex justify-center mb-6 space-x-1">
-                      {[...Array(5)].map((_, i) => (
-                        <div key={i} className="relative">
-                          <div className="absolute inset-0 bg-gradient-to-r from-[#14c0ff] to-[#8b5cf6] rounded-full blur-md opacity-60"></div>
-                          <svg className="relative w-6 h-6 fill-current drop-shadow-lg" viewBox="0 0 24 24">
-                            <defs>
-                              <linearGradient id={`starGradient3-${i}`} x1="0%" y1="0%" x2="100%" y2="100%">
-                                <stop offset="0%" stopColor="#14c0ff" />
-                                <stop offset="100%" stopColor="#8b5cf6" />
-                              </linearGradient>
-                            </defs>
-                            <path fill={`url(#starGradient3-${i})`} d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
-                          </svg>
-                        </div>
-                      ))}
-                    </div>
-
-                    {/* Name and Title */}
-                    <div className="text-center mb-6">
-                      <h3 className="text-lg font-bold text-white mb-0.5">Sarah's True Crime Obsession</h3>
-                      <p className="text-gray-400 text-base">True Crime Podcaster</p>
-                    </div>
-
-                    {/* Testimonial */}
-                    <blockquote className="text-gray-300 leading-relaxed text-center italic" style={{ fontSize: '1.07rem' }}>
-                      "I'm a skeptic by nature - occupational hazard when you investigate murders for a living. But FASHO delivered exactly what they promised. Top 100 podcasts chart within 2 months. This is the real deal."
-                    </blockquote>
-                  </div>
-                </div>
-
-                {/* Testimonial 4 - Chase Atlantic */}
-                <div className="relative group max-w-xs mx-auto">
-                  <div className="absolute inset-0 bg-gradient-to-br from-[#14c0ff]/30 via-[#59e3a5]/40 to-[#8b5cf6]/30 rounded-3xl blur-xl opacity-60 group-hover:opacity-90 transition-opacity duration-500"></div>
-                  <div className="relative bg-gradient-to-br from-[#1a1a2e]/95 via-[#16213e]/90 to-[#0a0a13]/95 rounded-3xl p-6 border-2 border-white/10 backdrop-blur-sm hover:border-[#14c0ff]/50 transition-all duration-500 group-hover:transform group-hover:scale-105 shadow-2xl">
-                    {/* Large Profile Image */}
-                    <div className="w-44 h-44 mx-auto mb-6 rounded-2xl overflow-hidden shadow-2xl">
-                      <img 
-                        src="/chaseatlantic.jpg" 
-                        alt="Chase Atlantic" 
-                        className="w-full h-full object-cover"
-                      />
-                    </div>
-                    
-                    {/* 5-Star Rating - Gradient with Glow */}
-                    <div className="flex justify-center mb-6 space-x-1">
-                      {[...Array(5)].map((_, i) => (
-                        <div key={i} className="relative">
-                          <div className="absolute inset-0 bg-gradient-to-r from-[#14c0ff] to-[#59e3a5] rounded-full blur-md opacity-60"></div>
-                          <svg className="relative w-6 h-6 fill-current drop-shadow-lg" viewBox="0 0 24 24">
-                            <defs>
-                              <linearGradient id={`starGradient4-${i}`} x1="0%" y1="0%" x2="100%" y2="100%">
-                                <stop offset="0%" stopColor="#14c0ff" />
-                                <stop offset="100%" stopColor="#59e3a5" />
-                              </linearGradient>
-                            </defs>
-                            <path fill={`url(#starGradient4-${i})`} d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
-                          </svg>
-                        </div>
-                      ))}
-                    </div>
-
-                    {/* Name and Title */}
-                    <div className="text-center mb-6">
-                      <h3 className="text-xl font-bold text-white mb-0.5">Chase Atlantic</h3>
-                      <p className="text-gray-400 text-base">Alternative Rock Band</p>
-                    </div>
-
-                    {/* Testimonial */}
-                    <blockquote className="text-gray-300 leading-relaxed text-center italic" style={{ fontSize: '1.07rem' }}>
-                      "Literally spent $10K last year on three different 'marketing agencies' that delivered absolutely nothing. My agent told me about FASHO.co and within a month my phone was receiving calls from A&Rs. Do the math on that ROI."
-                    </blockquote>
-                  </div>
+                  ))}
                 </div>
               </div>
 

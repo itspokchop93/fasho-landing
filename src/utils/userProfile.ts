@@ -67,7 +67,8 @@ export class UserProfileService {
     try {
       const response = await fetch('/api/user-artist-profile')
       if (response.ok) {
-        const profile = await response.json()
+        const data = await response.json()
+        const profile = data.profile || null
         this.artistProfileCache.set(userId, profile)
         this.cacheTimestamp.set(userId, Date.now())
         return profile
