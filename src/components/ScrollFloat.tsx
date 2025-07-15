@@ -90,6 +90,12 @@ const ScrollFloat: React.FC<ScrollFloatProps> = ({
 
     const charElements = el.querySelectorAll(".inline-block");
 
+    // Safety check for GSAP
+    if (!gsap || !gsap.fromTo) {
+      console.warn("GSAP not properly loaded");
+      return;
+    }
+
     gsap.fromTo(
       charElements,
       {

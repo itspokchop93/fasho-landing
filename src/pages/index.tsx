@@ -3,6 +3,7 @@ import { createPortal } from "react-dom";
 import { useRouter } from "next/router";
 import Head from "next/head";
 import Header from "../components/Header";
+import Footer from "../components/Footer";
 import TrackCard from "../components/TrackCard";
 import ShapeDivider from "../components/ShapeDivider";
 import SplitText from "../components/SplitText";
@@ -13,6 +14,7 @@ import { createClient } from '../utils/supabase/client';
 import HeroParticles from '../components/HeroParticles';
 import GlareHover from '../components/GlareHover';
 import Lottie from 'lottie-react';
+
 
 // Custom hook for viewport intersection
 const useInView = (options: IntersectionObserverInit = {}) => {
@@ -47,6 +49,72 @@ const useInView = (options: IntersectionObserverInit = {}) => {
   return [ref, isInView] as const;
 };
 
+// FAQ Card Component
+const FAQCard = ({ question, answer }: { question: string; answer: string }) => {
+  const [isExpanded, setIsExpanded] = useState(false);
+
+  // Parse emoji and text from question
+  const parseQuestion = (question: string) => {
+    const emojiMatch = question.match(/^(\S+)\s+(.*)$/);
+    if (emojiMatch) {
+      return { emoji: emojiMatch[1], text: emojiMatch[2] };
+    }
+    return { emoji: '', text: question };
+  };
+
+  const { emoji, text } = parseQuestion(question);
+
+  return (
+    <div 
+      className={`bg-gradient-to-br from-white/5 to-white/2 backdrop-blur-sm rounded-2xl border border-white/10 p-8 transition-all duration-300 hover:from-white/10 hover:to-white/5 hover:shadow-2xl hover:shadow-[#14c0ff]/10 cursor-pointer ${
+        isExpanded ? 'border-[#59e3a5]/50 shadow-2xl shadow-[#59e3a5]/20' : ''
+      }`}
+      onClick={() => setIsExpanded(!isExpanded)}
+    >
+      <div className="flex items-center justify-between">
+        {/* Accent Bar for Expanded State */}
+        <div className="flex items-center flex-1">
+          {isExpanded && (
+            <div className="w-7 h-1 bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] rounded-full mr-4 transition-all duration-300"></div>
+          )}
+          <h3 className="text-white font-semibold leading-tight" style={{ fontSize: 'calc(1.125rem + 0.10rem)' }}>
+            {emoji && (
+              <span className="bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] bg-clip-text text-transparent mr-2">
+                {emoji}
+              </span>
+            )}
+            {text}
+          </h3>
+        </div>
+        
+        {/* Plus/Minus Icon */}
+        <div className={`w-6 h-6 flex items-center justify-center transition-all duration-300 ml-4 ${
+          isExpanded ? 'text-[#59e3a5]' : 'text-[#8b5cf6]'
+        }`}>
+          {isExpanded ? (
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 12H4" />
+            </svg>
+          ) : (
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+            </svg>
+          )}
+        </div>
+      </div>
+      
+      {/* Expandable Answer */}
+      <div className={`overflow-hidden transition-all duration-300 ${
+        isExpanded ? 'max-h-96 opacity-100 mt-6' : 'max-h-0 opacity-0'
+      }`}>
+        <p className="text-gray-300 leading-relaxed" style={{ fontSize: 'calc(1rem + 0.2rem)' }}>
+          {answer}
+        </p>
+      </div>
+    </div>
+  );
+};
+
 // Add at the top of the Home component:
 const PHONE_SECTION_ID = "phone-mockup-scroll-section";
 
@@ -71,6 +139,7 @@ export default function Home() {
   const [isMounted, setIsMounted] = useState(false);
   const [lottieData, setLottieData] = useState<any>(null);
   const [musicNotesLottie, setMusicNotesLottie] = useState<any>(null);
+  const supabase = createClient();
   
   // How It Works Lottie animations
   const [step1Lottie, setStep1Lottie] = useState<any>(null);
@@ -87,6 +156,14 @@ export default function Home() {
 
   // Testimonial carousel state
   const [currentTestimonialIndex, setCurrentTestimonialIndex] = useState(0);
+  const [isCarouselPaused, setIsCarouselPaused] = useState(false);
+  const [resumeTimeout, setResumeTimeout] = useState<NodeJS.Timeout | null>(null);
+
+  // Logo carousel state
+  const [logoIndex, setLogoIndex] = useState(0);
+
+  // User authentication state
+  const [currentUser, setCurrentUser] = useState<any>(null);
 
   // Testimonial data
   const testimonials = [
@@ -112,10 +189,19 @@ export default function Home() {
       name: "Lin-Manuel Miranda",
       title: "Creator of Hamilton",
       image: "/lin.jpg",
-      quote: "I've worked with every major platform launching Hamilton's music, and FASHO's execution stands out. They understood that musical theater on Spotify requires a completely different approach. The precision of their playlist targeting was remarkable - reaching both Broadway enthusiasts and hip-hop fans simultaneously. Quite simply, they delivered on every promise.",
+      quote: "Launching Hamilton's music on Spotify required a unique approach - FASHO understood that immediately. They got us on playlists that reached both Broadway fans and hip-hop heads. Their precision and execution were remarkable. Simply put, they delivered.",
       gradient: "from-[#14c0ff]/30 via-[#8b5cf6]/40 to-[#59e3a5]/30",
       border: "border-[#8b5cf6]/50",
       starGradient: "from-[#14c0ff] to-[#8b5cf6]"
+    },
+    {
+      name: "Alex Warren",
+      title: "Singer",
+      image: "/alex.jpg",
+      quote: "FASHO.co was instrumental in making 'Ordinary' explode. While everyone obsessed over TikTok, they quietly built my Spotify foundation with major playlist placements. That song changed my life - FASHO's strategy was a huge part of it.",
+      gradient: "from-[#59e3a5]/30 via-[#14c0ff]/40 to-[#8b5cf6]/30",
+      border: "border-[#14c0ff]/50",
+      starGradient: "from-[#59e3a5] to-[#14c0ff]"
     },
     {
       name: "Sarah's True Crime Obsession",
@@ -146,8 +232,28 @@ export default function Home() {
     }
   ];
 
+  // Logo data
+  const logos = [
+    { src: "/logos/atlantic.png", alt: "Atlantic Records" },
+    { src: "/logos/capitol.png", alt: "Capitol Records" },
+    { src: "/logos/colum.png", alt: "Columbia Records" },
+    { src: "/logos/dfjam.png", alt: "Def Jam Recordings" },
+    { src: "/logos/empire.png", alt: "Empire Distribution" },
+    { src: "/logos/intersco.png", alt: "Interscope Records" },
+    { src: "/logos/island.png", alt: "Island Records" },
+    { src: "/logos/rca.png", alt: "RCA Records" },
+    { src: "/logos/repub.png", alt: "Republic Records" },
+    { src: "/logos/roc.png", alt: "Roc Nation" },
+    { src: "/logos/sny.png", alt: "Sony Music" },
+    { src: "/logos/unversal.png", alt: "Universal Music Group" },
+    { src: "/logos/warnr.png", alt: "Warner Records" },
+    { src: "/logos/aftermath.png", alt: "Aftermath Entertainment" }
+  ];
+
   // Auto-scroll carousel effect with proper infinite loop
   useEffect(() => {
+    if (isCarouselPaused) return; // Don't create interval if paused
+
     const interval = setInterval(() => {
       setCurrentTestimonialIndex((prevIndex) => {
         const nextIndex = prevIndex + 1;
@@ -160,7 +266,40 @@ export default function Home() {
     }, 3000); // 2000ms transition + 1000ms pause = 3000ms total
 
     return () => clearInterval(interval);
-  }, [testimonials.length]);
+  }, [testimonials.length, isCarouselPaused]);
+
+  // Cleanup resume timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (resumeTimeout) {
+        clearTimeout(resumeTimeout);
+      }
+    };
+  }, [resumeTimeout]);
+
+  // Check for authentication state
+  useEffect(() => {
+    const checkUser = async () => {
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        setCurrentUser(user);
+      } catch (error) {
+        console.error('Error checking user:', error);
+        setCurrentUser(null);
+      }
+    };
+    
+    checkUser();
+
+    // Listen for auth changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      (event, session) => {
+        setCurrentUser(session?.user ?? null);
+      }
+    );
+
+    return () => subscription.unsubscribe();
+  }, []);
 
   // Handle seamless reset when we reach the duplicate testimonials
   useEffect(() => {
@@ -181,6 +320,8 @@ export default function Home() {
       return () => clearTimeout(timer);
     }
   }, [currentTestimonialIndex, testimonials.length]);
+
+
 
   // Viewport animation hooks for PAS section
 
@@ -248,6 +389,13 @@ export default function Home() {
   const [authenticityClosingRef, authenticityClosingInView] = useInView({ threshold: 0.3 });
   const [authenticityHighlightRef, authenticityHighlightInView] = useInView({ threshold: 0.3 });
   const [authenticityGuaranteeRef, authenticityGuaranteeInView] = useInView({ threshold: 0.3 });
+  const [playlistsHeadingRef, playlistsHeadingInView] = useInView({ threshold: 0.3 });
+  const [playlistsSubheadingRef, playlistsSubheadingInView] = useInView({ threshold: 0.3 });
+  const [playlistsGridRef, playlistsGridInView] = useInView({ threshold: 0.3 });
+  const [thousandsMoreRef, thousandsMoreInView] = useInView({ threshold: 0.3 });
+  const [playlistsButtonRef, playlistsButtonInView] = useInView({ threshold: 0.3 });
+  const [testimonialsHeadingRef, testimonialsHeadingInView] = useInView({ threshold: 0.3 });
+  const [testimonialsSubheadingRef, testimonialsSubheadingInView] = useInView({ threshold: 0.3 });
 
   const phoneSectionRef = useRef<HTMLDivElement>(null);
   const [currentStep, setCurrentStep] = useState(0); // 0=Step1, 1=Step2, 2=Step3, 3=Step4
@@ -1143,6 +1291,84 @@ export default function Home() {
                           </div>
                         </div>
                       )}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Infinite Logo Carousel - Pure CSS Implementation */}
+                <div className="py-16 px-4 relative" style={{ background: 'transparent' }}>
+                  <div className="max-w-7xl mx-auto" style={{ background: 'transparent' }}>
+                    {/* Section Header */}
+                    <div className="text-center mb-12" style={{ background: 'transparent' }}>
+                      <h2 className="text-2xl md:text-3xl font-black text-white mb-4" style={{ background: 'transparent' }}>
+                        Trusted By Major Clients
+                      </h2>
+                    </div>
+
+                    {/* CSS Infinite Carousel - Working Implementation */}
+                    <div className="logo-carousel-container" style={{ height: '120px', background: 'transparent' }}>
+                      <style jsx>{`
+                        .logo-carousel-container {
+                          overflow: hidden;
+                          position: relative;
+                          width: 100%;
+                        }
+                        
+                        .logo-carousel-track {
+                          display: flex;
+                          align-items: center;
+                          width: calc(140px * 28); /* 14 logos × 2 sets × 140px each */
+                          animation: logoScroll 30s linear infinite;
+                        }
+                        
+                        .logo-carousel-track:hover {
+                          animation-play-state: paused;
+                        }
+                        
+                        .logo-item {
+                          width: 120px;
+                          height: 80px;
+                          margin: 0 10px;
+                          flex-shrink: 0;
+                          display: flex;
+                          align-items: center;
+                          justify-content: center;
+                        }
+                        
+                        @keyframes logoScroll {
+                          0% {
+                            transform: translateX(0);
+                          }
+                          100% {
+                            transform: translateX(calc(-140px * 14)); /* Move by exactly one set */
+                          }
+                        }
+                      `}</style>
+                      
+                      <div className="logo-carousel-track">
+                        {/* First set of logos */}
+                        {logos.map((logo, index) => (
+                          <div key={`set1-${index}`} className="logo-item">
+                            <img
+                              src={logo.src}
+                              alt={logo.alt}
+                              className="max-w-full max-h-full object-contain opacity-70 hover:opacity-100 transition-opacity duration-300 filter grayscale hover:grayscale-0"
+                              style={{ height: '60px' }}
+                            />
+                          </div>
+                        ))}
+                        {/* Second set of logos for seamless loop */}
+                        {logos.map((logo, index) => (
+                          <div key={`set2-${index}`} className="logo-item">
+                            <img
+                              src={logo.src}
+                              alt={logo.alt}
+                              className="max-w-full max-h-full object-contain opacity-70 hover:opacity-100 transition-opacity duration-300 filter grayscale hover:grayscale-0"
+                              style={{ height: '60px' }}
+                            />
+                          </div>
+                        ))}
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -2921,16 +3147,26 @@ export default function Home() {
             <div className="relative z-10 max-w-7xl mx-auto">
               {/* Section Header */}
               <div className="text-center mb-20">
-                <h2 className="text-5xl md:text-6xl lg:text-7xl font-black mb-8 bg-gradient-to-r from-[#59e3a5] via-[#14c0ff] to-[#8b5cf6] bg-clip-text text-transparent drop-shadow-2xl" style={{ lineHeight: '1.2' }}>
+                <h2 
+                  ref={playlistsHeadingRef}
+                  className={`text-5xl md:text-6xl lg:text-7xl font-black mb-8 bg-gradient-to-r from-[#59e3a5] via-[#14c0ff] to-[#8b5cf6] bg-clip-text text-transparent drop-shadow-2xl transition-all duration-700 ${playlistsHeadingInView ? 'animate-fade-in-up' : 'opacity-0 translate-y-8'}`} 
+                  style={{ lineHeight: '1.2' }}
+                >
                   The Playlists That Actually Matter
                 </h2>
-                <p className="text-xl md:text-2xl text-gray-300 max-w-4xl mx-auto leading-relaxed font-bold">
+                <p 
+                  ref={playlistsSubheadingRef}
+                  className={`text-xl md:text-2xl text-gray-300 max-w-4xl mx-auto leading-relaxed font-bold transition-all duration-700 ${playlistsSubheadingInView ? 'animate-fade-in-up' : 'opacity-0 translate-y-8'}`}
+                >
                   We have direct relationships with curators who control the world's biggest playlists.
                 </p>
               </div>
 
               {/* Playlist Grid with Creative Layout */}
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8 mb-16">
+              <div 
+                ref={playlistsGridRef}
+                className={`grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8 mb-16 transition-all duration-700 ${playlistsGridInView ? 'animate-fade-in-up' : 'opacity-0 translate-y-8'}`}
+              >
                 {[
                   { name: 'RapCaviar', followers: '11M+ followers', gradient: 'from-[#e6d3b7] to-[#d4c5a9]', icon: '🎤' },
                   { name: "Today's Top Hits", followers: '33M+ followers', gradient: 'from-[#feca57] to-[#ff9ff3]', icon: '🔥' },
@@ -2978,7 +3214,10 @@ export default function Home() {
               </div>
 
               {/* "Thousands More" Statement */}
-              <div className="text-center mb-16 mt-5">
+              <div 
+                ref={thousandsMoreRef}
+                className={`text-center mb-16 mt-5 transition-all duration-700 ${thousandsMoreInView ? 'animate-fade-in-up' : 'opacity-0 translate-y-8'}`}
+              >
                 <div className="relative inline-block">
                   {/* Glow Effect Behind Text */}
                   <div className="absolute inset-0 bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] blur-2xl opacity-30 animate-pulse"></div>
@@ -2994,7 +3233,10 @@ export default function Home() {
               </div>
 
               {/* CTA Button */}
-              <div className="text-center">
+              <div 
+                ref={playlistsButtonRef}
+                className={`text-center transition-all duration-700 ${playlistsButtonInView ? 'animate-fade-in-up' : 'opacity-0 translate-y-8'}`}
+              >
                 <button
                   onClick={scrollToTrackInput}
                   className="px-16 py-5 bg-gradient-to-r from-[#59e3a5] via-[#14c0ff] to-[#8b5cf6] text-white font-bold rounded-2xl hover:shadow-2xl hover:shadow-[#14c0ff]/30 transition-all duration-300 transform hover:scale-105 active:scale-95 relative overflow-hidden group text-xl"
@@ -3341,20 +3583,27 @@ export default function Home() {
           </section>
 
           {/* Testimonials Section */}
-          <section className="py-64 px-4 relative z-30" style={{ background: 'transparent' }}>
-            <div className="max-w-screen-2xl mx-auto">
+          <section className="py-64 px-4 relative z-30 overflow-visible" style={{ background: 'transparent' }}>
+            <div className="max-w-screen-2xl mx-auto overflow-visible">
               {/* Section Header */}
               <div className="text-center mb-20">
-                <h2 className="text-4xl md:text-5xl lg:text-6xl font-black mb-8 bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] bg-clip-text text-transparent" style={{ lineHeight: '1.3' }}>
+                <h2 
+                  ref={testimonialsHeadingRef}
+                  className={`text-4xl md:text-5xl lg:text-6xl font-black mb-8 bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] bg-clip-text text-transparent transition-all duration-700 ${testimonialsHeadingInView ? 'animate-fade-in-up' : 'opacity-0 translate-y-8'}`} 
+                  style={{ lineHeight: '1.3' }}
+                >
                   Real Artists. Real Results. Real Talk.
                 </h2>
-                <p className="text-[1.275rem] md:text-[1.4rem] text-gray-300 max-w-4xl mx-auto leading-relaxed font-bold">
+                <p 
+                  ref={testimonialsSubheadingRef}
+                  className={`text-[1.275rem] md:text-[1.4rem] text-gray-300 max-w-4xl mx-auto leading-relaxed font-bold transition-all duration-700 ${testimonialsSubheadingInView ? 'animate-fade-in-up' : 'opacity-0 translate-y-8'}`}
+                >
                   Don't just take our word for it. Here's what creators who actually use FASHO.co have to say about their experience.
                 </p>
               </div>
 
               {/* Testimonials Carousel */}
-              <div className="relative overflow-x-hidden mb-16 pr-8">
+              <div className="relative overflow-visible mb-16 pr-8 pt-8 z-40">
                 <div 
                   className="testimonial-carousel flex transition-transform duration-[2000ms] ease-in-out"
                   style={{ 
@@ -3365,11 +3614,29 @@ export default function Home() {
                   {/* Render testimonials twice for seamless loop */}
                   {[...testimonials, ...testimonials].map((testimonial, index) => (
                     <div key={index} className="flex-shrink-0 px-2" style={{ width: '24.5vw' }}>
-                      <div className="relative group max-w-xs mx-auto">
+                      <div 
+                        className="relative group max-w-xs mx-auto"
+                        onMouseEnter={() => {
+                          // Clear any existing resume timeout
+                          if (resumeTimeout) {
+                            clearTimeout(resumeTimeout);
+                            setResumeTimeout(null);
+                          }
+                          setIsCarouselPaused(true);
+                        }}
+                        onMouseLeave={() => {
+                          // Resume after 250ms delay
+                          const timeout = setTimeout(() => {
+                            setIsCarouselPaused(false);
+                            setResumeTimeout(null);
+                          }, 250);
+                          setResumeTimeout(timeout);
+                        }}
+                      >
                         <div className={`absolute inset-0 bg-gradient-to-br ${testimonial.gradient} rounded-3xl blur-xl opacity-60 group-hover:opacity-90 transition-opacity duration-500`}></div>
                         <div className={`relative bg-gradient-to-br from-[#1a1a2e]/95 via-[#16213e]/90 to-[#0a0a13]/95 rounded-3xl p-4 border-2 border-white/10 backdrop-blur-sm hover:${testimonial.border} transition-all duration-500 group-hover:transform group-hover:scale-105 shadow-2xl`}>
                           {/* Large Profile Image */}
-                          <div className="w-32 h-32 mx-auto mb-4 rounded-2xl overflow-hidden shadow-2xl">
+                          <div className="w-36 h-36 mx-auto mb-4 rounded-2xl overflow-hidden shadow-2xl">
                             <img 
                               src={testimonial.image}
                               alt={testimonial.name}
@@ -3856,14 +4123,86 @@ export default function Home() {
             </svg>
           </div>
 
+          {/* FAQ Section */}
+          <section id="faq" className="py-24 px-4 relative z-10">
+            <div className="max-w-4xl mx-auto">
+              {/* FAQ Header */}
+              <div className="text-center mb-16">
+                <h2 className="text-4xl md:text-5xl lg:text-6xl font-black mb-8 text-white" style={{ lineHeight: '1.1' }}>
+                  Frequently Asked Questions
+                </h2>
+              </div>
+
+              {/* FAQ Cards */}
+              <div className="space-y-5">
+                {[
+                  {
+                    question: "⚡ How fast will my music be placed on playlists?",
+                    answer: "Our team goes to work IMMEDIATELY after you order, and you'll see your first playlist placements within 48-72 hours. That's right - we don't mess around. Some tracks get placed even faster because our curators are HUNGRY for fresh music, but we guarantee results within that lightning-fast timeframe!"
+                  },
+                  {
+                    question: "🎵 When will my music start receiving streams?",
+                    answer: "The SECOND your track lands on a playlist, it starts getting streams! These aren't just any playlists - we're talking about playlists with MASSIVE followings that have listeners streaming 24/7. Your plays will start rolling in immediately and continue growing as we place you on more and more playlists throughout your campaign."
+                  },
+                  {
+                    question: "⏰ How long does the campaign last?",
+                    answer: "Your campaign lasts for a maximum of 30 days, but most campaigns are completed much sooner - typically within just 7-10 days. Once we deliver the estimated plays included in your package tier, the campaign automatically stops. We guarantee you'll reach your estimated stream count within the 30-day window, but in most cases, you'll see your full results delivered within the first week to 10 days of your campaign starting."
+                  },
+                  {
+                    question: "👀 How do I track which playlists featured my music?",
+                    answer: "Download Spotify's official \"Spotify for Artists\" app (if you haven't already - seriously, get it NOW!). This shows you EVERYTHING - which playlists added your music, your streaming stats, listener demographics, and more. You'll be able to watch your success in real-time!"
+                  },
+                  {
+                    question: "✈️ Do you work with artists worldwide?",
+                    answer: "YES! We work with musicians, podcasters, and record labels from EVERY country on the planet. Our playlist network spans globally, so whether you're in Nashville, London, Tokyo, or anywhere else - we've got playlists that will LOVE your sound!"
+                  },
+                  {
+                    question: "🎶 What genres do you cover?",
+                    answer: "EVERY. SINGLE. GENRE. Hip-hop, pop, rock, country, EDM, jazz, classical, indie, metal, folk, reggae, Latin, K-pop - you name it, we've got playlists for it. We have curators specializing in every genre imaginable, plus all the sub-genres and fusion styles. There's literally NO music we can't promote!"
+                  },
+                  {
+                    question: "💎 Will I make money from the streams?",
+                    answer: "ABSOLUTELY! Every stream generates royalties that go directly to you through Spotify's payment system. Many of our clients see their campaigns pay for themselves within months, then it's pure profit! The more playlists we get you on, the more streams you get, the more money you make. It's that simple!"
+                  },
+                  {
+                    question: "🎤 Do you work with podcasts too?",
+                    answer: "Absolutely! We work with podcast curators who specialize in playlists across every topic and format you can imagine. The process is identical to music - we'll match your podcast with the perfect playlist curators in your niche and get you the exposure you deserve. Same guaranteed results, same lightning-fast delivery!"
+                  },
+                  {
+                    question: "🔒 Is this safe for my Spotify account?",
+                    answer: "100% SAFE! We work exclusively with REAL playlists run by genuine music lovers - no bots, no fake streams, no shady tactics. We're talking about legitimate playlists with organic followers who actually listen to music. Spotify LOVES what we do because we help them discover great new music for their users!"
+                  },
+                  {
+                    question: "🏆 What makes FASHO.co different from other companies?",
+                    answer: "We're the ONLY company with 10+ year relationships with the biggest playlist curators in the world. While other companies send spam emails or buy fake plays, we make PERSONAL phone calls to curators who trust our taste in music. We've worked with curators from Rap Caviar, Today's Top Hits, and hundreds of other major playlists. Our success rate is UNMATCHED in the industry!"
+                  },
+                  {
+                    question: "🚀 What's your success rate?",
+                    answer: "Our artists have a 99%+ placement rate because of our personal relationships with curators. When FASHO.co recommends an artist, curators listen! We've helped create chart-toppers, viral hits, and launched countless careers. Your success is our success!"
+                  },
+                  {
+                    question: "🎧 What if my song is not on Spotify yet? Can you get me on Spotify?",
+                    answer: "We can only market music that's already live on Spotify - we don't offer distribution services (though we will in the very near future!). To get your music on Spotify, we recommend using a distribution service like DistroKid, CD Baby, or TuneCore. Once your track is live on Spotify, we can immediately start getting it placed on massive playlists!"
+                  },
+                  {
+                    question: "📞 How can I contact support?",
+                    answer: "Hit us up at support@fasho.co and our team will get back to you within 24 hours (usually much faster!). We're here to help you succeed, so don't hesitate to reach out with ANY questions about your campaign or account."
+                  }
+                ].map((faq, index) => (
+                  <FAQCard key={index} question={faq.question} answer={faq.answer} />
+                ))}
+              </div>
+            </div>
+          </section>
+
           {/* Final CTA Section */}
-          <section className="py-24 px-4 relative z-10">
+          <section className="px-4 relative z-10" style={{ marginTop: '-60px', paddingTop: '24px', paddingBottom: '24px', marginBottom: '205px' }}>
             <div className="max-w-4xl mx-auto text-center">
               <h2 className="text-4xl md:text-5xl lg:text-6xl font-black mb-8 bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] bg-clip-text text-transparent" style={{ lineHeight: '1.3' }}>
                 Ready to Go Viral?
                 </h2>
               <p className="text-xl text-gray-300 mb-12 max-w-2xl mx-auto leading-relaxed">
-                Join thousands of artists who've already transformed their careers with Fasho. Your breakthrough moment is just one campaign away.
+                Join thousands of artists who've already gone from unknown to unstoppable with FASHO. Your career changing moment is waiting - let's make it happen.
               </p>
                 <button
                   onClick={scrollToTrackInput}
@@ -3875,10 +4214,10 @@ export default function Home() {
             </div>
           </section>
 
-          {/* Add large margin for testing separation */}
-          <div style={{ marginBottom: '200px' }}></div>
-
         </div> {/* End Content Container */}
+
+        {/* Footer */}
+        <Footer />
 
         {/* Search Results Portal */}
         {isMounted && showSearchResults && (

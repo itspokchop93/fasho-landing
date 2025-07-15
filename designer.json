@@ -1,0 +1,143 @@
+{
+    "elementStyling": {
+      "background": {
+        "main": {
+          "type": "gradient",
+          "value": "linear-gradient(135deg, #FFFFFF 60%, #FFEAEA 100%)",
+          "appliesTo": "page background"
+        }
+      },
+      "faqSection": {
+        "header": {
+          "textColor": "#232323",
+          "fontWeight": 700,
+          "fontSize": "2.5rem",
+          "lineHeight": 1.1,
+          "marginBottom": "2.5rem"
+        }
+      },
+      "cards": {
+        "container": {
+          "background": "#FFFFFF",
+          "borderRadius": "16px",
+          "border": "none",
+          "boxShadow": "0px 8px 32px rgba(44, 43, 94, 0.06)",
+          "marginBottom": "1.25rem",
+          "padding": "2rem 2.5rem",
+          "transition": "box-shadow 0.2s cubic-bezier(.4,0,.2,1)",
+          "hover": {
+            "boxShadow": "0px 16px 40px rgba(44, 43, 94, 0.12)"
+          }
+        },
+        "expandedCardAccentBar": {
+          "display": true,
+          "width": "28px",
+          "height": "3px",
+          "backgroundColor": "#38D39F",     // Mint green accent
+          "borderRadius": "9999px",
+          "marginRight": "1rem"
+        },
+        "iconContainerCollapsedCard": {
+          "display": true,
+          "size": 24,
+          "iconType": "+",
+          "fillColor": "#5A4B8B",           // Deep muted purple
+          "backgroundColor": "#FFFFFF"
+        },
+        "iconContainerExpandedCard": {
+          "display": true,
+          "size": 24,
+          "iconType": "-",
+          "fillColor": "#38D39F",           // Mint green
+          "backgroundColor": "#FFFFFF"
+        },
+        "_DO_NOT_Apply_GradientOrShadow_To_IconItself_Or_Text_Inside_Card_"
+      },
+      // Card text
+      "cardContentTextStyles": {
+        // Question/title text styling in cards
+        ".card-title": {
+          // Context: The question or title at the top of each card.
+          // Expanded card: bolder, darker; collapsed: same color.
+          // Font and color details:
+          "color": "#232323",
+          // Slightly bolder than normal text.
+          "fontWeight": 600,
+          // Font size estimate:
+          "fontSize": 18,
+          // Collapsed/expanded: same styling
+        },
+        ".card-body-text": {
+          // Context: Only present in expanded card (visible answer)
+          // Lighter shade for detail text:
+          "color": "#8A8A8A",     // Soft grey for body copy
+          // Regular font weight:
+          "fontWeight": 400,
+          // Slightly smaller:
+          "fontSize": 16,
+        }
+      },
+      // Card States
+      "_cardStates_StylingRules_":{
+        "_default_":{
+           ".card-container":{
+               "_use_background":"#FFFFFF",
+               "_boxShadow":"0px 8px 32px rgba(44,43,94,0.06)"
+            }
+         },
+         "_hover_":{
+           ".card-container":{
+             "_boxShadow":"0px 16px 40px rgba(44,43,94,0.12)"
+           }
+         },
+         "_expanded_":{
+           ".expandedCardAccentBar":{
+             "_display":"block",
+             "_backgroundColor":"#38D39F"
+           },
+           ".card-icon":{
+             "_iconType":"minus",
+             "_fillColor":"#38D39F"
+           }
+         },
+         "_collapsed_":{
+           ".expandedCardAccentBar":{
+             "_display":"none"
+           },
+           ".card-icon":{
+             "_iconType":"plus",
+             "_fillColor":"#5A4B8B"
+           }
+         }
+       },
+       // Buttons: (No explicit button elements shown in this screenshot; if added, use these defaults)
+       "_buttons_":{
+         "_primary_":{
+            "_background":"linear-gradient(135deg,#38D39F,#4ECDC4)",   // Example from accent color family
+            "_text":"#FFFFFF",
+            "_hover_background":"#36C98B"
+         },
+         "_secondary_":{
+            "_background":"#F7F7F7",
+            "_text":"#5A4B8B",
+            "_hover_background":"#EFEFEF"
+         }
+       },
+       // Iconography
+       ".iconPlusMinus":{
+         // Use purple (#5A4B8B) for plus on collapsed; mint green (#38D39F) for minus on expanded.
+         // DO NOT use gradients or shadows on icons.
+         // DO NOT use accent bar color on icons.
+       },
+       // Miscellaneous/DO NOT rules:
+       "_DO_NOT_Rules_":[
+         {"rule":"Do not apply card container gradients or shadows to icons or text."},
+         {"rule":"Do not use accent bar color (#38D39F) as a background for cards or buttons."},
+         {"rule":"Do not apply button background gradients to card containers."},
+         {"rule":"Do not use deep purple (#5A4B8B) as a card background."},
+         {"rule":"Do not apply background gradient (#FFEAEA) to individual cards; only to page background."},
+         {"rule":"Do not apply card shadow to content text or icons."}
+       ]
+     }
+  }
+  
