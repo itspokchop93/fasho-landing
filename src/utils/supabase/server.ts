@@ -51,18 +51,41 @@ export function createClientSSR(context: GetServerSidePropsContext) {
     {
       cookies: {
         get(name: string) {
-          return context.req.cookies?.[name]
+          return context.req.cookies[name]
         },
         set(name: string, value: string, options: any) {
-          if (context.res) {
-            context.res.setHeader('Set-Cookie', `${name}=${value}; ${options ? Object.entries(options).map(([key, val]) => `${key}=${val}`).join('; ') : ''}`)
-          }
+          context.res.setHeader('Set-Cookie', `${name}=${value}; ${options ? Object.entries(options).map(([key, val]) => `${key}=${val}`).join('; ') : ''}`)
         },
         remove(name: string, options: any) {
-          if (context.res) {
-            context.res.setHeader('Set-Cookie', `${name}=; expires=Thu, 01 Jan 1970 00:00:00 GMT; ${options ? Object.entries(options).map(([key, val]) => `${key}=${val}`).join('; ') : ''}`)
-          }
+          context.res.setHeader('Set-Cookie', `${name}=; expires=Thu, 01 Jan 1970 00:00:00 GMT; ${options ? Object.entries(options).map(([key, val]) => `${key}=${val}`).join('; ') : ''}`)
         },
+      },
+    }
+  )
+}
+
+// For admin operations - uses service role key to bypass RLS
+export function createAdminClient() {
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY
+
+  if (!supabaseUrl || !serviceRoleKey) {
+    throw new Error(
+      'Missing Supabase environment variables for admin operations.\n' +
+      'Required variables:\n' +
+      '- NEXT_PUBLIC_SUPABASE_URL\n' +
+      '- SUPABASE_SERVICE_ROLE_KEY'
+    )
+  }
+
+  return createServerClient(
+    supabaseUrl,
+    serviceRoleKey,
+    {
+      cookies: {
+        get: () => undefined,
+        set: () => {},
+        remove: () => {},
       },
     }
   )

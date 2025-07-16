@@ -1,24 +1,13 @@
 import { NextApiRequest, NextApiResponse } from 'next'
-import { createClient } from '../../../utils/supabase/server'
+import { createAdminClient } from '../../../utils/supabase/server'
+import { requireAdminAuth, AdminUser } from '../../../utils/admin/auth'
 
-export default async function handler(req: NextApiRequest, res: NextApiResponse) {
-  const supabase = createClient(req, res)
+async function handler(req: NextApiRequest, res: NextApiResponse, adminUser: AdminUser) {
+  const supabase = createAdminClient()
 
   try {
     console.log('📧 EMAIL-TEMPLATES-API: Starting request processing...')
-    
-    // Check authentication
-    const { data: { user }, error: authError } = await supabase.auth.getUser()
-    console.log('📧 EMAIL-TEMPLATES-API: Auth check result:', { 
-      hasUser: !!user, 
-      userEmail: user?.email,
-      authError: authError?.message 
-    })
-    
-    if (authError || !user) {
-      console.log('📧 EMAIL-TEMPLATES-API: Authentication failed')
-      return res.status(401).json({ error: 'Unauthorized' })
-    }
+    console.log('📧 EMAIL-TEMPLATES-API: Admin user:', adminUser.email)
 
     console.log('📧 EMAIL-TEMPLATES-API: Processing', req.method, 'request')
 
@@ -283,4 +272,6 @@ async function deleteEmailTemplate(supabase: any, req: NextApiRequest, res: Next
     console.error('📧 EMAIL-TEMPLATE-DELETE: Unexpected error:', error)
     res.status(500).json({ error: 'Internal server error' })
   }
-} 
+}
+
+export default requireAdminAuth(handler);

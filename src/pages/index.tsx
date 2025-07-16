@@ -1159,6 +1159,7 @@ export default function Home() {
 
                 {/* Menu Anchor for Track Input */}
                 <div id="track-input-section"></div>
+                <div id="start-campaign"></div>
 
                 {/* Track Input Section - Enhanced Design with increased bottom padding and 10px top padding */}
                 <div className="mt-16 mb-[18px] -mb-[55px] relative pb-10 pt-2.5">

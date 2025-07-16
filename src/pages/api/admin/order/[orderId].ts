@@ -1,22 +1,18 @@
 import { NextApiRequest, NextApiResponse } from 'next';
-import { createClient } from '../../../../utils/supabase/server';
+import { createAdminClient } from '../../../../utils/supabase/server';
 import { sendOrderStatusChangeEmail } from '../../../../utils/email/emailService';
+import { requireAdminAuth, AdminUser } from '../../../../utils/admin/auth';
 
-export default async function handler(req: NextApiRequest, res: NextApiResponse) {
+async function handler(req: NextApiRequest, res: NextApiResponse, adminUser: AdminUser) {
   const { orderId } = req.query;
 
   if (!orderId || typeof orderId !== 'string') {
     return res.status(400).json({ error: 'Order ID is required' });
   }
 
-  const supabase = createClient(req, res);
+  const supabase = createAdminClient();
 
   try {
-    // Check authentication
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
-    if (authError || !user) {
-      return res.status(401).json({ error: 'Unauthorized' });
-    }
 
     if (req.method === 'GET') {
       console.log(`🔍 ADMIN-ORDER-DETAIL: Fetching order details for: ${orderId}`);
@@ -78,7 +74,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           .from('orders')
           .update({
             first_viewed_at: new Date().toISOString(),
-            viewed_by_admin: user.id
+            viewed_by_admin: adminUser.email
           })
           .eq('id', orderId);
 
@@ -210,4 +206,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     console.error('🔍 ADMIN-ORDER-DETAIL: Unexpected error:', error);
     return res.status(500).json({ error: 'Internal server error' });
   }
-} 
+}
+
+export default requireAdminAuth(handler);

@@ -713,7 +713,7 @@ export default function Dashboard({ user }: DashboardProps) {
             {/* Button - Overlayed on Lottie */}
             <div className="absolute bottom-0 left-1/2 transform -translate-x-1/2 mb-8">
               <button 
-                onClick={() => router.push('/add')}
+                onClick={() => router.push('/#start-campaign')}
                 className="bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white px-12 py-4 rounded-xl text-lg font-semibold transition-all duration-300 shadow-lg hover:shadow-xl transform hover:scale-105 border-2 border-gray-900/60 whitespace-nowrap"
               >
                 Start New Campaign
@@ -1017,7 +1017,7 @@ export default function Dashboard({ user }: DashboardProps) {
                 It's time to dominate on Spotify! 🚀
               </p>
               <button 
-                onClick={() => router.push('/add')}
+                onClick={() => router.push('/#start-campaign')}
                 className="bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white px-6 py-3 rounded-xl text-base font-semibold transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl"
               >
                 Start New Campaign
@@ -1370,7 +1370,7 @@ export default function Dashboard({ user }: DashboardProps) {
             <div className="text-4xl mb-4">🎵</div>
             <p className="text-gray-400 mb-4">No campaigns yet. Start your first promotion!</p>
             <button 
-              onClick={() => router.push('/add')}
+              onClick={() => router.push('/#start-campaign')}
               className="bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white px-6 py-3 rounded-xl font-semibold transition-all duration-300"
             >
               Create Campaign
@@ -1557,7 +1557,7 @@ export default function Dashboard({ user }: DashboardProps) {
           <h4 className="text-xl font-semibold text-white mb-2">No campaigns yet</h4>
           <p className="text-gray-400 mb-6">Start your first music promotion campaign today!</p>
           <button 
-            onClick={() => router.push('/add')}
+            onClick={() => router.push('/#start-campaign')}
             className="bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white px-6 py-3 rounded-xl font-semibold transition-all duration-300"
           >
             Create Campaign

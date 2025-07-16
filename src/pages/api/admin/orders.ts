@@ -1,24 +1,14 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
-import { createClient } from '../../../utils/supabase/server';
+import { createAdminClient } from '../../../utils/supabase/server';
+import { requireAdminAuth, AdminUser } from '../../../utils/admin/auth';
 
-export default async function handler(req: NextApiRequest, res: NextApiResponse) {
+async function handler(req: NextApiRequest, res: NextApiResponse, adminUser: AdminUser) {
   if (req.method !== 'GET') {
     return res.status(405).json({ success: false, message: 'Method not allowed' });
   }
 
   try {
-    const supabase = createClient(req, res);
-    
-    // Get the current user
-    const { data: { user }, error: userError } = await supabase.auth.getUser();
-    
-    if (userError || !user) {
-      return res.status(401).json({ success: false, message: 'Unauthorized' });
-    }
-
-    // TODO: Add role-based access control here
-    // For now, we'll allow any authenticated user to access admin orders
-    // Later we'll check if user.user_metadata.role === 'admin'
+    const supabase = createAdminClient();
 
     // Get query parameters
     const { 
@@ -177,4 +167,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     console.error('🔍 ADMIN-ORDERS: Error in orders API:', error);
     return res.status(500).json({ success: false, message: 'Internal server error' });
   }
-} 
+}
+
+export default requireAdminAuth(handler);
