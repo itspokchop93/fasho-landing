@@ -312,17 +312,17 @@ export default function Header({ transparent = false, hideSignUp = false }: Head
 
           {/* Desktop Navigation */}
           <nav className={`hidden md:flex items-center space-x-8 ${hideSignUp ? 'pr-16' : ''}`}>
-            <Link href="/song-promotion" className="text-white hover:text-[#59e3a5] transition-colors font-medium">
-              Song Promotion
+            <Link href="/pricing" className="text-white hover:text-[#59e3a5] transition-colors font-medium">
+              Pricing
             </Link>
-            <Link href="/about" className="text-white hover:text-[#59e3a5] transition-colors font-medium">
-              About Us
-            </Link>
-            <Link href="/faq" className="text-white hover:text-[#59e3a5] transition-colors font-medium">
+            <Link href="/#faq" className="text-white hover:text-[#59e3a5] transition-colors font-medium">
               FAQ
             </Link>
+            <Link href="/about" className="text-white hover:text-[#59e3a5] transition-colors font-medium">
+              About
+            </Link>
             <Link href="/contact" className="text-white hover:text-[#59e3a5] transition-colors font-medium">
-              Contact Us
+              Contact
             </Link>
             
             {/* Sign Up Button or User Profile */}
@@ -374,17 +374,17 @@ export default function Header({ transparent = false, hideSignUp = false }: Head
         {isMobileMenuOpen && (
           <div className="md:hidden">
             <div className="px-2 pt-2 pb-3 space-y-1 border-t border-white/10">
-              <Link href="/song-promotion" className="block px-3 py-2 text-white hover:text-[#59e3a5] transition-colors font-medium">
-                Song Promotion
+              <Link href="/pricing" className="block px-3 py-2 text-white hover:text-[#59e3a5] transition-colors font-medium">
+                Pricing
               </Link>
-              <Link href="/about" className="block px-3 py-2 text-white hover:text-[#59e3a5] transition-colors font-medium">
-                About Us
-              </Link>
-              <Link href="/faq" className="block px-3 py-2 text-white hover:text-[#59e3a5] transition-colors font-medium">
+              <Link href="/#faq" className="block px-3 py-2 text-white hover:text-[#59e3a5] transition-colors font-medium">
                 FAQ
               </Link>
+              <Link href="/about" className="block px-3 py-2 text-white hover:text-[#59e3a5] transition-colors font-medium">
+                About
+              </Link>
               <Link href="/contact" className="block px-3 py-2 text-white hover:text-[#59e3a5] transition-colors font-medium">
-                Contact Us
+                Contact
               </Link>
               
               <div className="flex items-center justify-center px-3 py-2">

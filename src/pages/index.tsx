@@ -1164,7 +1164,7 @@ export default function Home() {
                 <div className="mt-16 mb-[18px] -mb-[55px] relative pb-10 pt-2.5">
                   {/* Lottie Animation Behind Input Field */}
                   <div className="absolute left-1/2 -top-12 -translate-x-1/2 z-0 w-full flex justify-center pointer-events-none" style={{height: '70px'}}>
-                    <div className="w-[90%] max-w-4xl">
+                    <div style={{ width: '896px', maxWidth: '90vw', margin: '0 auto', padding: '0 20px' }}>
                       {lottieData && (
                         <Lottie
                           autoplay
@@ -1230,7 +1230,7 @@ export default function Home() {
                             <input
                               ref={inputRef}
                               type="text"
-                              placeholder="Enter Your Song Name or Track Link"
+                              placeholder="Search Your Song Name or Paste A Track Link"
                               value={url}
                               onFocus={handleInputFocus}
                               onChange={(e) => setUrl(e.target.value)}

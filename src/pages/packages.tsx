@@ -16,40 +16,56 @@ interface Package {
   plays: string;
   placements: string;
   description: string;
+  icon: string;
+  popular?: boolean;
 }
 
 const packages: Package[] = [
   {
-    id: "starter",
-    name: "Starter",
+    id: "legendary",
+    name: "LEGENDARY",
+    price: 479,
+    plays: "125,000 - 150,000 Streams", 
+    placements: "375 - 400 Playlist Pitches",
+    description: "Legendary status",
+    icon: "👑"
+  },
+  {
+    id: "unstoppable",
+    name: "UNSTOPPABLE",
+    price: 259,
+    plays: "45,000 - 50,000 Streams", 
+    placements: "150 - 170 Playlist Pitches",
+    description: "Become unstoppable",
+    icon: "💎"
+  },
+  {
+    id: "dominate",
+    name: "DOMINATE", 
+    price: 149,
+    plays: "18,000 - 20,000 Streams",
+    placements: "60 - 70 Playlist Pitches",
+    description: "Dominate the charts",
+    icon: "🔥",
+    popular: true
+  },
+  {
+    id: "momentum", 
+    name: "MOMENTUM",
+    price: 79,
+    plays: "7,500 - 8,500 Streams",
+    placements: "25 - 30 Playlist Pitches",
+    description: "Build your momentum",
+    icon: "⚡"
+  },
+  {
+    id: "breakthrough",
+    name: "BREAKTHROUGH",
     price: 39,
-    plays: "1k Plays",
-    placements: "35 Playlist Placements",
-    description: "Perfect for getting started"
-  },
-  {
-    id: "advanced", 
-    name: "Advanced",
-    price: 89,
-    plays: "5k Plays",
-    placements: "75 Playlist Placements",
-    description: "Great for growing artists"
-  },
-  {
-    id: "diamond",
-    name: "Diamond", 
-    price: 249,
-    plays: "15k Plays",
-    placements: "115 Playlist Placements",
-    description: "Professional promotion"
-  },
-  {
-    id: "ultra",
-    name: "Ultra",
-    price: 499,
-    plays: "50k Plays", 
-    placements: "250 Playlist Placements",
-    description: "Maximum exposure"
+    plays: "3,000 - 3,500 Streams",
+    placements: "10 - 12 Playlist Pitches",
+    description: "Perfect for getting started",
+    icon: "🚀"
   }
 ];
 
@@ -202,17 +218,25 @@ export default function PackagesPage() {
       return;
     }
     
-    const basePlay = parseInt(selected.plays.replace(/[^0-9]/g, '')) * 1000;
-    const maxPlays = Math.floor(basePlay * 1.1);
-    const basePlacements = parseInt(selected.placements.replace(/[^0-9]/g, ''));
-    const actualPlacements = Math.floor(basePlacements * (1.05 + Math.random() * 0.05));
-    const playsRange = `${(basePlay / 1000).toFixed(0)}k - ${(maxPlays / 1000).toFixed(1)}k plays`;
+    // Parse the exact range from package data
+    const playsNumbers = selected.plays.match(/[\d,]+/g);
+    const placementsNumbers = selected.placements.match(/\d+/g);
+    
+    const minPlays = playsNumbers ? parseInt(playsNumbers[0].replace(/,/g, '')) : 0;
+    const maxPlays = playsNumbers && playsNumbers.length > 1 ? parseInt(playsNumbers[1].replace(/,/g, '')) : minPlays;
+    
+    const minPlacements = placementsNumbers ? parseInt(placementsNumbers[0]) : 0;
+    const maxPlacements = placementsNumbers && placementsNumbers.length > 1 ? parseInt(placementsNumbers[1]) : minPlacements;
+    
+    // Use exact plays range from package and calculate average placements
+    const playsRange = selected.plays;
+    const avgPlacements = Math.round((minPlacements + maxPlacements) / 2);
     
     // Generate 30-day growth data
     const dailyData: number[] = [];
     for (let i = 0; i < 30; i++) {
       const progress = i / 29;
-      const randomVariation = 0.8 + Math.random() * 0.4;
+      const randomVariation = 0.85 + Math.random() * 0.3; // 85-115% variation for realistic data
       const dailyPlays = Math.floor(maxPlays * progress * randomVariation);
       dailyData.push(Math.max(0, dailyPlays));
     }
@@ -288,7 +312,7 @@ export default function PackagesPage() {
         setAnimatedData(newAnimatedData);
         
         // Animate numbers up
-        setAnimatedPlacements(Math.floor(actualPlacements * easeOutCubic));
+        setAnimatedPlacements(Math.floor(avgPlacements * easeOutCubic));
         setAnimatedPlays(easeOutCubic > 0.1 ? playsRange : "");
         
         if (progress >= 1) {
@@ -535,20 +559,27 @@ export default function PackagesPage() {
       };
     }
     
-    const basePlay = parseInt(selected.plays.replace(/[^0-9]/g, '')) * 1000;
-    const basePlacements = parseInt(selected.placements.replace(/[^0-9]/g, ''));
+    // Parse the range format (e.g., "3,000 - 3,500 Streams")
+    const playsNumbers = selected.plays.match(/[\d,]+/g);
+    const placementsNumbers = selected.placements.match(/\d+/g);
     
-    // Create range: base to 10% higher
-    const minPlays = basePlay;
-    const maxPlays = Math.floor(basePlay * 1.1);
-    const playsRange = `${(minPlays / 1000).toFixed(0)}k - ${(maxPlays / 1000).toFixed(1)}k plays`;
-    const actualPlacements = Math.floor(basePlacements * (1.05 + Math.random() * 0.05));
+    const minPlays = playsNumbers ? parseInt(playsNumbers[0].replace(/,/g, '')) : 0;
+    const maxPlays = playsNumbers && playsNumbers.length > 1 ? parseInt(playsNumbers[1].replace(/,/g, '')) : minPlays;
     
-    // Generate 30-day growth data using the max value for scaling
+    const minPlacements = placementsNumbers ? parseInt(placementsNumbers[0]) : 0;
+    const maxPlacements = placementsNumbers && placementsNumbers.length > 1 ? parseInt(placementsNumbers[1]) : minPlacements;
+    
+    // Use the exact plays range from package
+    const playsRange = selected.plays;
+    
+    // Calculate the average/middle ground for playlist placements
+    const avgPlacements = Math.round((minPlacements + maxPlacements) / 2);
+    
+    // Generate 30-day growth data using the max value for realistic projection
     const dailyData = [];
     for (let i = 0; i < 30; i++) {
       const progress = i / 29;
-      const randomVariation = 0.8 + Math.random() * 0.4; // 80-120% of expected
+      const randomVariation = 0.85 + Math.random() * 0.3; // 85-115% variation for realistic data
       const dailyPlays = Math.floor(maxPlays * progress * randomVariation);
       dailyData.push({
         day: i + 1,
@@ -558,7 +589,7 @@ export default function PackagesPage() {
     
     return {
       plays: maxPlays,
-      placements: actualPlacements,
+      placements: avgPlacements,
       dailyData,
       playsRange,
       maxPlays
@@ -712,15 +743,15 @@ export default function PackagesPage() {
                       key={pkg.id}
                       onClick={() => handlePackageSelect(pkg.id)}
                       className={`relative cursor-pointer rounded-xl transition-all duration-300 flex-shrink-0 ${
-                        pkg.id === 'advanced' ? '' : 'p-6 border-2'
+                        pkg.popular ? '' : 'p-4 border-2'
                       } ${
-                        selectedPackage === pkg.id && pkg.id !== 'advanced'
+                        selectedPackage === pkg.id && !pkg.popular
                           ? 'border-[#59e3a5] bg-[#59e3a5]/5'
-                          : pkg.id !== 'advanced'
+                          : !pkg.popular
                           ? 'border-white/20 bg-white/5 hover:border-white/40'
                           : ''
                       }`}
-                      style={{ width: 'calc(50vw - 1rem)' }}
+                      style={{ width: 'calc(85vw - 1rem)', minWidth: '280px' }}
                     >
                       {/* Confetti Animation Overlay */}
                       {confettiAnimation === pkg.id && confettiData && (
@@ -743,8 +774,8 @@ export default function PackagesPage() {
                           />
                         </div>
                       )}
-                      {/* Lens flare animation for Advanced package */}
-                      {pkg.id === 'advanced' && (
+                      {/* Lens flare animation for Popular package */}
+                      {pkg.popular && (
                         <>
                           {/* Outer glow layer */}
                           <div className="absolute -inset-1 bg-gradient-to-r from-blue-400 via-cyan-500 to-blue-600 rounded-2xl blur-lg opacity-50 animate-pulse"></div>
@@ -759,7 +790,7 @@ export default function PackagesPage() {
                       )}
                       
                       {/* Most Popular flag for Advanced package */}
-                      {pkg.id === 'advanced' && (
+                      {pkg.popular && (
                         <div className="absolute -top-2 left-1/2 -translate-x-1/2 bg-gradient-to-r from-[#14c0ff] to-[#59e3a5] text-white text-xs font-semibold px-4 py-1 rounded-md shadow-lg z-30 whitespace-nowrap">
                           Most Popular
                         </div>
@@ -770,39 +801,141 @@ export default function PackagesPage() {
                         </div>
                       )}
                       
-                      {/* Content container - same structure for all packages */}
-                      <div className={`${pkg.id === 'advanced' ? `relative z-20 bg-gray-900 rounded-xl p-6 border h-full flex flex-col ${selectedPackage === pkg.id ? 'border-[#59e3a5]' : 'border-white/20'}` : 'h-full flex flex-col'}`}>
-                        <div className="flex items-center justify-center mb-4">
-                          <div className="w-12 h-12 bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] rounded-full flex items-center justify-center">
-                            <span className="text-lg">🎧</span>
+                      {/* Content container - Horizontal layout for all packages */}
+                      <div className={`${pkg.popular ? `relative z-20 bg-gray-900 rounded-xl p-4 border h-full flex ${selectedPackage === pkg.id ? 'border-[#59e3a5]' : 'border-white/20'}` : 'h-full flex'}`}>
+                        {/* Left side - Icon and Price */}
+                        <div className="flex flex-col items-center justify-center mr-4 min-w-[80px]">
+                          <div className="w-12 h-12 bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] rounded-full flex items-center justify-center mb-2">
+                            <span className="text-lg">{pkg.icon}</span>
+                          </div>
+                          <div className="text-center">
+                            {isDiscountedSong ? (
+                              <div className="space-y-1">
+                                <div className="text-xs text-white/50 line-through">${pkg.price}</div>
+                                <div className="text-lg font-bold bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] bg-clip-text text-transparent">
+                                  ${getDiscountedPrice(pkg.price)}
+                                </div>
+                              </div>
+                            ) : (
+                              <span className="text-lg font-bold">${pkg.price}</span>
+                            )}
                           </div>
                         </div>
                         
-                        <h3 className="text-lg font-bold text-center mb-2">{pkg.name}</h3>
-                        <p className="text-xs text-white/70 text-center mb-4">{pkg.description}</p>
-                        
-                        <div className="space-y-2 mb-4 flex-grow">
-                          <div className="text-xs text-white/80">{pkg.plays}</div>
-                          <div className="text-xs text-white/80">{pkg.placements}</div>
+                        {/* Right side - Content */}
+                        <div className="flex-1 flex flex-col justify-center">
+                          <h3 className="text-base font-bold mb-1">{pkg.name}</h3>
+                          <div className="space-y-1 mb-2">
+                            <div className="text-xs text-white/80">{pkg.plays}</div>
+                            <div className="text-xs text-white/80">{pkg.placements}</div>
+                          </div>
+                          <p className="text-xs text-white/60">{pkg.description}</p>
                         </div>
+                      </div>
+                    </div>
+                                  ))}
+              </div>
+                
+              {/* Bottom row - 2 remaining packages centered */}
+              <div className="grid grid-cols-2 gap-4 max-w-lg mx-auto">
+                {packages.slice(3, 5).map((pkg) => (
+                  <div
+                    key={pkg.id}
+                    onClick={() => handlePackageSelect(pkg.id)}
+                    className={`relative cursor-pointer rounded-xl transition-all duration-300 hover:-translate-y-1 ${
+                      pkg.popular ? '' : 'p-4 border-2'
+                    } ${
+                      selectedPackage === pkg.id && !pkg.popular
+                        ? 'border-[#59e3a5] bg-[#59e3a5]/5'
+                        : !pkg.popular
+                        ? 'border-white/20 bg-white/5 hover:border-white/40'
+                        : ''
+                    }`}
+                    style={{ aspectRatio: '1 / 1.4' }}
+                  >
+                    {/* Confetti Animation Overlay */}
+                    {confettiAnimation === pkg.id && confettiData && (
+                      <div 
+                        key={confettiKey}
+                        className="absolute inset-0 z-50 pointer-events-none rounded-xl overflow-hidden"
+                      >
+                        <Lottie
+                          ref={lottieRef}
+                          animationData={confettiData}
+                          loop={false}
+                          autoplay={true}
+                          style={{
+                            width: '100%',
+                            height: '100%',
+                            position: 'absolute',
+                            top: 0,
+                            left: 0,
+                          }}
+                        />
+                      </div>
+                    )}
+                    {/* Lens flare animation for Popular package */}
+                    {pkg.popular && (
+                      <>
+                        {/* Outer glow layer */}
+                        <div className="absolute -inset-1 bg-gradient-to-r from-blue-400 via-cyan-500 to-blue-600 rounded-2xl blur-lg opacity-50 animate-pulse"></div>
                         
-                        <div className="text-center mt-auto">
+                        {/* Animated border layer */}
+                        <div className="absolute -inset-0.5 rounded-xl overflow-hidden">
+                          <div className="absolute inset-0 border-container-blue">
+                            <div className="absolute -inset-[100px] animate-spin-slow border-highlight-blue"></div>
+                          </div>
+                        </div>
+                      </>
+                    )}
+                    
+                    {/* Most Popular flag */}
+                    {pkg.popular && (
+                      <div className="absolute -top-3 -right-3 bg-gradient-to-r from-[#14c0ff] to-[#59e3a5] text-white text-xs font-semibold px-3 py-1 rounded-md shadow-lg z-30">
+                        Most Popular
+                      </div>
+                    )}
+                    {selectedPackage === pkg.id && (
+                      <div className="absolute -top-2 -left-2 w-6 h-6 bg-[#59e3a5] rounded-full flex items-center justify-center z-30">
+                        <span className="text-black text-sm font-bold">✓</span>
+                      </div>
+                    )}
+                    
+                    {/* Content container - Vertical baseball card layout */}
+                    <div className={`h-full ${pkg.popular ? `relative z-20 bg-gray-900 rounded-xl p-4 border flex flex-col ${selectedPackage === pkg.id ? 'border-[#59e3a5]' : 'border-white/20'}` : 'p-4 flex flex-col'}`}>
+                      {/* Top - Icon and Price */}
+                      <div className="flex flex-col items-center text-center mb-4">
+                        <div className="w-12 h-12 bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] rounded-full flex items-center justify-center mb-2">
+                          <span className="text-xl">{pkg.icon}</span>
+                        </div>
+                        <div>
                           {isDiscountedSong ? (
                             <div className="space-y-1">
-                              <div className="text-sm text-white/50 line-through">${pkg.price}</div>
-                              <div className="text-xl font-bold bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] bg-clip-text text-transparent">
+                              <div className="text-xs text-white/50 line-through">${pkg.price}</div>
+                              <div className="text-lg font-bold bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] bg-clip-text text-transparent">
                                 ${getDiscountedPrice(pkg.price)}
                               </div>
                             </div>
                           ) : (
-                            <span className="text-xl font-bold">${pkg.price}</span>
+                            <span className="text-lg font-bold">${pkg.price}</span>
                           )}
                         </div>
                       </div>
+                      
+                      {/* Middle - Content */}
+                      <div className="flex-1 text-center">
+                        <h3 className="text-sm font-bold mb-2">{pkg.name}</h3>
+                        <div className="space-y-1 mb-2">
+                          <div className="text-xs text-white/80">{pkg.plays}</div>
+                          <div className="text-xs text-white/80">{pkg.placements}</div>
+                        </div>
+                        <p className="text-xs text-white/60">{pkg.description}</p>
+                      </div>
                     </div>
-                  ))}
-                </div>
+                  </div>
+                ))}
               </div>
+            </div>
             </div>
 
             {/* Mobile: Chart section */}
@@ -956,21 +1089,23 @@ export default function PackagesPage() {
           <div className="hidden md:grid grid-cols-1 lg:grid-cols-2 gap-12 items-start">
             {/* Left side - Package selection */}
             <div className="space-y-8">
-              {/* Package cards */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {packages.map((pkg) => (
+              {/* Package cards - Baseball card style */}
+              <div className="grid grid-cols-3 gap-4 mb-4">
+                {/* Top row - 3 most expensive packages */}
+                {packages.slice(0, 3).map((pkg) => (
                   <div
                     key={pkg.id}
                     onClick={() => handlePackageSelect(pkg.id)}
-                    className={`relative cursor-pointer rounded-xl transition-all duration-300 hover:-translate-y-2 ${
-                      pkg.id === 'advanced' ? '' : 'p-6 border-2'
+                    className={`relative cursor-pointer rounded-xl transition-all duration-300 hover:-translate-y-1 ${
+                      pkg.popular ? '' : 'p-4 border-2'
                     } ${
-                      selectedPackage === pkg.id && pkg.id !== 'advanced'
+                      selectedPackage === pkg.id && !pkg.popular
                         ? 'border-[#59e3a5] bg-[#59e3a5]/5'
-                        : pkg.id !== 'advanced'
+                        : !pkg.popular
                         ? 'border-white/20 bg-white/5 hover:border-white/40'
                         : ''
                     }`}
+                    style={{ aspectRatio: '1 / 1.4' }}
                   >
                     {/* Confetti Animation Overlay */}
                     {confettiAnimation === pkg.id && confettiData && (
@@ -993,8 +1128,8 @@ export default function PackagesPage() {
                         />
                       </div>
                     )}
-                    {/* Lens flare animation for Advanced package */}
-                    {pkg.id === 'advanced' && (
+                    {/* Lens flare animation for Popular package */}
+                    {pkg.popular && (
                       <>
                         {/* Outer glow layer */}
                         <div className="absolute -inset-1 bg-gradient-to-r from-blue-400 via-cyan-500 to-blue-600 rounded-2xl blur-lg opacity-50 animate-pulse"></div>
@@ -1008,8 +1143,8 @@ export default function PackagesPage() {
                       </>
                     )}
                     
-                    {/* Most Popular flag for Advanced package */}
-                    {pkg.id === 'advanced' && (
+                    {/* Most Popular flag */}
+                    {pkg.popular && (
                       <div className="absolute -top-3 -right-3 bg-gradient-to-r from-[#14c0ff] to-[#59e3a5] text-white text-xs font-semibold px-3 py-1 rounded-md shadow-lg z-30">
                         Most Popular
                       </div>
@@ -1020,33 +1155,35 @@ export default function PackagesPage() {
                       </div>
                     )}
                     
-                    {/* Content container - same structure for all packages */}
-                    <div className={`${pkg.id === 'advanced' ? `relative z-20 bg-gray-900 rounded-xl p-6 border ${selectedPackage === pkg.id ? 'border-[#59e3a5]' : 'border-white/20'}` : ''}`}>
-                      <div className="flex items-center justify-center mb-4">
-                        <div className="w-16 h-16 bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] rounded-full flex items-center justify-center">
-                          <span className="text-2xl">🎧</span>
+                    {/* Content container - Vertical baseball card layout */}
+                    <div className={`h-full ${pkg.popular ? `relative z-20 bg-gray-900 rounded-xl p-4 border flex flex-col ${selectedPackage === pkg.id ? 'border-[#59e3a5]' : 'border-white/20'}` : 'p-4 flex flex-col'}`}>
+                      {/* Top - Icon and Price */}
+                      <div className="flex flex-col items-center text-center mb-4">
+                        <div className="w-12 h-12 bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] rounded-full flex items-center justify-center mb-2">
+                          <span className="text-xl">{pkg.icon}</span>
+                        </div>
+                        <div>
+                          {isDiscountedSong ? (
+                            <div className="space-y-1">
+                              <div className="text-xs text-white/50 line-through">${pkg.price}</div>
+                              <div className="text-lg font-bold bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] bg-clip-text text-transparent">
+                                ${getDiscountedPrice(pkg.price)}
+                              </div>
+                            </div>
+                          ) : (
+                            <span className="text-lg font-bold">${pkg.price}</span>
+                          )}
                         </div>
                       </div>
                       
-                      <h3 className="text-xl font-bold text-center mb-2">{pkg.name}</h3>
-                      <p className="text-sm text-white/70 text-center mb-4">{pkg.description}</p>
-                      
-                      <div className="space-y-2 mb-4">
-                        <div className="text-sm text-white/80">{pkg.plays}</div>
-                        <div className="text-sm text-white/80">{pkg.placements}</div>
-                      </div>
-                      
-                      <div className="text-center">
-                        {isDiscountedSong ? (
-                          <div className="space-y-1">
-                            <div className="text-sm text-white/50 line-through">${pkg.price}</div>
-                            <div className="text-2xl font-bold bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] bg-clip-text text-transparent">
-                              ${getDiscountedPrice(pkg.price)}
-                            </div>
-                          </div>
-                        ) : (
-                          <span className="text-2xl font-bold">${pkg.price}</span>
-                        )}
+                      {/* Middle - Content */}
+                      <div className="flex-1 text-center">
+                        <h3 className="text-sm font-bold mb-2">{pkg.name}</h3>
+                        <div className="space-y-1 mb-2">
+                          <div className="text-xs text-white/80">{pkg.plays}</div>
+                          <div className="text-xs text-white/80">{pkg.placements}</div>
+                        </div>
+                        <p className="text-xs text-white/60">{pkg.description}</p>
                       </div>
                     </div>
                   </div>

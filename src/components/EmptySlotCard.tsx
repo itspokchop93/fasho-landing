@@ -15,7 +15,7 @@ export default function EmptySlotCard({ onClick }: EmptySlotCardProps) {
           +25% OFF
         </div>
         <p className="text-center text-sm text-white/60 leading-tight px-3">
-          Add a second song
+          Add additional songs
           <br /> below <span>👇</span>
         </p>
       </div>

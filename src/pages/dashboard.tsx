@@ -180,6 +180,8 @@ export default function Dashboard({ user }: DashboardProps) {
       const hash = window.location.hash.slice(1) // Remove the '#' character
       if (hash === 'campaigns') {
         setActiveTab('campaigns')
+      } else if (hash === 'packages') {
+        setActiveTab('packages')
       } else if (hash === 'contact') {
         setActiveTab('contact')
       } else if (hash === 'faq') {
@@ -619,6 +621,7 @@ export default function Dashboard({ user }: DashboardProps) {
   const sidebarItems = [
     { id: 'dashboard', label: 'Dashboard', icon: 'M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2H5a2 2 0 00-2-2z' },
     { id: 'campaigns', label: 'Campaigns', icon: 'M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z' },
+    { id: 'packages', label: 'Packages', icon: 'M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4' },
     { id: 'faq', label: 'FAQ', icon: 'M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z' },
     { id: 'contact', label: 'Contact Us', icon: 'M3 8l7.89 4.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z' },
     { id: 'signout', label: 'Sign Out', icon: 'M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1' },
@@ -2017,12 +2020,379 @@ export default function Dashboard({ user }: DashboardProps) {
     </div>
   )
 
+  const renderPackagesContent = () => {
+    // Package data from pricing page
+    const packages = [
+      {
+        name: "LEGENDARY",
+        price: 479,
+        streams: "125,000 - 150,000 Streams",
+        pitches: "375 - 400 Playlist Pitches",
+        features: [
+          "Campaign starts within only 24 hours",
+          "All streams achieved in only 7-10 days",
+          "Established playlist curators",
+          "All genres supported",
+          "Spotify-safe guarantee",
+          "Dashboard tracking included"
+        ]
+      },
+      {
+        name: "UNSTOPPABLE",
+        price: 259,
+        streams: "45,000 - 50,000 Streams",
+        pitches: "150 - 170 Playlist Pitches",
+        features: [
+          "Campaign starts within only 24 hours",
+          "All streams achieved in only 7-10 days",
+          "Established playlist curators",
+          "All genres supported",
+          "Spotify-safe guarantee",
+          "Dashboard tracking included"
+        ]
+      },
+      {
+        name: "DOMINATE",
+        price: 149,
+        streams: "18,000 - 20,000 Streams",
+        pitches: "60 - 70 Playlist Pitches",
+        popular: true,
+        features: [
+          "Campaign starts within only 24 hours",
+          "All streams achieved in only 7-10 days",
+          "Established playlist curators",
+          "All genres supported",
+          "Spotify-safe guarantee",
+          "Dashboard tracking included"
+        ]
+      },
+      {
+        name: "MOMENTUM",
+        price: 79,
+        streams: "7,500 - 8,500 Streams",
+        pitches: "25 - 30 Playlist Pitches",
+        features: [
+          "Campaign starts within only 24 hours",
+          "All streams achieved in only 7-10 days",
+          "Established playlist curators",
+          "All genres supported",
+          "Spotify-safe guarantee",
+          "Dashboard tracking included"
+        ]
+      },
+      {
+        name: "BREAKTHROUGH",
+        price: 39,
+        streams: "3,000 - 3,500 Streams",
+        pitches: "10-12 Playlist Pitches",
+        features: [
+          "Campaign starts within only 24 hours",
+          "All streams achieved in only 7-10 days",
+          "Established playlist curators",
+          "All genres supported",
+          "Spotify-safe guarantee",
+          "Dashboard tracking included"
+        ]
+      }
+    ];
+
+    // Comparison table data
+    const comparisonPackages = [
+      {
+        name: "LEGENDARY",
+        price: 479,
+        features: [
+          "Campaign starts within only 24 hours",
+          "All streams achieved in only 7-10 days",
+          "Established playlist curators",
+          "All genres supported",
+          "Spotify-safe guarantee",
+          "Dashboard tracking included",
+          "Priority curator outreach",
+          "Major playlist targeting",
+          "Industry influencer reach",
+          "VIP curator network access",
+          "Dedicated account manager"
+        ]
+      },
+      {
+        name: "UNSTOPPABLE",
+        price: 259,
+        features: [
+          "Campaign starts within only 24 hours",
+          "All streams achieved in only 7-10 days",
+          "Established playlist curators",
+          "All genres supported",
+          "Spotify-safe guarantee",
+          "Dashboard tracking included",
+          "Priority curator outreach",
+          "Major playlist targeting",
+          "Industry influencer reach"
+        ]
+      },
+      {
+        name: "DOMINATE",
+        price: 149,
+        features: [
+          "Campaign starts within only 24 hours",
+          "All streams achieved in only 7-10 days",
+          "Established playlist curators",
+          "All genres supported",
+          "Spotify-safe guarantee",
+          "Dashboard tracking included",
+          "Priority curator outreach"
+        ]
+      },
+      {
+        name: "MOMENTUM",
+        price: 79,
+        features: [
+          "Campaign starts within only 24 hours",
+          "All streams achieved in only 7-10 days",
+          "Established playlist curators",
+          "All genres supported",
+          "Spotify-safe guarantee",
+          "Dashboard tracking included"
+        ]
+      },
+      {
+        name: "BREAKTHROUGH",
+        price: 39,
+        features: [
+          "Campaign starts within only 24 hours",
+          "All streams achieved in only 7-10 days",
+          "Established playlist curators",
+          "All genres supported",
+          "Spotify-safe guarantee",
+          "Dashboard tracking included"
+        ]
+      }
+    ];
+
+    const allFeatures = [
+      "Campaign starts within only 24 hours",
+      "All streams achieved in only 7-10 days",
+      "Established playlist curators",
+      "All genres supported",
+      "Spotify-safe guarantee",
+      "Dashboard tracking included",
+      "Priority curator outreach",
+      "Major playlist targeting",
+      "Industry influencer reach",
+      "VIP curator network access",
+      "Dedicated account manager"
+    ];
+
+    const handleGetStarted = (packageName: string) => {
+      router.push('/#start-campaign');
+    };
+
+    return (
+      <div className="space-y-8 pb-8">
+        {/* Pricing Cards */}
+        <div className="max-w-7xl mx-auto">
+          {/* First Row - 3 Cards */}
+          <div className="flex flex-wrap justify-center gap-6 mb-6">
+            {packages.slice(0, 3).map((pkg, index) => (
+              <div
+                key={index}
+                className={`relative bg-gradient-to-br from-white/10 to-white/5 backdrop-blur-sm rounded-2xl border p-8 transition-all duration-300 hover:shadow-2xl hover:shadow-[#14c0ff]/20 w-full sm:w-80 flex flex-col ${
+                  pkg.popular 
+                    ? 'border-[#59e3a5] shadow-2xl shadow-[#59e3a5]/20' 
+                    : 'border-white/20 hover:border-[#14c0ff]/50'
+                }`}
+                style={{ minHeight: '520px' }}
+              >
+                {pkg.popular && (
+                  <div className="absolute -top-4 left-1/2 transform -translate-x-1/2">
+                    <span className="bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] text-white px-4 py-1 rounded-full text-sm font-bold">
+                      POPULAR
+                    </span>
+                  </div>
+                )}
+                
+                <div className="text-center mb-6">
+                  <h3 className="text-lg font-bold mb-4 bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] bg-clip-text text-transparent">{pkg.name}</h3>
+                  <div className="mb-6 py-4">
+                    <span className="text-5xl font-black text-white">${pkg.price}</span>
+                    <span className="text-gray-400 text-sm">/campaign</span>
+                  </div>
+                  <div className="bg-gradient-to-br from-gray-800/80 to-gray-900/90 backdrop-blur-sm rounded-xl border border-white/20 p-4 space-y-2">
+                    <p className="text-base font-bold bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] bg-clip-text text-transparent">{pkg.streams}</p>
+                    <p className="text-base font-bold bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] bg-clip-text text-transparent">{pkg.pitches}</p>
+                  </div>
+                </div>
+
+                <div className="space-y-3 mb-8 flex-grow">
+                  {pkg.features.map((feature, featureIndex) => (
+                    <div key={featureIndex} className="flex items-start space-x-3">
+                      <div className="flex-shrink-0 w-5 h-5 bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] rounded-full flex items-center justify-center mt-0.5">
+                        <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                        </svg>
+                      </div>
+                      <span className="text-gray-300 text-sm leading-relaxed">{feature}</span>
+                    </div>
+                  ))}
+                </div>
+
+                <button
+                  onClick={() => handleGetStarted(pkg.name)}
+                  className={`w-full py-3 px-6 rounded-xl font-semibold transition-all duration-300 mt-auto ${
+                    pkg.popular
+                      ? 'bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] text-white hover:shadow-lg hover:shadow-[#14c0ff]/30'
+                      : 'bg-white/10 text-white border border-white/20 hover:bg-white/20 hover:border-[#14c0ff]/50'
+                  }`}
+                >
+                  Get Started
+                </button>
+              </div>
+            ))}
+          </div>
+          
+          {/* Second Row - 2 Cards */}
+          <div className="flex flex-wrap justify-center gap-6 mb-12">
+            {packages.slice(3, 5).map((pkg, index) => (
+              <div
+                key={index + 3}
+                className={`relative bg-gradient-to-br from-white/10 to-white/5 backdrop-blur-sm rounded-2xl border p-8 transition-all duration-300 hover:shadow-2xl hover:shadow-[#14c0ff]/20 w-full sm:w-80 flex flex-col ${
+                  pkg.popular 
+                    ? 'border-[#59e3a5] shadow-2xl shadow-[#59e3a5]/20' 
+                    : 'border-white/20 hover:border-[#14c0ff]/50'
+                }`}
+                style={{ minHeight: '520px' }}
+              >
+                {pkg.popular && (
+                  <div className="absolute -top-4 left-1/2 transform -translate-x-1/2">
+                    <span className="bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] text-white px-4 py-1 rounded-full text-sm font-bold">
+                      POPULAR
+                    </span>
+                  </div>
+                )}
+                
+                <div className="text-center mb-6">
+                  <h3 className="text-lg font-bold mb-4 bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] bg-clip-text text-transparent">{pkg.name}</h3>
+                  <div className="mb-6 py-4">
+                    <span className="text-5xl font-black text-white">${pkg.price}</span>
+                    <span className="text-gray-400 text-sm">/campaign</span>
+                  </div>
+                  <div className="bg-gradient-to-br from-gray-800/80 to-gray-900/90 backdrop-blur-sm rounded-xl border border-white/20 p-4 space-y-2">
+                    <p className="text-base font-bold bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] bg-clip-text text-transparent">{pkg.streams}</p>
+                    <p className="text-base font-bold bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] bg-clip-text text-transparent">{pkg.pitches}</p>
+                  </div>
+                </div>
+
+                <div className="space-y-3 mb-8 flex-grow">
+                  {pkg.features.map((feature, featureIndex) => (
+                    <div key={featureIndex} className="flex items-start space-x-3">
+                      <div className="flex-shrink-0 w-5 h-5 bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] rounded-full flex items-center justify-center mt-0.5">
+                        <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                        </svg>
+                      </div>
+                      <span className="text-gray-300 text-sm leading-relaxed">{feature}</span>
+                    </div>
+                  ))}
+                </div>
+
+                <button
+                  onClick={() => handleGetStarted(pkg.name)}
+                  className={`w-full py-3 px-6 rounded-xl font-semibold transition-all duration-300 mt-auto ${
+                    pkg.popular
+                      ? 'bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] text-white hover:shadow-lg hover:shadow-[#14c0ff]/30'
+                      : 'bg-white/10 text-white border border-white/20 hover:bg-white/20 hover:border-[#14c0ff]/50'
+                  }`}
+                >
+                  Get Started
+                </button>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Campaign Comparison Table */}
+        <div className="max-w-7xl mx-auto">
+          <div className="text-center mb-8">
+            <h2 className="text-3xl md:text-4xl font-black mb-4 bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] bg-clip-text text-transparent">
+              Campaign Comparison
+            </h2>
+            <p className="text-lg text-gray-300">
+              Compare all features across our packages
+            </p>
+          </div>
+
+          <div className="bg-gradient-to-br from-white/10 to-white/5 backdrop-blur-sm rounded-2xl border border-white/20 overflow-hidden">
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead>
+                  <tr className="border-b border-white/20">
+                    <th className="text-left p-6 text-white font-semibold">Features</th>
+                    {comparisonPackages.slice().reverse().map((pkg, index) => (
+                      <th key={index} className="text-center p-6 text-white font-semibold min-w-[150px]">
+                        <div className="mb-2">{pkg.name}</div>
+                        <div className="text-2xl font-black bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] bg-clip-text text-transparent">
+                          ${pkg.price}
+                        </div>
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {allFeatures.map((feature, featureIndex) => (
+                    <tr key={featureIndex} className="border-b border-white/10 hover:bg-white/5 transition-colors">
+                      <td className="p-6 text-gray-300 font-medium">{feature}</td>
+                      {comparisonPackages.slice().reverse().map((pkg, pkgIndex) => (
+                        <td key={pkgIndex} className="p-6 text-center">
+                          {pkg.features.includes(feature) ? (
+                            <div className="w-6 h-6 bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] rounded-full flex items-center justify-center mx-auto">
+                              <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                              </svg>
+                            </div>
+                          ) : (
+                            <div className="w-6 h-6 bg-gray-600 rounded-full flex items-center justify-center mx-auto">
+                              <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                              </svg>
+                            </div>
+                          )}
+                        </td>
+                      ))}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        {/* CTA Section */}
+        <div className="text-center mt-12 px-4">
+          <h3 className="text-2xl md:text-3xl font-black mb-4 text-white">
+            Ready to <span className="bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] bg-clip-text text-transparent">Go Viral?</span>
+          </h3>
+          <p className="text-lg text-gray-300 mb-6 max-w-2xl mx-auto">
+            Join thousands of artists who've already gone from unknown to unstoppable with FASHO.
+          </p>
+          <button
+            onClick={() => router.push('/')}
+            className="px-8 py-3 bg-gradient-to-r from-[#59e3a5] via-[#14c0ff] to-[#8b5cf6] text-white font-bold rounded-xl hover:shadow-lg hover:shadow-[#14c0ff]/30 transition-all duration-300 transform hover:scale-105"
+          >
+            Start Your Campaign
+          </button>
+        </div>
+      </div>
+    )
+  }
+
   const renderContent = () => {
     switch (activeTab) {
       case 'dashboard':
         return renderDashboardContent()
       case 'campaigns':
         return renderCampaignsContent()
+      case 'packages':
+        return renderPackagesContent()
       case 'faq':
         return renderFAQContent()
       case 'contact':
@@ -2173,12 +2543,14 @@ export default function Dashboard({ user }: DashboardProps) {
                 <h2 className="text-xl lg:text-2xl font-bold text-white">
                   {activeTab === 'dashboard' && 'Dashboard'}
                   {activeTab === 'campaigns' && 'Campaigns'}
+                  {activeTab === 'packages' && 'Packages'}
                   {activeTab === 'faq' && 'Frequently Asked Questions'}
                   {activeTab === 'contact' && 'Contact'}
                 </h2>
                 <p className="text-sm lg:text-base text-gray-400">
                   {activeTab === 'dashboard' && 'Welcome back! Here\'s your campaign overview.'}
                   {activeTab === 'campaigns' && 'Manage and monitor all your music campaigns.'}
+                  {activeTab === 'packages' && 'Choose the perfect plan to launch your music career.'}
                   {activeTab === 'faq' && 'Get the answers that you need, when you need them.'}
                   {activeTab === 'contact' && 'Get in touch with our support team.'}
                 </p>
