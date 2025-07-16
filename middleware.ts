@@ -46,6 +46,11 @@ async function trackUserActivity(
   sessionId: string,
   user: any
 ) {
+  // Skip if in build environment
+  if (process.env.NEXT_PHASE === 'phase-production-build' || !supabase) {
+    return
+  }
+
   try {
     const currentPage = request.nextUrl.pathname
     const userAgent = request.headers.get('user-agent') || 'unknown'
@@ -92,7 +97,11 @@ async function trackUserActivity(
       })
     
     if (upsertError) {
-      console.error('🔄 MIDDLEWARE: Error upserting active user:', upsertError)
+      // Only log errors in development
+      if (process.env.NODE_ENV === 'development') {
+        console.error('🔄 MIDDLEWARE: Error upserting active user:', upsertError)
+      }
+      return // Skip further operations if table doesn't exist
     }
     
     // Track daily visit
@@ -102,30 +111,37 @@ async function trackUserActivity(
       visitor_ip: clientIP
     })
     
-    if (visitError) {
+    if (visitError && process.env.NODE_ENV === 'development') {
       console.error('🔄 MIDDLEWARE: Error tracking daily visit:', visitError)
     }
     
     // Occasionally cleanup inactive users (1% chance)
     if (Math.random() < 0.01) {
       const { error: cleanupError } = await supabase.rpc('cleanup_inactive_users')
-      if (cleanupError) {
+      if (cleanupError && process.env.NODE_ENV === 'development') {
         console.error('🔄 MIDDLEWARE: Error cleaning up inactive users:', cleanupError)
       }
     }
     
   } catch (error) {
-    console.error('🔄 MIDDLEWARE: Error tracking user activity:', error)
+    // Only log errors in development
+    if (process.env.NODE_ENV === 'development') {
+      console.error('🔄 MIDDLEWARE: Error tracking user activity:', error)
+    }
   }
 }
 
 export async function middleware(request: NextRequest) {
+  // Skip middleware during build time or if environment is not properly configured
+  if (process.env.NEXT_PHASE === 'phase-production-build') {
+    return NextResponse.next()
+  }
+
   // Validate environment variables
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
   const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
 
   if (!supabaseUrl || !supabaseKey) {
-    console.error('Missing Supabase environment variables in middleware')
     return NextResponse.next()
   }
 
@@ -187,7 +203,10 @@ export async function middleware(request: NextRequest) {
   
   // Track user activity (async, non-blocking)
   trackUserActivity(supabase, request, sessionId, user).catch(error => {
-    console.error('🔄 MIDDLEWARE: Failed to track user activity:', error)
+    // Only log errors in development
+    if (process.env.NODE_ENV === 'development') {
+      console.error('🔄 MIDDLEWARE: Failed to track user activity:', error)
+    }
   })
 
   // Define protected routes that require authentication
@@ -199,7 +218,9 @@ export async function middleware(request: NextRequest) {
   // If accessing a protected route without authentication, redirect to signup
   if (isProtectedRoute && (!user || error)) {
     const signupUrl = new URL('/signup', request.url)
-    console.log('🔐 MIDDLEWARE: Redirecting unauthenticated user to signup from:', request.nextUrl.pathname)
+    if (process.env.NODE_ENV === 'development') {
+      console.log('🔐 MIDDLEWARE: Redirecting unauthenticated user to signup from:', request.nextUrl.pathname)
+    }
     return NextResponse.redirect(signupUrl)
   }
 
@@ -211,7 +232,9 @@ export async function middleware(request: NextRequest) {
 
   if (isAuthRoute && user && !error) {
     const dashboardUrl = new URL('/dashboard', request.url)
-    console.log('🔐 MIDDLEWARE: Redirecting authenticated user to dashboard from:', request.nextUrl.pathname)
+    if (process.env.NODE_ENV === 'development') {
+      console.log('🔐 MIDDLEWARE: Redirecting authenticated user to dashboard from:', request.nextUrl.pathname)
+    }
     return NextResponse.redirect(dashboardUrl)
   }
 
