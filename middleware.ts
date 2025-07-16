@@ -1,5 +1,123 @@
 import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
+import { v4 as uuidv4 } from 'uuid'
+
+// Helper function to get client IP address
+function getClientIP(request: NextRequest): string {
+  const forwarded = request.headers.get('x-forwarded-for')
+  const real = request.headers.get('x-real-ip')
+  const host = request.headers.get('host')
+  
+  if (forwarded) {
+    return forwarded.split(',')[0].trim()
+  }
+  if (real) {
+    return real
+  }
+  return request.ip || '127.0.0.1'
+}
+
+// Helper function to generate session ID from cookies or create new one
+function getOrCreateSessionId(request: NextRequest, response: NextResponse): string {
+  const existingSessionId = request.cookies.get('active_session_id')?.value
+  
+  if (existingSessionId) {
+    return existingSessionId
+  }
+  
+  // Generate new session ID
+  const newSessionId = uuidv4()
+  
+  // Set session cookie that expires in 24 hours
+  response.cookies.set('active_session_id', newSessionId, {
+    maxAge: 24 * 60 * 60, // 24 hours
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'lax'
+  })
+  
+  return newSessionId
+}
+
+// Helper function to track user activity
+async function trackUserActivity(
+  supabase: any,
+  request: NextRequest,
+  sessionId: string,
+  user: any
+) {
+  try {
+    const currentPage = request.nextUrl.pathname
+    const userAgent = request.headers.get('user-agent') || 'unknown'
+    const clientIP = getClientIP(request)
+    
+    // Skip tracking for API routes, static files, and admin routes (except admin dashboard)
+    const skipRoutes = ['/api/', '/_next/', '/favicon.ico']
+    if (skipRoutes.some(route => currentPage.startsWith(route))) {
+      return
+    }
+    
+    // Prepare user data
+    let userData = {
+      session_id: sessionId,
+      ip_address: clientIP,
+      user_agent: userAgent,
+      current_page: currentPage,
+      last_activity: new Date().toISOString(),
+      is_guest: !user,
+      user_id: user?.id || null,
+      first_name: null as string | null,
+      last_name: null as string | null,
+      email: null as string | null
+    }
+    
+    // If user is authenticated, get user details
+    if (user) {
+      // Extract name from user metadata or email
+      const fullName = user.user_metadata?.full_name || user.email?.split('@')[0] || ''
+      const nameParts = fullName.split(' ')
+      
+      userData.first_name = nameParts[0] || 'User'
+      userData.last_name = nameParts.slice(1).join(' ') || null
+      userData.email = user.email
+      userData.is_guest = false
+    }
+    
+    // Upsert active user record using service role
+    const { error: upsertError } = await supabase
+      .from('active_users')
+      .upsert(userData, {
+        onConflict: 'session_id',
+        ignoreDuplicates: false
+      })
+    
+    if (upsertError) {
+      console.error('🔄 MIDDLEWARE: Error upserting active user:', upsertError)
+    }
+    
+    // Track daily visit
+    const today = new Date().toISOString().split('T')[0] // YYYY-MM-DD format
+    const { error: visitError } = await supabase.rpc('upsert_daily_visit', {
+      visit_date: today,
+      visitor_ip: clientIP
+    })
+    
+    if (visitError) {
+      console.error('🔄 MIDDLEWARE: Error tracking daily visit:', visitError)
+    }
+    
+    // Occasionally cleanup inactive users (1% chance)
+    if (Math.random() < 0.01) {
+      const { error: cleanupError } = await supabase.rpc('cleanup_inactive_users')
+      if (cleanupError) {
+        console.error('🔄 MIDDLEWARE: Error cleaning up inactive users:', cleanupError)
+      }
+    }
+    
+  } catch (error) {
+    console.error('🔄 MIDDLEWARE: Error tracking user activity:', error)
+  }
+}
 
 export async function middleware(request: NextRequest) {
   // Validate environment variables
@@ -61,8 +179,16 @@ export async function middleware(request: NextRequest) {
     }
   )
 
+  // Get or create session ID for tracking
+  const sessionId = getOrCreateSessionId(request, supabaseResponse)
+
   // Refresh session if expired - required for Server Components
   const { data: { user }, error } = await supabase.auth.getUser()
+  
+  // Track user activity (async, non-blocking)
+  trackUserActivity(supabase, request, sessionId, user).catch(error => {
+    console.error('🔄 MIDDLEWARE: Failed to track user activity:', error)
+  })
 
   // Define protected routes that require authentication
   const protectedRoutes = ['/dashboard', '/add', '/packages', '/checkout', '/thank-you']

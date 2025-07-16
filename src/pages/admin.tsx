@@ -6,6 +6,7 @@ import Lottie from 'lottie-react'
 import AdminOrdersManagement from '../components/AdminOrdersManagement'
 import AdminEmailManagement from '../components/AdminEmailManagement'
 import MonthlyOrdersChart from '../components/MonthlyOrdersChart'
+import ActiveUsersSection from '../components/ActiveUsersSection'
 import AdminAccessDenied from '../components/AdminAccessDenied'
 import { verifyAdminToken, getAdminTokenFromRequest, AdminUser } from '../utils/admin/auth'
 
@@ -301,6 +302,9 @@ export default function AdminDashboard({ adminUser, authError }: AdminDashboardP
           currentMonth={analyticsData.currentMonth}
         />
       )}
+
+      {/* Active Users Section */}
+      <ActiveUsersSection />
     </div>
   )
 
