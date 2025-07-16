@@ -1,5 +1,5 @@
 import { NextApiRequest, NextApiResponse } from 'next'
-import { createClientSSR } from '../../../utils/supabase/server'
+import { createClient } from '../../../utils/supabase/server'
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== 'POST') {
@@ -8,7 +8,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
   try {
     // Create server-side client with request context
-    const supabase = createClientSSR({ req, res })
+    const supabase = createClient(req, res)
     
     // Sign out the user
     const { error } = await supabase.auth.signOut()
