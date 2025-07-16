@@ -1,12 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
 import { createClient } from '../utils/supabase/client';
+import { User } from '@supabase/supabase-js';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
 
 const PricingPage = () => {
   const router = useRouter();
-  const [currentUser, setCurrentUser] = useState(null);
+  const [currentUser, setCurrentUser] = useState<User | null>(null);
 
   useEffect(() => {
     const getUser = async () => {
