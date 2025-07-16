@@ -6,6 +6,7 @@ import { Track } from '../types/track';
 import Header from '../components/Header';
 import { createClient } from '../utils/supabase/client';
 import { userProfileService, UserProfileData, ArtistProfile } from '../utils/userProfile';
+import LegalModal from '../components/LegalModal';
 
 interface Package {
   id: string;
@@ -47,36 +48,44 @@ interface AddOnOrderItem {
 
 const packages: Package[] = [
   {
-    id: "starter",
-    name: "Starter",
+    id: "legendary",
+    name: "LEGENDARY",
+    price: 479,
+    plays: "125,000 - 150,000 Streams", 
+    placements: "375 - 400 Playlist Pitches",
+    description: "Legendary status"
+  },
+  {
+    id: "unstoppable",
+    name: "UNSTOPPABLE",
+    price: 259,
+    plays: "45,000 - 50,000 Streams", 
+    placements: "150 - 170 Playlist Pitches",
+    description: "Become unstoppable"
+  },
+  {
+    id: "dominate",
+    name: "DOMINATE", 
+    price: 149,
+    plays: "18,000 - 20,000 Streams",
+    placements: "60 - 70 Playlist Pitches",
+    description: "Dominate the charts"
+  },
+  {
+    id: "momentum", 
+    name: "MOMENTUM",
+    price: 79,
+    plays: "7,500 - 8,500 Streams",
+    placements: "25 - 30 Playlist Pitches",
+    description: "Build your momentum"
+  },
+  {
+    id: "breakthrough",
+    name: "BREAKTHROUGH",
     price: 39,
-    plays: "1k Plays",
-    placements: "35 Playlist Placements",
+    plays: "3,000 - 3,500 Streams",
+    placements: "10 - 12 Playlist Pitches",
     description: "Perfect for getting started"
-  },
-  {
-    id: "advanced", 
-    name: "Advanced",
-    price: 89,
-    plays: "5k Plays",
-    placements: "75 Playlist Placements",
-    description: "Great for growing artists"
-  },
-  {
-    id: "diamond",
-    name: "Diamond", 
-    price: 249,
-    plays: "15k Plays",
-    placements: "115 Playlist Placements",
-    description: "Professional promotion"
-  },
-  {
-    id: "ultra",
-    name: "Ultra",
-    price: 499,
-    plays: "50k Plays", 
-    placements: "250 Playlist Placements",
-    description: "Maximum exposure"
   }
 ];
 
@@ -144,6 +153,15 @@ export default function CheckoutPage() {
     zip: '',
     country: 'US' // 2-letter code only
   });
+
+  // Terms agreement state
+  const [termsAgreed, setTermsAgreed] = useState(false);
+
+  // Modal states
+  const [showTermsModal, setShowTermsModal] = useState(false);
+  const [showPrivacyModal, setShowPrivacyModal] = useState(false);
+  const [showDisclaimerModal, setShowDisclaimerModal] = useState(false);
+  const [showRefundModal, setShowRefundModal] = useState(false);
 
   // Helper functions for profile avatar
   const getUserInitials = (user: any) => {
@@ -667,17 +685,18 @@ export default function CheckoutPage() {
 
   // Validate if form is ready for payment
   const isFormValid = () => {
-    // If user is logged in, only need billing info
+    // If user is logged in, only need billing info + terms agreement
     if (currentUser) {
       return billingData.firstName && 
              billingData.lastName && 
              billingData.address && 
              billingData.city && 
              billingData.state && 
-             billingData.zip;
+             billingData.zip &&
+             termsAgreed;
     }
     
-    // If not logged in, need account info + billing info
+    // If not logged in, need account info + billing info + terms agreement
     if (isLoginMode) {
       // Login mode - need email and password
       return formData.email && 
@@ -687,9 +706,10 @@ export default function CheckoutPage() {
              billingData.address && 
              billingData.city && 
              billingData.state && 
-             billingData.zip;
+             billingData.zip &&
+             termsAgreed;
     } else {
-      // Signup mode - need all account fields + billing + no field errors
+      // Signup mode - need all account fields + billing + terms agreement + no field errors
       return formData.email && 
              formData.password && 
              formData.confirmPassword &&
@@ -702,6 +722,7 @@ export default function CheckoutPage() {
              billingData.city && 
              billingData.state && 
              billingData.zip &&
+             termsAgreed &&
              (emailStatus === 'available') &&
              !fieldErrors.password &&
              !fieldErrors.confirmPassword;
@@ -732,6 +753,9 @@ export default function CheckoutPage() {
     if (!billingData.state) return 'state';
     if (!billingData.zip) return 'zip';
     
+    // Terms agreement validation
+    if (!termsAgreed) return 'termsAgreed';
+    
     return null;
   };
 
@@ -750,12 +774,19 @@ export default function CheckoutPage() {
         const element = document.getElementById(firstMissingField);
         if (element) {
           element.scrollIntoView({ behavior: 'smooth', block: 'center' });
-          element.focus();
+          if (firstMissingField === 'termsAgreed') {
+            // For checkbox, focus and add visual indication
+            element.focus();
+          } else {
+            element.focus();
+          }
         }
         
         // Customize error message based on missing field
         if (['email', 'password', 'confirmPassword'].includes(firstMissingField)) {
           errorMessage = 'Please complete your account information before continuing.';
+        } else if (firstMissingField === 'termsAgreed') {
+          errorMessage = 'Please agree to the Terms & Conditions, Privacy Policy, Disclaimer, and Refund Policy before continuing.';
         } else {
           errorMessage = 'Please complete your billing information before continuing.';
         }
@@ -1537,8 +1568,7 @@ export default function CheckoutPage() {
         <div className="relative z-20">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="text-center mb-8">
-              <h1 className="text-3xl md:text-4xl font-bold mb-2">Complete Your Order</h1>
-              <p className="text-white/70">Secure checkout powered by Authorize.net</p>
+                          <h1 className="text-3xl md:text-4xl font-bold mb-2 mt-2 sm:mt-[10px] bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] bg-clip-text text-transparent">Complete Your Order</h1>
             </div>
             
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
@@ -1998,6 +2028,56 @@ export default function CheckoutPage() {
                   </div>
                 </div>
 
+                {/* Terms Agreement */}
+                <div className="bg-white/5 rounded-xl p-6 border border-white/20">
+                  <div className="flex items-start space-x-3">
+                    <input
+                      type="checkbox"
+                      id="termsAgreed"
+                      name="termsAgreed"
+                      checked={termsAgreed}
+                      onChange={(e) => setTermsAgreed(e.target.checked)}
+                      required
+                      className="mt-1 w-4 h-4 bg-white/10 border border-white/20 rounded focus:ring-[#59e3a5] focus:ring-2 text-[#59e3a5] transition-colors"
+                    />
+                    <label htmlFor="termsAgreed" className="text-sm text-white/70 leading-relaxed">
+                      I have read and understand the{' '}
+                      <button 
+                        type="button"
+                        onClick={() => setShowTermsModal(true)}
+                        className="text-[#59e3a5] hover:text-[#4bc995] underline transition-colors"
+                      >
+                        Terms & Conditions
+                      </button>
+                      ,{' '}
+                      <button 
+                        type="button"
+                        onClick={() => setShowPrivacyModal(true)}
+                        className="text-[#59e3a5] hover:text-[#4bc995] underline transition-colors"
+                      >
+                        Privacy Policy
+                      </button>
+                      ,{' '}
+                      <button 
+                        type="button"
+                        onClick={() => setShowDisclaimerModal(true)}
+                        className="text-[#59e3a5] hover:text-[#4bc995] underline transition-colors"
+                      >
+                        Disclaimer
+                      </button>
+                      , and{' '}
+                      <button 
+                        type="button"
+                        onClick={() => setShowRefundModal(true)}
+                        className="text-[#59e3a5] hover:text-[#4bc995] underline transition-colors"
+                      >
+                        Refund Policy
+                      </button>
+                      . <span className="text-red-400">*</span>
+                    </label>
+                  </div>
+                </div>
+
               </div>
 
               {/* Right Column - Order Summary */}
@@ -2311,15 +2391,420 @@ export default function CheckoutPage() {
                 </div>
               </div>
 
-              {/* Trust indicators */}
-              <div className="text-center text-sm text-white/60 mt-6">
-                <p className="mb-2">🔒 Secure checkout powered by Authorize.net</p>
-                <p>💳 All major credit cards accepted</p>
-              </div>
+
             </div>
           </div>
         </div>
       </main>
+
+      {/* Legal Modals */}
+      <LegalModal
+        isOpen={showTermsModal}
+        onClose={() => setShowTermsModal(false)}
+        title="Terms & Conditions"
+      >
+        <div className="bg-gradient-to-br from-gray-900/50 to-gray-800/30 backdrop-blur-xl rounded-2xl p-8 border border-gray-600/30 space-y-8">
+          <div>
+            <p className="text-gray-400 text-lg mb-4">Effective Date: 05/12/2025</p>
+            <p className="text-gray-300 leading-relaxed">
+              Welcome to FASHO.co, operated by FASHO Inc. ("FASHO," "we," "us," or "our"). Please read these Terms & Conditions ("Terms") carefully before accessing or using our website and services. By registering for an account or purchasing any services from FASHO.co, you agree to be bound by these Terms.
+            </p>
+            <p className="text-gray-300 leading-relaxed mt-4">
+              If you do not agree with any part of these Terms, please do not use our website or services.
+            </p>
+          </div>
+
+          <section>
+            <h2 className="text-2xl font-bold text-[#59e3a5] mb-4">1. COMPANY INFORMATION</h2>
+            <div className="text-gray-300 leading-relaxed">
+              <p>FASHO Inc.</p>
+              <p>PO Box 407</p>
+              <p>Los Angeles, CA 95001</p>
+              <p>Contact: <a href="mailto:support@fasho.co" className="text-[#14c0ff] hover:text-[#59e3a5] transition-colors">support@fasho.co</a></p>
+            </div>
+          </section>
+
+          <section>
+            <h2 className="text-2xl font-bold text-[#59e3a5] mb-4">2. ELIGIBILITY & USER ACCOUNTS</h2>
+            <div className="text-gray-300 leading-relaxed space-y-4">
+              <p>You must be at least 18 years old and complete registration to use any services offered on FASHO.co. By registering, you certify that all information provided is accurate and kept up to date.</p>
+              <p>You are responsible for maintaining the confidentiality of your account login details and for all activities under your account.</p>
+            </div>
+          </section>
+
+          <section>
+            <h2 className="text-2xl font-bold text-[#59e3a5] mb-4">3. SERVICES PROVIDED</h2>
+            <div className="text-gray-300 leading-relaxed space-y-4">
+              <p>FASHO provides Spotify promotion and digital marketing services, pitching users' music to third-party playlist curators worldwide.</p>
+              <p>We do not guarantee placement or specific results; final decisions rest with external playlist owners.</p>
+              <p>We reserve the right to modify, refuse, or discontinue services at any time at our sole discretion.</p>
+            </div>
+          </section>
+
+          <section>
+            <h2 className="text-2xl font-bold text-[#59e3a5] mb-4">4. PAYMENTS & REFUNDS</h2>
+            <div className="text-gray-300 leading-relaxed space-y-4">
+              <p>All purchases are one-time payments made via major credit or debit cards (no PayPal or other payment methods accepted).</p>
+              <div>
+                <p className="font-semibold text-white mb-2">Refund Policy:</p>
+                <p>If you are unhappy with your results, you may request a refund within thirty (30) days from the start of your campaign. Refunds will only be issued if requested within this window.</p>
+                <p className="mt-2">To request a refund, contact us at <a href="mailto:support@fasho.co" className="text-[#14c0ff] hover:text-[#59e3a5] transition-colors">support@fasho.co</a> with your order details.</p>
+              </div>
+            </div>
+          </section>
+
+          <section>
+            <h2 className="text-2xl font-bold text-[#59e3a5] mb-4">5. INTELLECTUAL PROPERTY</h2>
+            <div className="text-gray-300 leading-relaxed space-y-4">
+              <p>All content on FASHO.co—including but not limited to text, graphics, logos, images, videos, and software—is the exclusive property of FASHO Inc., protected by U.S. and international copyright laws.</p>
+              <p>Our company name ("FASHO"), logo, and associated trademarks are protected intellectual property of FASHO Inc.</p>
+              <p>You may not reproduce, distribute, modify, transmit, reuse, download, repost, copy, or use any content from our site without our prior written consent.</p>
+            </div>
+          </section>
+
+          <section>
+            <h2 className="text-2xl font-bold text-[#59e3a5] mb-4">6. USER CONTENT</h2>
+            <p className="text-gray-300 leading-relaxed">
+              FASHO.co does not allow user-generated content on its website or platforms.
+            </p>
+          </section>
+
+          <section>
+            <h2 className="text-2xl font-bold text-[#59e3a5] mb-4">7. DISCLAIMERS & LIMITATION OF LIABILITY</h2>
+            <div className="text-gray-300 leading-relaxed space-y-4">
+              <div>
+                <p className="font-semibold text-white">No Guarantee of Results:</p>
+                <p>We strive to facilitate placements but cannot guarantee specific outcomes from playlist submissions; all placement decisions are made by third-party playlist curators.</p>
+              </div>
+              <div>
+                <p className="font-semibold text-white">Third-Party Services:</p>
+                <p>We are not responsible for actions or decisions made by external playlist owners.</p>
+              </div>
+              <div>
+                <p className="font-semibold text-white">No Warranties:</p>
+                <p>Our website and services are provided "as-is" without warranties of any kind.</p>
+              </div>
+              <div>
+                <p className="font-semibold text-white">Limitation of Liability:</p>
+                <p>To the maximum extent permitted by law, FASHO Inc., its officers, directors, employees, agents, or affiliates shall not be liable for any direct, indirect, incidental, special, consequential or punitive damages resulting from your access to or use of (or inability to access or use) our website or services.</p>
+              </div>
+            </div>
+          </section>
+
+          <section>
+            <h2 className="text-2xl font-bold text-[#59e3a5] mb-4">8. GOVERNING LAW</h2>
+            <div className="text-gray-300 leading-relaxed space-y-4">
+              <p>These Terms shall be governed by and construed in accordance with the laws of the State of California, USA without regard to its conflict of law principles.</p>
+              <p>Any dispute arising under these Terms shall be subject to the exclusive jurisdiction of courts located in California.</p>
+            </div>
+          </section>
+
+          <section>
+            <h2 className="text-2xl font-bold text-[#59e3a5] mb-4">9. CHANGES TO TERMS</h2>
+            <div className="text-gray-300 leading-relaxed space-y-4">
+              <p>We reserve the right to update or modify these Terms at any time without prior notice. It is your responsibility to review this page periodically for updates.</p>
+              <p>Continued use of our website or services after changes constitutes acceptance of those changes.</p>
+            </div>
+          </section>
+
+          <section>
+            <h2 className="text-2xl font-bold text-[#59e3a5] mb-4">10. CONTACT US</h2>
+            <div className="text-gray-300 leading-relaxed space-y-2">
+              <p>For questions about these Terms & Conditions or your account with us:</p>
+              <p>Email: <a href="mailto:support@fasho.co" className="text-[#14c0ff] hover:text-[#59e3a5] transition-colors">support@fasho.co</a></p>
+              <p>Mailing Address: PO Box 407, Los Angeles CA 95001</p>
+            </div>
+          </section>
+
+          <div className="bg-gradient-to-r from-[#59e3a5]/10 to-[#14c0ff]/10 rounded-xl p-6 border border-white/10 mt-8">
+            <p className="text-white font-medium text-center">
+              By using FASHO.co's website and services you acknowledge that you have read, understood, and agree to be bound by these Terms & Conditions.
+            </p>
+          </div>
+        </div>
+      </LegalModal>
+
+      <LegalModal
+        isOpen={showPrivacyModal}
+        onClose={() => setShowPrivacyModal(false)}
+        title="Privacy Policy"
+      >
+        <div className="bg-gradient-to-br from-gray-900/50 to-gray-800/30 backdrop-blur-xl rounded-2xl p-8 border border-gray-600/30 space-y-8">
+          <div>
+            <p className="text-gray-400 text-lg mb-4">Effective Date: 05/12/2025</p>
+            <p className="text-gray-300 leading-relaxed">
+              FASHO Inc. ("FASHO," "we," "us," or "our") is committed to protecting your privacy. This Privacy Policy explains how we collect, use, store, and protect your personal information when you visit FASHO.co or use our services.
+            </p>
+            <p className="text-gray-300 leading-relaxed mt-4">
+              By accessing or using our website or services, you consent to the practices described in this Privacy Policy.
+            </p>
+          </div>
+
+          <section>
+            <h2 className="text-2xl font-bold text-[#59e3a5] mb-4">1. INFORMATION WE COLLECT</h2>
+            <div className="text-gray-300 leading-relaxed space-y-4">
+              <p>We may collect the following types of information from you:</p>
+              
+              <div>
+                <p className="font-semibold text-white mb-2">Personal Information:</p>
+                <p>When you register or purchase services, we may collect your name, email address, payment information (processed securely by third-party payment processors), and other information necessary to provide our services.</p>
+              </div>
+              
+              <div>
+                <p className="font-semibold text-white mb-2">Technical Information:</p>
+                <p>We collect information about your device and interaction with our website (such as IP address, browser type, operating system, pages visited, and referring URLs) via cookies and analytics tools.</p>
+              </div>
+              
+              <div>
+                <p className="font-semibold text-white mb-2">Communication:</p>
+                <p>Any correspondence sent to us (such as support emails) may be stored for record-keeping and customer service purposes.</p>
+              </div>
+              
+              <p className="font-medium text-white">We do not knowingly collect information from anyone under 18 years of age.</p>
+            </div>
+          </section>
+
+          <section>
+            <h2 className="text-2xl font-bold text-[#59e3a5] mb-4">2. HOW WE USE YOUR INFORMATION</h2>
+            <div className="text-gray-300 leading-relaxed space-y-4">
+              <p>Your information may be used to:</p>
+              <ul className="list-disc list-inside space-y-2 ml-4">
+                <li>Process transactions and deliver services you request</li>
+                <li>Communicate with you regarding your account or orders</li>
+                <li>Respond to customer service inquiries</li>
+                <li>Improve our website and services through analytics</li>
+                <li>Comply with legal requirements</li>
+              </ul>
+              <p className="font-medium text-white">We will never sell or rent your personal information to third parties.</p>
+            </div>
+          </section>
+
+          <section>
+            <h2 className="text-2xl font-bold text-[#59e3a5] mb-4">3. HOW WE SHARE YOUR INFORMATION</h2>
+            <div className="text-gray-300 leading-relaxed space-y-4">
+              <p>We may share your information only in the following circumstances:</p>
+              
+              <div>
+                <p className="font-semibold text-white mb-2">Service Providers:</p>
+                <p>With trusted third-party vendors who assist in operating our website and processing payments. These providers are bound by confidentiality obligations.</p>
+              </div>
+              
+              <div>
+                <p className="font-semibold text-white mb-2">Legal Compliance:</p>
+                <p>If required by law or subpoena, or to protect our rights or the rights of others.</p>
+              </div>
+              
+              <div>
+                <p className="font-semibold text-white mb-2">Business Transfers:</p>
+                <p>In the event FASHO is involved in a merger, acquisition, or asset sale, your data may be transferred as part of that transaction.</p>
+              </div>
+            </div>
+          </section>
+
+          <section>
+            <h2 className="text-2xl font-bold text-[#59e3a5] mb-4">4. COOKIES & TRACKING TECHNOLOGIES</h2>
+            <div className="text-gray-300 leading-relaxed space-y-4">
+              <p>We use cookies and similar technologies to:</p>
+              <ul className="list-disc list-inside space-y-2 ml-4">
+                <li>Improve website functionality and performance</li>
+                <li>Analyze how users interact with FASHO.co</li>
+                <li>Tailor content and marketing</li>
+              </ul>
+              <p>You can control cookie preferences through your browser settings; however, disabling cookies may affect your experience.</p>
+            </div>
+          </section>
+
+          <section>
+            <h2 className="text-2xl font-bold text-[#59e3a5] mb-4">5. DATA SECURITY</h2>
+            <div className="text-gray-300 leading-relaxed space-y-4">
+              <p>We implement industry-standard security measures to protect your personal information against unauthorized access, alteration, disclosure or destruction.</p>
+              <p>However, no method of transmission over the internet or electronic storage is 100% secure—use our services at your own risk.</p>
+            </div>
+          </section>
+
+          <section>
+            <h2 className="text-2xl font-bold text-[#59e3a5] mb-4">6. INTERNATIONAL USERS</h2>
+            <p className="text-gray-300 leading-relaxed">
+              FASHO.co is operated from the United States but is available worldwide. By using our site from outside the US, you consent to the transfer and processing of your information in the US.
+            </p>
+          </section>
+
+          <section>
+            <h2 className="text-2xl font-bold text-[#59e3a5] mb-4">7. YOUR RIGHTS & CHOICES</h2>
+            <div className="text-gray-300 leading-relaxed space-y-4">
+              <p>Depending on your location (e.g., California residents under CCPA; EU/UK users under GDPR), you may have rights regarding your personal data:</p>
+              <ul className="list-disc list-inside space-y-2 ml-4">
+                <li>Access the personal data we hold about you</li>
+                <li>Request correction or deletion of your data</li>
+                <li>Opt out of certain data uses (such as marketing emails)</li>
+                <li>Request restriction or object to certain processing</li>
+                <li>Receive a copy of your data in a portable format</li>
+              </ul>
+              <p>To exercise these rights, contact us at <a href="mailto:support@fasho.co" className="text-[#14c0ff] hover:text-[#59e3a5] transition-colors">support@fasho.co</a>.</p>
+            </div>
+          </section>
+
+          <section>
+            <h2 className="text-2xl font-bold text-[#59e3a5] mb-4">8. THIRD-PARTY LINKS</h2>
+            <p className="text-gray-300 leading-relaxed">
+              Our website may contain links to third-party websites not controlled by FASHO Inc. We are not responsible for their privacy practices; please review their policies separately.
+            </p>
+          </section>
+
+          <section>
+            <h2 className="text-2xl font-bold text-[#59e3a5] mb-4">9. CHANGES TO THIS PRIVACY POLICY</h2>
+            <div className="text-gray-300 leading-relaxed space-y-4">
+              <p>We reserve the right to update this Privacy Policy at any time. Changes take effect once posted on this page; it is your responsibility to review periodically.</p>
+              <p>Your continued use of our website/services after changes constitutes acceptance of those changes.</p>
+            </div>
+          </section>
+
+          <section>
+            <h2 className="text-2xl font-bold text-[#59e3a5] mb-4">10. CONTACT US</h2>
+            <div className="text-gray-300 leading-relaxed space-y-2">
+              <p>For questions about this Privacy Policy or to exercise your rights:</p>
+              <p>Email: <a href="mailto:support@fasho.co" className="text-[#14c0ff] hover:text-[#59e3a5] transition-colors">support@fasho.co</a></p>
+              <p>Mailing Address: PO Box 407, Los Angeles CA 95001</p>
+            </div>
+          </section>
+
+          <div className="bg-gradient-to-r from-[#59e3a5]/10 to-[#14c0ff]/10 rounded-xl p-6 border border-white/10 mt-8">
+            <p className="text-white font-medium text-center">
+              By using FASHO.co's website and services you acknowledge that you have read, understood, and agree to this Privacy Policy.
+            </p>
+          </div>
+        </div>
+      </LegalModal>
+
+      <LegalModal
+        isOpen={showDisclaimerModal}
+        onClose={() => setShowDisclaimerModal(false)}
+        title="Disclaimer"
+      >
+        <div className="bg-gradient-to-br from-gray-900/50 to-gray-800/30 backdrop-blur-xl rounded-2xl p-8 border border-gray-600/30 space-y-8">
+          <div>
+            <p className="text-gray-400 text-lg mb-4">Effective Date: 05/12/2025</p>
+            <p className="text-gray-300 leading-relaxed text-lg">
+              At FASHO.co, we believe in being upfront and real with you—just like we'd want for ourselves.
+            </p>
+            <p className="text-gray-300 leading-relaxed text-lg mt-4">
+              When it comes to marketing your music, here's the truth: Like any authentic marketing service, we don't guarantee results. No real company can ever promise exact outcomes, because every song, artist, and campaign is unique—and so are the tastes of playlist curators and listeners.
+            </p>
+          </div>
+
+          <section>
+            <h2 className="text-2xl font-bold text-[#59e3a5] mb-4">Why We Don't Guarantee Results (And Why That's a Good Thing)</h2>
+            <div className="text-gray-300 leading-relaxed space-y-4">
+              <p>Let's be honest: if you ever run into a company promising you "guaranteed streams" or "guaranteed placements" no matter what… <span className="text-white font-semibold">run for the hills!</span> That usually means bots, fake plays, or shady methods that put your music career at risk.</p>
+              <p>At FASHO.co, our job is to get your music in front of real playlist curators who make their own choices. We pitch your song directly to genuine decision-makers. What happens next depends on the quality of your track and what those curators are looking for at the time.</p>
+            </div>
+          </section>
+
+          <section>
+            <h2 className="text-2xl font-bold text-[#59e3a5] mb-4">We Know What We're Doing</h2>
+            <div className="text-gray-300 leading-relaxed space-y-4">
+              <p>While we can't make promises about specific numbers or placements, what we can promise is this:</p>
+              <ul className="list-disc list-inside space-y-2 ml-4 text-gray-300">
+                <li>We've been doing this for years and have built a massive network of trusted playlist curators.</li>
+                <li>Our artists have seen incredible results—many have reached new fans and achieved huge milestones with our help.</li>
+                <li>Your campaign will always be handled by experienced professionals who care about your growth.</li>
+              </ul>
+            </div>
+          </section>
+
+          <section>
+            <h2 className="text-2xl font-bold text-[#59e3a5] mb-4">About Those Numbers</h2>
+            <div className="text-gray-300 leading-relaxed space-y-4">
+              <p>Any streams or placements mentioned on our website are estimates only. They're based on real data from past campaigns, but your results may differ.</p>
+              <p>We always strive for the best possible outcome, but music is an art—<span className="text-white font-semibold">not a science!</span></p>
+            </div>
+          </section>
+
+          <section>
+            <h2 className="text-2xl font-bold text-[#59e3a5] mb-4">Bottom Line</h2>
+            <div className="text-gray-300 leading-relaxed space-y-4">
+              <p>You're paying us to pitch your music to real Spotify playlist owners—not for guaranteed numbers. The rest depends on how your music connects with curators and audiences.</p>
+              <p>If you have questions about how our process works or want honest feedback about what to expect for your campaign, reach out anytime at <a href="mailto:support@fasho.co" className="text-[#14c0ff] hover:text-[#59e3a5] transition-colors font-semibold">support@fasho.co</a>. We'll always keep it real with you.</p>
+              <p className="text-white font-semibold text-lg">Thanks for trusting us with your music. Let's chase greatness together—the right way!</p>
+            </div>
+          </section>
+
+          <div className="bg-gradient-to-r from-[#59e3a5]/10 to-[#14c0ff]/10 rounded-xl p-6 border border-white/10 mt-8">
+            <p className="text-white font-medium text-center">
+              By using FASHO.co's website and services you acknowledge that you have read and understood this Disclaimer.
+            </p>
+          </div>
+        </div>
+      </LegalModal>
+
+      <LegalModal
+        isOpen={showRefundModal}
+        onClose={() => setShowRefundModal(false)}
+        title="Refund Policy"
+      >
+        <div className="bg-gradient-to-br from-gray-900/50 to-gray-800/30 backdrop-blur-xl rounded-2xl p-8 border border-gray-600/30 space-y-8">
+          <div>
+            <p className="text-gray-400 text-lg mb-4">Effective Date: 05/12/2025</p>
+            <p className="text-gray-300 leading-relaxed text-lg">
+              At FASHO.co, we want you to feel confident and happy about your investment in your music career. We're committed to giving every artist the best shot at success—but if things don't turn out the way you hoped, we've got your back.
+            </p>
+          </div>
+
+          <section>
+            <h2 className="text-2xl font-bold text-[#59e3a5] mb-4">30-Day Satisfaction Guarantee</h2>
+            <div className="text-gray-300 leading-relaxed space-y-4">
+              <p className="text-lg">If you're not satisfied with your results, you can request a <span className="text-white font-semibold">full refund within 30 days</span> of your campaign starting—no hassle, no hard feelings.</p>
+            </div>
+          </section>
+
+          <section>
+            <h2 className="text-2xl font-bold text-[#59e3a5] mb-4">How It Works:</h2>
+            <div className="text-gray-300 leading-relaxed space-y-6">
+              
+              <div>
+                <h3 className="text-xl font-semibold text-white mb-3">Campaigns Start Fast:</h3>
+                <p>Most campaigns begin within 24 hours of your purchase. Your 30-day refund period starts the moment your campaign officially kicks off (not when you purchase).</p>
+              </div>
+              
+              <div>
+                <h3 className="text-xl font-semibold text-white mb-3">Simple Process:</h3>
+                <p>If you'd like a refund for any reason, just email us at <a href="mailto:support@fasho.co" className="text-[#14c0ff] hover:text-[#59e3a5] transition-colors font-semibold">support@fasho.co</a> within 30 days of your campaign start date. Include your order details and let us know why you're not satisfied—so we can keep improving our service for everyone.</p>
+              </div>
+              
+              <div>
+                <h3 className="text-xl font-semibold text-white mb-3">Full Refund:</h3>
+                <p>If your request meets these simple conditions, we'll process your full refund back to your original payment method. <span className="text-white font-semibold">No hoops to jump through.</span></p>
+              </div>
+              
+            </div>
+          </section>
+
+          <section>
+            <h2 className="text-2xl font-bold text-[#59e3a5] mb-4">A Few Things to Note</h2>
+            <div className="text-gray-300 leading-relaxed space-y-4">
+              <ul className="list-disc list-inside space-y-3 ml-4 text-gray-300">
+                <li>Refund requests made after the 30-day window cannot be processed.</li>
+                <li>Only the original purchaser is eligible for a refund.</li>
+                <li>We can only refund payments made directly through FASHO.co using a valid credit or debit card.</li>
+              </ul>
+            </div>
+          </section>
+
+          <section>
+            <h2 className="text-2xl font-bold text-[#59e3a5] mb-4">Questions?</h2>
+            <div className="text-gray-300 leading-relaxed space-y-4">
+              <p>If you're unsure about your campaign's start date or eligibility for a refund—or just want to talk to a real human—reach out anytime at <a href="mailto:support@fasho.co" className="text-[#14c0ff] hover:text-[#59e3a5] transition-colors font-semibold">support@fasho.co</a>. We're here to help!</p>
+              <p className="text-white font-semibold text-lg">We appreciate every artist who trusts us with their music. If it's not working out, we'll make it right.</p>
+            </div>
+          </section>
+
+          <div className="bg-gradient-to-r from-[#59e3a5]/10 to-[#14c0ff]/10 rounded-xl p-6 border border-white/10 mt-8">
+            <p className="text-white font-medium text-center text-lg">
+              Your satisfaction is our priority. We're confident in our service, but we believe you should be too.
+            </p>
+          </div>
+        </div>
+      </LegalModal>
     </>
   );
 } 

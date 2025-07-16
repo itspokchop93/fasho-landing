@@ -42,7 +42,7 @@ const Footer = () => {
                 </a>
               </li>
               <li>
-                <a href="#" className="text-gray-400 hover:text-[#59e3a5] transition-colors duration-200 text-sm">
+                <a href="/authenticity-guarantee" className="text-gray-400 hover:text-[#59e3a5] transition-colors duration-200 text-sm">
                   Authenticity Guarantee
                 </a>
               </li>
@@ -97,13 +97,23 @@ const Footer = () => {
                 </a>
               </li>
               <li>
-                <a href="#" className="text-gray-400 hover:text-[#59e3a5] transition-colors duration-200 text-sm">
+                <a href="/terms" className="text-gray-400 hover:text-[#59e3a5] transition-colors duration-200 text-sm">
                   Terms & Conditions
                 </a>
               </li>
               <li>
-                <a href="#" className="text-gray-400 hover:text-[#59e3a5] transition-colors duration-200 text-sm">
+                <a href="/privacy" className="text-gray-400 hover:text-[#59e3a5] transition-colors duration-200 text-sm">
                   Privacy Policy
+                </a>
+              </li>
+              <li>
+                <a href="/disclaimer" className="text-gray-400 hover:text-[#59e3a5] transition-colors duration-200 text-sm">
+                  Disclaimer
+                </a>
+              </li>
+              <li>
+                <a href="/refund-policy" className="text-gray-400 hover:text-[#59e3a5] transition-colors duration-200 text-sm">
+                  Refund Policy
                 </a>
               </li>
             </ul>

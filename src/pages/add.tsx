@@ -472,12 +472,12 @@ export default function AddSongsPage() {
         </h1>
         
         {/* Secondary Heading */}
-        <h2 className="text-2xl sm:text-3xl md:text-3xl lg:text-5xl font-bold text-center mb-3 md:mb-4 relative z-10 leading-tight">
-          Add additional songs now for <span className="text-[#59e3a5] font-black">25% OFF!</span>
+        <h2 className="text-[2.15rem] sm:text-3xl md:text-3xl lg:text-5xl font-bold text-center mb-3 md:mb-4 relative z-10 leading-tight">
+          Add additional songs<br className="sm:hidden" /> now for <span className="text-[#59e3a5] font-black">25% OFF!</span>
         </h2>
         
         {/* Subheadline */}
-        <p className="text-sm sm:text-base md:text-base text-gray-300 text-center mb-8 md:mb-12 max-w-2xl relative z-10 px-2">
+        <p className="text-sm sm:text-base md:text-base text-gray-300 text-center mb-8 md:mb-12 max-w-2xl relative z-10 px-2 mt-1">
           You're Smart. You Know One Song Won't Build A Career By Itself.
         </p>
 
@@ -540,7 +540,7 @@ export default function AddSongsPage() {
         {tracks.length === 1 && (
           <button
             onClick={promote}
-            className="w-full text-gray-400 text-xs opacity-50 mt-3 hover:opacity-75 transition-opacity duration-200"
+            className="w-full text-gray-400 text-xs opacity-50 mt-3 hover:opacity-75 transition-opacity duration-200 underline"
           >
             No thanks, I don't want compounding growth
           </button>
