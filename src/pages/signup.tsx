@@ -14,6 +14,9 @@ export default function SignUpPage() {
   const [message, setMessage] = useState('');
   const [showResendLink, setShowResendLink] = useState(false);
   const [fieldErrors, setFieldErrors] = useState<{[key: string]: string}>({});
+  const [emailStatus, setEmailStatus] = useState<'checking' | 'available' | 'exists' | 'invalid' | null>(null);
+  const [isCheckingEmail, setIsCheckingEmail] = useState(false);
+  const [showPasswordRequirements, setShowPasswordRequirements] = useState(false);
   const [formData, setFormData] = useState({
     fullName: '',
     email: '',
@@ -62,8 +65,84 @@ export default function SignUpPage() {
   // Password validation function
   const validatePassword = (password: string) => {
     const hasUpperCase = /[A-Z]/.test(password);
+    const hasLowerCase = /[a-z]/.test(password);
     const hasNumber = /\d/.test(password);
-    return hasUpperCase && hasNumber;
+    const hasSpecialChar = /[@$!%*?&]/.test(password);
+    const hasMinLength = password.length >= 8;
+    
+    return hasUpperCase && hasLowerCase && hasNumber && hasSpecialChar && hasMinLength;
+  };
+
+  // Get password requirements status
+  const getPasswordRequirements = (password: string) => {
+    return {
+      minLength: password.length >= 8,
+      hasUpperCase: /[A-Z]/.test(password),
+      hasLowerCase: /[a-z]/.test(password),
+      hasSpecialChar: /[@$!%*?&]/.test(password),
+    };
+  };
+
+  // Email validation function
+  const validateEmail = (email: string) => {
+    if (!email || email.trim() === '') {
+      return { isValid: false, reason: 'empty' };
+    }
+    
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      return { isValid: false, reason: 'invalid' };
+    }
+    
+    return { isValid: true, reason: 'valid' };
+  };
+
+  // Check if email exists function
+  const checkEmailExists = async (email: string) => {
+    // Reset status first
+    setEmailStatus(null);
+    
+    // Validate email format
+    const validation = validateEmail(email);
+    
+    if (!validation.isValid) {
+      if (validation.reason === 'empty') {
+        // Don't show any status for empty email
+        return;
+      } else if (validation.reason === 'invalid') {
+        setEmailStatus('invalid');
+        return;
+      }
+    }
+    
+    setIsCheckingEmail(true);
+    setFieldErrors(prev => ({ ...prev, email: '' }));
+    
+    try {
+      const response = await fetch('/api/check-user-exists', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email }),
+      });
+      
+      const data = await response.json();
+      
+      if (response.ok) {
+        if (data.exists) {
+          setEmailStatus('exists');
+        } else {
+          setEmailStatus('available');
+        }
+      } else {
+        setEmailStatus('invalid');
+      }
+    } catch (error) {
+      setEmailStatus('invalid');
+    } finally {
+      setIsCheckingEmail(false);
+    }
   };
 
   // Resend verification email function
@@ -93,17 +172,24 @@ export default function SignUpPage() {
   };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    
     setFormData({
       ...formData,
-      [e.target.name]: e.target.value
+      [name]: value
     });
     
     // Clear field error when user starts typing
-    if (fieldErrors[e.target.name]) {
+    if (fieldErrors[name]) {
       setFieldErrors(prev => ({
         ...prev,
-        [e.target.name]: ''
+        [name]: ''
       }));
+    }
+    
+    // Clear email status when user is typing in email field
+    if (name === 'email' && !isLogin) {
+      setEmailStatus(null);
     }
   };
 
@@ -111,12 +197,23 @@ export default function SignUpPage() {
   const handleFieldBlur = (field: string, value: string) => {
     let error = '';
     
-    if (field === 'password' && value && !isLogin) {
-      if (value.length < 6) {
-        error = 'Password must be at least 6 characters long';
-      } else if (!validatePassword(value)) {
-        error = 'Passwords require 1 Uppercase Letter and 1 Number';
+    if (field === 'email' && !isLogin) {
+      if (!value || value.trim() === '') {
+        // Clear email status when field is empty
+        setEmailStatus(null);
+      } else {
+        // Check email exists only if it's not empty
+        checkEmailExists(value);
       }
+    }
+    
+    if (field === 'password' && value && !isLogin) {
+      if (value.length < 8) {
+        error = 'Password must be at least 8 characters long';
+      } else if (!validatePassword(value)) {
+        error = 'Password must include uppercase, lowercase, number, and special character (@$!%*?&)';
+      }
+      setShowPasswordRequirements(false);
     }
     
     if (field === 'confirmPassword' && value && formData.password && !isLogin) {
@@ -136,6 +233,48 @@ export default function SignUpPage() {
     setIsLoading(true);
     setMessage('');
     setShowResendLink(false);
+
+    // Prevent submission if there are field errors or email issues
+    if (!isLogin) {
+      // Validate email format first
+      const emailValidation = validateEmail(formData.email);
+      if (!emailValidation.isValid) {
+        if (emailValidation.reason === 'empty') {
+          setMessage('Please enter your email address.');
+        } else {
+          setMessage('Please enter a valid email address.');
+        }
+        setIsLoading(false);
+        return;
+      }
+
+      // Check for field errors
+      const hasFieldErrors = Object.values(fieldErrors).some(error => error !== '');
+      if (hasFieldErrors) {
+        setMessage('Please fix the highlighted errors before continuing.');
+        setIsLoading(false);
+        return;
+      }
+
+      // Check email status
+      if (emailStatus === 'exists') {
+        setMessage('This email already has an account. Please use the login form instead.');
+        setIsLoading(false);
+        return;
+      }
+
+      if (emailStatus === 'invalid') {
+        setMessage('Please enter a valid email address.');
+        setIsLoading(false);
+        return;
+      }
+
+      if (emailStatus !== 'available') {
+        setMessage('Please wait for email validation to complete.');
+        setIsLoading(false);
+        return;
+      }
+    }
 
     try {
       if (isLogin) {
@@ -165,14 +304,14 @@ export default function SignUpPage() {
           return;
         }
 
-        if (formData.password.length < 6) {
-          setMessage('Password must be at least 6 characters long');
+        if (formData.password.length < 8) {
+          setMessage('Password must be at least 8 characters long');
           setIsLoading(false);
           return;
         }
 
         if (!validatePassword(formData.password)) {
-          setMessage('Passwords require 1 Uppercase Letter and 1 Number');
+          setMessage('Password must include uppercase, lowercase, number, and special character (@$!%*?&)');
           setIsLoading(false);
           return;
         }
@@ -206,6 +345,8 @@ export default function SignUpPage() {
     setMessage('');
     setShowResendLink(false);
     setFieldErrors({});
+    setEmailStatus(null);
+    setShowPasswordRequirements(false);
     setFormData({
       fullName: '',
       email: '',
@@ -275,32 +416,85 @@ export default function SignUpPage() {
                       placeholder="full name"
                       value={formData.fullName}
                       onChange={handleInputChange}
+                      autoComplete="name"
                       className="w-full bg-transparent border-b-2 border-white/30 pb-3 text-white placeholder-white/60 focus:border-[#59e3a5] focus:outline-none transition-colors text-lg autofill-override"
                       style={{
-                        WebkitTextFillColor: 'white',
-                        WebkitBoxShadow: '0 0 0 1000px transparent inset',
-                        transition: 'background-color 5000s ease-in-out 0s'
+                        WebkitTextFillColor: 'white !important',
+                        WebkitBoxShadow: '0 0 0 30px transparent inset !important',
+                        backgroundColor: 'transparent !important',
+                        backgroundImage: 'none !important',
+                        caretColor: 'white !important',
+                        transition: 'background-color 5000s ease-in-out 0s !important'
                       }}
                       required
                     />
                   </div>
                 )}
                 
-                <div>
-                                      <input
-                      type="email"
-                      name="email"
-                      placeholder="email"
-                      value={formData.email}
-                      onChange={handleInputChange}
-                      className="w-full bg-transparent border-b-2 border-white/30 pb-3 text-white placeholder-white/60 focus:border-[#59e3a5] focus:outline-none transition-colors text-lg autofill-override"
-                      style={{
-                        WebkitTextFillColor: 'white',
-                        WebkitBoxShadow: '0 0 0 1000px transparent inset',
-                        transition: 'background-color 5000s ease-in-out 0s'
-                      }}
-                      required
-                    />
+                                <div>
+                  <input
+                    type="email"
+                    name="email"
+                    placeholder="email"
+                    value={formData.email}
+                    onChange={handleInputChange}
+                    onBlur={(e) => !isLogin && handleFieldBlur('email', e.target.value)}
+                    autoComplete="email"
+                    className={`w-full bg-transparent border-b-2 pb-3 text-white placeholder-white/60 focus:outline-none transition-colors text-lg autofill-override ${
+                      emailStatus === 'available' ? 'border-green-500' :
+                      emailStatus === 'exists' || emailStatus === 'invalid' ? 'border-red-500' :
+                      'border-white/30 focus:border-[#59e3a5]'
+                    }`}
+                    style={{
+                      WebkitTextFillColor: 'white !important',
+                      WebkitBoxShadow: '0 0 0 30px transparent inset !important',
+                      backgroundColor: 'transparent !important',
+                      backgroundImage: 'none !important',
+                      caretColor: 'white !important',
+                      transition: 'background-color 5000s ease-in-out 0s !important'
+                    }}
+                    required
+                  />
+                  
+                  {/* Email validation feedback */}
+                  {!isLogin && (
+                    <div className="mt-2">
+                      {isCheckingEmail && (
+                        <div className="flex items-center text-white/60 text-sm">
+                          <div className="animate-spin rounded-full h-3 w-3 border border-white/30 border-t-[#59e3a5] mr-2"></div>
+                          Checking email...
+                        </div>
+                      )}
+                      
+                      {emailStatus === 'available' && (
+                        <div className="flex items-center text-green-400 text-sm">
+                          <svg className="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                            <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd"/>
+                          </svg>
+                          Email is available
+                        </div>
+                      )}
+                      
+                      {emailStatus === 'exists' && (
+                        <div className="text-red-400 text-sm">
+                          This email already has an account. Please{' '}
+                          <button
+                            type="button"
+                            onClick={() => setIsLogin(true)}
+                            className="text-[#59e3a5] hover:text-[#14c0ff] underline transition-colors"
+                          >
+                            login instead
+                          </button>
+                        </div>
+                      )}
+                      
+                      {emailStatus === 'invalid' && (
+                        <div className="text-red-400 text-sm">
+                          Please enter a valid email address
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
 
                 <div>
@@ -310,19 +504,63 @@ export default function SignUpPage() {
                     placeholder={isLogin ? "password" : "create password"}
                     value={formData.password}
                     onChange={handleInputChange}
+                    onFocus={() => !isLogin && setShowPasswordRequirements(true)}
                     onBlur={(e) => handleFieldBlur('password', e.target.value)}
+                    autoComplete={isLogin ? "current-password" : "new-password"}
                     className={`w-full bg-transparent border-b-2 pb-3 text-white placeholder-white/60 focus:outline-none transition-colors text-lg autofill-override ${
                       fieldErrors.password 
                         ? 'border-red-500 focus:border-red-500' 
                         : 'border-white/30 focus:border-[#59e3a5]'
                     }`}
                     style={{
-                      WebkitTextFillColor: 'white',
-                      WebkitBoxShadow: '0 0 0 1000px transparent inset',
-                      transition: 'background-color 5000s ease-in-out 0s'
+                      WebkitTextFillColor: 'white !important',
+                      WebkitBoxShadow: '0 0 0 30px transparent inset !important',
+                      backgroundColor: 'transparent !important',
+                      backgroundImage: 'none !important',
+                      caretColor: 'white !important',
+                      transition: 'background-color 5000s ease-in-out 0s !important'
                     }}
                     required
                   />
+                  
+                  {/* Password requirements checklist */}
+                  {!isLogin && showPasswordRequirements && (
+                    <div className="mt-3 p-3 bg-white/5 rounded-lg border border-white/10">
+                      <p className="text-white/80 text-sm mb-2 font-medium">Password requirements:</p>
+                      {(() => {
+                        const requirements = getPasswordRequirements(formData.password);
+                        return (
+                          <div className="space-y-1">
+                            <div className={`flex items-center text-sm ${requirements.minLength ? 'text-green-400' : 'text-white/60'}`}>
+                              <svg className={`w-3 h-3 mr-2 ${requirements.minLength ? 'text-green-400' : 'text-white/40'}`} fill="currentColor" viewBox="0 0 20 20">
+                                <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd"/>
+                              </svg>
+                              Minimum 8 characters
+                            </div>
+                            <div className={`flex items-center text-sm ${requirements.hasSpecialChar ? 'text-green-400' : 'text-white/60'}`}>
+                              <svg className={`w-3 h-3 mr-2 ${requirements.hasSpecialChar ? 'text-green-400' : 'text-white/40'}`} fill="currentColor" viewBox="0 0 20 20">
+                                <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd"/>
+                              </svg>
+                              At least 1 special character (@, $, !, %)
+                            </div>
+                            <div className={`flex items-center text-sm ${requirements.hasUpperCase ? 'text-green-400' : 'text-white/60'}`}>
+                              <svg className={`w-3 h-3 mr-2 ${requirements.hasUpperCase ? 'text-green-400' : 'text-white/40'}`} fill="currentColor" viewBox="0 0 20 20">
+                                <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd"/>
+                              </svg>
+                              At least 1 uppercase letter
+                            </div>
+                            <div className={`flex items-center text-sm ${requirements.hasLowerCase ? 'text-green-400' : 'text-white/60'}`}>
+                              <svg className={`w-3 h-3 mr-2 ${requirements.hasLowerCase ? 'text-green-400' : 'text-white/40'}`} fill="currentColor" viewBox="0 0 20 20">
+                                <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd"/>
+                              </svg>
+                              At least 1 lowercase letter
+                            </div>
+                          </div>
+                        );
+                      })()}
+                    </div>
+                  )}
+                  
                   {fieldErrors.password && (
                     <p className="text-red-400 text-sm mt-1">{fieldErrors.password}</p>
                   )}
@@ -337,15 +575,19 @@ export default function SignUpPage() {
                       value={formData.confirmPassword}
                       onChange={handleInputChange}
                       onBlur={(e) => handleFieldBlur('confirmPassword', e.target.value)}
+                      autoComplete="new-password"
                       className={`w-full bg-transparent border-b-2 pb-3 text-white placeholder-white/60 focus:outline-none transition-colors text-lg autofill-override ${
                         fieldErrors.confirmPassword 
                           ? 'border-red-500 focus:border-red-500' 
                           : 'border-white/30 focus:border-[#59e3a5]'
                       }`}
                       style={{
-                        WebkitTextFillColor: 'white',
-                        WebkitBoxShadow: '0 0 0 1000px transparent inset',
-                        transition: 'background-color 5000s ease-in-out 0s'
+                        WebkitTextFillColor: 'white !important',
+                        WebkitBoxShadow: '0 0 0 30px transparent inset !important',
+                        backgroundColor: 'transparent !important',
+                        backgroundImage: 'none !important',
+                        caretColor: 'white !important',
+                        transition: 'background-color 5000s ease-in-out 0s !important'
                       }}
                       required
                     />
@@ -492,7 +734,12 @@ export default function SignUpPage() {
                     placeholder="email"
                     value={formData.email}
                     onChange={handleInputChange}
-                    className="w-full bg-transparent border-b-2 border-white/30 pb-3 text-white placeholder-white/60 focus:border-[#59e3a5] focus:outline-none transition-colors autofill-override"
+                    onBlur={(e) => !isLogin && handleFieldBlur('email', e.target.value)}
+                    className={`w-full bg-transparent border-b-2 pb-3 text-white placeholder-white/60 focus:outline-none transition-colors autofill-override ${
+                      emailStatus === 'available' ? 'border-green-500' :
+                      emailStatus === 'exists' || emailStatus === 'invalid' ? 'border-red-500' :
+                      'border-white/30 focus:border-[#59e3a5]'
+                    }`}
                     style={{
                       WebkitTextFillColor: 'white',
                       WebkitBoxShadow: '0 0 0 1000px transparent inset',
@@ -500,6 +747,46 @@ export default function SignUpPage() {
                     }}
                     required
                   />
+                  
+                  {/* Email validation feedback for mobile */}
+                  {!isLogin && (
+                    <div className="mt-2">
+                      {isCheckingEmail && (
+                        <div className="flex items-center text-white/60 text-sm">
+                          <div className="animate-spin rounded-full h-3 w-3 border border-white/30 border-t-[#59e3a5] mr-2"></div>
+                          Checking email...
+                        </div>
+                      )}
+                      
+                      {emailStatus === 'available' && (
+                        <div className="flex items-center text-green-400 text-sm">
+                          <svg className="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                            <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd"/>
+                          </svg>
+                          Email is available
+                        </div>
+                      )}
+                      
+                      {emailStatus === 'exists' && (
+                        <div className="text-red-400 text-sm">
+                          This email already has an account. Please{' '}
+                          <button
+                            type="button"
+                            onClick={() => setIsLogin(true)}
+                            className="text-[#59e3a5] hover:text-[#14c0ff] underline transition-colors"
+                          >
+                            login instead
+                          </button>
+                        </div>
+                      )}
+                      
+                      {emailStatus === 'invalid' && (
+                        <div className="text-red-400 text-sm">
+                          Please enter a valid email address
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
 
                 <div>
@@ -509,6 +796,7 @@ export default function SignUpPage() {
                     placeholder={isLogin ? "password" : "create password"}
                     value={formData.password}
                     onChange={handleInputChange}
+                    onFocus={() => !isLogin && setShowPasswordRequirements(true)}
                     onBlur={(e) => handleFieldBlur('password', e.target.value)}
                     className={`w-full bg-transparent border-b-2 pb-3 text-white placeholder-white/60 focus:outline-none transition-colors autofill-override ${
                       fieldErrors.password 
@@ -522,6 +810,45 @@ export default function SignUpPage() {
                     }}
                     required
                   />
+                  
+                  {/* Password requirements checklist for mobile */}
+                  {!isLogin && showPasswordRequirements && (
+                    <div className="mt-3 p-3 bg-white/5 rounded-lg border border-white/10">
+                      <p className="text-white/80 text-sm mb-2 font-medium">Password requirements:</p>
+                      {(() => {
+                        const requirements = getPasswordRequirements(formData.password);
+                        return (
+                          <div className="space-y-1">
+                            <div className={`flex items-center text-sm ${requirements.minLength ? 'text-green-400' : 'text-white/60'}`}>
+                              <svg className={`w-3 h-3 mr-2 ${requirements.minLength ? 'text-green-400' : 'text-white/40'}`} fill="currentColor" viewBox="0 0 20 20">
+                                <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd"/>
+                              </svg>
+                              Minimum 8 characters
+                            </div>
+                            <div className={`flex items-center text-sm ${requirements.hasSpecialChar ? 'text-green-400' : 'text-white/60'}`}>
+                              <svg className={`w-3 h-3 mr-2 ${requirements.hasSpecialChar ? 'text-green-400' : 'text-white/40'}`} fill="currentColor" viewBox="0 0 20 20">
+                                <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd"/>
+                              </svg>
+                              At least 1 special character (@, $, !, %)
+                            </div>
+                            <div className={`flex items-center text-sm ${requirements.hasUpperCase ? 'text-green-400' : 'text-white/60'}`}>
+                              <svg className={`w-3 h-3 mr-2 ${requirements.hasUpperCase ? 'text-green-400' : 'text-white/40'}`} fill="currentColor" viewBox="0 0 20 20">
+                                <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd"/>
+                              </svg>
+                              At least 1 uppercase letter
+                            </div>
+                            <div className={`flex items-center text-sm ${requirements.hasLowerCase ? 'text-green-400' : 'text-white/60'}`}>
+                              <svg className={`w-3 h-3 mr-2 ${requirements.hasLowerCase ? 'text-green-400' : 'text-white/40'}`} fill="currentColor" viewBox="0 0 20 20">
+                                <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd"/>
+                              </svg>
+                              At least 1 lowercase letter
+                            </div>
+                          </div>
+                        );
+                      })()}
+                    </div>
+                  )}
+                  
                   {fieldErrors.password && (
                     <p className="text-red-400 text-sm mt-1">{fieldErrors.password}</p>
                   )}

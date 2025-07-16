@@ -7,6 +7,52 @@ body {
   @apply bg-white text-gray-900 scroll-smooth;
 }
 
+/* Autofill styling override - preserves dropdown functionality */
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus,
+input:-webkit-autofill:active {
+  -webkit-box-shadow: 0 0 0 30px transparent inset !important;
+  -webkit-text-fill-color: white !important;
+  background-color: transparent !important;
+  background-image: none !important;
+  transition: background-color 5000s ease-in-out 0s !important;
+  caret-color: white !important;
+}
+
+input[type="email"]:-webkit-autofill,
+input[type="password"]:-webkit-autofill,
+input[type="text"]:-webkit-autofill {
+  -webkit-box-shadow: 0 0 0 30px transparent inset !important;
+  -webkit-text-fill-color: white !important;
+  background-color: transparent !important;
+  background-image: none !important;
+  transition: background-color 5000s ease-in-out 0s !important;
+  caret-color: white !important;
+}
+
+/* Firefox autofill override */
+input:-moz-autofill,
+input:-moz-autofill:hover,
+input:-moz-autofill:focus {
+  background-color: transparent !important;
+  background-image: none !important;
+  color: white !important;
+}
+
+/* Autofill class for manual application */
+.autofill-override:-webkit-autofill,
+.autofill-override:-webkit-autofill:hover,
+.autofill-override:-webkit-autofill:focus,
+.autofill-override:-webkit-autofill:active {
+  -webkit-box-shadow: 0 0 0 30px transparent inset !important;
+  -webkit-text-fill-color: white !important;
+  background-color: transparent !important;
+  background-image: none !important;
+  transition: background-color 5000s ease-in-out 0s !important;
+  caret-color: white !important;
+}
+
 @keyframes spin-slow {
   0% { transform: rotate(0deg); }
   100% { transform: rotate(360deg); }
