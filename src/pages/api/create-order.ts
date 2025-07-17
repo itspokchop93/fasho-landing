@@ -343,6 +343,56 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       // Don't fail the entire order creation if email fails
     }
 
+    // Send Zapier webhook for successful checkout
+    try {
+      console.log('🔗 CREATE-ORDER: Sending Zapier webhook for checkout success...');
+      
+      const { sendZapierWebhookServer, formatCustomerName, formatCurrency } = await import('../../utils/zapier/webhookService');
+      
+      // Format customer name
+      const { first_name, last_name } = formatCustomerName(customerName);
+      
+      // Prepare packages ordered list
+      const packagesOrdered = items.map(item => `${item.package.name} - ${item.package.plays}`);
+      
+      // Prepare webhook payload
+      const webhookPayload = {
+        event_type: 'checkout_success' as const,
+        timestamp: new Date().toISOString(),
+        customer_data: {
+          first_name,
+          last_name,
+          email: customerEmail,
+          billing_address: {
+            line1: billingInfo?.line1,
+            line2: billingInfo?.line2,
+            city: billingInfo?.city,
+            state: billingInfo?.state,
+            postal_code: billingInfo?.postal_code,
+            country: billingInfo?.country
+          }
+        },
+        order_data: {
+          packages_ordered: packagesOrdered,
+          order_date: order.created_at,
+          order_total: formatCurrency(order.total),
+          order_number: order.order_number
+        }
+      };
+
+      const webhookSent = await sendZapierWebhookServer(webhookPayload, supabase);
+      
+      if (webhookSent) {
+        console.log('🔗 CREATE-ORDER: ✅ Zapier webhook sent successfully');
+      } else {
+        console.log('🔗 CREATE-ORDER: ❌ Zapier webhook failed or was not sent');
+      }
+
+    } catch (webhookError) {
+      console.error('🔗 CREATE-ORDER: ❌ Error sending Zapier webhook:', webhookError);
+      // Don't fail the entire order creation if webhook fails
+    }
+
     return res.status(200).json({
       success: true,
       order: {

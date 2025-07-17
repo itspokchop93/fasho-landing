@@ -384,6 +384,39 @@ export default function SignUpPage() {
           setMessage(`Signup failed: ${error.message}`);
         } else {
           setMessage('Please check your email for a verification link before signing in.');
+          
+          // Send Zapier webhook for user signup
+          try {
+            console.log('🔗 SIGNUP: Sending Zapier webhook for user signup...');
+            
+            const { sendZapierWebhook, formatCustomerName } = await import('../utils/zapier/webhookService');
+            
+            // Format customer name
+            const { first_name, last_name } = formatCustomerName(formData.fullName);
+            
+            // Prepare webhook payload
+            const webhookPayload = {
+              event_type: 'user_signup' as const,
+              timestamp: new Date().toISOString(),
+              customer_data: {
+                first_name,
+                last_name,
+                email: formData.email
+              }
+            };
+
+            const webhookSent = await sendZapierWebhook(webhookPayload);
+            
+            if (webhookSent) {
+              console.log('🔗 SIGNUP: ✅ Zapier webhook sent successfully');
+            } else {
+              console.log('🔗 SIGNUP: ❌ Zapier webhook failed or was not sent');
+            }
+
+          } catch (webhookError) {
+            console.error('🔗 SIGNUP: ❌ Error sending Zapier webhook:', webhookError);
+            // Don't affect the signup flow if webhook fails
+          }
         }
       }
     } catch (error) {
