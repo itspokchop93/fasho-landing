@@ -215,23 +215,43 @@ export default function Dashboard({ user }: DashboardProps) {
       return orderDate >= thirtyDaysAgo
     })
     
+    console.log('📊 PROJECTED PLAYS: Calculating total plays for', recentOrders.length, 'recent orders (last 30 days)')
+    
     let totalPlays = 0
     recentOrders.forEach(order => {
       if (order.items && order.items.length > 0) {
         order.items.forEach((item: any) => {
-          // Extract plays from package (e.g., "1k Plays" -> 1000)
-          const playsMatch = item.package.plays.match(/(\d+)k?\s*Plays/i)
-          if (playsMatch) {
-            let plays = parseInt(playsMatch[1])
-            if (item.package.plays.toLowerCase().includes('k')) {
-              plays *= 1000
+          // Parse the new range format (e.g., "18,000 - 20,000 Streams")
+          const playsNumbers = item.package.plays.match(/[\d,]+/g)
+          
+          if (playsNumbers && playsNumbers.length >= 1) {
+            // Convert comma-separated numbers to integers
+            const minPlays = parseInt(playsNumbers[0].replace(/,/g, ''))
+            const maxPlays = playsNumbers.length > 1 ? parseInt(playsNumbers[1].replace(/,/g, '')) : minPlays
+            
+            // Take the average of the range as requested
+            const avgPlays = Math.round((minPlays + maxPlays) / 2)
+            console.log(`📊 PROJECTED PLAYS: Package "${item.package.plays}" -> Range: ${minPlays.toLocaleString()} - ${maxPlays.toLocaleString()} -> Average: ${avgPlays.toLocaleString()}`)
+            totalPlays += avgPlays
+          } else {
+            // Fallback for old format (e.g., "1k Plays")
+            const playsMatch = item.package.plays.match(/(\d+)k?\s*Plays/i)
+            if (playsMatch) {
+              let plays = parseInt(playsMatch[1])
+              if (item.package.plays.toLowerCase().includes('k')) {
+                plays *= 1000
+              }
+              console.log(`📊 PROJECTED PLAYS: Old format "${item.package.plays}" -> ${plays.toLocaleString()}`)
+              totalPlays += plays
+            } else {
+              console.log(`📊 PROJECTED PLAYS: Could not parse package plays: "${item.package.plays}"`)
             }
-            totalPlays += plays
           }
         })
       }
     })
     
+    console.log('📊 PROJECTED PLAYS: Total estimated plays:', totalPlays.toLocaleString())
     return totalPlays
   }
 
@@ -922,9 +942,9 @@ export default function Dashboard({ user }: DashboardProps) {
       {/* Mobile Projected Plays Chart Section */}
       <div className="lg:hidden mb-6">
         <div className="bg-gradient-to-br from-gray-950/90 to-gray-900/90 backdrop-blur-sm rounded-2xl p-4 border border-gray-800/30 relative z-10">
-          <h3 className="text-lg font-semibold text-white mb-3">Next 30 Days Projected Plays</h3>
+          <h3 className="text-lg font-semibold text-white mb-3">Next 30 Days Projected Streams</h3>
           <div className="text-xs text-gray-400 mb-3">
-            Total estimated plays: {totalPlays.toLocaleString()}
+            Total estimated streams: {totalPlays.toLocaleString()}
           </div>
           <div className="relative h-48 bg-black/20 rounded-lg">
             {/* Y-axis labels - positioned absolutely */}
@@ -1270,9 +1290,9 @@ export default function Dashboard({ user }: DashboardProps) {
       {/* Full Width Chart Section - Above Your Campaigns */}
       <div className="hidden lg:block mb-8">
         <div className="bg-gradient-to-br from-gray-950/90 to-gray-900/90 backdrop-blur-sm rounded-2xl p-6 border border-gray-800/30 relative z-10">
-          <h3 className="text-xl font-semibold text-white mb-4">Next 30 Days Projected Plays</h3>
+          <h3 className="text-xl font-semibold text-white mb-4">Next 30 Days Projected Streams</h3>
           <div className="text-sm text-gray-400 mb-4">
-            Total estimated plays: {totalPlays.toLocaleString()}
+            Total estimated streams: {totalPlays.toLocaleString()}
           </div>
           <div className="relative h-64 bg-black/20 rounded-lg">
             {/* Y-axis labels - positioned absolutely */}
