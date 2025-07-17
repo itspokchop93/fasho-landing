@@ -102,10 +102,15 @@ export default function SignUpPage() {
     return () => subscription.unsubscribe();
   }, [router, supabase.auth]);
 
-  // Check for confirmation failure message
+  // Check for confirmation and verification messages
   useEffect(() => {
     if (router.query.message === 'confirmation_failed') {
       setMessage('Email confirmation failed or expired. Please try signing up again.');
+      // Clean up the URL parameter
+      router.replace('/signup', undefined, { shallow: true });
+    } else if (router.query.message === 'email_verified') {
+      setMessage('🎉 Success! Your email has been verified successfully. Please login below.');
+      setIsLogin(true); // Switch to login form
       // Clean up the URL parameter
       router.replace('/signup', undefined, { shallow: true });
     }

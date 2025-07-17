@@ -6,6 +6,7 @@ import { createClient } from '../utils/supabase/client'
 import { useRouter } from 'next/router'
 import Lottie from 'lottie-react'
 import CampaignProgressBar from '../components/CampaignProgressBar'
+import IntakeFormModal from '../components/IntakeFormModal'
 
 interface DashboardProps {
   user: {
@@ -50,6 +51,44 @@ export default function Dashboard({ user }: DashboardProps) {
   })
   const [contactFormLoading, setContactFormLoading] = useState(false)
   const [contactFormMessage, setContactFormMessage] = useState<{type: 'success' | 'error', text: string} | null>(null)
+
+  // Intake form state
+  const [showIntakeForm, setShowIntakeForm] = useState(false)
+  const [checkingIntakeStatus, setCheckingIntakeStatus] = useState(true)
+
+  // Check intake form status on component mount
+  useEffect(() => {
+    const checkIntakeFormStatus = async () => {
+      console.log('📋 DASHBOARD: Checking intake form status...');
+      setCheckingIntakeStatus(true);
+
+      try {
+        const response = await fetch('/api/intake-form/check-status');
+        const data = await response.json();
+
+        if (response.ok && data.success) {
+          console.log('📋 DASHBOARD: Intake form status:', { completed: data.completed });
+          
+          if (!data.completed) {
+            console.log('📋 DASHBOARD: Showing intake form modal');
+            setShowIntakeForm(true);
+          } else {
+            console.log('📋 DASHBOARD: User has already completed intake form');
+          }
+        } else {
+          console.error('📋 DASHBOARD: Failed to check intake form status:', data);
+          // Don't show the form if we can't check the status
+        }
+      } catch (error) {
+        console.error('📋 DASHBOARD: Error checking intake form status:', error);
+        // Don't show the form if there's an error
+      } finally {
+        setCheckingIntakeStatus(false);
+      }
+    };
+
+    checkIntakeFormStatus();
+  }, []); // Run once on component mount
 
   // Get user initials or profile image
   const getUserInitials = () => {
@@ -2504,6 +2543,12 @@ export default function Dashboard({ user }: DashboardProps) {
     }
   }
 
+  // Handle intake form completion
+  const handleIntakeFormComplete = (responses: Record<string, any>) => {
+    console.log('📋 DASHBOARD: Intake form completed:', responses);
+    setShowIntakeForm(false);
+  };
+
   return (
     <>
       <Head>
@@ -2624,6 +2669,12 @@ export default function Dashboard({ user }: DashboardProps) {
         
         {/* Sign Out Modal */}
         {showSignOutModal && renderSignOutModal()}
+
+        {/* Intake Form Modal */}
+        <IntakeFormModal 
+          isOpen={showIntakeForm && !checkingIntakeStatus}
+          onComplete={handleIntakeFormComplete}
+        />
       </div>
     </>
   )
