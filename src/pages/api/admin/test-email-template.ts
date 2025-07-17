@@ -125,7 +125,7 @@ async function handler(req: NextApiRequest, res: NextApiResponse, adminUser: Adm
         trigger_type: trigger_type,
         sent_to: adminEmail
       },
-      details: result.result 
+      details: result 
     })
 
   } catch (error: any) {

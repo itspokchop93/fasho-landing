@@ -45,12 +45,61 @@ export default function SignUpPage() {
   // Check if user is already logged in
   useEffect(() => {
     const checkUser = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user) {
-        router.push('/dashboard');
+      try {
+        console.log('🔐 SIGNUP: Checking if user is logged in...');
+        
+        // Start with getUser (most reliable for checking actual auth status)
+        const { data: { user }, error: userError } = await supabase.auth.getUser();
+        console.log('🔐 SIGNUP: getUser() response:', { user: user?.email || null, error: userError });
+        
+        if (user && !userError) {
+          console.log('🔐 SIGNUP: Valid user found, redirecting to dashboard...');
+          router.push('/dashboard');
+          return;
+        }
+        
+        // If getUser fails, try to get session
+        console.log('🔐 SIGNUP: No user from getUser, trying session...');
+        const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+        console.log('🔐 SIGNUP: Session check:', { session: session?.user?.email || 'No session', error: sessionError });
+        
+        if (session?.user && !sessionError) {
+          console.log('🔐 SIGNUP: Valid session found, redirecting to dashboard...');
+          router.push('/dashboard');
+          return;
+        }
+        
+        // If session fails, try to refresh
+        if (sessionError || !session) {
+          console.log('🔐 SIGNUP: No valid session, trying to refresh...');
+          const { data: { session: refreshedSession }, error: refreshError } = await supabase.auth.refreshSession();
+          console.log('🔐 SIGNUP: Refresh result:', { session: refreshedSession?.user?.email || 'No session', error: refreshError });
+          
+          if (refreshedSession?.user && !refreshError) {
+            console.log('🔐 SIGNUP: Refreshed session found, redirecting to dashboard...');
+            router.push('/dashboard');
+            return;
+          }
+        }
+        
+        console.log('🔐 SIGNUP: No user found through any method, staying on signup page');
+      } catch (err) {
+        console.error('🔐 SIGNUP: Error checking user:', err);
       }
     };
+    
     checkUser();
+
+    // Listen for auth changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      console.log('🔐 SIGNUP: Auth state changed:', event, session?.user?.email || 'No user');
+      if (event === 'SIGNED_IN' && session?.user) {
+        console.log('🔐 SIGNUP: User signed in, redirecting to dashboard...');
+        router.push('/dashboard');
+      }
+    });
+
+    return () => subscription.unsubscribe();
   }, [router, supabase.auth]);
 
   // Check for confirmation failure message

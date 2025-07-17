@@ -18,6 +18,8 @@ export default function Header({ transparent = false, hideSignUp = false }: Head
   const dropdownRef = useRef<HTMLDivElement>(null);
   const supabase = createClient();
 
+
+
   // Helper functions for profile display
   const getUserInitials = (user: any) => {
     if (!user?.email) return 'U';
@@ -136,17 +138,48 @@ export default function Header({ transparent = false, hideSignUp = false }: Head
     
     const checkUser = async () => {
       try {
-        console.log('🔐 HEADER: About to call supabase.auth.getUser()');
-        const { data: { user }, error } = await supabase.auth.getUser();
-        console.log('🔐 HEADER: supabase.auth.getUser() response:', { user: user?.email || null, error });
+        console.log('🔐 HEADER: Checking authentication state...');
         
-        if (error) {
-          console.error('🔐 HEADER: Error in getUser:', error);
+        // Start with getUser (most reliable for checking actual auth status)
+        const { data: { user }, error: userError } = await supabase.auth.getUser();
+        console.log('🔐 HEADER: getUser() response:', { user: user?.email || null, error: userError });
+        
+        if (user && !userError) {
+          console.log('🔐 HEADER: Valid user found, setting currentUser:', user.email);
+          setCurrentUser(user);
+          fetchArtistProfile(user);
+          return;
         }
         
-        console.log('🔐 HEADER: Setting currentUser to:', user?.email || 'No user');
-        setCurrentUser(user);
-        fetchArtistProfile(user);
+        // If getUser fails, try to get session
+        console.log('🔐 HEADER: No user from getUser, trying session...');
+        const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+        console.log('🔐 HEADER: Session check:', { session: session?.user?.email || 'No session', error: sessionError });
+        
+        if (session?.user && !sessionError) {
+          console.log('🔐 HEADER: Valid session found, setting user:', session.user.email);
+          setCurrentUser(session.user);
+          fetchArtistProfile(session.user);
+          return;
+        }
+        
+        // If session fails, try to refresh
+        if (sessionError || !session) {
+          console.log('🔐 HEADER: No valid session, trying to refresh...');
+          const { data: { session: refreshedSession }, error: refreshError } = await supabase.auth.refreshSession();
+          console.log('🔐 HEADER: Refresh result:', { session: refreshedSession?.user?.email || 'No session', error: refreshError });
+          
+          if (refreshedSession?.user && !refreshError) {
+            console.log('🔐 HEADER: Refreshed session found, setting user:', refreshedSession.user.email);
+            setCurrentUser(refreshedSession.user);
+            fetchArtistProfile(refreshedSession.user);
+            return;
+          }
+        }
+        
+        console.log('🔐 HEADER: No user found through any method, clearing state');
+        setCurrentUser(null);
+        setArtistProfile(null);
       } catch (err) {
         console.error('🔐 HEADER: Exception in checkUser:', err);
         setCurrentUser(null);
@@ -154,17 +187,25 @@ export default function Header({ transparent = false, hideSignUp = false }: Head
       }
     };
     
+    // Initial check
     checkUser();
 
     // Listen for auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-        console.log('🔐 HEADER: Auth state changed:', event, session?.user?.email || 'No user');
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      console.log('🔐 HEADER: Auth state changed:', event, session?.user?.email || 'No user');
+      
       if (event === 'SIGNED_OUT') {
         setCurrentUser(null);
         setArtistProfile(null);
       } else if (event === 'SIGNED_IN' && session?.user) {
         setCurrentUser(session.user);
         fetchArtistProfile(session.user);
+      } else if (event === 'TOKEN_REFRESHED' && session?.user) {
+        setCurrentUser(session.user);
+        fetchArtistProfile(session.user);
+      } else {
+        // For any other event, re-check the user
+        checkUser();
       }
     });
 
@@ -325,6 +366,8 @@ export default function Header({ transparent = false, hideSignUp = false }: Head
               Contact
             </Link>
             
+
+            
             {/* Sign Up Button or User Profile */}
             {!hideSignUp && (
               currentUser ? (
@@ -386,6 +429,8 @@ export default function Header({ transparent = false, hideSignUp = false }: Head
               <Link href="/contact" className="block px-3 py-2 text-white hover:text-[#59e3a5] transition-colors font-medium">
                 Contact
               </Link>
+              
+
               
               <div className="flex items-center justify-center px-3 py-2">
                 {/* Sign Up Button or User Profile */}

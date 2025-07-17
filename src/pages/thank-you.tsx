@@ -5,6 +5,7 @@ import Image from 'next/image';
 import { useRouter } from 'next/router';
 import Lottie from 'lottie-react';
 import Header from '../components/Header';
+import Footer from '../components/Footer';
 
 interface OrderItem {
   track: {
@@ -222,7 +223,7 @@ export default function ThankYouPage() {
         <Head>
           <title>Thank You – Fasho.co</title>
         </Head>
-        <Header />
+        <Header hideSignUp={true} />
         
         <main className="min-h-screen relative text-white pt-20 pb-12">
           {/* Background layers */}
@@ -301,7 +302,6 @@ export default function ThankYouPage() {
       <Head>
         <title>Thank You – Fasho.co</title>
       </Head>
-      <Header />
       
       <main className="min-h-screen relative text-white pt-20 pb-12">
         {/* Confetti Animation - Full Screen */}
@@ -331,9 +331,10 @@ export default function ThankYouPage() {
         <div className="fixed inset-0 bg-black z-0"></div>
         {/* Gradient glow background - on top of black layer */}
         <div 
-          className="fixed inset-0 z-5"
+          className="fixed inset-0"
           style={{
-            background: 'radial-gradient(ellipse 100% 60% at 50% 30%, rgba(89, 227, 165, 0.15) 0%, rgba(20, 192, 255, 0.1) 40%, rgba(89, 227, 165, 0.05) 70%, transparent 100%)'
+            background: 'radial-gradient(ellipse 100% 60% at 50% 30%, rgba(89, 227, 165, 0.15) 0%, rgba(20, 192, 255, 0.1) 40%, rgba(89, 227, 165, 0.05) 70%, transparent 100%)',
+            zIndex: 5
           }}
         ></div>
         <div 
@@ -583,6 +584,7 @@ export default function ThankYouPage() {
           </div>
         </div>
       </main>
+      <Footer />
     </>
   );
 } 
