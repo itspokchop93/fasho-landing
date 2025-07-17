@@ -327,7 +327,6 @@ const IntakeFormModal: React.FC<IntakeFormModalProps> = ({ isOpen, onComplete })
                        onClick={() => handleAnswerSelect(option)}
                        disabled={isAnimating}
                        variants={cardVariants}
-                       animate={isSelected ? "selected" : "unselected"}
                        whileHover={!isAnimating ? { scale: 1.02 } : {}}
                        whileTap={!isAnimating ? { scale: 0.98 } : {}}
                        initial={{ opacity: 0, y: 20 }}
