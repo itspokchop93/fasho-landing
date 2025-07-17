@@ -49,6 +49,9 @@ interface OrderData {
   orderId?: string;
   paymentData?: any;
   createdAt: string;
+  couponId?: string | null;
+  couponCode?: string | null;
+  couponDiscount?: number;
 }
 
 export default function ThankYouPage() {
@@ -92,6 +95,9 @@ export default function ThankYouPage() {
               orderNumber: data.orderDetails.orderNumber,
               orderId: data.orderDetails.id,
               createdAt: data.orderDetails.createdAt,
+              couponId: data.orderDetails.couponId,
+              couponCode: data.orderDetails.couponCode,
+              couponDiscount: data.orderDetails.couponDiscount,
               newAccountCreated: false // We can't determine this from the API, but it's not critical for display
             };
 
@@ -328,6 +334,14 @@ export default function ThankYouPage() {
           style={{ backgroundImage: 'url(/marble-bg.jpg)' }}
         ></div>
         
+        {/* Subtle gradient glow background */}
+        <div 
+          className="fixed inset-0 opacity-30 z-20"
+          style={{
+            background: 'radial-gradient(ellipse 80% 50% at 50% 40%, rgba(89, 227, 165, 0.15) 0%, rgba(20, 192, 255, 0.1) 30%, transparent 70%)'
+          }}
+        ></div>
+        
         <div className="relative z-40">{/* Increased z-index to be above confetti */}
           <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
             {/* Success Header */}
@@ -337,12 +351,12 @@ export default function ThankYouPage() {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                 </svg>
               </div>
-              <h1 className="text-4xl md:text-5xl font-bold mb-4">Thank You! 🎉</h1>
-              <p className="text-xl text-white/70 mb-2">Your order has been successfully processed</p>
-              {orderData.orderNumber && (
-                <div className="bg-gradient-to-r from-[#59e3a5]/10 to-[#14c0ff]/10 border border-[#59e3a5]/20 rounded-lg p-4 mb-4">
-                  <p className="text-[#59e3a5] font-semibold text-lg">Order #{orderData.orderNumber}</p>
-                  <p className="text-white/70 text-sm">Keep this number for your records</p>
+              <h1 className="text-4xl md:text-5xl font-bold mb-4">Success! 🎉</h1>
+              <p className="text-xl text-white/70 mb-2">Welcome to the FASHO.co family!</p>
+                            {orderData.orderNumber && (
+                <div className="bg-gradient-to-r from-[#59e3a5]/10 to-[#14c0ff]/10 border border-[#59e3a5]/20 rounded-lg p-4 mb-4 mt-3">
+                  <p className="text-[#59e3a5] font-black text-2xl">Order #{orderData.orderNumber}</p>
+                  <p className="text-white/60 text-xs mt-2">The charge on your card will show as *Focused Founders LLC*</p>
                 </div>
               )}
               {orderData.newAccountCreated && (
@@ -355,8 +369,63 @@ export default function ThankYouPage() {
                 </>
               )}
               {!orderData.newAccountCreated && (
-                <p className="text-white/60 mb-4">You can now track your campaign progress in your dashboard.</p>
+                <p className="text-white mb-4">Your campaign is officially in the works, and we're excited to be part of your journey.</p>
               )}
+            </div>
+
+            {/* What Happens Next Section */}
+            <div className="bg-white/5 rounded-xl p-6 border border-white/20 mb-8">
+              <h2 className="text-2xl font-bold mb-6 text-center">🎯 What Happens Next</h2>
+              <div className="space-y-4">
+                <div className="flex items-start space-x-4 p-4 bg-white/5 rounded-lg">
+                  <div className="flex-shrink-0 w-12 h-12 bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] rounded-full flex items-center justify-center text-xl">
+                    🔍
+                  </div>
+                  <div>
+                    <h3 className="font-semibold text-white mb-1">Within 24 Hours</h3>
+                    <p className="text-white/70 text-sm">Our team reviews your content and crafts your personalized marketing strategy</p>
+                  </div>
+                </div>
+                
+                <div className="flex items-start space-x-4 p-4 bg-white/5 rounded-lg">
+                  <div className="flex-shrink-0 w-12 h-12 bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] rounded-full flex items-center justify-center text-xl">
+                    🚀
+                  </div>
+                  <div>
+                    <h3 className="font-semibold text-white mb-1">24-48 Hours</h3>
+                    <p className="text-white/70 text-sm">Your campaign goes LIVE and we start contacting playlist curators</p>
+                  </div>
+                </div>
+                
+                <div className="flex items-start space-x-4 p-4 bg-white/5 rounded-lg">
+                  <div className="flex-shrink-0 w-12 h-12 bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] rounded-full flex items-center justify-center text-xl">
+                    🎵
+                  </div>
+                  <div>
+                    <h3 className="font-semibold text-white mb-1">48-72 Hours</h3>
+                    <p className="text-white/70 text-sm">You'll see your first playlist placements and streams start rolling in</p>
+                  </div>
+                </div>
+                
+                <div className="flex items-start space-x-4 p-4 bg-white/5 rounded-lg">
+                  <div className="flex-shrink-0 w-12 h-12 bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] rounded-full flex items-center justify-center text-xl">
+                    ✅
+                  </div>
+                  <div>
+                    <h3 className="font-semibold text-white mb-1">7-10 Days</h3>
+                    <p className="text-white/70 text-sm">Campaign complete with all estimated streams delivered</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Track Your Campaign Section */}
+            <div className="bg-gradient-to-r from-[#59e3a5]/10 to-[#14c0ff]/10 border border-[#59e3a5]/20 rounded-xl p-6 mb-8 text-center">
+              <h2 className="text-2xl font-bold mb-4">📱 Track Your Campaign</h2>
+              <p className="text-white/70 mb-6 text-lg">Your personal dashboard is ready and waiting! Monitor your progress, launch new campaigns, and see your success happen in real-time.</p>
+              <Link href="/dashboard" className="inline-block bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] text-black font-bold py-3 px-8 rounded-lg hover:opacity-90 transition-opacity">
+                GO TO DASHBOARD
+              </Link>
             </div>
 
             {/* Order Summary */}
@@ -444,29 +513,63 @@ export default function ThankYouPage() {
                 <div className="space-y-2">
                   <div className="flex justify-between">
                     <span className="text-white/70">Subtotal</span>
-                    <span>${orderData.subtotal}</span>
+                    <span>${Number(orderData.subtotal).toFixed(2)}</span>
                   </div>
                   
                   {orderData.discount > 0 && (
                     <div className="flex justify-between text-[#59e3a5]">
                       <span>Multi-song discount (25% off)</span>
-                      <span>-${orderData.discount}</span>
+                      <span>-${Number(orderData.discount).toFixed(2)}</span>
+                    </div>
+                  )}
+                  
+                  {orderData.couponCode && orderData.couponDiscount && Number(orderData.couponDiscount) > 0 && (
+                    <div className="flex justify-between text-[#59e3a5]">
+                      <span>Coupon discount ({orderData.couponCode})</span>
+                      <span>-${Number(orderData.couponDiscount).toFixed(2)}</span>
                     </div>
                   )}
                   
                   <div className="border-t border-white/20 pt-2">
                     <div className="flex justify-between text-xl font-bold">
                       <span>Total Paid</span>
-                      <span className="text-[#59e3a5]">${orderData.total}</span>
+                      <span className="text-[#59e3a5]">${Number(orderData.total).toFixed(2)}</span>
                     </div>
                   </div>
                 </div>
               </div>
             </div>
 
-            <div className="text-center">
-              <Link href="/dashboard" className="bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] text-black font-semibold py-4 px-6 rounded-lg hover:opacity-90 transition-opacity">
-                View Dashboard
+            {/* Additional Information Sections */}
+            <div className="grid md:grid-cols-3 gap-6 mb-8">
+              {/* Check Your Email */}
+              <div className="bg-white/5 rounded-xl p-6 border border-white/20 text-center">
+                <div className="text-4xl mb-4">📧</div>
+                <h3 className="text-xl font-semibold mb-3">Check Your Email</h3>
+                <p className="text-white/70 text-base">We've sent you a detailed welcome email with everything you need to know about your campaign. Make sure to check your inbox (and spam folder) for important updates!</p>
+              </div>
+
+              {/* Download Spotify for Artists */}
+              <div className="bg-white/5 rounded-xl p-6 border border-white/20 text-center">
+                <div className="text-4xl mb-4">🎵</div>
+                <h3 className="font-semibold mb-3" style={{ fontSize: 'calc(1.25rem - 0.10rem)' }}>Get Spotify for Artists</h3>
+                <p className="text-white/70 text-base">If you haven't already, download the official Spotify for Artists app on your phone. This is how you'll see which playlists add your music and track your streaming numbers in real-time.</p>
+              </div>
+
+              {/* Need Help */}
+              <div className="bg-white/5 rounded-xl p-6 border border-white/20 text-center">
+                <div className="text-4xl mb-4">🤝</div>
+                <h3 className="text-xl font-semibold mb-3">Need Help?</h3>
+                <p className="text-white/70 text-base">Got questions? We're here for you! Email us at <a href="mailto:support@fasho.co" className="text-[#59e3a5] hover:text-[#4bc995] underline">support@fasho.co</a> and our team will respond within 24 hours.</p>
+              </div>
+            </div>
+
+            {/* Final Welcome Message */}
+            <div className="bg-gradient-to-r from-[#59e3a5]/10 to-[#14c0ff]/10 border border-[#59e3a5]/20 rounded-xl p-6 mb-8 text-center">
+              <p className="text-3xl font-black mb-5 text-white">Welcome to the FASHO.co family!</p>
+              <p className="text-white mb-6 text-xl">Your breakthrough moment is coming. 🚀</p>
+              <Link href="/dashboard" className="inline-block bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] text-black font-bold py-3 px-8 rounded-lg hover:opacity-90 transition-opacity">
+                GO TO DASHBOARD
               </Link>
             </div>
             

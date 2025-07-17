@@ -1301,6 +1301,7 @@ export default function CheckoutPage() {
           accountNumber: response.accountNumber,
           accountType: response.accountType,
         },
+        coupon: appliedCoupon,
         userId: userId
       };
 
@@ -1362,6 +1363,9 @@ export default function CheckoutPage() {
           accountType: response.accountType,
         },
         createdAt: orderResult.order.createdAt,
+        couponId: pendingOrder.coupon?.id || null,
+        couponCode: pendingOrder.coupon?.code || null,
+        couponDiscount: pendingOrder.coupon?.calculated_discount || null,
       };
       console.log('🚀 CHECKOUT: Storing completedOrder in sessionStorage:', orderData);
       sessionStorage.setItem('completedOrder', JSON.stringify(orderData));

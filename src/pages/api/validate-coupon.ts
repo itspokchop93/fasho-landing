@@ -1,5 +1,5 @@
 import { NextApiRequest, NextApiResponse } from 'next'
-import { createClient } from '../../utils/supabase/server'
+import { createClient } from '@supabase/supabase-js'
 
 interface CouponValidationResult {
   is_valid: boolean;
@@ -15,7 +15,11 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     return res.status(405).json({ error: 'Method not allowed' })
   }
 
-  const supabase = createClient(req, res)
+  // Use service role client for coupon validation to bypass RLS
+  const supabase = createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!
+  )
 
   try {
     console.log('🎫 VALIDATE-COUPON: Starting validation process...')
