@@ -105,6 +105,7 @@ const IntakeFormModal: React.FC<IntakeFormModalProps> = ({ isOpen, onComplete })
   const [isAnimating, setIsAnimating] = useState(false);
   const [showCompletion, setShowCompletion] = useState(false);
   const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
+  const [countdown, setCountdown] = useState(5);
 
   console.log('📋 INTAKE-FORM-MODAL: Component rendered', { 
     isOpen, 
@@ -115,6 +116,31 @@ const IntakeFormModal: React.FC<IntakeFormModalProps> = ({ isOpen, onComplete })
 
   const currentQuestion = questions[currentQuestionIndex];
   const isLastQuestion = currentQuestionIndex === questions.length - 1;
+
+  // Reset state when modal opens
+  useEffect(() => {
+    if (isOpen) {
+      setCurrentQuestionIndex(0);
+      setResponses({});
+      setIsAnimating(false);
+      setShowCompletion(false);
+      setSelectedAnswer(null);
+      setCountdown(5);
+    }
+  }, [isOpen]);
+
+  // Countdown timer effect
+  useEffect(() => {
+    if (showCompletion && countdown > 0) {
+      const timer = setTimeout(() => {
+        setCountdown(prev => prev - 1);
+      }, 1000);
+      return () => clearTimeout(timer);
+    } else if (showCompletion && countdown === 0) {
+      // Auto-close when countdown reaches 0
+      onComplete(responses);
+    }
+  }, [showCompletion, countdown, responses, onComplete]);
 
   // Handle answer selection
   const handleAnswerSelect = async (answer: string) => {
@@ -191,10 +217,8 @@ const IntakeFormModal: React.FC<IntakeFormModalProps> = ({ isOpen, onComplete })
       if (response.ok && data.success) {
         console.log('✅ INTAKE-FORM: Successfully submitted:', data);
         
-        // Close modal after brief delay
-        setTimeout(() => {
-          onComplete(finalResponses);
-        }, 1000);
+        // Start countdown timer
+        setCountdown(5);
       } else {
         console.error('❌ INTAKE-FORM: Submission failed:', data);
         // Handle error - could show error message
@@ -301,7 +325,20 @@ const IntakeFormModal: React.FC<IntakeFormModalProps> = ({ isOpen, onComplete })
                 </svg>
               </motion.div>
               <h2 className="text-2xl font-bold text-white mb-4">Thank you!</h2>
-              <p className="text-gray-400">Your responses have been submitted successfully.</p>
+              <p className="text-gray-400 mb-6">Your responses have been submitted successfully.</p>
+              
+              {/* Countdown and Manual Close */}
+              <div className="text-center space-y-3">
+                <p className="text-gray-300 text-sm">
+                  This popup will automatically close within ({countdown}) seconds
+                </p>
+                <button 
+                  onClick={() => onComplete(responses)}
+                  className="underline text-blue-400 hover:text-blue-300 transition-colors text-sm"
+                >
+                  CLOSE THIS POPUP MANUALLY
+                </button>
+              </div>
             </motion.div>
           ) : (
             <motion.div

@@ -105,7 +105,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           
           // Prepare order data
           const packagesOrdered = latestOrder.order_items?.map((item: any) => 
-            `${item.package_name} - ${item.package_plays}`
+            item.package_name
           ) || [];
           
           orderData = {

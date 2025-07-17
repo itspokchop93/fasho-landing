@@ -353,7 +353,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       const { first_name, last_name } = formatCustomerName(customerName);
       
       // Prepare packages ordered list
-      const packagesOrdered = items.map(item => `${item.package.name} - ${item.package.plays}`);
+      const packagesOrdered = items.map(item => item.package.name);
       
       // Prepare webhook payload
       const webhookPayload = {
