@@ -5,6 +5,7 @@ import { useRouter } from 'next/router'
 import Lottie from 'lottie-react'
 import AdminOrdersManagement from '../components/AdminOrdersManagement'
 import AdminEmailManagement from '../components/AdminEmailManagement'
+import AdminCouponsManagement from '../components/AdminCouponsManagement'
 import MonthlyOrdersChart from '../components/MonthlyOrdersChart'
 import ActiveUsersSection from '../components/ActiveUsersSection'
 import AdminAccessDenied from '../components/AdminAccessDenied'
@@ -92,6 +93,16 @@ export default function AdminDashboard({ adminUser, authError }: AdminDashboardP
         }
         console.log('🔄 ADMIN-NAV: Setting active tab to emails');
         setActiveTab('emails')
+      } else if (hash === 'coupons') {
+        // Check if sub-admin trying to access coupons (not allowed)
+        if (adminUser.role === 'sub_admin') {
+          console.log('🔄 ADMIN-NAV: Sub-admin cannot access coupons tab');
+          setActiveTab('orders') // Redirect to orders
+          window.location.hash = '#orders'
+          return
+        }
+        console.log('🔄 ADMIN-NAV: Setting active tab to coupons');
+        setActiveTab('coupons')
       } else if (hash === 'dashboard' || !hash) {
         // Check if sub-admin trying to access dashboard (not allowed)
         if (adminUser.role === 'sub_admin') {
@@ -325,6 +336,15 @@ export default function AdminDashboard({ adminUser, authError }: AdminDashboardP
     )
   }
 
+  const renderCouponsContent = () => {
+    console.log('🔄 ADMIN-RENDER: Rendering coupons content...');
+    return (
+      <div className="space-y-6">
+        <AdminCouponsManagement />
+      </div>
+    )
+  }
+
   const renderContent = () => {
     console.log('🔄 ADMIN-RENDER: Rendering content for tab:', activeTab);
     
@@ -340,6 +360,8 @@ export default function AdminDashboard({ adminUser, authError }: AdminDashboardP
         return renderOrdersContent()
       case 'emails':
         return adminUser.role === 'admin' ? renderEmailsContent() : renderOrdersContent()
+      case 'coupons':
+        return adminUser.role === 'admin' ? renderCouponsContent() : renderOrdersContent()
       default:
         return adminUser.role === 'admin' ? renderDashboardContent() : renderOrdersContent()
     }
@@ -410,6 +432,23 @@ export default function AdminDashboard({ adminUser, authError }: AdminDashboardP
                       }`}
                     >
                       Emails
+                    </button>
+                  )}
+                  
+                  {/* Coupons Tab - Only for full admins */}
+                  {adminUser.role === 'admin' && (
+                    <button
+                      onClick={() => {
+                        setActiveTab('coupons')
+                        window.location.hash = '#coupons'
+                      }}
+                      className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                        activeTab === 'coupons'
+                          ? 'bg-indigo-100 text-indigo-700'
+                          : 'text-gray-500 hover:text-gray-700'
+                      }`}
+                    >
+                      Coupons
                     </button>
                   )}
                 </div>

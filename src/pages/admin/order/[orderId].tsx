@@ -50,6 +50,8 @@ interface Order {
   admin_notes: string | null;
   first_viewed_at: string | null;
   viewed_by_admin: boolean;
+  couponCode?: string | null;
+  couponDiscount?: number;
   created_at: string;
   updated_at: string;
   items: OrderItem[];
@@ -733,8 +735,14 @@ export default function OrderDetailPage({ adminSession, accessDenied }: OrderDet
                 </div>
                 {order.discount > 0 && (
                   <div className="flex justify-between">
-                    <span className="text-white/70">Discount</span>
+                    <span className="text-white/70">Multi-song discount</span>
                     <span className="text-green-400">-{formatOrderCurrency(order.discount)}</span>
+                  </div>
+                )}
+                {order.couponCode && order.couponDiscount && order.couponDiscount > 0 && (
+                  <div className="flex justify-between">
+                    <span className="text-white/70">Coupon ({order.couponCode})</span>
+                    <span className="text-green-400">-{formatOrderCurrency(order.couponDiscount)}</span>
                   </div>
                 )}
                 <div className="border-t border-white/20 pt-2">

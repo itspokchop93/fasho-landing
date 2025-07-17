@@ -52,6 +52,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       paymentStatus: order.payment_status,
       billingInfo: order.billing_info,
       paymentData: order.payment_data,
+      couponId: order.coupon_id,
+      couponCode: order.coupon_code,
+      couponDiscount: order.coupon_discount,
       createdAt: order.created_at,
       updatedAt: order.updated_at,
       items: order.order_items.map((item: any) => ({

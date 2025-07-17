@@ -1720,8 +1720,14 @@ export default function Dashboard({ user }: DashboardProps) {
                     </div>
                     {order.discount > 0 && (
                       <div className="flex justify-between items-center text-sm mt-1">
-                        <span className="text-gray-400">Discount:</span>
+                        <span className="text-gray-400">Multi-song discount:</span>
                         <span className="text-green-400">-${Math.round(order.discount)}</span>
+                      </div>
+                    )}
+                    {order.couponCode && order.couponDiscount > 0 && (
+                      <div className="flex justify-between items-center text-sm mt-1">
+                        <span className="text-gray-400">Coupon ({order.couponCode}):</span>
+                        <span className="text-green-400">-${Math.round(order.couponDiscount)}</span>
                       </div>
                     )}
                     <div className="flex justify-between items-center text-sm mt-1 pt-2 border-t border-gray-800/50">

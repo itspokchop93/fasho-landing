@@ -116,6 +116,16 @@ export default function CheckoutPage() {
   const [subtotal, setSubtotal] = useState(0);
   const [discount, setDiscount] = useState(0);
   const [total, setTotal] = useState(0);
+  const [couponCode, setCouponCode] = useState('');
+  const [appliedCoupon, setAppliedCoupon] = useState<{
+    id: string;
+    code: string;
+    discount_type: 'percentage' | 'flat';
+    discount_value: number;
+    calculated_discount: number;
+  } | null>(null);
+  const [couponError, setCouponError] = useState('');
+  const [isApplyingCoupon, setIsApplyingCoupon] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
   const [formError, setFormError] = useState('');
@@ -320,7 +330,7 @@ export default function CheckoutPage() {
     router.push('/add');
   };
 
-  // Update totals including add-ons
+  // Update totals including add-ons and coupons
   const updateTotals = () => {
     // Calculate main items totals
     let mainSubtotal = 0;
@@ -346,12 +356,104 @@ export default function CheckoutPage() {
     
     const totalSubtotal = mainSubtotal + addOnSubtotal;
     const totalDiscount = mainDiscount + addOnDiscount;
-    const finalTotal = totalSubtotal - totalDiscount;
+    
+    // Calculate final total with coupon discount
+    let finalTotal = totalSubtotal - totalDiscount;
+    let couponDiscount = 0;
+    
+    if (appliedCoupon) {
+      couponDiscount = appliedCoupon.calculated_discount;
+      finalTotal = Math.max(0, finalTotal - couponDiscount); // Don't allow negative totals
+    }
     
     setSubtotal(totalSubtotal);
     setDiscount(totalDiscount);
     setTotal(finalTotal);
   };
+
+  // Apply coupon code
+  const handleApplyCoupon = async () => {
+    if (!couponCode.trim()) {
+      setCouponError('Please enter a coupon code');
+      return;
+    }
+
+    setIsApplyingCoupon(true);
+    setCouponError('');
+
+    try {
+      console.log('🎫 CHECKOUT: Applying coupon:', couponCode);
+      
+      // Calculate the pre-coupon total for validation
+      const preCouponTotal = subtotal - discount;
+      
+      const response = await fetch('/api/validate-coupon', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          coupon_code: couponCode.trim(),
+          order_amount: preCouponTotal
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok || !data.success) {
+        throw new Error(data.error || 'Failed to apply coupon');
+      }
+
+      console.log('🎫 CHECKOUT: Coupon applied successfully:', data.coupon);
+
+      // Set the applied coupon
+      setAppliedCoupon({
+        id: data.coupon.id,
+        code: couponCode.trim().toUpperCase(),
+        discount_type: data.coupon.discount_type,
+        discount_value: data.coupon.discount_value,
+        calculated_discount: data.coupon.calculated_discount
+      });
+
+      // Show success message
+      const successElement = document.createElement('div');
+      successElement.className = 'fixed top-4 right-4 bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded z-50';
+      successElement.innerHTML = `
+        <div class="flex items-center">
+          <span class="mr-2">✅</span>
+          <span>${data.message}</span>
+        </div>
+      `;
+      document.body.appendChild(successElement);
+      
+      setTimeout(() => {
+        if (document.body.contains(successElement)) {
+          document.body.removeChild(successElement);
+        }
+      }, 5000);
+
+      // Clear the input field and update totals
+      setCouponCode('');
+      
+    } catch (err: any) {
+      console.error('🎫 CHECKOUT: Error applying coupon:', err);
+      setCouponError(err.message || 'Failed to apply coupon');
+    } finally {
+      setIsApplyingCoupon(false);
+    }
+  };
+
+  // Remove applied coupon
+  const handleRemoveCoupon = () => {
+    setAppliedCoupon(null);
+    setCouponCode('');
+    setCouponError('');
+  };
+
+  // Update totals when coupon changes
+  useEffect(() => {
+    updateTotals();
+  }, [appliedCoupon, orderItems, addOnOrderItems]);
 
   // Validate checkout session and load data
   useEffect(() => {
@@ -1363,6 +1465,13 @@ export default function CheckoutPage() {
         customerEmail: currentUser ? currentUser.email : formData.email,
         customerName: `${billingData.firstName} ${billingData.lastName}`,
         billingInfo: billingData,
+        coupon: appliedCoupon ? {
+          id: appliedCoupon.id,
+          code: appliedCoupon.code,
+          discount_type: appliedCoupon.discount_type,
+          discount_value: appliedCoupon.discount_value,
+          calculated_discount: appliedCoupon.calculated_discount
+        } : null,
         createdAt: new Date().toISOString(),
         paymentToken: data.token
       };
@@ -2182,6 +2291,61 @@ export default function CheckoutPage() {
                   </div>
                 </div>
 
+                {/* Coupon Code */}
+                <div className="bg-white/5 rounded-xl p-6 border border-white/20">
+                  <h3 className="text-lg font-semibold mb-4">Coupon Code</h3>
+                  
+                  {!appliedCoupon ? (
+                    <div className="space-y-3">
+                      <div className="flex space-x-2">
+                        <input
+                          type="text"
+                          value={couponCode}
+                          onChange={(e) => setCouponCode(e.target.value.toUpperCase())}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') {
+                              e.preventDefault();
+                              handleApplyCoupon();
+                            }
+                          }}
+                          placeholder="Enter coupon code"
+                          className="flex-1 px-3 py-2 bg-white/10 border border-white/20 rounded-lg text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-[#59e3a5] focus:border-[#59e3a5]"
+                          disabled={isApplyingCoupon}
+                        />
+                        <button
+                          onClick={handleApplyCoupon}
+                          disabled={isApplyingCoupon || !couponCode.trim()}
+                          className="px-4 py-2 bg-[#59e3a5] text-black font-medium rounded-lg hover:bg-[#4bc995] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          {isApplyingCoupon ? 'Applying...' : 'Apply'}
+                        </button>
+                      </div>
+                      
+                      {couponError && (
+                        <div className="text-red-400 text-sm">{couponError}</div>
+                      )}
+                    </div>
+                  ) : (
+                    <div className="flex items-center justify-between p-3 bg-green-500/20 border border-green-500/30 rounded-lg">
+                      <div className="flex items-center space-x-2">
+                        <span className="text-green-400">✅</span>
+                        <span className="text-white font-medium">{appliedCoupon.code}</span>
+                        <span className="text-green-400 text-sm">
+                          ({appliedCoupon.discount_type === 'percentage' 
+                            ? `${appliedCoupon.discount_value}% off` 
+                            : `$${appliedCoupon.discount_value} off`})
+                        </span>
+                      </div>
+                      <button
+                        onClick={handleRemoveCoupon}
+                        className="text-red-400 hover:text-red-300 text-sm font-medium"
+                      >
+                        Remove
+                      </button>
+                    </div>
+                  )}
+                </div>
+
                 {/* Price Summary */}
                 <div className="bg-white/5 rounded-xl p-6 border border-white/20">
                   <div className="space-y-3">
@@ -2197,6 +2361,12 @@ export default function CheckoutPage() {
                       </div>
                     )}
                     
+                    {appliedCoupon && (
+                      <div className="flex justify-between text-[#59e3a5]">
+                        <span>Coupon discount ({appliedCoupon.code})</span>
+                        <span>-${appliedCoupon.calculated_discount.toFixed(2)}</span>
+                      </div>
+                    )}
 
                     
                     <div className="border-t border-white/20 pt-3">

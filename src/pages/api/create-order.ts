@@ -57,6 +57,13 @@ interface CreateOrderRequest {
     accountNumber: string;
     accountType: string;
   };
+  coupon?: {
+    id: string;
+    code: string;
+    discount_type: 'percentage' | 'flat';
+    discount_value: number;
+    calculated_discount: number;
+  } | null;
   userId?: string;
 }
 
@@ -80,6 +87,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       customerName,
       billingInfo,
       paymentData,
+      coupon,
       userId
     }: CreateOrderRequest = req.body;
     
@@ -131,6 +139,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           payment_status: 'paid',
           billing_info: billingInfo,
           payment_data: paymentData,
+          coupon_id: coupon?.id || null,
+          coupon_code: coupon?.code || null,
+          coupon_discount: coupon?.calculated_discount || 0,
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString()
         };
@@ -247,6 +258,43 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         // Don't fail the entire order if add-on creation fails, but log the error
       } else {
         console.log('🔍 CREATE-ORDER: Add-on items created successfully');
+      }
+    }
+
+    // Track coupon usage if a coupon was applied
+    if (coupon) {
+      console.log('🎫 CREATE-ORDER: Recording coupon usage...');
+      try {
+        // Record coupon usage
+        const { error: usageError } = await supabase
+          .from('coupon_usage')
+          .insert({
+            coupon_id: coupon.id,
+            order_id: order.id,
+            customer_email: customerEmail,
+            discount_amount: coupon.calculated_discount,
+            used_at: new Date().toISOString()
+          });
+
+        if (usageError) {
+          console.error('🎫 CREATE-ORDER: Error recording coupon usage:', usageError);
+          // Don't fail the order creation if coupon usage tracking fails
+        } else {
+          console.log('🎫 CREATE-ORDER: Coupon usage recorded successfully');
+          
+          // Increment coupon usage counter
+          const { error: incrementError } = await supabase
+            .rpc('increment_coupon_usage', { coupon_uuid: coupon.id });
+            
+          if (incrementError) {
+            console.error('🎫 CREATE-ORDER: Error incrementing coupon usage:', incrementError);
+          } else {
+            console.log('🎫 CREATE-ORDER: Coupon usage counter incremented');
+          }
+        }
+      } catch (error) {
+        console.error('🎫 CREATE-ORDER: Unexpected error tracking coupon usage:', error);
+        // Don't fail the order creation
       }
     }
 

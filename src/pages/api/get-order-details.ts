@@ -9,6 +9,9 @@ interface OrderDetails {
   total: number;
   customerEmail: string;
   customerName: string;
+  couponId?: string | null;
+  couponCode?: string | null;
+  couponDiscount?: number;
   createdAt: string;
   items: Array<{
     track: {
@@ -155,6 +158,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       total: order.total,
       customerEmail: order.customer_email,
       customerName: order.customer_name,
+      couponId: order.coupon_id,
+      couponCode: order.coupon_code,
+      couponDiscount: order.coupon_discount,
       createdAt: order.created_at,
       items: transformedItems,
       addOnItems: transformedAddOnItems.length > 0 ? transformedAddOnItems : undefined
