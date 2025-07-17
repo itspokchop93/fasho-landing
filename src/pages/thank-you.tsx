@@ -329,17 +329,16 @@ export default function ThankYouPage() {
 
         {/* Background layers */}
         <div className="fixed inset-0 bg-black z-0"></div>
+        {/* Gradient glow background - on top of black layer */}
+        <div 
+          className="fixed inset-0 z-5"
+          style={{
+            background: 'radial-gradient(ellipse 100% 60% at 50% 30%, rgba(89, 227, 165, 0.15) 0%, rgba(20, 192, 255, 0.1) 40%, rgba(89, 227, 165, 0.05) 70%, transparent 100%)'
+          }}
+        ></div>
         <div 
           className="fixed inset-0 bg-cover bg-center bg-no-repeat opacity-20 z-10"
           style={{ backgroundImage: 'url(/marble-bg.jpg)' }}
-        ></div>
-        
-        {/* Subtle gradient glow background */}
-        <div 
-          className="fixed inset-0 opacity-30 z-20"
-          style={{
-            background: 'radial-gradient(ellipse 80% 50% at 50% 40%, rgba(89, 227, 165, 0.15) 0%, rgba(20, 192, 255, 0.1) 30%, transparent 70%)'
-          }}
         ></div>
         
         <div className="relative z-40">{/* Increased z-index to be above confetti */}
