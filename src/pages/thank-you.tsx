@@ -478,7 +478,8 @@ export default function ThankYouPage() {
             {/* Track Your Campaign Section */}
             <div className="bg-gradient-to-r from-[#59e3a5]/10 to-[#14c0ff]/10 border border-[#59e3a5]/20 rounded-xl p-6 mb-8 text-center">
               <h2 className="text-2xl font-bold mb-4">📱 Track Your Campaign</h2>
-              <p className="text-white/70 mb-6 text-lg">Your personal dashboard is ready and waiting! Monitor your progress, launch new campaigns, and see your success happen in real-time.</p>
+              <p className="text-white/70 mb-4 text-lg"><strong>Check your email right away!</strong> We just sent you a confirmation email that you'll need to click to activate your account. Once you confirm, you can login to your dashboard using the email and password you created during checkout.</p>
+              <p className="text-white/70 mb-6 text-lg">Your personal dashboard is locked and loaded! Monitor your progress, launch new campaigns, and see your success happen in real-time.</p>
               <Link href="/dashboard" className="inline-block bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] text-black font-bold py-3 px-8 rounded-lg hover:opacity-90 transition-opacity">
                 GO TO DASHBOARD
               </Link>

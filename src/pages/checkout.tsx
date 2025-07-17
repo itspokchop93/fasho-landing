@@ -1247,6 +1247,15 @@ export default function CheckoutPage() {
   const handleSuccessfulPayment = async (response: any) => {
     try {
       console.log('🚀 CHECKOUT: handleSuccessfulPayment called with response:', response);
+      console.log('🚀 CHECKOUT: Current user state:', { 
+        hasCurrentUser: !!currentUser, 
+        currentUserEmail: currentUser?.email, 
+        currentUserId: currentUser?.id 
+      });
+      console.log('🚀 CHECKOUT: Form data:', { 
+        email: formData.email, 
+        hasPassword: !!formData.password 
+      });
       console.log('🚀 CHECKOUT: Current orderItems:', orderItems);
       console.log('🚀 CHECKOUT: Current totals - subtotal:', subtotal, 'discount:', discount, 'total:', total);
       
@@ -1267,6 +1276,12 @@ export default function CheckoutPage() {
       
       // Create user account after successful payment (only if not already signed in)
       if (!currentUser) {
+        console.log('🔍 CHECKOUT: Creating new user account after successful payment');
+        console.log('🔍 CHECKOUT: Account details:', {
+          email: formData.email,
+          fullName: `${billingData.firstName} ${billingData.lastName}`
+        });
+        
         const { data: authData, error: authError } = await supabase.auth.signUp({
           email: formData.email,
           password: formData.password,
@@ -1276,13 +1291,26 @@ export default function CheckoutPage() {
             },
           },
         });
+        
         if (authError) {
-          console.error('Error creating account:', authError);
-          // Don't fail the entire checkout if account creation fails
+          console.error('🚨 CHECKOUT: Error creating account after payment:', authError);
+          console.error('🚨 CHECKOUT: Auth error details:', JSON.stringify(authError, null, 2));
+          // Don't fail the entire checkout if account creation fails - payment was successful
         } else {
+          console.log('✅ CHECKOUT: Account created successfully after payment');
+          console.log('✅ CHECKOUT: New user data:', {
+            userId: authData.user?.id,
+            email: authData.user?.email,
+            emailConfirmed: authData.user?.email_confirmed_at
+          });
           newAccountCreated = true;
           userId = authData.user?.id || null;
         }
+      } else {
+        console.log('✅ CHECKOUT: User already authenticated, using existing account:', {
+          userId: currentUser.id,
+          email: currentUser.email
+        });
       }
       
       // Create order in database
@@ -1305,7 +1333,15 @@ export default function CheckoutPage() {
         userId: userId
       };
 
-      console.log('🚀 CHECKOUT: Creating order in database:', orderPayload);
+      console.log('🚀 CHECKOUT: Creating order in database with payload:', orderPayload);
+      console.log('🚀 CHECKOUT: Order creation details:', {
+        hasUserId: !!orderPayload.userId,
+        userId: orderPayload.userId,
+        customerEmail: orderPayload.customerEmail,
+        itemsCount: orderPayload.items.length,
+        addOnItemsCount: orderPayload.addOnItems.length,
+        total: orderPayload.total
+      });
       
       const orderResponse = await fetch('/api/create-order', {
         method: 'POST',
@@ -1316,9 +1352,11 @@ export default function CheckoutPage() {
       });
 
       const orderResult = await orderResponse.json();
+      console.log('🚀 CHECKOUT: Order creation response:', orderResult);
 
       if (!orderResult.success) {
-        console.error('Error creating order:', orderResult.message);
+        console.error('🚨 CHECKOUT: Error creating order:', orderResult.message);
+        console.error('🚨 CHECKOUT: Order error details:', JSON.stringify(orderResult, null, 2));
         setError('Payment was successful but there was an error saving your order. Please contact support with your transaction ID: ' + response.transId);
         return;
       }
@@ -1485,6 +1523,8 @@ export default function CheckoutPage() {
       
       // Create user account after successful payment token generation (only if not already signed in)
       if (!currentUser) {
+        console.log('🔍 CHECKOUT: User not authenticated, checking if account exists for:', formData.email);
+        
         // First check if user already exists to prevent duplicate account creation
         const checkResponse = await fetch('/api/check-user-exists', {
           method: 'POST',
@@ -1495,8 +1535,10 @@ export default function CheckoutPage() {
         });
         
         const checkData = await checkResponse.json();
+        console.log('🔍 CHECKOUT: User existence check result:', checkData);
         
         if (checkData.exists) {
+          console.log('🔍 CHECKOUT: User exists, attempting sign in...');
           // User already exists, try to sign them in
           const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
             email: formData.email,
@@ -1504,14 +1546,19 @@ export default function CheckoutPage() {
           });
           
           if (signInError) {
+            console.error('🚨 CHECKOUT: Sign-in failed during checkout:', signInError);
             // Password is wrong - show error and stop checkout
             setFormError('An account with this email already exists. Please use the correct password or sign in first.');
             return;
           }
           
           // Successfully signed in - continue with checkout
-          console.log('User signed in successfully during checkout');
+          console.log('✅ CHECKOUT: User signed in successfully during checkout:', {
+            userId: signInData.user?.id,
+            email: signInData.user?.email
+          });
         } else {
+          console.log('🔍 CHECKOUT: User does not exist, creating new account...');
           // User doesn't exist, create new account
           const { data: authData, error: authError } = await supabase.auth.signUp({
             email: formData.email,
@@ -1524,7 +1571,8 @@ export default function CheckoutPage() {
           });
 
           if (authError) {
-            console.error('Error creating account:', authError);
+            console.error('🚨 CHECKOUT: Error creating account during checkout:', authError);
+            console.error('🚨 CHECKOUT: Auth error details:', JSON.stringify(authError, null, 2));
             
             // Handle specific signup errors
             if (authError.message?.includes('User already registered')) {
@@ -1533,13 +1581,22 @@ export default function CheckoutPage() {
               return;
             } else {
               // Other signup errors - don't fail the entire checkout
-              console.log('Account creation failed but continuing with checkout:', authError.message);
+              console.log('⚠️ CHECKOUT: Account creation failed but continuing with checkout:', authError.message);
             }
           } else {
             // Account created successfully
-            console.log('New account created successfully');
+            console.log('✅ CHECKOUT: New account created successfully during checkout:', {
+              userId: authData.user?.id,
+              email: authData.user?.email,
+              emailConfirmed: authData.user?.email_confirmed_at
+            });
           }
         }
+      } else {
+        console.log('✅ CHECKOUT: User already authenticated, skipping account creation:', {
+          userId: currentUser.id,
+          email: currentUser.email
+        });
       }
 
       // Show payment iframe with the token

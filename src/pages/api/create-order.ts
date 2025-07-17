@@ -1,5 +1,5 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
-import { createClient } from '../../utils/supabase/server';
+import { createClient, createAdminClient } from '../../utils/supabase/server';
 import { sendNewOrderEmail, sendAdminNewOrderEmail } from '../../utils/email/emailService';
 
 interface OrderItem {
@@ -76,7 +76,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     console.log('🔍 CREATE-ORDER: Starting order creation process');
     console.log('🔍 CREATE-ORDER: Request body:', JSON.stringify(req.body, null, 2));
     
-    const supabase = createClient(req, res);
+    // Use admin client to bypass RLS for order creation
+    const supabase = createAdminClient();
+    console.log('🔍 CREATE-ORDER: Using admin client to bypass RLS for order creation');
     const {
       items,
       addOnItems = [],

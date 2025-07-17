@@ -1,5 +1,5 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
-import { createClient } from '../../utils/supabase/server';
+import { createAdminClient } from '../../utils/supabase/server';
 
 interface OrderDetails {
   id: string;
@@ -57,7 +57,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     console.log('🔍 GET-ORDER-DETAILS: Fetching order details for:', orderNumber);
 
-    const supabase = createClient(req, res);
+    const supabase = createAdminClient();
 
     // Get order details
     const { data: order, error: orderError } = await supabase
@@ -119,7 +119,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     console.log('🔍 GET-ORDER-DETAILS: Found', addOnItems?.length || 0, 'add-on items');
 
     // Transform order items to match the expected format
-    const transformedItems = orderItems?.map(item => ({
+    const transformedItems = orderItems?.map((item: any) => ({
       track: {
         id: item.track_id,
         title: item.track_title,
@@ -141,7 +141,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     })) || [];
 
     // Transform add-on items to match the expected format
-    const transformedAddOnItems = addOnItems?.map(item => ({
+    const transformedAddOnItems = addOnItems?.map((item: any) => ({
       id: item.addon_id,
       name: item.addon_name,
       emoji: item.emoji || '🎵',
