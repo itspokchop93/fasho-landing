@@ -36,8 +36,10 @@ export default function EmailEditor({ adminSession, accessDenied }: EmailEditorP
   const [template, setTemplate] = useState<EmailTemplate | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
+  const [isTestingEmail, setIsTestingEmail] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const [adminEmail, setAdminEmail] = useState<string>('');
 
   // Form state
   const [formData, setFormData] = useState({
@@ -86,8 +88,21 @@ export default function EmailEditor({ adminSession, accessDenied }: EmailEditorP
   useEffect(() => {
     if (trigger) {
       fetchTemplate();
+      fetchAdminEmail();
     }
   }, [trigger]);
+
+  const fetchAdminEmail = async () => {
+    try {
+      const response = await fetch('/api/admin/admin-settings');
+      if (response.ok) {
+        const data = await response.json();
+        setAdminEmail(data.settings?.admin_notification_email || '');
+      }
+    } catch (err) {
+      console.error('Error fetching admin email:', err);
+    }
+  };
 
   const fetchTemplate = async () => {
     try {
@@ -422,6 +437,42 @@ export default function EmailEditor({ adminSession, accessDenied }: EmailEditorP
     router.push('/admin#emails');
   };
 
+  const handleTestEmail = async () => {
+    try {
+      setIsTestingEmail(true);
+      setError(null);
+
+      const response = await fetch('/api/admin/test-email-template', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+        body: JSON.stringify({
+          trigger_type: trigger
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.details || data.error || 'Failed to send test email');
+      }
+
+      setSuccessMessage(`Test email sent successfully to ${adminEmail}`);
+      
+      // Clear success message after 5 seconds
+      setTimeout(() => setSuccessMessage(null), 5000);
+
+      console.log('📧 TEST-EMAIL: Successfully sent test email for:', trigger);
+    } catch (err) {
+      console.error('Error sending test email:', err);
+      setError(err instanceof Error ? err.message : 'Failed to send test email');
+    } finally {
+      setIsTestingEmail(false);
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -569,8 +620,16 @@ export default function EmailEditor({ adminSession, accessDenied }: EmailEditorP
                     />
                   </div>
 
-                  {/* Save Button */}
-                  <div className="flex justify-end">
+                  {/* Action Buttons */}
+                  <div className="flex justify-end space-x-4">
+                    <button
+                      onClick={handleTestEmail}
+                      disabled={isTestingEmail || !adminEmail || !template}
+                      className="bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      {isTestingEmail ? 'Sending...' : 'Send Test Email'}
+                    </button>
+                    
                     <button
                       onClick={handleSave}
                       disabled={isSaving}
@@ -630,6 +689,32 @@ export default function EmailEditor({ adminSession, accessDenied }: EmailEditorP
                     <code className="bg-gray-100 px-2 py-1 rounded text-xs">{'{{order_date}}'}</code>
                     <p className="text-gray-600 mt-1">Order creation date</p>
                   </div>
+                </div>
+              </div>
+
+              {/* Test Email Information */}
+              <div className="bg-white rounded-xl p-6 shadow-lg border border-gray-100">
+                <h3 className="text-lg font-semibold text-gray-900 mb-4">Test Email</h3>
+                <div className="space-y-3">
+                  <div>
+                    <p className="text-sm font-medium text-gray-700">Test Email Destination</p>
+                    <p className="text-sm text-gray-600">
+                      {adminEmail || 'Admin email not configured'}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-gray-700">What Happens</p>
+                    <p className="text-sm text-gray-600">
+                      The template will be sent with sample data to test how it looks and functions.
+                    </p>
+                  </div>
+                  {!adminEmail && (
+                    <div className="p-3 bg-orange-50 border border-orange-200 rounded-lg">
+                      <p className="text-sm text-orange-700">
+                        ⚠️ Configure admin email in settings to enable test emails.
+                      </p>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>

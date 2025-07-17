@@ -34,6 +34,7 @@ export default function AdminEmailManagement() {
   const [emailSettings, setEmailSettings] = useState<EmailNotificationSetting[]>([]);
   const [adminSettings, setAdminSettings] = useState<AdminSettings>({ admin_notification_email: '' });
   const [adminEmailSaving, setAdminEmailSaving] = useState(false);
+  const [testingEmails, setTestingEmails] = useState<{ [key: string]: boolean }>({});
 
   // Customer email notification types
   const customerEmailNotificationTypes = [
@@ -163,7 +164,7 @@ export default function AdminEmailManagement() {
       console.log('📧 ADMIN-EMAIL: Successfully loaded email data');
     } catch (err: any) {
       console.error('📧 ADMIN-EMAIL: Error fetching email data:', err);
-      setError(err.message || 'Failed to load email data');
+      setError(err.message || err.toString() || 'Failed to load email data');
     } finally {
       setIsLoading(false);
     }
@@ -276,6 +277,113 @@ export default function AdminEmailManagement() {
     }
   };
 
+  const handleTestEmail = async (triggerType: string) => {
+    try {
+      setTestingEmails(prev => ({ ...prev, [triggerType]: true }));
+      setError(null);
+
+      const response = await fetch('/api/admin/test-email-template', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+        body: JSON.stringify({
+          trigger_type: triggerType
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.details || data.error || 'Failed to send test email');
+      }
+
+      // Show success message
+      const successElement = document.createElement('div');
+      successElement.className = 'fixed top-4 right-4 bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded z-50';
+      successElement.innerHTML = `
+        <div class="flex items-center">
+          <span class="mr-2">✅</span>
+          <span>${data.message}</span>
+        </div>
+      `;
+      document.body.appendChild(successElement);
+      
+      // Remove success message after 5 seconds
+      setTimeout(() => {
+        if (document.body.contains(successElement)) {
+          document.body.removeChild(successElement);
+        }
+      }, 5000);
+
+      console.log('📧 TEST-EMAIL: Successfully sent test email for:', triggerType);
+    } catch (err) {
+      console.error('Error sending test email:', err);
+      setError(err instanceof Error ? err.message : 'Failed to send test email');
+    } finally {
+      setTestingEmails(prev => ({ ...prev, [triggerType]: false }));
+    }
+  };
+
+  const checkDatabaseTables = async () => {
+    try {
+      setError(null);
+      console.log('🔍 ADMIN-EMAIL: Checking database tables...');
+
+      const response = await fetch('/api/admin/check-email-tables', {
+        method: 'GET',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.details || data.error || 'Failed to check database tables');
+      }
+
+      // Show diagnostic results
+      const resultsElement = document.createElement('div');
+      resultsElement.className = 'fixed top-4 right-4 bg-blue-100 border border-blue-400 text-blue-700 px-4 py-3 rounded z-50 max-w-md';
+      
+      const missingTables = data.summary.missing_tables;
+      const allTablesExist = data.summary.all_tables_exist;
+      
+      resultsElement.innerHTML = `
+        <div>
+          <h4 class="font-medium mb-2">Database Check Results</h4>
+          <div class="text-sm space-y-1">
+            <div>email_templates: ${data.tables.email_templates.exists ? '✅' : '❌'} (${data.tables.email_templates.count} records)</div>
+            <div>email_notification_settings: ${data.tables.email_notification_settings.exists ? '✅' : '❌'} (${data.tables.email_notification_settings.count} records)</div>
+            <div>admin_settings: ${data.tables.admin_settings.exists ? '✅' : '❌'} (${data.tables.admin_settings.count} records)</div>
+            ${!allTablesExist ? `<div class="mt-2 text-red-700 font-medium">Missing tables: ${missingTables.join(', ')}</div>` : ''}
+          </div>
+        </div>
+      `;
+      document.body.appendChild(resultsElement);
+      
+      // Remove results after 10 seconds
+      setTimeout(() => {
+        if (document.body.contains(resultsElement)) {
+          document.body.removeChild(resultsElement);
+        }
+      }, 10000);
+
+      console.log('🔍 ADMIN-EMAIL: Database check completed:', data);
+
+      if (!allTablesExist) {
+        setError(`Missing database tables: ${missingTables.join(', ')}. Please run the email system migration.`);
+      }
+
+    } catch (err) {
+      console.error('Error checking database tables:', err);
+      setError(err instanceof Error ? err.message : 'Failed to check database tables');
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center p-8">
@@ -322,7 +430,13 @@ export default function AdminEmailManagement() {
             Configure email notifications for customers and admin alerts.
           </p>
         </div>
-        <div className="mt-4 sm:mt-0 sm:ml-16 sm:flex-none">
+        <div className="mt-4 sm:mt-0 sm:ml-16 sm:flex-none space-x-2">
+          <button
+            onClick={checkDatabaseTables}
+            className="inline-flex items-center justify-center rounded-md border border-transparent bg-yellow-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-yellow-700 focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:ring-offset-2"
+          >
+            Check Database
+          </button>
           <button
             onClick={fetchEmailData}
             className="inline-flex items-center justify-center rounded-md border border-transparent bg-blue-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
@@ -411,6 +525,14 @@ export default function AdminEmailManagement() {
                     </div>
                     
                     <button
+                      onClick={() => handleTestEmail(notificationType.trigger)}
+                      disabled={!template || !adminSettings.admin_notification_email || testingEmails[notificationType.trigger]}
+                      className="text-green-600 hover:text-green-800 text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      {testingEmails[notificationType.trigger] ? 'Sending...' : 'Send Test Email'}
+                    </button>
+                    
+                    <button
                       onClick={() => router.push(`/admin/emails/edit/${notificationType.trigger}`)}
                       className="text-blue-600 hover:text-blue-800 text-sm font-medium"
                     >
@@ -468,6 +590,14 @@ export default function AdminEmailManagement() {
                         {isActive ? 'Active' : 'Inactive'}
                       </span>
                     </div>
+                    
+                    <button
+                      onClick={() => handleTestEmail(notificationType.trigger)}
+                      disabled={!template || !adminSettings.admin_notification_email || testingEmails[notificationType.trigger]}
+                      className="text-green-600 hover:text-green-800 text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      {testingEmails[notificationType.trigger] ? 'Sending...' : 'Send Test Email'}
+                    </button>
                     
                     <button
                       onClick={() => router.push(`/admin/emails/edit/${notificationType.trigger}`)}
