@@ -6,6 +6,7 @@ import { useRouter } from 'next/router';
 import Lottie from 'lottie-react';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
+import IntakeFormModal from '../components/IntakeFormModal';
 
 interface OrderItem {
   track: {
@@ -63,6 +64,8 @@ export default function ThankYouPage() {
   const [showConfetti, setShowConfetti] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [timeRemaining, setTimeRemaining] = useState<number>(0);
+  const [showIntakeForm, setShowIntakeForm] = useState(false);
+  const [checkingIntakeStatus, setCheckingIntakeStatus] = useState(true);
 
   useEffect(() => {
     const loadOrderData = async () => {
@@ -190,10 +193,46 @@ export default function ThankYouPage() {
     loadConfettiAnimation();
   }, []);
 
-  // Trigger confetti animation when order data is loaded
+  // Check intake form status when order data is loaded
   useEffect(() => {
-    if (orderData && confettiAnimationData && !isLoading) {
-      console.log('🎉 CONFETTI: Triggering confetti animation');
+    const checkIntakeFormStatus = async () => {
+      if (!orderData || isLoading) return;
+
+      console.log('📋 THANK-YOU: Checking intake form status...');
+      setCheckingIntakeStatus(true);
+
+      try {
+        const response = await fetch('/api/intake-form/check-status');
+        const data = await response.json();
+
+        if (response.ok && data.success) {
+          console.log('📋 THANK-YOU: Intake form status:', { completed: data.completed });
+          
+          if (!data.completed) {
+            console.log('📋 THANK-YOU: Showing intake form modal');
+            setShowIntakeForm(true);
+          } else {
+            console.log('📋 THANK-YOU: User has already completed intake form');
+          }
+        } else {
+          console.error('📋 THANK-YOU: Failed to check intake form status:', data);
+          // Don't show the form if we can't check the status
+        }
+      } catch (error) {
+        console.error('📋 THANK-YOU: Error checking intake form status:', error);
+        // Don't show the form if there's an error
+      } finally {
+        setCheckingIntakeStatus(false);
+      }
+    };
+
+    checkIntakeFormStatus();
+  }, [orderData, isLoading]);
+
+  // Trigger confetti animation when order data is loaded (only if no intake form needed)
+  useEffect(() => {
+    if (orderData && confettiAnimationData && !isLoading && !showIntakeForm && !checkingIntakeStatus) {
+      console.log('🎉 CONFETTI: Triggering confetti animation (no intake form needed)');
       setShowConfetti(true);
       
       // Hide confetti after animation completes (approximately 5 seconds)
@@ -204,7 +243,22 @@ export default function ThankYouPage() {
 
       return () => clearTimeout(timer);
     }
-  }, [orderData, confettiAnimationData, isLoading]);
+  }, [orderData, confettiAnimationData, isLoading, showIntakeForm, checkingIntakeStatus]);
+
+  // Handle intake form completion
+  const handleIntakeFormComplete = (responses: Record<string, any>) => {
+    console.log('📋 THANK-YOU: Intake form completed:', responses);
+    setShowIntakeForm(false);
+    
+    // Trigger confetti when form closes
+    if (confettiAnimationData) {
+      console.log('🎉 CONFETTI: Triggering confetti after form completion');
+      setShowConfetti(true);
+      setTimeout(() => {
+        setShowConfetti(false);
+      }, 3000);
+    }
+  };
 
   if (isLoading) {
     return (
@@ -302,6 +356,8 @@ export default function ThankYouPage() {
       <Head>
         <title>Thank You – Fasho.co</title>
       </Head>
+      
+      <Header hideSignUp={true} />
       
       <main className="min-h-screen relative text-white pt-20 pb-12">
         {/* Confetti Animation - Full Screen */}
@@ -584,7 +640,16 @@ export default function ThankYouPage() {
           </div>
         </div>
       </main>
-      <Footer />
+      
+      <div className="relative z-50">
+        <Footer />
+      </div>
+
+      {/* Intake Form Modal */}
+      <IntakeFormModal 
+        isOpen={showIntakeForm && !checkingIntakeStatus}
+        onComplete={handleIntakeFormComplete}
+      />
     </>
   );
 } 
