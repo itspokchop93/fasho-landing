@@ -3591,7 +3591,7 @@ export default function Home() {
                 <h2 
                   ref={testimonialsHeadingRef}
                   className={`text-4xl md:text-5xl lg:text-6xl font-black mb-8 bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] bg-clip-text text-transparent transition-all duration-700 ${testimonialsHeadingInView ? 'animate-fade-in-up' : 'opacity-0 translate-y-8'}`} 
-                  style={{ lineHeight: '1.3' }}
+                  style={{ lineHeight: '1.3', marginTop: '-50px' }}
                 >
                   Real Artists. Real Results. Real Talk.
                 </h2>

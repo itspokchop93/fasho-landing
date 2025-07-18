@@ -25,27 +25,27 @@ const packages: Package[] = [
     id: "legendary",
     name: "LEGENDARY",
     price: 479,
-    plays: "125,000 - 150,000 Streams", 
+    plays: "125K - 150K Streams", 
     placements: "375 - 400 Playlist Pitches",
-    description: "Legendary status",
+    description: "",
     icon: "👑"
   },
   {
     id: "unstoppable",
     name: "UNSTOPPABLE",
     price: 259,
-    plays: "45,000 - 50,000 Streams", 
+    plays: "45K - 50K Streams", 
     placements: "150 - 170 Playlist Pitches",
-    description: "Become unstoppable",
+    description: "",
     icon: "💎"
   },
   {
     id: "dominate",
     name: "DOMINATE", 
     price: 149,
-    plays: "18,000 - 20,000 Streams",
+    plays: "18K - 20K Streams",
     placements: "60 - 70 Playlist Pitches",
-    description: "Dominate the charts",
+    description: "",
     icon: "🔥",
     popular: true
   },
@@ -53,18 +53,18 @@ const packages: Package[] = [
     id: "momentum", 
     name: "MOMENTUM",
     price: 79,
-    plays: "7,500 - 8,500 Streams",
+    plays: "7.5K - 8.5K Streams",
     placements: "25 - 30 Playlist Pitches",
-    description: "Build your momentum",
+    description: "",
     icon: "⚡"
   },
   {
     id: "breakthrough",
     name: "BREAKTHROUGH",
     price: 39,
-    plays: "3,000 - 3,500 Streams",
+    plays: "3K - 3.5K Streams",
     placements: "10 - 12 Playlist Pitches",
-    description: "Perfect for getting started",
+    description: "",
     icon: "🚀"
   }
 ];
@@ -86,6 +86,7 @@ export default function PackagesPage() {
   const [currentScale, setCurrentScale] = useState<number>(0);
   const [canScrollLeft, setCanScrollLeft] = useState(false); // Hide left arrow initially
   const [canScrollRight, setCanScrollRight] = useState(true); // Start with right arrow showing
+  const [scrollProgress, setScrollProgress] = useState(0); // Track scroll progress for progress bar
   const [songIndicatorKey, setSongIndicatorKey] = useState(0); // For triggering animation
   const [confettiAnimation, setConfettiAnimation] = useState<string | null>(null); // Track which package shows confetti
   const [confettiKey, setConfettiKey] = useState(0);
@@ -219,17 +220,51 @@ export default function PackagesPage() {
     }
     
     // Parse the exact range from package data
-    const playsNumbers = selected.plays.match(/[\d,]+/g);
+    const playsNumbers = selected.plays.match(/[\d,\.]+K?/g);
     const placementsNumbers = selected.placements.match(/\d+/g);
     
-    const minPlays = playsNumbers ? parseInt(playsNumbers[0].replace(/,/g, '')) : 0;
-    const maxPlays = playsNumbers && playsNumbers.length > 1 ? parseInt(playsNumbers[1].replace(/,/g, '')) : minPlays;
+    // Convert K format to actual numbers
+    const parseNumber = (numStr: string): number => {
+      const cleanNum = numStr.replace(/,/g, '');
+      if (cleanNum.includes('K')) {
+        return parseFloat(cleanNum.replace('K', '')) * 1000;
+      }
+      return parseInt(cleanNum);
+    };
+    
+    const minPlays = playsNumbers ? parseNumber(playsNumbers[0]) : 0;
+    const maxPlays = playsNumbers && playsNumbers.length > 1 ? parseNumber(playsNumbers[1]) : minPlays;
     
     const minPlacements = placementsNumbers ? parseInt(placementsNumbers[0]) : 0;
     const maxPlacements = placementsNumbers && placementsNumbers.length > 1 ? parseInt(placementsNumbers[1]) : minPlacements;
     
-    // Use exact plays range from package and calculate average placements
-    const playsRange = selected.plays;
+    // Generate realistic offset numbers that don't end with 00
+    const generateRealisticNumber = (baseNumber: number): number => {
+      // Create an offset between 8-18% of the base number
+      const offsetPercentage = 0.08 + Math.random() * 0.10; // 8-18%
+      const offset = Math.floor(baseNumber * offsetPercentage);
+      
+      // Add the offset and ensure it doesn't end with 00
+      let realisticNumber = baseNumber + offset;
+      
+      // If it ends with 00, adjust it
+      if (realisticNumber % 100 === 0) {
+        // Add a random number between 20-99 that doesn't end in 0
+        const adjustment = 20 + Math.floor(Math.random() * 70); // 20-89
+        realisticNumber += adjustment;
+      } else if (realisticNumber % 10 === 0) {
+        // If it ends with just one 0, add 1-9
+        realisticNumber += Math.floor(Math.random() * 9) + 1;
+      }
+      
+      return Math.floor(realisticNumber);
+    };
+    
+    // Generate realistic range for display
+    const realisticMinPlays = generateRealisticNumber(minPlays);
+    const realisticMaxPlays = generateRealisticNumber(maxPlays);
+    const playsRange = `${realisticMinPlays.toLocaleString()} - ${realisticMaxPlays.toLocaleString()} Streams`;
+    
     const avgPlacements = Math.round((minPlacements + maxPlacements) / 2);
     
     // Generate 30-day growth data
@@ -493,8 +528,13 @@ export default function PackagesPage() {
     const hasScrollableContent = scrollWidth > clientWidth;
     const finalShowRightArrow = showRightArrow || (hasScrollableContent && scrollLeft < 5);
     
+    // Calculate scroll progress (0 to 1)
+    const maxScrollLeft = scrollWidth - clientWidth;
+    const progress = maxScrollLeft > 0 ? scrollLeft / maxScrollLeft : 0;
+    
     setCanScrollLeft(showLeftArrow);
     setCanScrollRight(finalShowRightArrow);
+    setScrollProgress(progress);
   };
 
   const scrollCarousel = (direction: 'left' | 'right') => {
@@ -539,6 +579,28 @@ export default function PackagesPage() {
 
 
 
+  // Generate realistic offset numbers that don't end with 00
+  const generateRealisticNumber = (baseNumber: number): number => {
+    // Create an offset between 8-18% of the base number
+    const offsetPercentage = 0.08 + Math.random() * 0.10; // 8-18%
+    const offset = Math.floor(baseNumber * offsetPercentage);
+    
+    // Add the offset and ensure it doesn't end with 00
+    let realisticNumber = baseNumber + offset;
+    
+    // If it ends with 00, adjust it
+    if (realisticNumber % 100 === 0) {
+      // Add a random number between 20-99 that doesn't end in 0
+      const adjustment = 20 + Math.floor(Math.random() * 70); // 20-89
+      realisticNumber += adjustment;
+    } else if (realisticNumber % 10 === 0) {
+      // If it ends with just one 0, add 1-9
+      realisticNumber += Math.floor(Math.random() * 9) + 1;
+    }
+    
+    return Math.floor(realisticNumber);
+  };
+
   const getChartData = () => {
     const selected = packages.find(p => p.id === selectedPackage);
     
@@ -555,21 +617,36 @@ export default function PackagesPage() {
         placements: 0, 
         dailyData: emptyDailyData, 
         playsRange: "", 
-        maxPlays: 0 
+        realisticPlaysRange: "",
+        maxPlays: 0
       };
     }
     
-    // Parse the range format (e.g., "3,000 - 3,500 Streams")
-    const playsNumbers = selected.plays.match(/[\d,]+/g);
+    // Parse the range format (e.g., "125K - 150K Streams" or "3,000 - 3,500 Streams")
+    const playsNumbers = selected.plays.match(/[\d,\.]+K?/g);
     const placementsNumbers = selected.placements.match(/\d+/g);
     
-    const minPlays = playsNumbers ? parseInt(playsNumbers[0].replace(/,/g, '')) : 0;
-    const maxPlays = playsNumbers && playsNumbers.length > 1 ? parseInt(playsNumbers[1].replace(/,/g, '')) : minPlays;
+    // Convert K format to actual numbers
+    const parseNumber = (numStr: string): number => {
+      const cleanNum = numStr.replace(/,/g, '');
+      if (cleanNum.includes('K')) {
+        return parseFloat(cleanNum.replace('K', '')) * 1000;
+      }
+      return parseInt(cleanNum);
+    };
+    
+    const minPlays = playsNumbers ? parseNumber(playsNumbers[0]) : 0;
+    const maxPlays = playsNumbers && playsNumbers.length > 1 ? parseNumber(playsNumbers[1]) : minPlays;
     
     const minPlacements = placementsNumbers ? parseInt(placementsNumbers[0]) : 0;
     const maxPlacements = placementsNumbers && placementsNumbers.length > 1 ? parseInt(placementsNumbers[1]) : minPlacements;
     
-    // Use the exact plays range from package
+    // Generate realistic range for Expected Total Plays display
+    const realisticMinPlays = generateRealisticNumber(minPlays);
+    const realisticMaxPlays = generateRealisticNumber(maxPlays);
+    const realisticPlaysRange = `${realisticMinPlays.toLocaleString()} - ${realisticMaxPlays.toLocaleString()} Streams`;
+    
+    // Use the exact plays range from package for Y-axis scaling (keep flat numbers)
     const playsRange = selected.plays;
     
     // Calculate the average/middle ground for playlist placements
@@ -587,13 +664,14 @@ export default function PackagesPage() {
       });
     }
     
-    return {
-      plays: maxPlays,
-      placements: avgPlacements,
-      dailyData,
-      playsRange,
-      maxPlays
-    };
+          return {
+        plays: maxPlays,
+        placements: avgPlacements,
+        dailyData,
+        playsRange,
+        realisticPlaysRange,
+        maxPlays
+      };
   };
 
   const getYAxisLabels = (maxValue: number) => {
@@ -707,12 +785,12 @@ export default function PackagesPage() {
             </div>
 
             {/* Mobile: Package carousel */}
-            <div className="mb-8 relative">
+            <div className="md:hidden mb-8 relative">
               {/* Left arrow */}
               {canScrollLeft && (
                 <button
                   onClick={() => scrollCarousel('left')}
-                  className="absolute left-4 top-1/2 -translate-y-1/2 z-50 bg-black/70 backdrop-blur-sm rounded-full p-2 border border-white/20 shadow-lg animate-bounce-left"
+                  className="absolute left-2 top-1/2 -translate-y-1/2 z-50 bg-black/80 backdrop-blur-sm rounded-full p-2 border border-white/20 shadow-lg hover:bg-black/90 transition-all duration-300"
                 >
                   <svg className="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
@@ -724,7 +802,7 @@ export default function PackagesPage() {
               {canScrollRight && (
                 <button
                   onClick={() => scrollCarousel('right')}
-                  className="absolute right-4 top-1/2 -translate-y-1/2 z-50 bg-black/70 backdrop-blur-sm rounded-full p-2 border border-white/20 shadow-lg animate-bounce-right"
+                  className="absolute right-2 top-1/2 -translate-y-1/2 z-50 bg-black/80 backdrop-blur-sm rounded-full p-2 border border-white/20 shadow-lg hover:bg-black/90 transition-all duration-300"
                 >
                   <svg className="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
@@ -734,16 +812,17 @@ export default function PackagesPage() {
               
               <div 
                 ref={carouselRef}
-                className="overflow-x-auto scrollbar-hide cursor-grab active:cursor-grabbing"
+                className="overflow-x-auto scrollbar-hide cursor-grab active:cursor-grabbing pb-3"
                 style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+                onScroll={checkScrollArrows}
               >
-                <div className="flex gap-4 px-4 pt-6 pb-2" style={{ width: 'max-content' }}>
+                <div className="flex gap-4 px-4 py-6" style={{ width: 'max-content' }}>
                   {packages.map((pkg) => (
                     <div
                       key={pkg.id}
                       onClick={() => handlePackageSelect(pkg.id)}
-                      className={`relative cursor-pointer rounded-xl transition-all duration-300 flex-shrink-0 ${
-                        pkg.popular ? '' : 'p-4 border-2'
+                      className={`relative cursor-pointer rounded-xl transition-all duration-300 flex-shrink-0 hover:-translate-y-1 ${
+                        pkg.popular ? '' : 'border-2'
                       } ${
                         selectedPackage === pkg.id && !pkg.popular
                           ? 'border-[#59e3a5] bg-[#59e3a5]/5'
@@ -751,7 +830,11 @@ export default function PackagesPage() {
                           ? 'border-white/20 bg-white/5 hover:border-white/40'
                           : ''
                       }`}
-                      style={{ width: 'calc(85vw - 1rem)', minWidth: '280px' }}
+                      style={{ 
+                        width: '240px', 
+                        height: '240px',
+                        aspectRatio: '1 / 1' 
+                      }}
                     >
                       {/* Confetti Animation Overlay */}
                       {confettiAnimation === pkg.id && confettiData && (
@@ -774,172 +857,107 @@ export default function PackagesPage() {
                           />
                         </div>
                       )}
+                      
                       {/* Lens flare animation for Popular package */}
                       {pkg.popular && (
                         <>
                           {/* Outer glow layer */}
-                          <div className="absolute -inset-1 bg-gradient-to-r from-blue-400 via-cyan-500 to-blue-600 rounded-2xl blur-lg opacity-50 animate-pulse"></div>
+                          <div className="absolute -inset-0.5 bg-gradient-to-r from-blue-400 via-cyan-500 to-blue-600 rounded-2xl blur-sm opacity-30 animate-pulse"></div>
                           
                           {/* Animated border layer */}
                           <div className="absolute -inset-0.5 rounded-xl overflow-hidden">
                             <div className="absolute inset-0 border-container-blue">
-                              <div className="absolute -inset-[100px] animate-spin-slow border-highlight-blue"></div>
+                              <div className="absolute -inset-[20px] animate-spin-slow border-highlight-blue"></div>
                             </div>
                           </div>
                         </>
                       )}
                       
-                      {/* Most Popular flag for Advanced package */}
+                      {/* Most Popular flag */}
                       {pkg.popular && (
-                        <div className="absolute -top-2 left-1/2 -translate-x-1/2 bg-gradient-to-r from-[#14c0ff] to-[#59e3a5] text-white text-xs font-semibold px-4 py-1 rounded-md shadow-lg z-30 whitespace-nowrap">
+                        <div className="absolute -top-3 -right-3 bg-gradient-to-r from-[#14c0ff] to-[#59e3a5] text-white text-xs font-semibold px-3 py-1 rounded-md shadow-lg z-30">
                           Most Popular
                         </div>
                       )}
+                      
+                      {/* Selected checkmark */}
                       {selectedPackage === pkg.id && (
                         <div className="absolute -top-2 -left-2 w-6 h-6 bg-[#59e3a5] rounded-full flex items-center justify-center z-30">
                           <span className="text-black text-sm font-bold">✓</span>
                         </div>
                       )}
                       
-                      {/* Content container - Horizontal layout for all packages */}
-                      <div className={`${pkg.popular ? `relative z-20 bg-gray-900 rounded-xl p-4 border h-full flex ${selectedPackage === pkg.id ? 'border-[#59e3a5]' : 'border-white/20'}` : 'h-full flex'}`}>
-                        {/* Left side - Icon and Price */}
-                        <div className="flex flex-col items-center justify-center mr-4 min-w-[80px]">
-                          <div className="w-12 h-12 bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] rounded-full flex items-center justify-center mb-2">
-                            <span className="text-lg">{pkg.icon}</span>
+                      {/* Content container - Vertical baseball card layout */}
+                      <div className={`h-full p-2 pb-4 flex flex-col ${pkg.popular ? 'relative z-20 bg-gray-900 rounded-xl border' : ''} ${
+                        pkg.popular && selectedPackage === pkg.id ? 'border-[#59e3a5]' : pkg.popular ? 'border-white/20' : ''
+                      }`}>
+                        
+                        {/* Top - Icon and Price */}
+                        <div className="flex flex-col items-center text-center mb-1">
+                          <div className="w-14 h-14 flex items-center justify-center mb-1">
+                            <span className="text-3xl">{pkg.icon}</span>
                           </div>
-                          <div className="text-center">
+                          <div>
                             {isDiscountedSong ? (
                               <div className="space-y-1">
                                 <div className="text-xs text-white/50 line-through">${pkg.price}</div>
-                                <div className="text-lg font-bold bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] bg-clip-text text-transparent">
+                                <div className="text-lg font-bold bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] bg-clip-text text-transparent" style={{fontSize: 'calc(1.125rem + 0.15rem + 0.25rem)'}}>
                                   ${getDiscountedPrice(pkg.price)}
                                 </div>
                               </div>
                             ) : (
-                              <span className="text-lg font-bold">${pkg.price}</span>
+                              <span className="font-bold text-white" style={{fontSize: 'calc(1.125rem - 0.12rem + 0.15rem + 0.25rem)'}}>${pkg.price}</span>
                             )}
                           </div>
                         </div>
                         
-                        {/* Right side - Content */}
-                        <div className="flex-1 flex flex-col justify-center">
-                          <h3 className="text-base font-bold mb-1">{pkg.name}</h3>
-                          <div className="space-y-1 mb-2">
-                            <div className="text-xs text-white/80">{pkg.plays}</div>
-                            <div className="text-xs text-white/80">{pkg.placements}</div>
-                          </div>
-                          <p className="text-xs text-white/60">{pkg.description}</p>
+                        {/* Middle - Package name */}
+                        <div className="text-center" style={{marginBottom: '5px'}}>
+                          <h3 className="font-black bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] bg-clip-text text-transparent" 
+                              style={{fontSize: ['legendary', 'dominate', 'momentum'].includes(pkg.id) ? 'calc(0.875rem + 0.18rem + 0.12rem + 0.2rem + 0.15rem - 0.1rem)' : pkg.id === 'unstoppable' ? 'calc(0.875rem + 0.12rem + 0.12rem + 0.2rem + 0.15rem - 0.1rem)' : 'calc(0.875rem + 0.12rem + 0.2rem + 0.15rem - 0.1rem)', fontWeight: '900'}}>
+                            {pkg.name}
+                          </h3>
                         </div>
-                      </div>
-                    </div>
-                                  ))}
-              </div>
-                
-              {/* Bottom row - 2 remaining packages centered */}
-              <div className="grid grid-cols-2 gap-4 max-w-lg mx-auto">
-                {packages.slice(3, 5).map((pkg) => (
-                  <div
-                    key={pkg.id}
-                    onClick={() => handlePackageSelect(pkg.id)}
-                    className={`relative cursor-pointer rounded-xl transition-all duration-300 hover:-translate-y-1 ${
-                      pkg.popular ? '' : 'p-4 border-2'
-                    } ${
-                      selectedPackage === pkg.id && !pkg.popular
-                        ? 'border-[#59e3a5] bg-[#59e3a5]/5'
-                        : !pkg.popular
-                        ? 'border-white/20 bg-white/5 hover:border-white/40'
-                        : ''
-                    }`}
-                    style={{ aspectRatio: '1 / 1.4' }}
-                  >
-                    {/* Confetti Animation Overlay */}
-                    {confettiAnimation === pkg.id && confettiData && (
-                      <div 
-                        key={confettiKey}
-                        className="absolute inset-0 z-50 pointer-events-none rounded-xl overflow-hidden"
-                      >
-                        <Lottie
-                          ref={lottieRef}
-                          animationData={confettiData}
-                          loop={false}
-                          autoplay={true}
-                          style={{
-                            width: '100%',
-                            height: '100%',
-                            position: 'absolute',
-                            top: 0,
-                            left: 0,
-                          }}
-                        />
-                      </div>
-                    )}
-                    {/* Lens flare animation for Popular package */}
-                    {pkg.popular && (
-                      <>
-                        {/* Outer glow layer */}
-                        <div className="absolute -inset-1 bg-gradient-to-r from-blue-400 via-cyan-500 to-blue-600 rounded-2xl blur-lg opacity-50 animate-pulse"></div>
                         
-                        {/* Animated border layer */}
-                        <div className="absolute -inset-0.5 rounded-xl overflow-hidden">
-                          <div className="absolute inset-0 border-container-blue">
-                            <div className="absolute -inset-[100px] animate-spin-slow border-highlight-blue"></div>
+                        {/* Bottom - Features */}
+                        <div className="flex-1 flex flex-col justify-center">
+                          <div style={{display: 'flex', flexDirection: 'column', gap: '8px'}}>
+                            <div className="flex items-center text-white/80 justify-center" style={{fontSize: 'calc(0.75rem + 0.2rem + 0.15rem - 0.08rem)', fontWeight: '700'}}>
+                              <div className="w-3 h-3 bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] rounded-full flex items-center justify-center mr-2 flex-shrink-0">
+                                <span className="text-black text-xs font-bold">✓</span>
+                              </div>
+                              <span>{pkg.plays}</span>
+                            </div>
+                            <div className="flex items-center text-white/80 justify-center" style={{fontSize: 'calc(0.75rem + 0.2rem)', fontWeight: '700', marginBottom: '8px'}}>
+                              <div className="w-3 h-3 bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] rounded-full flex items-center justify-center mr-2 flex-shrink-0">
+                                <span className="text-black text-xs font-bold">✓</span>
+                              </div>
+                              <span>{pkg.placements}</span>
+                            </div>
                           </div>
                         </div>
-                      </>
-                    )}
-                    
-                    {/* Most Popular flag */}
-                    {pkg.popular && (
-                      <div className="absolute -top-3 -right-3 bg-gradient-to-r from-[#14c0ff] to-[#59e3a5] text-white text-xs font-semibold px-3 py-1 rounded-md shadow-lg z-30">
-                        Most Popular
-                      </div>
-                    )}
-                    {selectedPackage === pkg.id && (
-                      <div className="absolute -top-2 -left-2 w-6 h-6 bg-[#59e3a5] rounded-full flex items-center justify-center z-30">
-                        <span className="text-black text-sm font-bold">✓</span>
-                      </div>
-                    )}
-                    
-                    {/* Content container - Vertical baseball card layout */}
-                    <div className={`h-full ${pkg.popular ? `relative z-20 bg-gray-900 rounded-xl p-4 border flex flex-col ${selectedPackage === pkg.id ? 'border-[#59e3a5]' : 'border-white/20'}` : 'p-4 flex flex-col'}`}>
-                      {/* Top - Icon and Price */}
-                      <div className="flex flex-col items-center text-center mb-4">
-                        <div className="w-12 h-12 bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] rounded-full flex items-center justify-center mb-2">
-                          <span className="text-xl">{pkg.icon}</span>
-                        </div>
-                        <div>
-                          {isDiscountedSong ? (
-                            <div className="space-y-1">
-                              <div className="text-xs text-white/50 line-through">${pkg.price}</div>
-                              <div className="text-lg font-bold bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] bg-clip-text text-transparent">
-                                ${getDiscountedPrice(pkg.price)}
-                              </div>
-                            </div>
-                          ) : (
-                            <span className="text-lg font-bold">${pkg.price}</span>
-                          )}
-                        </div>
-                      </div>
-                      
-                      {/* Middle - Content */}
-                      <div className="flex-1 text-center">
-                        <h3 className="text-sm font-bold mb-2">{pkg.name}</h3>
-                        <div className="space-y-1 mb-2">
-                          <div className="text-xs text-white/80">{pkg.plays}</div>
-                          <div className="text-xs text-white/80">{pkg.placements}</div>
-                        </div>
-                        <p className="text-xs text-white/60">{pkg.description}</p>
                       </div>
                     </div>
-                  </div>
-                ))}
+                  ))}
+                </div>
               </div>
-            </div>
+              
+              {/* Scrollbar */}
+              <div className="relative mx-4 mt-2">
+                <div className="h-1 bg-white/10 rounded-full relative overflow-hidden">
+                  <div 
+                    className="absolute h-full bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] rounded-full transition-all duration-300"
+                    style={{
+                      width: '30%', // Fixed width for the scrollbar thumb
+                      left: `${Math.min(70, (scrollProgress * 70))}%` // Move along the track
+                    }}
+                  />
+                </div>
+              </div>
             </div>
 
             {/* Mobile: Chart section */}
-            <div className="bg-white/5 rounded-xl p-6 border border-white/20 mb-8">
+            <div className="md:hidden bg-white/5 rounded-xl p-6 border border-white/20 mb-8">
               <h3 className="text-lg font-semibold mb-4">Based on past campaigns</h3>
               
               <div className="space-y-6">
@@ -947,7 +965,7 @@ export default function PackagesPage() {
                   <div>
                     <div className="text-sm text-white/70">Expected Total Plays</div>
                     <div className="text-xl font-bold text-[#59e3a5] transition-all duration-500">
-                      {animatedPlays || chartData.playsRange || "Select a package"}
+                      {animatedPlays || chartData.realisticPlaysRange || "Select a package"}
                     </div>
                   </div>
                   <div>
@@ -1048,7 +1066,7 @@ export default function PackagesPage() {
             </div>
 
             {/* Mobile: Action buttons */}
-            <div className="space-y-4">
+            <div className="md:hidden space-y-4">
               <button
                 onClick={handleNext}
                 disabled={!selectedPackage || isAuthLoading}
@@ -1086,108 +1104,226 @@ export default function PackagesPage() {
           </div>
 
           {/* Desktop Layout */}
-          <div className="hidden md:grid grid-cols-1 lg:grid-cols-2 gap-12 items-start">
+          <div className="hidden md:grid grid-cols-1 lg:grid-cols-[3fr_2fr] gap-12 items-start">
             {/* Left side - Package selection */}
             <div className="space-y-8">
               {/* Package cards - Baseball card style */}
-              <div className="grid grid-cols-3 gap-4 mb-4">
-                {/* Top row - 3 most expensive packages */}
-                {packages.slice(0, 3).map((pkg) => (
-                  <div
-                    key={pkg.id}
-                    onClick={() => handlePackageSelect(pkg.id)}
-                    className={`relative cursor-pointer rounded-xl transition-all duration-300 hover:-translate-y-1 ${
-                      pkg.popular ? '' : 'p-4 border-2'
-                    } ${
-                      selectedPackage === pkg.id && !pkg.popular
-                        ? 'border-[#59e3a5] bg-[#59e3a5]/5'
-                        : !pkg.popular
-                        ? 'border-white/20 bg-white/5 hover:border-white/40'
-                        : ''
-                    }`}
-                    style={{ aspectRatio: '1 / 1.4' }}
-                  >
-                    {/* Confetti Animation Overlay */}
-                    {confettiAnimation === pkg.id && confettiData && (
-                      <div 
-                        key={confettiKey}
-                        className="absolute inset-0 z-50 pointer-events-none rounded-xl overflow-hidden"
-                      >
-                        <Lottie
-                          ref={lottieRef}
-                          animationData={confettiData}
-                          loop={false}
-                          autoplay={true}
-                          style={{
-                            width: '100%',
-                            height: '100%',
-                            position: 'absolute',
-                            top: 0,
-                            left: 0,
-                          }}
-                        />
-                      </div>
-                    )}
-                    {/* Lens flare animation for Popular package */}
-                    {pkg.popular && (
-                      <>
-                        {/* Outer glow layer */}
-                        <div className="absolute -inset-1 bg-gradient-to-r from-blue-400 via-cyan-500 to-blue-600 rounded-2xl blur-lg opacity-50 animate-pulse"></div>
-                        
-                        {/* Animated border layer */}
-                        <div className="absolute -inset-0.5 rounded-xl overflow-hidden">
-                          <div className="absolute inset-0 border-container-blue">
-                            <div className="absolute -inset-[100px] animate-spin-slow border-highlight-blue"></div>
-                          </div>
-                        </div>
-                      </>
-                    )}
-                    
-                    {/* Most Popular flag */}
-                    {pkg.popular && (
-                      <div className="absolute -top-3 -right-3 bg-gradient-to-r from-[#14c0ff] to-[#59e3a5] text-white text-xs font-semibold px-3 py-1 rounded-md shadow-lg z-30">
-                        Most Popular
-                      </div>
-                    )}
-                    {selectedPackage === pkg.id && (
-                      <div className="absolute -top-2 -left-2 w-6 h-6 bg-[#59e3a5] rounded-full flex items-center justify-center z-30">
-                        <span className="text-black text-sm font-bold">✓</span>
-                      </div>
-                    )}
-                    
-                    {/* Content container - Vertical baseball card layout */}
-                    <div className={`h-full ${pkg.popular ? `relative z-20 bg-gray-900 rounded-xl p-4 border flex flex-col ${selectedPackage === pkg.id ? 'border-[#59e3a5]' : 'border-white/20'}` : 'p-4 flex flex-col'}`}>
-                      {/* Top - Icon and Price */}
-                      <div className="flex flex-col items-center text-center mb-4">
-                        <div className="w-12 h-12 bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] rounded-full flex items-center justify-center mb-2">
-                          <span className="text-xl">{pkg.icon}</span>
-                        </div>
-                        <div>
-                          {isDiscountedSong ? (
-                            <div className="space-y-1">
-                              <div className="text-xs text-white/50 line-through">${pkg.price}</div>
-                              <div className="text-lg font-bold bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] bg-clip-text text-transparent">
-                                ${getDiscountedPrice(pkg.price)}
+              <div className="space-y-6 mb-4">
+                {/* Helper function to format streams with K */}
+                {(() => {
+                  const formatStreamsForDisplay = (streams: string) => {
+                    return streams.replace(/(\d{1,3}),(\d{3})/g, (match, num1, num2) => {
+                      const fullNumber = parseInt(num1 + num2);
+                      return `${fullNumber / 1000}K`;
+                    });
+                  };
+
+                  return (
+                    <>
+                      {/* Top row - 3 packages */}
+                      <div className="grid grid-cols-3 gap-6">
+                        {packages.slice(0, 3).map((pkg) => (
+                          <div
+                            key={pkg.id}
+                            onClick={() => handlePackageSelect(pkg.id)}
+                            className={`relative cursor-pointer rounded-xl transition-all duration-300 hover:-translate-y-1 ${
+                              pkg.popular ? '' : 'border-2'
+                            } ${
+                              selectedPackage === pkg.id && !pkg.popular
+                                ? 'border-[#59e3a5] bg-[#59e3a5]/5'
+                                : !pkg.popular
+                                ? 'border-white/20 bg-white/5 hover:border-white/40'
+                                : ''
+                                                            }`}
+                                style={{ minHeight: '200px', aspectRatio: '1 / 1.1' }}
+                              >
+                                {/* Confetti Animation Overlay */}
+                                {confettiAnimation === pkg.id && confettiData && (
+                              <div 
+                                key={confettiKey}
+                                className="absolute inset-0 z-50 pointer-events-none rounded-xl overflow-hidden"
+                              >
+                                <Lottie
+                                  ref={lottieRef}
+                                  animationData={confettiData}
+                                  loop={false}
+                                  autoplay={true}
+                                  style={{
+                                    width: '100%',
+                                    height: '100%',
+                                    position: 'absolute',
+                                    top: 0,
+                                    left: 0,
+                                  }}
+                                />
                               </div>
+                            )}
+                            
+                            {/* Lens flare animation for Popular package with reduced opacity */}
+                            {pkg.popular && (
+                              <>
+                                {/* Outer glow layer - reduced spread (blur-md to blur-sm, -inset-1 to -inset-0.5) */}
+                                <div className="absolute -inset-0.5 bg-gradient-to-r from-blue-400 via-cyan-500 to-blue-600 rounded-2xl blur-sm opacity-30 animate-pulse"></div>
+                                
+                                {/* Animated border layer */}
+                                <div className="absolute -inset-0.5 rounded-xl overflow-hidden">
+                                  <div className="absolute inset-0 border-container-blue">
+                                    <div className="absolute -inset-[20px] animate-spin-slow border-highlight-blue"></div>
+                                  </div>
+                                </div>
+                              </>
+                            )}
+                            
+                            {/* Most Popular flag */}
+                            {pkg.popular && (
+                              <div className="absolute -top-3 -right-3 bg-gradient-to-r from-[#14c0ff] to-[#59e3a5] text-white text-xs font-semibold px-3 py-1 rounded-md shadow-lg z-30">
+                                Most Popular
+                              </div>
+                            )}
+                            
+                            {selectedPackage === pkg.id && (
+                              <div className="absolute -top-2 -left-2 w-6 h-6 bg-[#59e3a5] rounded-full flex items-center justify-center z-30">
+                                <span className="text-black text-sm font-bold">✓</span>
+                              </div>
+                            )}
+                            
+                            {/* Content container */}
+                            <div className={`h-full ${pkg.popular ? `relative z-20 bg-gray-900 rounded-xl p-5 pb-8 border flex flex-col ${selectedPackage === pkg.id ? 'border-[#59e3a5]' : 'border-white/20'}` : 'p-5 pb-8 flex flex-col'}`}>
+                              {/* Top - Icon and Price */}
+                              <div className="flex flex-col items-center text-center mb-2">
+                                <div className="w-18 h-18 flex items-center justify-center mb-3">
+                                  <span className="text-4xl">{pkg.icon}</span>
+                                </div>
+                                <div>
+                                  {isDiscountedSong ? (
+                                    <div className="space-y-1">
+                                      <div className="text-sm text-white/50 line-through">${pkg.price}</div>
+                                      <div className="font-bold bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] bg-clip-text text-transparent" style={{fontSize: 'calc(1.25rem + 0.35rem - 0.12rem)'}}>
+                                        ${getDiscountedPrice(pkg.price)}
+                                      </div>
+                                    </div>
+                                  ) : (
+                                    <span className="font-bold" style={{fontSize: 'calc(1.25rem + 0.35rem - 0.12rem)'}}>${pkg.price}</span>
+                                  )}
+                                </div>
+                              </div>
+                              
+                              {/* Middle - Package Name */}
+                              <div className="text-center mb-4">
+                                <h3 className="font-bold bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] bg-clip-text text-transparent" style={{fontSize: ['legendary', 'dominate', 'momentum'].includes(pkg.id) ? 'calc(1rem + 0.2rem + 0.18rem)' : pkg.id === 'unstoppable' ? 'calc(1rem + 0.2rem + 0.12rem)' : 'calc(1rem + 0.2rem)'}}>{pkg.name}</h3>
+                              </div>
+                              
+                                                             {/* Bottom - Features with checkmarks */}
+                               <div className="space-y-2">
+                                 <div className="flex items-center text-sm text-white/90">
+                                   <div className="w-4 h-4 bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] rounded-full flex items-center justify-center mr-2 flex-shrink-0">
+                                     <span className="text-black text-xs font-bold">✓</span>
+                                   </div>
+                                   <span>{formatStreamsForDisplay(pkg.plays)}</span>
+                                 </div>
+                                 <div className={`flex items-center text-sm text-white/90 ${['unstoppable', 'dominate'].includes(pkg.id) ? '' : 'mb-4'}`}>
+                                   <div className="w-4 h-4 bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] rounded-full flex items-center justify-center mr-2 flex-shrink-0">
+                                     <span className="text-black text-xs font-bold">✓</span>
+                                   </div>
+                                   <span>{pkg.placements}</span>
+                                 </div>
+                               </div>
                             </div>
-                          ) : (
-                            <span className="text-lg font-bold">${pkg.price}</span>
-                          )}
-                        </div>
+                          </div>
+                        ))}
                       </div>
                       
-                      {/* Middle - Content */}
-                      <div className="flex-1 text-center">
-                        <h3 className="text-sm font-bold mb-2">{pkg.name}</h3>
-                        <div className="space-y-1 mb-2">
-                          <div className="text-xs text-white/80">{pkg.plays}</div>
-                          <div className="text-xs text-white/80">{pkg.placements}</div>
-                        </div>
-                        <p className="text-xs text-white/60">{pkg.description}</p>
-                      </div>
-                    </div>
-                  </div>
-                ))}
+                      {/* Bottom row - 2 packages centered */}
+                      <div className="flex justify-center">
+                        <div className="grid grid-cols-2 gap-6 max-w-2xl">
+                          {packages.slice(3, 5).map((pkg) => (
+                            <div
+                              key={pkg.id}
+                              onClick={() => handlePackageSelect(pkg.id)}
+                              className={`relative cursor-pointer rounded-xl transition-all duration-300 hover:-translate-y-1 border-2 ${
+                                selectedPackage === pkg.id
+                                  ? 'border-[#59e3a5] bg-[#59e3a5]/5'
+                                  : 'border-white/20 bg-white/5 hover:border-white/40'
+                              }`}
+                              style={{ minHeight: '200px', aspectRatio: '1 / 1.1' }}
+                            >
+                              {/* Confetti Animation Overlay */}
+                              {confettiAnimation === pkg.id && confettiData && (
+                                <div 
+                                  key={confettiKey}
+                                  className="absolute inset-0 z-50 pointer-events-none rounded-xl overflow-hidden"
+                                >
+                                  <Lottie
+                                    ref={lottieRef}
+                                    animationData={confettiData}
+                                    loop={false}
+                                    autoplay={true}
+                                    style={{
+                                      width: '100%',
+                                      height: '100%',
+                                      position: 'absolute',
+                                      top: 0,
+                                      left: 0,
+                                    }}
+                                  />
+                                </div>
+                              )}
+                              
+                              {selectedPackage === pkg.id && (
+                                <div className="absolute -top-2 -left-2 w-6 h-6 bg-[#59e3a5] rounded-full flex items-center justify-center z-30">
+                                  <span className="text-black text-sm font-bold">✓</span>
+                                </div>
+                              )}
+                              
+                              {/* Content container */}
+                              <div className="h-full p-5 pb-8 flex flex-col">
+                                {/* Top - Icon and Price */}
+                                <div className="flex flex-col items-center text-center mb-2">
+                                  <div className="w-18 h-18 flex items-center justify-center mb-3">
+                                    <span className="text-4xl">{pkg.icon}</span>
+                                  </div>
+                                  <div>
+                                    {isDiscountedSong ? (
+                                      <div className="space-y-1">
+                                        <div className="text-sm text-white/50 line-through">${pkg.price}</div>
+                                        <div className="font-bold bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] bg-clip-text text-transparent" style={{fontSize: 'calc(1.25rem + 0.35rem)'}}>
+                                          ${getDiscountedPrice(pkg.price)}
+                                        </div>
+                                      </div>
+                                                                          ) : (
+                                      <span className="font-bold" style={{fontSize: 'calc(1.25rem + 0.35rem - 0.12rem)'}}>${pkg.price}</span>
+                                    )}
+                                  </div>
+                                </div>
+                                
+                                {/* Middle - Package Name */}
+                                <div className="text-center mb-4">
+                                  <h3 className="font-bold bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] bg-clip-text text-transparent" style={{fontSize: ['legendary', 'dominate', 'momentum'].includes(pkg.id) ? 'calc(1rem + 0.2rem + 0.18rem)' : pkg.id === 'unstoppable' ? 'calc(1rem + 0.2rem + 0.12rem)' : 'calc(1rem + 0.2rem)'}}>{pkg.name}</h3>
+                                </div>
+                                
+                                                                 {/* Bottom - Features with checkmarks */}
+                                 <div className="space-y-2">
+                                   <div className="flex items-center text-sm text-white/90">
+                                     <div className="w-4 h-4 bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] rounded-full flex items-center justify-center mr-2 flex-shrink-0">
+                                       <span className="text-black text-xs font-bold">✓</span>
+                                     </div>
+                                     <span>{formatStreamsForDisplay(pkg.plays)}</span>
+                                   </div>
+                                   <div className={`flex items-center text-sm text-white/90 ${['unstoppable', 'dominate'].includes(pkg.id) ? '' : 'mb-4'}`}>
+                                     <div className="w-4 h-4 bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] rounded-full flex items-center justify-center mr-2 flex-shrink-0">
+                                       <span className="text-black text-xs font-bold">✓</span>
+                                     </div>
+                                     <span>{pkg.placements}</span>
+                                   </div>
+                                 </div>
+                               </div>
+                             </div>
+                           ))}
+                         </div>
+                       </div>
+                    </>
+                  );
+                })()}
               </div>
 
                              {/* Chart section */}
@@ -1199,7 +1335,7 @@ export default function PackagesPage() {
                      <div>
                        <div className="text-sm text-white/70">Expected Total Plays</div>
                        <div className="text-2xl font-bold text-[#59e3a5] transition-all duration-500">
-                         {animatedPlays || chartData.playsRange || "Select a package"}
+                         {animatedPlays || chartData.realisticPlaysRange || "Select a package"}
                        </div>
                      </div>
                      <div>
@@ -1376,6 +1512,697 @@ export default function PackagesPage() {
           </div>
         </div>
         </div>
+
+        {/* Shape Divider Section - Full Width */}
+        <div className="w-full">
+          {/* Flowing Shape Divider - Curves on Both Sides */}
+          <div className="relative z-30" style={{ height: '200px', width: '110vw', left: '-5vw', transform: 'rotate(-3deg)', background: 'transparent', marginTop: '60px' }}>
+            {/* Background foundation */}
+            <div className="absolute inset-0 z-30" style={{ background: 'transparent' }}></div>
+            
+            {/* Base layer - darkest */}
+            <svg
+              className="absolute inset-0 w-full h-full z-40"
+              viewBox="0 0 1440 200"
+              preserveAspectRatio="none"
+              style={{ filter: 'drop-shadow(0 4px 20px rgba(20, 192, 255, 0.4))' }}
+            >
+              <defs>
+                <linearGradient id="packagesShapeGradient1" x1="0%" y1="0%" x2="100%" y2="0%">
+                  <stop offset="0%" stopColor="#59e3a5" stopOpacity="0.6" />
+                  <stop offset="50%" stopColor="#14c0ff" stopOpacity="0.67" />
+                  <stop offset="100%" stopColor="#8b5cf6" stopOpacity="0.6" />
+                </linearGradient>
+              </defs>
+              <path
+                d="M-200,30 C100,120 300,10 500,90 C700,170 900,20 1100,100 C1300,180 1500,15 1640,70 L1640,150 C1500,120 1300,160 1100,140 C900,120 700,180 500,160 C300,140 100,190 -200,170 Z"
+                fill="url(#packagesShapeGradient1)"
+              />
+            </svg>
+
+            {/* Middle layer */}
+            <svg
+              className="absolute inset-0 w-full h-full z-40"
+              viewBox="0 0 1440 200"
+              preserveAspectRatio="none"
+              style={{ filter: 'drop-shadow(0 4px 16px rgba(89, 227, 165, 0.4))' }}
+            >
+              <defs>
+                <linearGradient id="packagesShapeGradient2" x1="0%" y1="0%" x2="100%" y2="0%">
+                  <stop offset="0%" stopColor="#59e3a5" stopOpacity="0.7" />
+                  <stop offset="50%" stopColor="#14c0ff" stopOpacity="0.8" />
+                  <stop offset="100%" stopColor="#8b5cf6" stopOpacity="0.7" />
+                </linearGradient>
+              </defs>
+              <path
+                d="M-200,45 C150,140 400,15 650,110 C900,190 1150,25 1400,125 C1550,165 1640,55 1640,55 L1640,145 C1550,115 1400,185 1150,125 C900,75 650,195 400,145 C150,95 -200,195 -200,195 Z"
+                fill="url(#packagesShapeGradient2)"
+              />
+            </svg>
+
+            {/* Top layer - brightest */}
+            <svg
+              className="absolute inset-0 w-full h-full z-40"
+              viewBox="0 0 1440 200"
+              preserveAspectRatio="none"
+              style={{ filter: 'drop-shadow(0 2px 12px rgba(139, 92, 246, 0.5))' }}
+            >
+              <defs>
+                <linearGradient id="packagesShapeGradient3" x1="0%" y1="0%" x2="100%" y2="0%">
+                  <stop offset="0%" stopColor="#59e3a5" stopOpacity="0.7" />
+                  <stop offset="50%" stopColor="#14c0ff" stopOpacity="0.75" />
+                  <stop offset="100%" stopColor="#8b5cf6" stopOpacity="0.7" />
+                </linearGradient>
+              </defs>
+              <path
+                d="M-200,65 C200,155 450,20 700,120 C950,185 1200,30 1450,135 C1600,175 1640,70 1640,70 L1640,125 C1600,95 1450,180 1200,125 C950,55 700,185 450,135 C200,75 -200,75 -200,75 Z"
+                fill="url(#packagesShapeGradient3)"
+              />
+            </svg>
+
+            {/* Additional accent layer */}
+            <svg
+              className="absolute inset-0 w-full h-full z-40"
+              viewBox="0 0 1440 200"
+              preserveAspectRatio="none"
+              style={{ filter: 'drop-shadow(0 1px 8px rgba(89, 227, 165, 0.3))' }}
+            >
+              <defs>
+                <linearGradient id="packagesShapeGradient4" x1="0%" y1="0%" x2="100%" y2="0%">
+                  <stop offset="0%" stopColor="#8b5cf6" stopOpacity="0.68" />
+                  <stop offset="50%" stopColor="#59e3a5" stopOpacity="0.72" />
+                  <stop offset="100%" stopColor="#14c0ff" stopOpacity="0.68" />
+                </linearGradient>
+              </defs>
+              <path
+                d="M-200,55 C120,15 280,150 440,65 C600,20 760,165 920,75 C1080,25 1240,145 1400,85 C1520,55 1640,115 1640,115 L1640,165 C1520,135 1400,185 1240,165 C1080,135 920,195 760,175 C600,155 440,195 280,175 C120,155 -200,185 -200,185 Z"
+                fill="url(#packagesShapeGradient4)"
+              />
+            </svg>
+          </div>
+        </div>
+
+        {/* Campaign Comparison Table - Independent from Packages Page */}
+        <div className="w-full bg-transparent relative z-30">
+          <div className="max-w-7xl mx-auto px-4 py-20">
+            <div className="text-center mb-8 relative z-50">
+              <h2 className="text-4xl md:text-5xl font-black mb-4 text-white leading-tight px-4 relative z-50">
+                <span className="text-4xl md:text-5xl">📊</span>{' '}
+                <span style={{
+                  background: 'linear-gradient(to right, #59e3a5, #14c0ff)',
+                  WebkitBackgroundClip: 'text',
+                  WebkitTextFillColor: 'transparent',
+                  backgroundClip: 'text'
+                }}>
+                  Compare Your Campaigns
+                </span>
+              </h2>
+              <p className="text-xl text-gray-300">
+                Compare all features across our packages
+              </p>
+            </div>
+
+            <div className="bg-black rounded-2xl border border-white/40 overflow-hidden relative z-30">
+              <div className="overflow-x-auto">
+                <table className="w-full relative z-20">
+                  <thead>
+                    <tr className="border-b border-white/40">
+                      <th className="text-left p-6 text-white font-semibold">Features</th>
+                      {/* BREAKTHROUGH */}
+                      <th className="text-center p-6 text-white font-semibold min-w-[150px]">
+                        <div className="mb-2">BREAKTHROUGH</div>
+                        <div className="text-2xl font-black bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] bg-clip-text text-transparent">
+                          $39
+                        </div>
+                      </th>
+                      {/* MOMENTUM */}
+                      <th className="text-center p-6 text-white font-semibold min-w-[150px]">
+                        <div className="mb-2">MOMENTUM</div>
+                        <div className="text-2xl font-black bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] bg-clip-text text-transparent">
+                          $79
+                        </div>
+                      </th>
+                      {/* DOMINATE */}
+                      <th className="text-center p-6 text-white font-semibold min-w-[150px]">
+                        <div className="mb-2">DOMINATE</div>
+                        <div className="text-2xl font-black bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] bg-clip-text text-transparent">
+                          $149
+                        </div>
+                      </th>
+                      {/* UNSTOPPABLE */}
+                      <th className="text-center p-6 text-white font-semibold min-w-[150px]">
+                        <div className="mb-2">UNSTOPPABLE</div>
+                        <div className="text-2xl font-black bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] bg-clip-text text-transparent">
+                          $259
+                        </div>
+                      </th>
+                      {/* LEGENDARY */}
+                      <th className="text-center p-6 text-white font-semibold min-w-[150px]">
+                        <div className="mb-2">LEGENDARY</div>
+                        <div className="text-2xl font-black bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] bg-clip-text text-transparent">
+                          $479
+                        </div>
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {/* Campaign starts within only 24 hours */}
+                    <tr className="border-b border-white/20 hover:bg-white/10 transition-colors">
+                      <td className="p-6 text-white font-medium">Campaign starts within only 24 hours</td>
+                      <td className="p-6 text-center">
+                        <div className="w-6 h-6 bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] rounded-full flex items-center justify-center mx-auto">
+                          <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                          </svg>
+                        </div>
+                      </td>
+                      <td className="p-6 text-center">
+                        <div className="w-6 h-6 bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] rounded-full flex items-center justify-center mx-auto">
+                          <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                          </svg>
+                        </div>
+                      </td>
+                      <td className="p-6 text-center">
+                        <div className="w-6 h-6 bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] rounded-full flex items-center justify-center mx-auto">
+                          <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                          </svg>
+                        </div>
+                      </td>
+                      <td className="p-6 text-center">
+                        <div className="w-6 h-6 bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] rounded-full flex items-center justify-center mx-auto">
+                          <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                          </svg>
+                        </div>
+                      </td>
+                      <td className="p-6 text-center">
+                        <div className="w-6 h-6 bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] rounded-full flex items-center justify-center mx-auto">
+                          <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                          </svg>
+                        </div>
+                      </td>
+                    </tr>
+                    {/* All streams achieved in only 7-10 days */}
+                    <tr className="border-b border-white/20 hover:bg-white/10 transition-colors">
+                      <td className="p-6 text-white font-medium">All streams achieved in only 7-10 days</td>
+                      <td className="p-6 text-center">
+                        <div className="w-6 h-6 bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] rounded-full flex items-center justify-center mx-auto">
+                          <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                          </svg>
+                        </div>
+                      </td>
+                      <td className="p-6 text-center">
+                        <div className="w-6 h-6 bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] rounded-full flex items-center justify-center mx-auto">
+                          <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                          </svg>
+                        </div>
+                      </td>
+                      <td className="p-6 text-center">
+                        <div className="w-6 h-6 bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] rounded-full flex items-center justify-center mx-auto">
+                          <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                          </svg>
+                        </div>
+                      </td>
+                      <td className="p-6 text-center">
+                        <div className="w-6 h-6 bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] rounded-full flex items-center justify-center mx-auto">
+                          <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                          </svg>
+                        </div>
+                      </td>
+                      <td className="p-6 text-center">
+                        <div className="w-6 h-6 bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] rounded-full flex items-center justify-center mx-auto">
+                          <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                          </svg>
+                        </div>
+                      </td>
+                    </tr>
+                    {/* Established playlist curators */}
+                    <tr className="border-b border-white/20 hover:bg-white/10 transition-colors">
+                      <td className="p-6 text-white font-medium">Established playlist curators</td>
+                      <td className="p-6 text-center">
+                        <div className="w-6 h-6 bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] rounded-full flex items-center justify-center mx-auto">
+                          <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                          </svg>
+                        </div>
+                      </td>
+                      <td className="p-6 text-center">
+                        <div className="w-6 h-6 bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] rounded-full flex items-center justify-center mx-auto">
+                          <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                          </svg>
+                        </div>
+                      </td>
+                      <td className="p-6 text-center">
+                        <div className="w-6 h-6 bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] rounded-full flex items-center justify-center mx-auto">
+                          <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                          </svg>
+                        </div>
+                      </td>
+                      <td className="p-6 text-center">
+                        <div className="w-6 h-6 bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] rounded-full flex items-center justify-center mx-auto">
+                          <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                          </svg>
+                        </div>
+                      </td>
+                      <td className="p-6 text-center">
+                        <div className="w-6 h-6 bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] rounded-full flex items-center justify-center mx-auto">
+                          <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                          </svg>
+                        </div>
+                      </td>
+                    </tr>
+                    {/* All genres supported */}
+                    <tr className="border-b border-white/20 hover:bg-white/10 transition-colors">
+                      <td className="p-6 text-white font-medium">All genres supported</td>
+                      <td className="p-6 text-center">
+                        <div className="w-6 h-6 bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] rounded-full flex items-center justify-center mx-auto">
+                          <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                          </svg>
+                        </div>
+                      </td>
+                      <td className="p-6 text-center">
+                        <div className="w-6 h-6 bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] rounded-full flex items-center justify-center mx-auto">
+                          <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                          </svg>
+                        </div>
+                      </td>
+                      <td className="p-6 text-center">
+                        <div className="w-6 h-6 bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] rounded-full flex items-center justify-center mx-auto">
+                          <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                          </svg>
+                        </div>
+                      </td>
+                      <td className="p-6 text-center">
+                        <div className="w-6 h-6 bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] rounded-full flex items-center justify-center mx-auto">
+                          <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                          </svg>
+                        </div>
+                      </td>
+                      <td className="p-6 text-center">
+                        <div className="w-6 h-6 bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] rounded-full flex items-center justify-center mx-auto">
+                          <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                          </svg>
+                        </div>
+                      </td>
+                    </tr>
+                    {/* Spotify-safe guarantee */}
+                    <tr className="border-b border-white/20 hover:bg-white/10 transition-colors">
+                      <td className="p-6 text-white font-medium">Spotify-safe guarantee</td>
+                      <td className="p-6 text-center">
+                        <div className="w-6 h-6 bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] rounded-full flex items-center justify-center mx-auto">
+                          <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                          </svg>
+                        </div>
+                      </td>
+                      <td className="p-6 text-center">
+                        <div className="w-6 h-6 bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] rounded-full flex items-center justify-center mx-auto">
+                          <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                          </svg>
+                        </div>
+                      </td>
+                      <td className="p-6 text-center">
+                        <div className="w-6 h-6 bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] rounded-full flex items-center justify-center mx-auto">
+                          <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                          </svg>
+                        </div>
+                      </td>
+                      <td className="p-6 text-center">
+                        <div className="w-6 h-6 bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] rounded-full flex items-center justify-center mx-auto">
+                          <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                          </svg>
+                        </div>
+                      </td>
+                      <td className="p-6 text-center">
+                        <div className="w-6 h-6 bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] rounded-full flex items-center justify-center mx-auto">
+                          <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                          </svg>
+                        </div>
+                      </td>
+                    </tr>
+                    {/* Dashboard tracking included */}
+                    <tr className="border-b border-white/20 hover:bg-white/10 transition-colors">
+                      <td className="p-6 text-white font-medium">Dashboard tracking included</td>
+                      <td className="p-6 text-center">
+                        <div className="w-6 h-6 bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] rounded-full flex items-center justify-center mx-auto">
+                          <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                          </svg>
+                        </div>
+                      </td>
+                      <td className="p-6 text-center">
+                        <div className="w-6 h-6 bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] rounded-full flex items-center justify-center mx-auto">
+                          <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                          </svg>
+                        </div>
+                      </td>
+                      <td className="p-6 text-center">
+                        <div className="w-6 h-6 bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] rounded-full flex items-center justify-center mx-auto">
+                          <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                          </svg>
+                        </div>
+                      </td>
+                      <td className="p-6 text-center">
+                        <div className="w-6 h-6 bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] rounded-full flex items-center justify-center mx-auto">
+                          <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                          </svg>
+                        </div>
+                      </td>
+                      <td className="p-6 text-center">
+                        <div className="w-6 h-6 bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] rounded-full flex items-center justify-center mx-auto">
+                          <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                          </svg>
+                        </div>
+                      </td>
+                    </tr>
+                    {/* Priority curator outreach - only for higher tiers */}
+                    <tr className="border-b border-white/20 hover:bg-white/10 transition-colors">
+                      <td className="p-6 text-white font-medium">Priority curator outreach</td>
+                      <td className="p-6 text-center">
+                        <div className="w-6 h-6 bg-gray-600 rounded-full flex items-center justify-center mx-auto">
+                          <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                          </svg>
+                        </div>
+                      </td>
+                      <td className="p-6 text-center">
+                        <div className="w-6 h-6 bg-gray-600 rounded-full flex items-center justify-center mx-auto">
+                          <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                          </svg>
+                        </div>
+                      </td>
+                      <td className="p-6 text-center">
+                        <div className="w-6 h-6 bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] rounded-full flex items-center justify-center mx-auto">
+                          <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                          </svg>
+                        </div>
+                      </td>
+                      <td className="p-6 text-center">
+                        <div className="w-6 h-6 bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] rounded-full flex items-center justify-center mx-auto">
+                          <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                          </svg>
+                        </div>
+                      </td>
+                      <td className="p-6 text-center">
+                        <div className="w-6 h-6 bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] rounded-full flex items-center justify-center mx-auto">
+                          <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                          </svg>
+                        </div>
+                      </td>
+                    </tr>
+                    {/* Major playlist targeting - only for top 3 tiers */}
+                    <tr className="border-b border-white/20 hover:bg-white/10 transition-colors">
+                      <td className="p-6 text-white font-medium">Major playlist targeting</td>
+                      <td className="p-6 text-center">
+                        <div className="w-6 h-6 bg-gray-600 rounded-full flex items-center justify-center mx-auto">
+                          <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                          </svg>
+                        </div>
+                      </td>
+                      <td className="p-6 text-center">
+                        <div className="w-6 h-6 bg-gray-600 rounded-full flex items-center justify-center mx-auto">
+                          <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                          </svg>
+                        </div>
+                      </td>
+                      <td className="p-6 text-center">
+                        <div className="w-6 h-6 bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] rounded-full flex items-center justify-center mx-auto">
+                          <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                          </svg>
+                        </div>
+                      </td>
+                      <td className="p-6 text-center">
+                        <div className="w-6 h-6 bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] rounded-full flex items-center justify-center mx-auto">
+                          <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                          </svg>
+                        </div>
+                      </td>
+                      <td className="p-6 text-center">
+                        <div className="w-6 h-6 bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] rounded-full flex items-center justify-center mx-auto">
+                          <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                          </svg>
+                        </div>
+                      </td>
+                    </tr>
+                    {/* Industry influencer reach - only for top 2 tiers */}
+                    <tr className="border-b border-white/20 hover:bg-white/10 transition-colors">
+                      <td className="p-6 text-white font-medium">Industry influencer reach</td>
+                      <td className="p-6 text-center">
+                        <div className="w-6 h-6 bg-gray-600 rounded-full flex items-center justify-center mx-auto">
+                          <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                          </svg>
+                        </div>
+                      </td>
+                      <td className="p-6 text-center">
+                        <div className="w-6 h-6 bg-gray-600 rounded-full flex items-center justify-center mx-auto">
+                          <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                          </svg>
+                        </div>
+                      </td>
+                      <td className="p-6 text-center">
+                        <div className="w-6 h-6 bg-gray-600 rounded-full flex items-center justify-center mx-auto">
+                          <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                          </svg>
+                        </div>
+                      </td>
+                      <td className="p-6 text-center">
+                        <div className="w-6 h-6 bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] rounded-full flex items-center justify-center mx-auto">
+                          <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                          </svg>
+                        </div>
+                      </td>
+                      <td className="p-6 text-center">
+                        <div className="w-6 h-6 bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] rounded-full flex items-center justify-center mx-auto">
+                          <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                          </svg>
+                        </div>
+                      </td>
+                    </tr>
+                    {/* VIP curator network access - only for LEGENDARY */}
+                    <tr className="border-b border-white/20 hover:bg-white/10 transition-colors">
+                      <td className="p-6 text-white font-medium">VIP curator network access</td>
+                      <td className="p-6 text-center">
+                        <div className="w-6 h-6 bg-gray-600 rounded-full flex items-center justify-center mx-auto">
+                          <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                          </svg>
+                        </div>
+                      </td>
+                      <td className="p-6 text-center">
+                        <div className="w-6 h-6 bg-gray-600 rounded-full flex items-center justify-center mx-auto">
+                          <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                          </svg>
+                        </div>
+                      </td>
+                      <td className="p-6 text-center">
+                        <div className="w-6 h-6 bg-gray-600 rounded-full flex items-center justify-center mx-auto">
+                          <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                          </svg>
+                        </div>
+                      </td>
+                      <td className="p-6 text-center">
+                        <div className="w-6 h-6 bg-gray-600 rounded-full flex items-center justify-center mx-auto">
+                          <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                          </svg>
+                        </div>
+                      </td>
+                      <td className="p-6 text-center">
+                        <div className="w-6 h-6 bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] rounded-full flex items-center justify-center mx-auto">
+                          <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                          </svg>
+                        </div>
+                      </td>
+                    </tr>
+                    {/* Dedicated account manager - only for LEGENDARY */}
+                    <tr className="border-b border-white/20 hover:bg-white/10 transition-colors">
+                      <td className="p-6 text-white font-medium">Dedicated account manager</td>
+                      <td className="p-6 text-center">
+                        <div className="w-6 h-6 bg-gray-600 rounded-full flex items-center justify-center mx-auto">
+                          <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                          </svg>
+                        </div>
+                      </td>
+                      <td className="p-6 text-center">
+                        <div className="w-6 h-6 bg-gray-600 rounded-full flex items-center justify-center mx-auto">
+                          <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                          </svg>
+                        </div>
+                      </td>
+                      <td className="p-6 text-center">
+                        <div className="w-6 h-6 bg-gray-600 rounded-full flex items-center justify-center mx-auto">
+                          <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                          </svg>
+                        </div>
+                      </td>
+                      <td className="p-6 text-center">
+                        <div className="w-6 h-6 bg-gray-600 rounded-full flex items-center justify-center mx-auto">
+                          <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                          </svg>
+                        </div>
+                      </td>
+                      <td className="p-6 text-center">
+                        <div className="w-6 h-6 bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] rounded-full flex items-center justify-center mx-auto">
+                          <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                          </svg>
+                        </div>
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Why FASHO.co Gets Results Section */}
+        <div className="w-full bg-transparent relative z-30">
+          <div className="max-w-7xl mx-auto px-4 py-20">
+            {/* Why FASHO.co Gets Results */}
+            <div className="text-center mb-16 relative z-50">
+              <h2 className="font-black mb-6 text-white leading-tight px-4 relative z-50 md:text-5xl" style={{ fontSize: 'calc(2.25rem + 0.35rem)' }}>
+                <span className="text-4xl md:text-5xl">🎯</span>{' '}
+                <span style={{
+                  background: 'linear-gradient(to right, #59e3a5, #14c0ff)',
+                  WebkitBackgroundClip: 'text',
+                  WebkitTextFillColor: 'transparent',
+                  backgroundClip: 'text'
+                }}>
+                  Why FASHO.co Gets Results
+                </span>
+              </h2>
+            </div>
+
+            <div className="grid md:grid-cols-2 gap-8 mb-20 relative z-30">
+              {/* Direct Access to Major Curators */}
+              <div className="bg-gradient-to-br from-white/10 to-white/5 backdrop-blur-sm rounded-2xl border border-white/20 p-8 hover:shadow-2xl hover:shadow-[#14c0ff]/20 transition-all duration-300">
+                <div className="flex items-start space-x-4">
+                  <div className="flex-shrink-0 w-12 h-12 bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] rounded-full flex items-center justify-center">
+                    <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
+                    </svg>
+                  </div>
+                  <div>
+                    <h3 className="text-xl font-bold text-white mb-3">Direct Access to Major Curators</h3>
+                    <p className="text-gray-300 leading-relaxed">
+                      We're not sending spam emails. We're making personal phone calls to curators from RapCaviar, Today's Top Hits, and hundreds of other massive playlists.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* 10+ Years of Relationships */}
+              <div className="bg-gradient-to-br from-white/10 to-white/5 backdrop-blur-sm rounded-2xl border border-white/20 p-8 hover:shadow-2xl hover:shadow-[#14c0ff]/20 transition-all duration-300">
+                <div className="flex items-start space-x-4">
+                  <div className="flex-shrink-0 w-12 h-12 bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] rounded-full flex items-center justify-center">
+                    <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                    </svg>
+                  </div>
+                  <div>
+                    <h3 className="text-xl font-bold text-white mb-3">10+ Years of Relationships</h3>
+                    <p className="text-gray-300 leading-relaxed">
+                      These curators know us, trust us, and actually listen when we recommend new music. That's why we have a 99%+ success rate.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* 100% Safe & Organic */}
+              <div className="bg-gradient-to-br from-white/10 to-white/5 backdrop-blur-sm rounded-2xl border border-white/20 p-8 hover:shadow-2xl hover:shadow-[#14c0ff]/20 transition-all duration-300">
+                <div className="flex items-start space-x-4">
+                  <div className="flex-shrink-0 w-12 h-12 bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] rounded-full flex items-center justify-center">
+                    <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+                    </svg>
+                  </div>
+                  <div>
+                    <h3 className="text-xl font-bold text-white mb-3">100% Safe & Organic</h3>
+                    <p className="text-gray-300 leading-relaxed">
+                      Real playlists, real listeners, real growth. No bots, no fake streams, no risks to your account.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Lightning Fast Results */}
+              <div className="bg-gradient-to-br from-white/10 to-white/5 backdrop-blur-sm rounded-2xl border border-white/20 p-8 hover:shadow-2xl hover:shadow-[#14c0ff]/20 transition-all duration-300">
+                <div className="flex items-start space-x-4">
+                  <div className="flex-shrink-0 w-12 h-12 bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] rounded-full flex items-center justify-center">
+                    <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                    </svg>
+                  </div>
+                  <div>
+                    <h3 className="text-xl font-bold text-white mb-3">Lightning Fast Results</h3>
+                    <p className="text-gray-300 leading-relaxed">
+                      Most campaigns are completed within 7-10 days. You'll see your first playlist placements within 48-72 hours.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Every Stream = Money in Your Pocket */}
+            <div className="bg-gradient-to-br from-yellow-500/10 to-orange-500/10 backdrop-blur-sm rounded-2xl border border-yellow-500/20 p-8 text-center relative z-30">
+              <div className="max-w-4xl mx-auto">
+                <h2 className="text-3xl md:text-4xl font-black mb-6 bg-gradient-to-r from-yellow-400 to-orange-400 bg-clip-text text-transparent">
+                  💰 Every Stream = Money in Your Pocket
+                </h2>
+                <p className="text-xl text-gray-300 leading-relaxed">
+                  Remember, every single stream from our playlist placements generates royalties that go directly to you. Many artists see their campaigns pay for themselves within months, then it's pure profit!
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
       </main>
 
       <style jsx>{`
@@ -1459,7 +2286,7 @@ export default function PackagesPage() {
         }
         
         .border-container-blue {
-          background: rgba(20, 192, 255, 0.45);
+          background: rgba(20, 192, 255, 0.15);
           border-radius: 0.75rem;
         }
         

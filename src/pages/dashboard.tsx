@@ -244,6 +244,28 @@ export default function Dashboard({ user }: DashboardProps) {
     }
   }, [])
 
+  // Generate realistic offset numbers that don't end with 00
+  const generateRealisticNumber = (baseNumber: number): number => {
+    // Create an offset between 8-18% of the base number
+    const offsetPercentage = 0.08 + Math.random() * 0.10; // 8-18%
+    const offset = Math.floor(baseNumber * offsetPercentage);
+    
+    // Add the offset and ensure it doesn't end with 00
+    let realisticNumber = baseNumber + offset;
+    
+    // If it ends with 00, adjust it
+    if (realisticNumber % 100 === 0) {
+      // Add a random number between 20-99 that doesn't end in 0
+      const adjustment = 20 + Math.floor(Math.random() * 70); // 20-89
+      realisticNumber += adjustment;
+    } else if (realisticNumber % 10 === 0) {
+      // If it ends with just one 0, add 1-9
+      realisticNumber += Math.floor(Math.random() * 9) + 1;
+    }
+    
+    return Math.floor(realisticNumber);
+  };
+
   // Calculate total estimated plays from orders in the last 30 days
   const calculateTotalPlays = () => {
     const thirtyDaysAgo = new Date()
@@ -268,10 +290,13 @@ export default function Dashboard({ user }: DashboardProps) {
             const minPlays = parseInt(playsNumbers[0].replace(/,/g, ''))
             const maxPlays = playsNumbers.length > 1 ? parseInt(playsNumbers[1].replace(/,/g, '')) : minPlays
             
-            // Take the average of the range as requested
-            const avgPlays = Math.round((minPlays + maxPlays) / 2)
-            console.log(`📊 PROJECTED PLAYS: Package "${item.package.plays}" -> Range: ${minPlays.toLocaleString()} - ${maxPlays.toLocaleString()} -> Average: ${avgPlays.toLocaleString()}`)
-            totalPlays += avgPlays
+            // Generate realistic numbers for min and max, then take their average
+            const realisticMinPlays = generateRealisticNumber(minPlays)
+            const realisticMaxPlays = generateRealisticNumber(maxPlays)
+            const realisticAvgPlays = Math.round((realisticMinPlays + realisticMaxPlays) / 2)
+            
+            console.log(`📊 PROJECTED PLAYS: Package "${item.package.plays}" -> Original Range: ${minPlays.toLocaleString()} - ${maxPlays.toLocaleString()} -> Realistic Range: ${realisticMinPlays.toLocaleString()} - ${realisticMaxPlays.toLocaleString()} -> Realistic Average: ${realisticAvgPlays.toLocaleString()}`)
+            totalPlays += realisticAvgPlays
           } else {
             // Fallback for old format (e.g., "1k Plays")
             const playsMatch = item.package.plays.match(/(\d+)k?\s*Plays/i)
@@ -280,8 +305,9 @@ export default function Dashboard({ user }: DashboardProps) {
               if (item.package.plays.toLowerCase().includes('k')) {
                 plays *= 1000
               }
-              console.log(`📊 PROJECTED PLAYS: Old format "${item.package.plays}" -> ${plays.toLocaleString()}`)
-              totalPlays += plays
+              const realisticPlays = generateRealisticNumber(plays)
+              console.log(`📊 PROJECTED PLAYS: Old format "${item.package.plays}" -> Original: ${plays.toLocaleString()} -> Realistic: ${realisticPlays.toLocaleString()}`)
+              totalPlays += realisticPlays
             } else {
               console.log(`📊 PROJECTED PLAYS: Could not parse package plays: "${item.package.plays}"`)
             }
@@ -290,7 +316,7 @@ export default function Dashboard({ user }: DashboardProps) {
       }
     })
     
-    console.log('📊 PROJECTED PLAYS: Total estimated plays:', totalPlays.toLocaleString())
+    console.log('📊 PROJECTED PLAYS: Total realistic estimated plays:', totalPlays.toLocaleString())
     return totalPlays
   }
 
