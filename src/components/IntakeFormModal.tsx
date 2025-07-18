@@ -129,18 +129,15 @@ const IntakeFormModal: React.FC<IntakeFormModalProps> = ({ isOpen, onComplete })
     }
   }, [isOpen]);
 
-  // Countdown timer effect
+  // Countdown timer effect (visual only - modal closes after submission)
   useEffect(() => {
     if (showCompletion && countdown > 0) {
       const timer = setTimeout(() => {
         setCountdown(prev => prev - 1);
       }, 1000);
       return () => clearTimeout(timer);
-    } else if (showCompletion && countdown === 0) {
-      // Auto-close when countdown reaches 0
-      onComplete(responses);
     }
-  }, [showCompletion, countdown, responses, onComplete]);
+  }, [showCompletion, countdown]);
 
   // Handle answer selection
   const handleAnswerSelect = async (answer: string) => {
@@ -168,11 +165,14 @@ const IntakeFormModal: React.FC<IntakeFormModalProps> = ({ isOpen, onComplete })
         console.log('📋 INTAKE-FORM: Last question completed, showing completion');
         setShowCompletion(true);
         
-        // Submit the form
+        // Submit the form immediately
         setTimeout(async () => {
           console.log('📋 INTAKE-FORM: Submitting final responses:', newResponses);
           await handleSubmit(newResponses);
-        }, 2000); // Wait 2 seconds before submitting
+          // Close modal immediately after successful submission
+          console.log('📋 INTAKE-FORM: Form submitted successfully, closing modal');
+          onComplete(newResponses);
+        }, 2000); // Wait 2 seconds before submitting and closing
       } else {
         console.log('📋 INTAKE-FORM: Moving to next question');
         setCurrentQuestionIndex(prev => prev + 1);
@@ -216,9 +216,7 @@ const IntakeFormModal: React.FC<IntakeFormModalProps> = ({ isOpen, onComplete })
 
       if (response.ok && data.success) {
         console.log('✅ INTAKE-FORM: Successfully submitted:', data);
-        
-        // Start countdown timer
-        setCountdown(5);
+        // Note: Modal will close immediately after this function returns
       } else {
         console.error('❌ INTAKE-FORM: Submission failed:', data);
         // Handle error - could show error message

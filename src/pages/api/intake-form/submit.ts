@@ -96,6 +96,19 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         .limit(1)
         .single();
 
+      // Get all user's orders to calculate total spent
+      const { data: allOrders, error: allOrdersError } = await supabase
+        .from('orders')
+        .select('total')
+        .eq('user_id', user.id);
+
+      // Calculate total amount spent by user
+      let totalSpent = 0;
+      if (allOrders && !allOrdersError) {
+        totalSpent = allOrders.reduce((sum, order) => sum + (order.total || 0), 0);
+      }
+      console.log('💰 INTAKE-FORM-SUBMIT: User total spent calculated:', formatCurrency(totalSpent));
+
       let eventType: 'intake_form_thank_you' | 'intake_form_dashboard' = 'intake_form_dashboard';
       let orderData = undefined;
 
@@ -140,6 +153,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         const propertyName = questionMap[questionId] || questionId;
         intakeFormData[propertyName] = String(answer);
       });
+      
+      // Add total spent to intake form data
+      intakeFormData['Total Spent'] = formatCurrency(totalSpent);
 
       // Send single webhook with all intake form data
       const webhookPayload = {
