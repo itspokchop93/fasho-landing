@@ -364,11 +364,11 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           last_name,
           email: customerEmail,
           billing_address: {
-            line1: billingInfo?.line1,
-            line2: billingInfo?.line2,
+            line1: billingInfo?.address,
+            line2: billingInfo?.address2,
             city: billingInfo?.city,
             state: billingInfo?.state,
-            postal_code: billingInfo?.postal_code,
+            postal_code: billingInfo?.zip,
             country: billingInfo?.country
           }
         },

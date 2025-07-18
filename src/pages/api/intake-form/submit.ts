@@ -1,5 +1,6 @@
 import { NextApiRequest, NextApiResponse } from 'next';
 import { createClient } from '../../../utils/supabase/server';
+import { sendZapierWebhookServer, formatCustomerName, formatCurrency } from '../../../utils/zapier/webhookService';
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== 'POST') {
@@ -28,6 +29,12 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     console.log('🔍 INTAKE-FORM-SUBMIT: Processing for user:', user.email);
     console.log('🔍 INTAKE-FORM-SUBMIT: Responses:', responses);
+
+    // Ensure we have a valid email
+    if (!user.email) {
+      console.log('❌ INTAKE-FORM-SUBMIT: User email not available');
+      return res.status(400).json({ error: 'User email not available' });
+    }
 
     // Store the responses in the database
     const { data: responseData, error: responseError } = await supabase
@@ -63,8 +70,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     // Send Zapier webhook for intake form submission
     try {
       console.log('🔗 INTAKE-FORM-SUBMIT: Sending Zapier webhook for intake form submission...');
-      
-      const { sendZapierWebhookServer, formatCustomerName, formatCurrency } = await import('../../utils/zapier/webhookService');
       
       // Get user's profile data
       const { data: profile } = await supabase.auth.getUser();
@@ -130,7 +135,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         };
         
         const question = questionMap[questionId] || questionId;
-        return { question, answer };
+        return { question, answer: String(answer) };
       });
 
       // Send a webhook for each question/answer pair
