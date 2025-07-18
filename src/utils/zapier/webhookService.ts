@@ -20,10 +20,7 @@ interface WebhookPayload {
     order_total?: string;
     order_number?: string;
   };
-  intake_form_data?: {
-    question: string;
-    answer: string;
-  };
+  intake_form_data?: Record<string, string>;
 }
 
 export async function sendZapierWebhook(payload: WebhookPayload): Promise<boolean> {

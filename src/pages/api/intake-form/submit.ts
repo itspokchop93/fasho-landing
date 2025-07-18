@@ -122,46 +122,44 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         }
       }
 
-      // Convert responses object to question/answer pairs for webhook
-      const formattedResponses = Object.entries(responses).map(([questionId, answer]) => {
-        // Find the question text based on the ID
-        const questionMap: Record<string, string> = {
-          'music_experience': 'How long have you been creating music/podcasts?',
-          'primary_genre': 'What\'s your primary music genre?',
-          'age_range': 'What\'s your age range?',
-          'spotify_releases': 'How many songs have you released on Spotify?',
-          'promotion_platform': 'Where do you primarily promote your music?',
-          'online_activity_time': 'What time of day are you most active online?'
-        };
-        
-        const question = questionMap[questionId] || questionId;
-        return { question, answer: String(answer) };
+      // Convert responses object to formatted intake form data for webhook
+      const intakeFormData: Record<string, string> = {};
+      
+      // Map question IDs to simplified property names for Zapier
+      const questionMap: Record<string, string> = {
+        'music_experience': 'How Long Creating Music',
+        'primary_genre': 'Primary Music Genre',
+        'age_range': 'Age Range',
+        'spotify_releases': 'Spotify Releases',
+        'promotion_platform': 'Promotion Platform',
+        'online_activity_time': 'Online Activity Time'
+      };
+      
+      // Format each question/answer as a property name/value pair
+      Object.entries(responses).forEach(([questionId, answer]) => {
+        const propertyName = questionMap[questionId] || questionId;
+        intakeFormData[propertyName] = String(answer);
       });
 
-      // Send a webhook for each question/answer pair
-      for (const response of formattedResponses) {
-        const webhookPayload = {
-          event_type: eventType,
-          timestamp: new Date().toISOString(),
-          customer_data: {
-            first_name,
-            last_name,
-            email: user.email
-          },
-          ...(orderData && { order_data: orderData }),
-          intake_form_data: {
-            question: response.question,
-            answer: response.answer
-          }
-        };
+      // Send single webhook with all intake form data
+      const webhookPayload = {
+        event_type: eventType,
+        timestamp: new Date().toISOString(),
+        customer_data: {
+          first_name,
+          last_name,
+          email: user.email
+        },
+        ...(orderData && { order_data: orderData }),
+        intake_form_data: intakeFormData
+      };
 
-        const webhookSent = await sendZapierWebhookServer(webhookPayload, supabase);
-        
-        if (webhookSent) {
-          console.log(`🔗 INTAKE-FORM-SUBMIT: ✅ Zapier webhook sent successfully for question: ${response.question}`);
-        } else {
-          console.log(`🔗 INTAKE-FORM-SUBMIT: ❌ Zapier webhook failed for question: ${response.question}`);
-        }
+      const webhookSent = await sendZapierWebhookServer(webhookPayload, supabase);
+      
+      if (webhookSent) {
+        console.log('🔗 INTAKE-FORM-SUBMIT: ✅ Zapier webhook sent successfully for intake form submission');
+      } else {
+        console.log('🔗 INTAKE-FORM-SUBMIT: ❌ Zapier webhook failed for intake form submission');
       }
 
     } catch (webhookError) {
