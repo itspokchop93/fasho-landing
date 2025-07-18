@@ -2,9 +2,31 @@
 @tailwind components;
 @tailwind utilities;
 
-html,
+/* Base responsive styles */
+* {
+  box-sizing: border-box;
+}
+
+html {
+  overflow-x: hidden;
+  width: 100%;
+  max-width: 100%;
+}
+
 body {
   @apply bg-white text-gray-900 scroll-smooth;
+  overflow-x: hidden;
+  width: 100%;
+  max-width: 100%;
+  margin: 0;
+  padding: 0;
+}
+
+/* Text overflow prevention */
+h1, h2, h3, h4, h5, h6, p, div {
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  hyphens: auto;
 }
 
 /* Autofill styling override - preserves dropdown functionality */

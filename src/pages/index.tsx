@@ -414,12 +414,21 @@ export default function Home() {
       private stepProgress: number = 0;
       private isPinned: boolean = false;
       private totalScrollAccumulated: number = 0;
-      private stepDuration: number = 640; // Pixels of scroll per step - increased for slower transitions
+      private stepDuration: number = this.getMobileAdjustedStepDuration(); // Responsive scroll distance
       private lastTouchY: number = 0;
       
       constructor(sectionElement: HTMLElement) {
         this.section = sectionElement;
         this.bindEvents();
+      }
+
+      private getMobileAdjustedStepDuration(): number {
+        // Check if device is mobile (768px and below)
+        const isMobile = window.innerWidth <= 768;
+        
+        // Desktop: 640px per step (original)
+        // Mobile: 480px per step (25% reduction: 640 * 0.75 = 480)
+        return isMobile ? 480 : 640;
       }
 
       private bindEvents() {
@@ -1071,7 +1080,7 @@ export default function Home() {
       <Header transparent={true} />
 
       {/* Main Content */}
-      <main className="min-h-screen bg-gradient-to-b from-[#18192a] to-[#0a0a13] text-white relative overflow-x-hidden overflow-y-visible">
+      <main className="min-h-screen bg-gradient-to-b from-[#18192a] to-[#0a0a13] text-white relative overflow-x-hidden overflow-y-visible w-full max-w-full">
         {/* Subtle, large radial glow behind hero/campaign */}
         <div className="pointer-events-none absolute left-1/2 -top-[10vh] -translate-x-1/2 z-0 w-[96vw] h-[64vh]" style={{ filter: 'blur(60px)' }}>
           <div className="w-full h-full bg-gradient-radial from-[#14c0ff]/30 via-[#59e3a5]/20 to-transparent opacity-60"></div>
@@ -1080,7 +1089,7 @@ export default function Home() {
         {/* Content Container */}
         <div className="relative z-10">
           {/* Hero Section - Reduced padding from pt-60 to pt-40 (25px reduction) */}
-          <section className="min-h-screen flex items-center justify-center px-4 pt-40 relative overflow-hidden">
+          <section className="min-h-screen flex items-center justify-center px-4 pt-40 relative overflow-hidden w-full">
             {/* Animated lens flare particles background - covers entire hero section */}
             <div className="absolute inset-0 w-full h-full z-0 pointer-events-none">
               <HeroParticles />
@@ -1098,10 +1107,10 @@ export default function Home() {
                 disableRotation={false}
               />
             </div>
-            <div className="max-w-7xl mx-auto relative z-10">
-              <div className="text-center mb-20">
+            <div className="w-full max-w-7xl mx-auto relative z-10 px-4 sm:px-6 lg:px-8">
+              <div className="text-center mb-20 max-w-5xl mx-auto">
                 {/* Main Heading with SplitText Animation */}
-                <h1 className="text-6xl md:text-7xl lg:text-8xl font-black mb-8 leading-none">
+                <h1 className="text-5xl sm:text-6xl md:text-7xl lg:text-8xl font-black mb-8 leading-none break-words" style={{ wordBreak: 'break-word', overflowWrap: 'break-word' }}>
                   <SplitText
                     text="#1 Spotify"
                     className="block drop-shadow-[0_8px_16px_rgba(0,0,0,0.6)]"
@@ -1141,7 +1150,7 @@ export default function Home() {
 
 
                 {/* Subtitle */}
-                <div className="text-xl md:text-2xl text-gray-300 mb-16 max-w-3xl mx-auto leading-relaxed" style={{ paddingBottom: '45px' }}>
+                <div className="text-xl md:text-2xl text-gray-300 mb-16 max-w-4xl mx-auto leading-relaxed break-words" style={{ paddingBottom: '45px', wordBreak: 'break-word', overflowWrap: 'break-word' }}>
                   <SplitText
                     text="Stop watching other artists blow up while your tracks collect dust. It's time to get the plays, fans, and recognition you deserve."
                     className="block"
@@ -1206,27 +1215,27 @@ export default function Home() {
                     )}
                   </div>
                   {/* Main container with enhanced styling */}
-                  <div className="relative z-20 bg-gradient-to-br from-white/10 to-white/5 backdrop-blur-xl rounded-3xl p-8 border border-white/20 shadow-[0_12px_40px_0_rgba(20,192,255,0.45)]" style={{ width: '896px', maxWidth: '90vw', margin: '0 auto' }}>
+                  <div className="relative z-20 bg-gradient-to-br from-white/10 to-white/5 backdrop-blur-xl rounded-3xl p-4 sm:p-6 md:p-8 border border-white/20 shadow-[0_12px_40px_0_rgba(20,192,255,0.45)] w-full max-w-[calc(100vw-2rem)] sm:max-w-[calc(100vw-3rem)] md:max-w-[calc(100vw-4rem)] lg:max-w-4xl mx-auto">
                     {/* Static border gradient */}
                     <div className="absolute inset-0 rounded-3xl bg-gradient-to-r from-[#59e3a5] via-[#14c0ff] to-[#8b5cf6] p-[2px]">
                       <div className="h-full w-full rounded-3xl bg-black/80 backdrop-blur-xl"></div>
                     </div>
                     
                     {/* Content */}
-                    <div className="relative z-10" style={{ width: '100%', maxWidth: '832px', margin: '0 auto' }}>
+                    <div className="relative z-10 w-full max-w-full mx-auto">
                       {/* Campaign Start Text - Reduced by 10px and added gradient text with reduced shadow */}
                       <div className="text-center mb-8">
-                        <h2 className="text-3xl md:text-4xl font-black bg-gradient-to-b from-white to-gray-400 bg-clip-text text-transparent drop-shadow-[0_8px_16px_rgba(0,0,0,0.6)] mb-4">
+                        <h2 className="text-3xl md:text-4xl font-black bg-gradient-to-b from-white to-gray-400 bg-clip-text text-transparent drop-shadow-[0_8px_16px_rgba(0,0,0,0.6)] mb-4 pt-2.5 md:pt-0">
                           🚀 Start Your Campaign
                         </h2>
-                        <p className="text-lg text-gray-300 mb-8">
+                        <p className="text-sm md:text-lg text-gray-300 mb-8 -mb-2.5">
                           Search For Your Spotify Song or Enter Your Track Link
                         </p>
                       </div>
 
                       {/* Input and Button Layout - Responsive - SEARCH CONTAINER WITH ESCAPE POSITIONING */}
-                      <div className="relative mb-8" style={{ width: '100%' }}>
-                        <div className="flex flex-col md:flex-row gap-4 items-stretch md:items-center" style={{ width: '100%', maxWidth: '832px' }}>
+                      <div className="relative mb-8 w-full">
+                        <div className="flex flex-col md:flex-row gap-4 items-stretch md:items-center w-full">
                           <div className="flex-1 relative">
                             <input
                               ref={inputRef}
@@ -1235,7 +1244,7 @@ export default function Home() {
                               value={url}
                               onFocus={handleInputFocus}
                               onChange={(e) => setUrl(e.target.value)}
-                              className={`w-full px-6 py-4 bg-white/10 backdrop-blur-xl border border-white/20 rounded-2xl text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#14c0ff]/50 focus:border-[#14c0ff]/50 transition-all duration-300 text-lg hover:bg-white/15 hover:shadow-lg hover:shadow-[#14c0ff]/20 ${
+                              className={`w-full px-6 py-4 bg-white/10 backdrop-blur-xl border border-white/20 rounded-2xl text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#14c0ff]/50 focus:border-[#14c0ff]/50 transition-all duration-300 text-sm md:text-lg hover:bg-white/15 hover:shadow-lg hover:shadow-[#14c0ff]/20 ${
                                 (focused || showSearchResults) ? 'ring-2 ring-[#14c0ff]/50 border-[#14c0ff]/50' : ''
                               }`}
                               disabled={loading}
@@ -1264,17 +1273,17 @@ export default function Home() {
                       </div>
                       {/* Song card directly below input/button row, INSIDE the campaign container */}
                       {previewTrack && isSpotifyUrlCheck(url) && (
-                        <div className="mb-2 animate-popdown" style={{ width: '100%', maxWidth: '832px' }}>
+                        <div className="mb-2 animate-popdown w-full">
                           <div className="bg-gradient-to-r from-[#59e3a5] via-[#14c0ff] to-[#8b5cf6] p-[1px] rounded-2xl shadow-[0_8px_32px_0_rgba(20,192,255,0.35)]">
-                            <div className="flex items-center bg-gradient-to-r from-[#23272f] to-[#1a1a2e] rounded-2xl p-4 gap-4" style={{ width: '100%', maxWidth: '100%', overflow: 'hidden' }}>
+                            <div className="flex items-center bg-gradient-to-r from-[#23272f] to-[#1a1a2e] rounded-2xl p-4 gap-4 w-full overflow-hidden">
                               <img
                                 src={previewTrack.imageUrl}
                                 alt={previewTrack.title}
                                 className="w-20 h-20 rounded-xl object-cover shadow-md border border-white/10 flex-shrink-0"
                               />
                               <div className="flex-1 min-w-0 overflow-hidden">
-                                <div className="font-bold text-white text-left truncate" style={{ fontSize: '1.15rem' }}>{previewTrack.title}</div>
-                                <div className="text-gray-300 text-left truncate" style={{ fontSize: '1.00rem' }}>{previewTrack.artist}</div>
+                                <div className="font-bold text-white text-left truncate" style={{ fontSize: '1rem' }}>{previewTrack.title}</div>
+                                <div className="text-gray-300 text-left truncate" style={{ fontSize: '0.9rem' }}>{previewTrack.artist}</div>
                               </div>
                               {/* Green checkmark Lottie animation */}
                               {checkmarkLottie && (
@@ -1297,8 +1306,8 @@ export default function Home() {
                 </div>
 
                 {/* Infinite Logo Carousel - Pure CSS Implementation */}
-                <div className="py-16 px-4 relative" style={{ background: 'transparent' }}>
-                  <div className="max-w-7xl mx-auto" style={{ background: 'transparent' }}>
+                <div className="py-16 px-0 sm:px-2 md:px-4 relative w-full max-w-full" style={{ background: 'transparent' }}>
+                  <div className="w-full max-w-full sm:max-w-[calc(100vw-1rem)] md:max-w-[calc(100vw-2rem)] lg:max-w-7xl mx-auto" style={{ background: 'transparent' }}>
                     {/* Section Header */}
                     <div className="text-center mb-12" style={{ background: 'transparent' }}>
                       <h2 className="text-2xl md:text-3xl font-black text-white mb-4" style={{ background: 'transparent' }}>
@@ -1378,7 +1387,7 @@ export default function Home() {
           </section>
 
           {/* Flowing Shape Divider - Curves on Both Sides */}
-          <div className="relative z-30" style={{ height: '200px', width: '110vw', left: '-5vw', transform: 'rotate(-3deg)', background: 'transparent', marginTop: '-35px' }}>
+          <div className="relative z-30" style={{ height: '200px', width: '110vw', left: '-5vw', transform: 'rotate(-3deg)', background: 'transparent', marginTop: '-75px' }}>
             {/* Background foundation */}
             <div className="absolute inset-0 z-30" style={{ background: 'transparent' }}></div>
             
@@ -1601,8 +1610,8 @@ export default function Home() {
                 scrollStart="center bottom+=50%"
                 scrollEnd="bottom bottom-=40%"
                 stagger={0.03}
-                containerClassName="mb-0 pb-2 -mt-8"
-                textClassName="text-4xl md:text-5xl lg:text-6xl font-bold text-white drop-shadow-lg"
+                containerClassName="mb-0 pb-1 -mt-8 your-music-fire-text"
+                textClassName="font-bold text-white drop-shadow-lg"
               >
                 Your Music Is Fire,
               </ScrollFloat>
@@ -1612,40 +1621,70 @@ export default function Home() {
                 scrollStart="center bottom+=50%"
                 scrollEnd="bottom bottom-=40%"
                 stagger={0.03}
-                containerClassName="mb-8 pb-6"
-                textClassName="text-4xl md:text-5xl lg:text-6xl font-bold text-white drop-shadow-lg"
+                containerClassName="mb-8 pb-6 -mt-4 nobodys-hearing-text"
+                textClassName="font-bold text-white drop-shadow-lg"
                 gradientWords={["Nobody's"]}
                 gradientFrom="#59e3a5"
                 gradientTo="#14c0ff"
               >
                 But Nobody's Hearing It….
               </ScrollFloat>
+              <style jsx>{`
+                .your-music-fire-text span {
+                  font-size: 4rem !important;
+                }
+                @media (min-width: 768px) {
+                  .your-music-fire-text span {
+                    font-size: 5rem !important;
+                  }
+                }
+                @media (min-width: 1024px) {
+                  .your-music-fire-text span {
+                    font-size: 6rem !important;
+                  }
+                }
+
+                .nobodys-hearing-text span {
+                  font-size: 4rem !important;
+                }
+                @media (min-width: 768px) {
+                  .nobodys-hearing-text span {
+                    font-size: 5rem !important;
+                  }
+                }
+                @media (min-width: 1024px) {
+                  .nobodys-hearing-text span {
+                    font-size: 6rem !important;
+                  }
+                }
+              `}</style>
               <p ref={text1Ref} className={`text-gray-300 pb-12 font-medium text-center transition-all duration-700 ${text1InView ? 'animate-fade-in-up' : 'opacity-0 translate-y-8'}`} style={{ fontSize: '1.6rem', lineHeight: '1.8' }}>
                 You spent days making the best song of your life. Created the dopest cover art for it. All your friends said it slaps harder than Will Smith at the Oscars....
               </p>
-              <p ref={text2Ref} className={`text-2xl md:text-3xl font-bold pb-12 text-center transition-all duration-700 ${text2InView ? 'animate-fade-in-up' : 'opacity-0 translate-y-8'}`} style={{ lineHeight: '1.6' }}>
-                But your Spotify still says " &lt; 1,000 "<span className="bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] bg-clip-text text-transparent"></span> plays
+              <p ref={text2Ref} className={`text-2xl md:text-3xl font-bold pb-12 text-center transition-all duration-700 ${text2InView ? 'animate-fade-in-up' : 'opacity-0 translate-y-8'}`} style={{ lineHeight: '1.6', fontSize: 'calc(1.5rem + 0.45rem)' }}>
+                <span className="block md:inline">But your Spotify still</span>{' '}
+                <span className="block md:inline">says " <span className="bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] bg-clip-text text-transparent">&lt; 1,000</span> " plays</span>
               </p>
               <p ref={text3Ref} className={`text-gray-300 pb-12 font-medium text-center transition-all duration-700 ${text3InView ? 'animate-fade-in-up' : 'opacity-0 translate-y-8'}`} style={{ fontSize: '1.6rem', lineHeight: '1.8' }}>
                 Meanwhile, some dude who recorded his whole album <b>on an iPhone</b> just hit <b>2 million</b> streams and <b>got signed.</b>
               </p>
-              <p ref={text4Ref} className={`text-4xl md:text-5xl font-black pb-5 bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] bg-clip-text text-transparent transition-all duration-700 ${text4InView ? 'animate-fade-in-up' : 'opacity-0 translate-y-8'}`} style={{ lineHeight: '1.5' }}>
+              <p ref={text4Ref} className={`text-4xl md:text-5xl font-black pb-5 bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] bg-clip-text text-transparent transition-all duration-700 ${text4InView ? 'animate-fade-in-up' : 'opacity-0 translate-y-8'}`} style={{ lineHeight: '1.5', fontSize: 'calc(2.25rem + 0.25rem)' }}>
                 Damn…
               </p>
-              <p ref={text5Ref} className={`text-3xl md:text-4xl font-black text-white pb-12 pt-1 transition-all duration-700 ${text5InView ? 'animate-fade-in-up' : 'opacity-0 translate-y-8'}`} style={{ lineHeight: '1.5' }}>
+              <p ref={text5Ref} className={`text-3xl md:text-4xl font-black text-white pb-12 pt-1 transition-all duration-700 ${text5InView ? 'animate-fade-in-up' : 'opacity-0 translate-y-8'}`} style={{ lineHeight: '1.5', fontSize: 'calc(1.875rem + 0.00rem)' }}>
                 Ready to know the truth?
               </p>
-              <p ref={text6bRef} className={`font-black text-white pb-8 text-center transition-all duration-700 ${text6bInView ? 'animate-fade-in-up' : 'opacity-0 translate-y-8'}`} style={{ fontSize: '1.874rem', lineHeight: '1.5' }}>
+              <p ref={text6bRef} className={`font-black text-white pb-8 text-center transition-all duration-700 ${text6bInView ? 'animate-fade-in-up' : 'opacity-0 translate-y-8'}`} style={{ fontSize: 'calc(1.874rem - 0.15rem)', lineHeight: '1.5' }}>
                 Talent and hard work DOES NOT guarantee success on Spotify.
               </p>
               <p ref={text6Ref} className={`text-gray-300 pb-12 font-medium text-center transition-all duration-700 ${text6InView ? 'animate-fade-in-up' : 'opacity-0 translate-y-8'}`} style={{ fontSize: '1.6rem', lineHeight: '1.8' }}>
                 The platform only pushes artists who <b><i>ALREADY</i></b> have momentum. Big streams, high engagement, and playlist placements. If you've got them, Spotify's algorithm <b>LOVES</b> you. But if you don't? <b>You're invisible.</b>
               </p>
               <div ref={text7Ref} className={`text-center pb-12 transition-all duration-700 ${text7InView ? 'animate-fade-in-up' : 'opacity-0 translate-y-8'}`}>
-                <p className="font-black text-white mb-2" style={{ fontSize: 'calc(1.5rem + 0.75rem)', lineHeight: '1.5' }}>
+                <p className="font-black text-white mb-2" style={{ fontSize: 'calc(1.5rem + 0.60rem)', lineHeight: '1.5' }}>
                   Here's the <span className="bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] bg-clip-text text-transparent">CATCH</span> that's
                 </p>
-                <p className="font-black text-white" style={{ fontSize: 'calc(1.5rem + 0.75rem)', lineHeight: '1.5' }}>
+                <p className="font-black text-white" style={{ fontSize: 'calc(1.5rem + 0.60rem)', lineHeight: '1.5' }}>
                   <span className="bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] bg-clip-text text-transparent">KILLING</span> independent artists…
                 </p>
               </div>
@@ -1655,7 +1694,7 @@ export default function Home() {
               <p ref={text8bRef} className={`text-gray-300 pb-12 font-medium text-center transition-all duration-700 ${text8bInView ? 'animate-fade-in-up' : 'opacity-0 translate-y-8'}`} style={{ fontSize: '1.6rem', lineHeight: '1.8' }}>
                 You're trapped in a death loop where the only way to win is to <i><b><span className="bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] bg-clip-text text-transparent">ALREADY</span></b></i> be winning.
               </p>
-              <p ref={text9Ref} className={`text-3xl md:text-4xl font-bold text-white pb-12 transition-all duration-700 ${text9InView ? 'animate-fade-in-up' : 'opacity-0 translate-y-8'}`} style={{ lineHeight: '1.6' }}>
+              <p ref={text9Ref} className={`text-3xl md:text-4xl font-bold text-white pb-12 transition-all duration-700 ${text9InView ? 'animate-fade-in-up' : 'opacity-0 translate-y-8'}`} style={{ lineHeight: '1.6', fontSize: 'calc(1.875rem + 0.10rem)' }}>
                 Trust me, we know the struggle.
               </p>
               <h2 ref={heading3Ref} className={`text-4xl md:text-5xl lg:text-6xl font-black pb-1 pt-2 bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] bg-clip-text text-transparent transition-all duration-700 ${heading3InView ? 'animate-fade-in-up' : 'opacity-0 translate-y-8'}`} style={{ lineHeight: '1.3' }}>
@@ -1706,19 +1745,19 @@ export default function Home() {
               </div>
             </div>
             <div ref={bottomSectionRef}>
-            <p className={`text-2xl md:text-3xl font-bold text-white pb-12 text-center transition-all duration-700 ${bottomSectionInView ? 'animate-fade-in-up' : 'opacity-0 translate-y-8'}`} style={{ lineHeight: '1.6' }}>
+            <p className={`text-2xl md:text-3xl font-bold text-white pb-12 text-center transition-all duration-700 ${bottomSectionInView ? 'animate-fade-in-up' : 'opacity-0 translate-y-8'}`} style={{ lineHeight: '1.6', fontSize: 'calc(1.5rem + 0.10rem)' }}>
               And while you're still wondering if playlist placements are <i>"worth it"</i>, other artists are collecting streaming revenue and booking their first tours.
             </p>
             <h2 ref={worstPartRef} className={`text-4xl md:text-5xl lg:text-6xl font-black pb-12 pt-8 bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] bg-clip-text text-transparent text-center transition-all duration-700 ${worstPartInView ? 'animate-fade-in-up' : 'opacity-0 translate-y-8'}`} style={{ lineHeight: '1.3' }}>
               But The WORST Part Is...
             </h2>
-            <p ref={fakeAgenciesRef} className={`text-2xl md:text-3xl font-bold text-white pb-12 text-center transition-all duration-700 ${fakeAgenciesInView ? 'animate-fade-in-up' : 'opacity-0 translate-y-8'}`} style={{ lineHeight: '1.6' }}>
+            <p ref={fakeAgenciesRef} className={`text-2xl md:text-3xl font-bold text-white pb-12 text-center transition-all duration-700 ${fakeAgenciesInView ? 'animate-fade-in-up' : 'opacity-0 translate-y-8'}`} style={{ lineHeight: '1.6', fontSize: 'calc(1.5rem + 0.25rem)' }}>
               REAL Spotify growth is trapped behind a field of landmines.
             </p>
             <p ref={fakeAgenciesParaRef} className={`text-gray-300 pb-12 font-medium text-center transition-all duration-700 ${fakeAgenciesParaInView ? 'animate-fade-in-up' : 'opacity-0 translate-y-8'}`} style={{ fontSize: '1.6rem', lineHeight: '1.8' }}>
               Fake agencies charging <b>$99</b> for <b>bot plays</b> from <b>Kazakstan.</b> Scammers in your DMs with <b>"PROMO 4 SALE"</b> messages. Snake oil companies on <b>Google</b> who put you on <b>handmade playlists</b> with only <b>52 followers.</b>
             </p>
-            <p ref={noCapRef} className={`text-2xl md:text-3xl font-bold text-white pb-12 text-center transition-all duration-700 ${noCapInView ? 'animate-fade-in-up' : 'opacity-0 translate-y-8'}`} style={{ lineHeight: '1.6' }}>
+            <p ref={noCapRef} className={`text-2xl md:text-3xl font-bold text-white pb-12 text-center transition-all duration-700 ${noCapInView ? 'animate-fade-in-up' : 'opacity-0 translate-y-8'}`} style={{ lineHeight: '1.6', fontSize: 'calc(1.5rem + 0.15rem)' }}>
               No Cap - Finding <span className="bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] bg-clip-text text-transparent">REAL</span> Spotify Marketing is Harder Than Finding a PS5 to Buy During COVID
             </p>
             <h2 ref={thatsWhyRef} className={`text-4xl md:text-5xl font-black pb-12 pt-2 bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] bg-clip-text text-transparent text-center transition-all duration-700 ${thatsWhyInView ? 'animate-fade-in-up' : 'opacity-0 translate-y-8'}`} style={{ lineHeight: '1.3' }}>
@@ -1748,7 +1787,7 @@ export default function Home() {
             <p ref={getMusicRef} className={`text-gray-300 pb-12 font-medium text-center transition-all duration-700 ${getMusicInView ? 'animate-fade-in-up' : 'opacity-0 translate-y-8'}`} style={{ fontSize: '1.6rem', lineHeight: '1.8' }}>
               We get your music directly in front of playlist curators who control <b><i><span className="bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] bg-clip-text text-transparent">MILLIONS</span></i></b> of real listeners.
             </p>
-            <p ref={rapCaviarRef} className={`text-2xl md:text-3xl font-bold text-white pb-12 text-center transition-all duration-700 ${rapCaviarInView ? 'animate-fade-in-up' : 'opacity-0 translate-y-8'}`} style={{ lineHeight: '1.6' }}>
+            <p ref={rapCaviarRef} className={`text-2xl md:text-3xl font-bold text-white pb-12 text-center transition-all duration-700 ${rapCaviarInView ? 'animate-fade-in-up' : 'opacity-0 translate-y-8'}`} style={{ lineHeight: '1.6', fontSize: 'calc(1.5rem + 0.15rem)' }}>
               RapCaviar. Today's Top Hits. Viva Latino. The playlists that actually move the needle on careers.
             </p>
             <p ref={whileOtherRef} className={`text-gray-300 pb-12 font-medium text-center transition-all duration-700 ${whileOtherInView ? 'animate-fade-in-up' : 'opacity-0 translate-y-8'}`} style={{ fontSize: '1.6rem', lineHeight: '1.8' }}>
@@ -1763,7 +1802,7 @@ export default function Home() {
             <p ref={gotTiredRef} className={`text-gray-300 pb-6 font-medium text-center transition-all duration-700 ${gotTiredInView ? 'animate-fade-in-up' : 'opacity-0 translate-y-8'}`} style={{ fontSize: '1.6rem', lineHeight: '1.8' }}>
               We got tired of watching talented artists get <b>chewed up</b> and <b>spit out</b> by an industry that only cares about <b>who you know.</b> Gatekeepers controlling <b>everything.</b> Labels taking <b>80%</b> of your revenue.
             </p>
-            <p ref={gameRiggedRef} className={`text-2xl md:text-3xl font-bold text-white pt-1.5 pb-14 text-center transition-all duration-700 ${gameRiggedInView ? 'animate-fade-in-up' : 'opacity-0 translate-y-8'}`} style={{ lineHeight: '1.6' }}>
+            <p ref={gameRiggedRef} className={`text-2xl md:text-3xl font-bold text-white pt-1.5 pb-14 text-center transition-all duration-700 ${gameRiggedInView ? 'animate-fade-in-up' : 'opacity-0 translate-y-8'}`} style={{ lineHeight: '1.6', fontSize: 'calc(1.5rem + 0.40rem)' }}>
               The game was rigged from the start.
             </p>
             <p ref={builtFashoRef} className={`text-gray-300 pb-12 font-medium text-center transition-all duration-700 ${builtFashoInView ? 'animate-fade-in-up' : 'opacity-0 translate-y-8'}`} style={{ fontSize: '1.6rem', lineHeight: '1.8' }}>
@@ -2005,7 +2044,7 @@ export default function Home() {
             <div className="max-w-7xl mx-auto">
               <div className="grid lg:grid-cols-2 gap-12 items-center">
                 {/* Left Column - All 4 Steps, animated by scroll progress */}
-                <div className="order-2 lg:order-1 relative" style={{ minHeight: 220 }}>
+                <div className="order-2 lg:order-1 relative -mt-20 md:mt-0 md:pl-[10px]" style={{ minHeight: 220 }}>
                   {/* Step 1 Text */}
                   <div style={{
                     position: 'absolute',
@@ -2020,10 +2059,10 @@ export default function Home() {
                   <h2 className="text-4xl md:text-5xl lg:text-6xl font-black bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] bg-clip-text text-transparent mb-1" style={{ lineHeight: '1.2' }}>
                     STEP 1
                   </h2>
-                  <h3 className="text-3xl md:text-4xl lg:text-5xl font-black text-white mb-8" style={{ lineHeight: '1.2' }}>
+                  <h3 className="text-3xl md:text-4xl lg:text-5xl font-black text-white mb-4 md:mb-8" style={{ lineHeight: '1.2' }}>
                     Find Your Song
                   </h3>
-                  <p className="text-xl text-gray-300 leading-relaxed">
+                  <p className="text-[0.95rem] md:text-[1.4rem] text-gray-300 leading-relaxed pb-8 md:pb-12">
                     Search your song or drop a direct link to your track and we'll analyze everything - your genre, style, energy, mood, and vibe. Our team scans through thousands of trending playlists in our exclusive network to find the EXACT ones where your music fits perfectly. We match you with curators who are actively looking for YOUR sound. Takes 30 seconds to submit, and our team immediately starts identifying opportunities that other services would never find.
                   </p>
                 </div>
@@ -2042,10 +2081,10 @@ export default function Home() {
                     <h2 className="text-4xl md:text-5xl lg:text-6xl font-black bg-gradient-to-r from-[#14c0ff] to-[#8b5cf6] bg-clip-text text-transparent mb-1" style={{ lineHeight: '1.2' }}>
                       STEP 2
                     </h2>
-                    <h3 className="text-3xl md:text-4xl lg:text-5xl font-black text-white mb-8" style={{ lineHeight: '1.2' }}>
+                    <h3 className="text-3xl md:text-4xl lg:text-5xl font-black text-white mb-4 md:mb-8" style={{ lineHeight: '1.2' }}>
                       Choose Your Package
                     </h3>
-                    <p className="text-xl text-gray-300 leading-relaxed">
+                    <p className="text-[0.95rem] md:text-[1.4rem] text-gray-300 leading-relaxed pb-8 md:pb-12">
                       Pick the campaign that matches where you're at in your career. Just dropped your first single? We got you. Ready to push that track to viral status? We got that too. Each package is built different - from starter campaigns that get you those first crucial playlist placements, all the way to our highest tier packages that put you in front of MILLIONS of new listeners. Add multiple tracks for 25% off each additional song. Stack your entire EP if you want. This is YOUR campaign, built YOUR way.
                     </p>
                   </div>
@@ -2064,10 +2103,10 @@ export default function Home() {
                     <h2 className="text-4xl md:text-5xl lg:text-6xl font-black bg-gradient-to-r from-[#8b5cf6] to-[#59e3a5] bg-clip-text text-transparent mb-1" style={{ lineHeight: '1.2' }}>
                       STEP 3
                     </h2>
-                    <h3 className="text-3xl md:text-4xl lg:text-5xl font-black text-white mb-8" style={{ lineHeight: '1.2' }}>
+                    <h3 className="text-3xl md:text-4xl lg:text-5xl font-black text-white mb-4 md:mb-8" style={{ lineHeight: '1.2' }}>
                       We Go To Work For You
                     </h3>
-                    <p className="text-xl text-gray-300 leading-relaxed">
+                    <p className="text-[0.95rem] md:text-[1.4rem] text-gray-300 leading-relaxed pb-8 md:pb-12">
                       This is where the magic happens. Our team gets on the phone and in the emails with playlist curators who TRUST us. We're not sending mass emails into the void - we're having real conversations with real people who control the biggest playlists on Spotify. "Hey Marcus, remember that R&B track that killed it last month? We got another one." That's how we move. Personal relationships, direct communication, and a track record that makes curators actually excited to hear what we're bringing them.
                     </p>
                   </div>
@@ -2086,17 +2125,17 @@ export default function Home() {
                     <h2 className="text-4xl md:text-5xl lg:text-6xl font-black bg-gradient-to-r from-[#59e3a5] to-[#8b5cf6] bg-clip-text text-transparent mb-1" style={{ lineHeight: '1.2' }}>
                       STEP 4
                     </h2>
-                    <h3 className="text-2xl md:text-3xl lg:text-4xl font-black text-white mb-8" style={{ lineHeight: '1.2' }}>
+                    <h3 className="text-2xl md:text-3xl lg:text-4xl font-black text-white mb-4 md:mb-8" style={{ lineHeight: '1.2' }}>
                       Watch Your Career Transform
                     </h3>
-                    <p className="text-xl text-gray-300 leading-relaxed">
+                    <p className="text-[0.95rem] md:text-[1.4rem] text-gray-300 leading-relaxed pb-8 md:pb-12">
                       Within 48 hours, your campaign goes live and everything shifts. Major playlists start adding your track. Thousands of new listeners discovering your music every day. The same Spotify for Artists app that used to depress you? Now it's showing numbers you screenshot and send to your group chat. No more watching everyone else win while you wonder what you're doing wrong. You're IN the game now - getting the plays, building the fanbase, and finally seeing your music reach the audience it was meant for. This is what momentum feels like.
                     </p>
                   </div>
                 </div>
 
                 {/* Right Column - Phone Mockup, Step 1 and Step 2 animated by scroll progress */}
-                <div className="order-1 lg:order-2 flex justify-center relative" style={{ minHeight: 600 }}>
+                <div className="order-1 lg:order-2 flex justify-center relative -mt-6 md:mt-0" style={{ minHeight: 600 }}>
                   {/* Background Glow Effect - Static */}
                   <div className="absolute inset-0 flex items-center justify-center">
                     <div className="w-[500px] h-[500px] bg-gradient-to-br from-[#59e3a5]/40 via-[#14c0ff]/50 via-[#8b5cf6]/45 to-[#59e3a5]/35 rounded-full blur-3xl opacity-80 animate-pulse" style={{ animationDuration: '4s' }}></div>
@@ -2108,7 +2147,7 @@ export default function Home() {
                     <div className="w-80 h-80 bg-gradient-to-tr from-[#8b5cf6]/45 via-[#14c0ff]/50 to-[#59e3a5]/40 rounded-full blur-xl opacity-60"></div>
                   </div>
                   {/* Phone Frame (static) */}
-                    <div className="w-80 h-[600px] bg-gradient-to-br from-gray-900 via-black to-gray-800 rounded-[3rem] p-2 shadow-2xl relative z-10 border border-gray-700/50">
+                    <div className="w-64 h-[480px] md:w-80 md:h-[600px] bg-gradient-to-br from-gray-900 via-black to-gray-800 rounded-[3rem] p-2 shadow-2xl relative z-10 border border-gray-700/50">
                     <div className="w-full h-full bg-gradient-to-br from-[#18192a] to-[#0a0a13] rounded-[2.5rem] relative overflow-hidden flex flex-col">
                       {/* Status Bar (static) */}
                       <div className="flex justify-between items-center px-8 py-4 text-white text-sm relative">
@@ -2123,10 +2162,10 @@ export default function Home() {
                           </div>
                         </div>
                       {/* App Header (static) */}
-                        <div className="px-8 py-4 border-b border-white/10">
-                          <div className="flex items-center space-x-3">
-                            <img src="/fasho-logo-wide.png" alt="Fasho" className="w-10 h-auto" />
-                          <h3 className="text-white font-bold text-lg">
+                        <div className="px-4 md:px-8 py-4 border-b border-white/10">
+                          <div className="flex items-center space-x-2 md:space-x-3">
+                            <img src="/fasho-logo-wide.png" alt="Fasho" className="w-8 md:w-10 h-auto" />
+                          <h3 className="text-white font-bold whitespace-nowrap text-xs md:text-lg">
                             {currentStep === 0 ? 'Find Your Song' : 
                              currentStep === 1 ? 'Build Your Package' :
                              currentStep === 2 ? 'Let\'s Get You Placed' :
@@ -2149,47 +2188,47 @@ export default function Home() {
                           transition: 'opacity 0.3s, transform 0.3s',
                         }}>
                         {/* Search Input Mockup */}
-                        <div className="px-6 py-8" style={{ overflow: 'visible' }}>
+                        <div style={{ padding: '20px 16px', overflow: 'visible' }}>
                           <div className="relative" style={{ overflow: 'visible' }}>
                             {/* Search Input Field */}
-                            <div className="w-full px-4 py-4 bg-white/10 backdrop-blur-xl border border-white/20 rounded-2xl text-white placeholder-gray-400 transition-all duration-300">
+                            <div className="w-full bg-white/10 backdrop-blur-xl border border-white/20 rounded-xl text-white placeholder-gray-400 transition-all duration-300" style={{ padding: '12px', fontSize: '13px' }}>
                               {/* Animated typing effect */}
                               <div className="flex items-center">
-                                <span className="text-white typing-animation" style={{minWidth: 0}}>The Weeknd</span>
-                                <div className="ml-1 w-0.5 h-5 bg-[#14c0ff] cursor-blink"></div>
+                                <span className="text-white typing-animation" style={{minWidth: 0, fontSize: '13px'}}>The Weeknd</span>
+                                <div style={{ marginLeft: '3px', width: '1.5px', height: '16px', backgroundColor: '#14c0ff' }} className="cursor-blink"></div>
                               </div>
                             </div>
                             {/* Animated search results - Only show AFTER typing completes */}
-                            <div className="mt-4 space-y-3 search-results">
-                              <div className="bg-white/5 rounded-xl p-3 border border-white/5 result-item result-card-clickable">
-                                <div className="flex items-center space-x-3">
-                                  <img src="/weekend1.jpg" alt="Starboy" className="w-10 h-10 rounded-lg object-cover" />
+                            <div className="search-results" style={{ marginTop: '12px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                              <div className="bg-white/5 rounded-lg border border-white/5 result-item result-card-clickable" style={{ padding: '12px' }}>
+                                <div className="flex items-center" style={{ gap: '10px' }}>
+                                  <img src="/weekend1.jpg" alt="Starboy" className="rounded-md object-cover" style={{ width: '40px', height: '40px' }} />
                                   <div className="flex-1">
-                                    <div className="text-white text-sm font-medium">Starboy</div>
-                                    <div className="text-gray-400 text-xs">The Weeknd ft. Daft Punk</div>
+                                    <div className="text-white font-medium" style={{ fontSize: '14px' }}>Starboy</div>
+                                    <div className="text-gray-400" style={{ fontSize: '12px' }}>The Weeknd ft. Daft Punk</div>
                                   </div>
                                   {/* Green checkmark in corner */}
-                                  <div className="w-4 h-4 bg-[#59e3a5] rounded-full flex items-center justify-center result-checkmark">
-                                    <svg className="w-2.5 h-2.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <div className="bg-[#59e3a5] rounded-full flex items-center justify-center result-checkmark" style={{ width: '16px', height: '16px' }}>
+                                    <svg className="text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" style={{ width: '10px', height: '10px' }}>
                                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
                                     </svg>
                                 </div>
                               </div>
                               </div>
-                              <div className="bg-white/5 rounded-xl p-3 border border-white/5 result-item">
-                                <div className="flex items-center space-x-3">
-                                  <img src="/weekend2.jpg" alt="Can't Feel My Face" className="w-10 h-10 rounded-lg object-cover" />
+                              <div className="bg-white/5 rounded-lg border border-white/5 result-item" style={{ padding: '12px' }}>
+                                <div className="flex items-center" style={{ gap: '10px' }}>
+                                  <img src="/weekend2.jpg" alt="Can't Feel My Face" className="rounded-md object-cover" style={{ width: '40px', height: '40px' }} />
                                   <div className="flex-1">
-                                    <div className="text-white text-sm font-medium">Can't Feel My Face</div>
-                                    <div className="text-gray-400 text-xs">The Weeknd</div>
+                                    <div className="text-white font-medium" style={{ fontSize: '14px' }}>Can't Feel My Face</div>
+                                    <div className="text-gray-400" style={{ fontSize: '12px' }}>The Weeknd</div>
                                   </div>
                                 </div>
                               </div>
                             </div>
                             {/* Static Magnifying Glass Icon - Always visible, not animated */}
-                            <div className="flex justify-center mt-8">
-                              <div className="w-14 h-14 bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] rounded-full flex items-center justify-center shadow-lg">
-                                <svg className="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <div className="flex justify-center" style={{ marginTop: '20px' }}>
+                              <div className="bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] rounded-full flex items-center justify-center shadow-lg" style={{ width: '40px', height: '40px' }}>
+                                <svg className="text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" style={{ width: '20px', height: '20px' }}>
                                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                                 </svg>
                               </div>
@@ -2210,41 +2249,41 @@ export default function Home() {
                           transition: 'opacity 0.3s, transform 0.3s',
                         }}>
                           {/* Step 2 Mockup Content */}
-                          <div className="px-8 py-8 flex flex-col h-full justify-between">
+                          <div className="flex flex-col h-full" style={{ padding: '20px' }}>
                             {/* Song Info Card */}
-                            <div className="bg-gradient-to-r from-[#59e3a5] via-[#14c0ff] to-[#8b5cf6] p-[1px] rounded-2xl shadow-[0_8px_32px_0_rgba(20,192,255,0.35)] mb-6 relative">
+                            <div className="bg-gradient-to-r from-[#59e3a5] via-[#14c0ff] to-[#8b5cf6] rounded-xl shadow-[0_8px_32px_0_rgba(20,192,255,0.35)] relative" style={{ padding: '1px', marginBottom: '20px' }}>
                               {/* 25% OFF Badge */}
-                              <div className="absolute -top-3 -right-3 bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] text-black text-xs font-semibold px-2 py-1 rounded-md z-10">
+                              <div className="absolute bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] text-black font-semibold rounded-md z-10" style={{ top: '-8px', right: '-8px', fontSize: '10px', padding: '3px 6px' }}>
                                 25% OFF
                     </div>
-                              <div className="flex items-center w-full bg-gradient-to-r from-[#23272f] to-[#1a1a2e] rounded-2xl p-4 gap-4">
-                                <img src="/weekend1.jpg" alt="Starboy" className="w-16 h-16 rounded-xl object-cover shadow-md border border-white/10 flex-shrink-0" />
+                              <div className="flex items-center w-full bg-gradient-to-r from-[#23272f] to-[#1a1a2e] rounded-xl" style={{ padding: '12px', gap: '12px' }}>
+                                <img src="/weekend1.jpg" alt="Starboy" className="rounded-lg object-cover shadow-md border border-white/10 flex-shrink-0" style={{ width: '48px', height: '48px' }} />
                                 <div className="flex-1 min-w-0">
-                                  <div className="font-bold text-white truncate text-left text-lg">Starboy</div>
-                                  <div className="text-gray-300 truncate text-left text-base">The Weeknd ft. Daft Punk</div>
+                                  <div className="font-bold text-white truncate text-left" style={{ fontSize: '14px' }}>Starboy</div>
+                                  <div className="text-gray-300 truncate text-left" style={{ fontSize: '12px' }}>The Weeknd ft. Daft Punk</div>
                   </div>
                 </div>
               </div>
                             {/* Package Selection Mockup */}
-                            <div className="flex flex-col gap-4 mb-6">
-                              <div className="bg-white/5 rounded-xl p-4 border border-white/10 flex flex-col items-center relative package-card-clickable">
-                                <div className="text-white font-bold text-lg mb-1">Premium Package</div>
-                                <div className="text-white text-2xl font-black mb-1">$199</div>
-                                <div className="text-white/80 text-sm">Best for viral growth</div>
+                            <div className="flex flex-col" style={{ gap: '12px' }}>
+                              <div className="bg-white/5 rounded-lg border border-white/10 flex flex-col items-center relative package-card-clickable" style={{ padding: '12px' }}>
+                                <div className="text-white font-bold" style={{ fontSize: '14px', marginBottom: '3px' }}>Premium Package</div>
+                                <div className="text-white font-black" style={{ fontSize: '18px', marginBottom: '3px' }}>$199</div>
+                                <div className="text-white/80" style={{ fontSize: '11px' }}>Best for viral growth</div>
                                 {/* Green checkmark in corner */}
-                                <div className="absolute top-3 right-3 w-4 h-4 bg-[#59e3a5] rounded-full flex items-center justify-center package-checkmark">
-                                  <svg className="w-2.5 h-2.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <div className="absolute bg-[#59e3a5] rounded-full flex items-center justify-center package-checkmark" style={{ top: '8px', right: '8px', width: '14px', height: '14px' }}>
+                                  <svg className="text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" style={{ width: '8px', height: '8px' }}>
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
                                   </svg>
             </div>
                               </div>
-                              <div className="bg-white/5 rounded-xl p-4 border border-white/10 flex flex-col items-center">
-                                <div className="text-white font-bold text-lg mb-1">Standard Package</div>
-                                <div className="text-white text-2xl font-black mb-1">$99</div>
-                                <div className="text-white/80 text-sm">Solid starter boost</div>
+                              <div className="bg-white/5 rounded-lg border border-white/10 flex flex-col items-center" style={{ padding: '12px' }}>
+                                <div className="text-white font-bold" style={{ fontSize: '14px', marginBottom: '3px' }}>Standard Package</div>
+                                <div className="text-white font-black" style={{ fontSize: '18px', marginBottom: '3px' }}>$99</div>
+                                <div className="text-white/80" style={{ fontSize: '11px' }}>Solid starter boost</div>
                               </div>
                               {/* Next Step Button */}
-                              <button className="w-full py-4 bg-gradient-to-r from-[#59e3a5] via-[#14c0ff] to-[#8b5cf6] text-white font-bold rounded-2xl shadow-lg text-lg hover:scale-105 active:scale-95 transition-transform duration-200">
+                              <button className="w-full bg-gradient-to-r from-[#59e3a5] via-[#14c0ff] to-[#8b5cf6] text-white font-bold rounded-xl shadow-lg hover:scale-105 active:scale-95 transition-transform duration-200" style={{ padding: '12px', fontSize: '14px' }}>
                                 Next Step
                               </button>
                             </div>
@@ -2265,23 +2304,23 @@ export default function Home() {
                           transition: 'opacity 0.3s, transform 0.3s',
                         }}>
                           {/* Step 3 Mockup Content - Lottie Animation */}
-                          <div className="px-2 pb-1 flex flex-col h-full">
+                          <div className="flex flex-col h-full" style={{ padding: '4px', paddingBottom: '6px' }}>
                             {/* Lottie Animation - Large size positioned at very top */}
-                            <div className="w-full flex items-start justify-center mb-2">
+                            <div className="w-full flex items-start justify-center" style={{ marginBottom: '4px', marginTop: '-8px' }}>
                               {step3Lottie && (
                                 <Lottie
                                   autoplay
                                   loop
                                   animationData={step3Lottie}
-                                  style={{ width: '120%', height: '120%' }}
+                                  style={{ width: '110%', height: '110%' }}
                                   rendererSettings={{ preserveAspectRatio: 'xMidYMid slice' }}
                                 />
                               )}
                             </div>
                             
                             {/* Text content with gradient and drop shadow */}
-                            <div className="text-center mt-8">
-                              <p className="font-bold text-sm leading-relaxed bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] bg-clip-text text-transparent" style={{ filter: 'drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3))' }}>
+                            <div className="text-center" style={{ marginTop: '8px' }}>
+                              <p className="font-bold leading-relaxed bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] bg-clip-text text-transparent" style={{ filter: 'drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3))', fontSize: '12px' }}>
                                 Direct access to curators of the world's biggest playlists. They know us, they trust us, and they love our artists.
                               </p>
                             </div>
@@ -2301,35 +2340,35 @@ export default function Home() {
                           transition: 'opacity 0.3s, transform 0.3s',
                         }}>
                           {/* Step 4 Mockup Content - Lottie Animation and Chat Message */}
-                          <div className="px-2 pb-1 flex flex-col h-full">
+                          <div className="flex flex-col h-full" style={{ padding: '12px', paddingBottom: '6px' }}>
                             {/* Lottie Animation - Large size positioned at very top */}
-                            <div className="w-full flex items-start justify-center mb-2">
+                            <div className="w-full flex items-start justify-center" style={{ marginBottom: '12px' }}>
                               {step4Lottie && (
                                 <Lottie
                                   autoplay
                                   loop
                                   animationData={step4Lottie}
-                                  style={{ width: '120%', height: '120%' }}
+                                  style={{ width: '110%', height: '110%' }}
                                   rendererSettings={{ preserveAspectRatio: 'xMidYMid slice' }}
                                 />
                               )}
                             </div>
                             
                             {/* Chat Message Mockup */}
-                            <div className="text-center mt-16">
-                              <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-4 mx-4 relative border border-white/20">
+                            <div className="text-center" style={{ marginTop: '40px' }}>
+                              <div className="bg-white/10 backdrop-blur-sm rounded-xl relative border border-white/20" style={{ padding: '12px', margin: '0 12px' }}>
                                 {/* Chat bubble tail - single downward arrow */}
-                                <div className="absolute -bottom-2 left-6 w-4 h-4 bg-white/10 rotate-45 border-r border-b border-white/20"></div>
+                                <div className="absolute bg-white/10 rotate-45 border-r border-b border-white/20" style={{ bottom: '-6px', left: '18px', width: '12px', height: '12px' }}></div>
                                 
                                 {/* Message content */}
-                                <div className="flex items-center mb-3">
+                                <div className="flex items-center" style={{ marginBottom: '8px' }}>
                                   {/* Avatar */}
-                                  <div className="w-8 h-8 bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] rounded-full flex items-center justify-center flex-shrink-0 mr-3">
-                                    <span className="text-white text-sm font-bold">J</span>
+                                  <div className="bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] rounded-full flex items-center justify-center flex-shrink-0" style={{ width: '24px', height: '24px', marginRight: '8px' }}>
+                                    <span className="text-white font-bold" style={{ fontSize: '11px' }}>J</span>
                                   </div>
                                   {/* Message Text */}
                                   <div className="flex-1 text-center">
-                                    <p className="text-white font-medium text-sm whitespace-nowrap">
+                                    <p className="text-white font-medium whitespace-nowrap" style={{ fontSize: '12px' }}>
                                       Dude you're going viral! 🔥
                                     </p>
                                   </div>
@@ -2337,7 +2376,7 @@ export default function Home() {
                                 
                                 {/* Timestamp at bottom right */}
                                 <div className="flex justify-end">
-                                  <span className="text-gray-400 text-[10px]">just now</span>
+                                  <span className="text-gray-400" style={{ fontSize: '9px' }}>just now</span>
                                 </div>
                               </div>
                             </div>

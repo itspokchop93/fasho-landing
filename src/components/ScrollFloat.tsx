@@ -1,8 +1,20 @@
 import React, { useEffect, useMemo, useRef, ReactNode, RefObject } from "react";
-import { gsap } from "gsap";
-import { ScrollTrigger } from "gsap/ScrollTrigger";
 
-gsap.registerPlugin(ScrollTrigger);
+// Dynamic import for GSAP to ensure proper loading
+let gsap: any = null;
+let ScrollTrigger: any = null;
+
+if (typeof window !== 'undefined') {
+  import('gsap').then((gsapModule) => {
+    gsap = gsapModule.gsap;
+    return import('gsap/ScrollTrigger');
+  }).then((scrollTriggerModule) => {
+    ScrollTrigger = scrollTriggerModule.ScrollTrigger;
+    if (gsap && ScrollTrigger) {
+      gsap.registerPlugin(ScrollTrigger);
+    }
+  }).catch(console.error);
+}
 
 interface ScrollFloatProps {
   children: ReactNode;
@@ -83,46 +95,57 @@ const ScrollFloat: React.FC<ScrollFloatProps> = ({
     const el = containerRef.current;
     if (!el) return;
 
-    const scroller =
-      scrollContainerRef && scrollContainerRef.current
-        ? scrollContainerRef.current
-        : window;
-
-    const charElements = el.querySelectorAll(".inline-block");
-
-    // Safety check for GSAP
-    if (!gsap || !gsap.fromTo) {
-      console.warn("GSAP not properly loaded");
-      return;
-    }
-
-    gsap.fromTo(
-      charElements,
-      {
-        willChange: "opacity, transform",
-        opacity: 0,
-        yPercent: 120,
-        scaleY: 2.3,
-        scaleX: 0.7,
-        transformOrigin: "50% 0%"
-      },
-      {
-        duration: animationDuration,
-        ease: ease,
-        opacity: 1,
-        yPercent: 0,
-        scaleY: 1,
-        scaleX: 1,
-        stagger: stagger,
-        scrollTrigger: {
-          trigger: el,
-          scroller,
-          start: scrollStart,
-          end: scrollEnd,
-          scrub: true
-        },
+    // Wait for GSAP to load with timeout
+    const initAnimation = () => {
+      if (!gsap || !gsap.fromTo || !ScrollTrigger) {
+        // Try again after a short delay
+        setTimeout(initAnimation, 100);
+        return;
       }
-    );
+
+      const scroller =
+        scrollContainerRef && scrollContainerRef.current
+          ? scrollContainerRef.current
+          : window;
+
+      const charElements = el.querySelectorAll(".inline-block");
+
+      if (charElements.length === 0) {
+        console.warn("No character elements found for animation");
+        return;
+      }
+
+      gsap.fromTo(
+        charElements,
+        {
+          willChange: "opacity, transform",
+          opacity: 0,
+          yPercent: 120,
+          scaleY: 2.3,
+          scaleX: 0.7,
+          transformOrigin: "50% 0%"
+        },
+        {
+          duration: animationDuration,
+          ease: ease,
+          opacity: 1,
+          yPercent: 0,
+          scaleY: 1,
+          scaleX: 1,
+          stagger: stagger,
+          scrollTrigger: {
+            trigger: el,
+            scroller,
+            start: scrollStart,
+            end: scrollEnd,
+            scrub: true
+          },
+        }
+      );
+    };
+
+    // Start the animation initialization
+    initAnimation();
   }, [
     scrollContainerRef,
     animationDuration,
@@ -139,7 +162,7 @@ const ScrollFloat: React.FC<ScrollFloatProps> = ({
       style={{ lineHeight: '1.2', paddingBottom: '8px' }}
     >
       <span
-        className={`inline-block text-[clamp(1.6rem,4vw,3rem)] ${textClassName}`}
+        className={`inline-block text-[clamp(1rem,7vw,3.5rem)] ${textClassName}`}
         style={{ lineHeight: '1.2', display: 'inline-block' }}
       >
         {splitText}
