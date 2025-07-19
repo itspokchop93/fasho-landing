@@ -993,36 +993,76 @@ export default function Home() {
   // Scroll animation for dashboard
   useEffect(() => {
     const handleScroll = () => setScrollY(window.scrollY);
+    const handleResize = () => {
+      // Force re-render when window is resized to update scale
+      setScrollY(window.scrollY);
+    };
+    
     window.addEventListener('scroll', handleScroll, { passive: true });
-    return () => window.removeEventListener('scroll', handleScroll);
+    window.addEventListener('resize', handleResize, { passive: true });
+    
+    return () => {
+      window.removeEventListener('scroll', handleScroll);
+      window.removeEventListener('resize', handleResize);
+    };
   }, []);
 
-  // Calculate smooth scroll transform with easing
+  // Calculate responsive scale and scroll transform
   const getDashboardTransform = () => {
-    if (!dashboardRef.current) return 'translateY(0px)';
+    // Calculate responsive scale factor
+    const getScaleFactor = () => {
+      if (typeof window === 'undefined') return 1;
+      
+      const viewportWidth = window.innerWidth;
+      const baseWidth = 1200; // Our fixed browser mockup width (wider for realistic proportions)
+      const maxScale = 1; // Maximum scale on desktop
+      const minScale = 0.25; // More aggressive minimum scale for small mobile screens
+      
+      // Calculate scale based on viewport width with better mobile handling
+      let scale;
+      if (viewportWidth >= 1400) {
+        scale = maxScale; // Full size on extra large screens
+      } else if (viewportWidth >= 1024) {
+        scale = Math.max(0.6, (viewportWidth - 50) / baseWidth); // Less aggressive scaling on tablets
+      } else if (viewportWidth >= 768) {
+        scale = Math.max(0.5, (viewportWidth - 30) / baseWidth); // Better tablet scaling
+              } else {
+          // Mobile: more aggressive scaling with padding for breathing room
+          scale = Math.max(minScale, (viewportWidth - 32) / baseWidth);
+        }
+      
+      return Math.min(maxScale, scale);
+    };
     
-    const element = dashboardRef.current;
-    const rect = element.getBoundingClientRect();
-    const elementTop = window.scrollY + rect.top;
-    const elementHeight = rect.height;
-    const windowHeight = window.innerHeight;
+    // Calculate scroll animation transform
+    let scrollTransform = 'translateY(0px)';
+    if (dashboardRef.current) {
+      const element = dashboardRef.current;
+      const rect = element.getBoundingClientRect();
+      const elementTop = window.scrollY + rect.top;
+      const elementHeight = rect.height;
+      const windowHeight = window.innerHeight;
+      
+      // Start animation when element is 95% into view (maximum early trigger)
+      const startPoint = elementTop - windowHeight * 0.95;
+      // End animation much higher - when element is just past center view
+      const endPoint = elementTop + elementHeight * 0.3;
+      
+      const scrollProgress = (scrollY - startPoint) / (endPoint - startPoint);
+      const clampedProgress = Math.max(0, Math.min(1, scrollProgress));
+      
+      // Eased progress using cubic-bezier for smooth transition
+      const easedProgress = clampedProgress * clampedProgress * (3 - 2 * clampedProgress);
+      
+      // Maximum transform distance
+      const maxTransform = 300;
+      const transformY = easedProgress * maxTransform;
+      
+      scrollTransform = `translateY(-${transformY}px)`;
+    }
     
-    // Start animation when element is 95% into view (maximum early trigger)
-    const startPoint = elementTop - windowHeight * 0.95;
-    // End animation much higher - when element is just past center view
-    const endPoint = elementTop + elementHeight * 0.3;
-    
-    const scrollProgress = (scrollY - startPoint) / (endPoint - startPoint);
-    const clampedProgress = Math.max(0, Math.min(1, scrollProgress));
-    
-    // Eased progress using cubic-bezier for smooth transition
-    const easedProgress = clampedProgress * clampedProgress * (3 - 2 * clampedProgress);
-    
-    // Maximum transform distance
-    const maxTransform = 300;
-    const transformY = easedProgress * maxTransform;
-    
-    return `translateY(-${transformY}px)`;
+    const scaleFactor = getScaleFactor();
+    return `${scrollTransform} scale(${scaleFactor})`;
   };
 
   return (
@@ -2417,15 +2457,15 @@ export default function Home() {
           </section>
 
           {/* Dashboard Preview Section */}
-          <section className="py-24 px-4 pb-48 relative z-10 overflow-hidden">
+          <section className="py-0 md:py-24 px-4 pb-0 md:pb-48 relative z-10 overflow-hidden">
             {/* Extended gradient overlay that flows into next section */}
             <div className="absolute inset-0 bg-gradient-to-b from-[#18192a] via-[#16213e] to-[#0a0a13] -z-10"></div>
             <div className="absolute bottom-0 left-0 right-0 h-64 bg-gradient-to-b from-transparent to-[#0a0a13] -z-5"></div>
             <div className="max-w-7xl mx-auto">
-              <div className="text-center mb-16">
+              <div className="text-center mb-4 md:mb-16">
                 <h2 
                   ref={commandCenterRef}
-                  className={`text-4xl md:text-5xl lg:text-6xl font-black mb-8 bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] bg-clip-text text-transparent transition-all duration-700 ${commandCenterInView ? 'animate-fade-in-up' : 'opacity-0 translate-y-8'}`} 
+                  className={`text-4xl md:text-5xl lg:text-6xl font-black mb-4 md:mb-8 bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] bg-clip-text text-transparent transition-all duration-700 ${commandCenterInView ? 'animate-fade-in-up' : 'opacity-0 translate-y-8'}`} 
                   style={{ lineHeight: '1.3' }}
                 >
                   Your Personal Command Center
@@ -2439,98 +2479,104 @@ export default function Home() {
               </div>
 
               {/* Browser Window Mockup */}
-              <div ref={dashboardRef} className="relative flex justify-center">
+              <div ref={dashboardRef} className="relative flex justify-center -mb-[600px] md:mb-0">
                 {/* Background Glow Effect */}
                 <div className="absolute inset-0 -m-16 rounded-3xl opacity-50 blur-3xl bg-gradient-to-r from-[#59e3a5]/30 via-[#14c0ff]/40 to-[#8b5cf6]/30 animate-pulse"></div>
                 
-                <div 
-                  className="bg-gradient-to-br from-[#1a1a2e] to-[#16213e] rounded-t-2xl shadow-2xl transition-transform duration-700 ease-out relative z-10 w-[90%]"
-                  style={{ transform: getDashboardTransform() }}
-                >
+                {/* Centering container for scaled mockup */}
+                <div className="flex justify-center items-start w-full">
+                  <div 
+                    className="bg-gradient-to-br from-[#1a1a2e] to-[#16213e] rounded-t-2xl shadow-2xl transition-transform duration-700 ease-out relative z-10"
+                    style={{ 
+                      transform: getDashboardTransform(),
+                      width: '1200px',
+                      transformOrigin: 'top center'
+                    }}
+                  >
                   {/* Browser Header */}
-                  <div className="bg-gradient-to-r from-[#59e3a5] via-[#14c0ff] to-[#8b5cf6] rounded-t-2xl px-4 py-3 border-b border-white/10">
+                  <div className="bg-gradient-to-r from-[#59e3a5] via-[#14c0ff] to-[#8b5cf6] rounded-t-2xl border-b border-white/10" style={{ padding: '12px 16px' }}>
                       <div className="flex items-center justify-between">
-                        <div className="flex items-center space-x-2">
-                        <div className="flex space-x-1.5">
-                          <div className="w-3 h-3 bg-red-500 rounded-full"></div>
-                          <div className="w-3 h-3 bg-yellow-500 rounded-full"></div>
-                          <div className="w-3 h-3 bg-green-500 rounded-full"></div>
+                        <div className="flex items-center" style={{ gap: '8px' }}>
+                        <div className="flex" style={{ gap: '6px' }}>
+                          <div style={{ width: '12px', height: '12px', backgroundColor: '#ef4444', borderRadius: '50%' }}></div>
+                          <div style={{ width: '12px', height: '12px', backgroundColor: '#eab308', borderRadius: '50%' }}></div>
+                          <div style={{ width: '12px', height: '12px', backgroundColor: '#22c55e', borderRadius: '50%' }}></div>
                         </div>
                           </div>
-                      <div className="flex-1 mx-6">
-                        <div className="bg-black/30 backdrop-blur-sm rounded-lg px-3 py-1.5 text-center border border-white/20">
-                          <span className="text-white text-sm font-mono">fasho.co/dashboard</span>
+                      <div className="flex-1" style={{ margin: '0 24px' }}>
+                        <div className="bg-black/30 backdrop-blur-sm rounded-lg border border-white/20" style={{ padding: '6px 12px', textAlign: 'center' }}>
+                          <span className="text-white font-mono" style={{ fontSize: '14px' }}>fasho.co/dashboard</span>
                         </div>
                           </div>
-                      <div className="w-20"></div>
+                      <div style={{ width: '80px' }}></div>
                     </div>
                   </div>
 
                 {/* Dashboard Content */}
-                  <div className="bg-gradient-to-r from-[#59e3a5] via-[#14c0ff] to-[#8b5cf6] p-[1px] rounded-b-2xl relative">
-                    <div className="bg-gradient-to-br from-[#1a1a2e] to-[#16213e] rounded-b-2xl p-6 relative">
+                  <div className="bg-gradient-to-r from-[#59e3a5] via-[#14c0ff] to-[#8b5cf6] rounded-b-2xl relative" style={{ padding: '1px' }}>
+                    <div className="bg-gradient-to-br from-[#1a1a2e] to-[#16213e] rounded-b-2xl relative" style={{ padding: '24px' }}>
                       
                       {/* Fade to transparent overlay for bottom 10% */}
-                      <div className="absolute inset-x-0 bottom-0 h-[10%] bg-gradient-to-t from-[#16213e] via-[#16213e]/90 to-transparent rounded-b-2xl pointer-events-none z-10"></div>
+                      <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-[#16213e] via-[#16213e]/90 to-transparent rounded-b-2xl pointer-events-none z-10" style={{ height: '10%' }}></div>
                       
                   {/* Dashboard Header */}
-                      <div className="flex items-center justify-between mb-8">
-                        <div className="flex items-center space-x-4">
-                          <div className="w-14 h-14 bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] rounded-xl flex items-center justify-center">
-                            <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <div className="flex items-center justify-between" style={{ marginBottom: '32px' }}>
+                        <div className="flex items-center" style={{ gap: '16px' }}>
+                          <div className="bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] rounded-xl flex items-center justify-center" style={{ width: '56px', height: '56px' }}>
+                            <svg className="text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" style={{ width: '24px', height: '24px' }}>
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
                             </svg>
                           </div>
                     <div>
-                            <h3 className="text-2xl font-bold text-white">Campaign Dashboard</h3>
-                            <p className="text-gray-400 text-sm">Real-time performance metrics</p>
+                            <h3 className="font-bold text-white" style={{ fontSize: '18px' }}>Campaign Dashboard</h3>
+                            <p className="text-gray-400" style={{ fontSize: '12px' }}>Real-time performance metrics</p>
                     </div>
                         </div>
-                        <div className="flex items-center space-x-3">
-                          <div className="bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] text-white px-4 py-2 rounded-lg font-semibold text-sm animate-pulse">
+                        <div className="flex items-center" style={{ gap: '12px' }}>
+                          <div className="bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] text-white rounded-lg font-semibold animate-pulse" style={{ padding: '8px 16px', fontSize: '12px' }}>
                             LIVE
                           </div>
                     </div>
                   </div>
 
                       {/* Top Stats Grid - Only 3 cards now */}
-                      <div className="grid md:grid-cols-3 gap-4 mb-8">
-                        <div className="bg-gradient-to-br from-white/10 to-white/5 rounded-xl p-4 border border-white/10 backdrop-blur-sm">
-                          <div className="flex items-center justify-between mb-2">
-                            <div className="text-gray-400 text-sm font-medium">Estimated Streams</div>
-                            <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
+                      <div className="flex" style={{ gap: '16px', marginBottom: '32px' }}>
+                        <div className="bg-gradient-to-br from-white/10 to-white/5 rounded-xl border border-white/10 backdrop-blur-sm" style={{ padding: '16px', width: '360px' }}>
+                          <div className="flex items-center justify-between" style={{ marginBottom: '8px' }}>
+                            <div className="text-gray-400 font-medium" style={{ fontSize: '12px' }}>Estimated Streams</div>
+                            <div className="bg-green-400 rounded-full animate-pulse" style={{ width: '8px', height: '8px' }}></div>
                       </div>
-                          <div className="text-2xl font-bold text-white mb-0.5">247,382</div>
-                          <div className="flex items-center text-green-400 text-sm">
-                            <svg className="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                          <div className="font-bold text-white" style={{ fontSize: '18px', marginBottom: '2px' }}>247,382</div>
+                          <div className="flex items-center text-green-400" style={{ fontSize: '10px' }}>
+                            <svg fill="currentColor" viewBox="0 0 20 20" style={{ width: '12px', height: '12px', marginRight: '4px' }}>
                               <path fillRule="evenodd" d="M5.293 9.707a1 1 0 010-1.414l4-4a1 1 0 011.414 0l4 4a1 1 0 01-1.414 1.414L11 7.414V15a1 1 0 11-2 0V7.414L6.707 9.707a1 1 0 01-1.414 0z" clipRule="evenodd" />
                             </svg>
                             +23% this week
                     </div>
                       </div>
                         
-                        <div className="bg-gradient-to-br from-white/10 to-white/5 rounded-xl p-4 border border-white/10 backdrop-blur-sm">
-                          <div className="flex items-center justify-between mb-2">
-                            <div className="text-gray-400 text-sm font-medium">Playlist Adds</div>
-                            <div className="w-2 h-2 bg-blue-400 rounded-full animate-pulse"></div>
+                        <div className="bg-gradient-to-br from-white/10 to-white/5 rounded-xl border border-white/10 backdrop-blur-sm" style={{ padding: '16px', width: '360px' }}>
+                          <div className="flex items-center justify-between" style={{ marginBottom: '8px' }}>
+                            <div className="text-gray-400 font-medium" style={{ fontSize: '12px' }}>Playlist Adds</div>
+                            <div className="bg-blue-400 rounded-full animate-pulse" style={{ width: '8px', height: '8px' }}></div>
                     </div>
-                          <div className="text-2xl font-bold text-white mb-0.5">47</div>
-                          <div className="flex items-center text-blue-400 text-sm">
-                            <svg className="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                          <div className="font-bold text-white" style={{ fontSize: '18px', marginBottom: '2px' }}>47</div>
+                          <div className="flex items-center text-blue-400" style={{ fontSize: '10px' }}>
+                            <svg fill="currentColor" viewBox="0 0 20 20" style={{ width: '12px', height: '12px', marginRight: '4px' }}>
                               <path fillRule="evenodd" d="M5.293 9.707a1 1 0 010-1.414l4-4a1 1 0 011.414 0l4 4a1 1 0 01-1.414 1.414L11 7.414V15a1 1 0 11-2 0V7.414L6.707 9.707a1 1 0 01-1.414 0z" clipRule="evenodd" />
                             </svg>
                             +12 new placements
                       </div>
                         </div>
                         
-                        <div className="bg-gradient-to-br from-white/10 to-white/5 rounded-xl p-4 border border-white/10 backdrop-blur-sm">
-                          <div className="flex items-center justify-between mb-2">
-                            <div className="text-gray-400 text-sm font-medium">Active Campaigns</div>
-                            <div className="w-2 h-2 bg-purple-400 rounded-full animate-pulse"></div>
+                        <div className="bg-gradient-to-br from-white/10 to-white/5 rounded-xl border border-white/10 backdrop-blur-sm" style={{ padding: '16px', width: '360px' }}>
+                          <div className="flex items-center justify-between" style={{ marginBottom: '8px' }}>
+                            <div className="text-gray-400 font-medium" style={{ fontSize: '12px' }}>Active Campaigns</div>
+                            <div className="bg-purple-400 rounded-full animate-pulse" style={{ width: '8px', height: '8px' }}></div>
                           </div>
-                          <div className="text-2xl font-bold text-white mb-0.5">3</div>
-                          <div className="flex items-center text-purple-400 text-sm">
-                            <svg className="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                          <div className="font-bold text-white" style={{ fontSize: '18px', marginBottom: '2px' }}>3</div>
+                          <div className="flex items-center text-purple-400" style={{ fontSize: '10px' }}>
+                            <svg fill="currentColor" viewBox="0 0 20 20" style={{ width: '12px', height: '12px', marginRight: '4px' }}>
                               <path fillRule="evenodd" d="M5.293 9.707a1 1 0 010-1.414l4-4a1 1 0 011.414 0l4 4a1 1 0 01-1.414 1.414L11 7.414V15a1 1 0 11-2 0V7.414L6.707 9.707a1 1 0 01-1.414 0z" clipRule="evenodd" />
                             </svg>
                             2 launching soon
@@ -2539,25 +2585,25 @@ export default function Home() {
                   </div>
 
                       {/* Chart and Artist Profile Section */}
-                      <div className="grid lg:grid-cols-3 gap-6 mb-6">
+                      <div className="flex" style={{ gap: '24px', marginBottom: '24px' }}>
                         {/* Animated Chart Section - Takes 2/3 width */}
-                        <div className="lg:col-span-2 bg-gradient-to-br from-white/10 to-white/5 rounded-xl p-6 border border-white/10 backdrop-blur-sm">
-                      <div className="flex items-center justify-between mb-6">
-                            <h4 className="text-white font-semibold text-lg">Stream Growth Analytics</h4>
-                            <div className="flex items-center space-x-3">
-                              <div className="flex items-center space-x-2 text-sm text-gray-400">
-                                <div className="w-3 h-3 bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] rounded-full"></div>
+                        <div className="bg-gradient-to-br from-white/10 to-white/5 rounded-xl border border-white/10 backdrop-blur-sm" style={{ padding: '24px', width: '776px' }}>
+                      <div className="flex items-center justify-between" style={{ marginBottom: '24px' }}>
+                            <h4 className="text-white font-semibold" style={{ fontSize: '16px' }}>Stream Growth Analytics</h4>
+                            <div className="flex items-center" style={{ gap: '12px' }}>
+                              <div className="flex items-center text-gray-400" style={{ gap: '8px', fontSize: '11px' }}>
+                                <div className="bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] rounded-full" style={{ width: '12px', height: '12px' }}></div>
                                 <span>Streams</span>
                         </div>
-                              <div className="flex items-center space-x-2 text-sm text-gray-400">
-                                <div className="w-3 h-3 bg-gradient-to-r from-[#8b5cf6] to-[#ec4899] rounded-full"></div>
+                              <div className="flex items-center text-gray-400" style={{ gap: '8px', fontSize: '11px' }}>
+                                <div className="bg-gradient-to-r from-[#8b5cf6] to-[#ec4899] rounded-full" style={{ width: '12px', height: '12px' }}></div>
                                 <span>Saves</span>
                       </div>
                             </div>
                           </div>
                           
                           {/* Animated Line Chart with Bouncing Data Points */}
-                          <div className="h-48 relative bg-gradient-to-r from-[#59e3a5]/10 to-[#14c0ff]/10 rounded-lg p-4 overflow-hidden">
+                          <div className="relative bg-gradient-to-r from-[#59e3a5]/10 to-[#14c0ff]/10 rounded-lg overflow-hidden" style={{ height: '160px', padding: '16px' }}>
                            {/* Grid lines */}
                             <div className="absolute inset-0 opacity-20">
                               <div className="h-full w-full grid grid-cols-12 grid-rows-6">
@@ -2643,33 +2689,33 @@ export default function Home() {
                         </div>
 
                         {/* Spotify Artist Profile Section - Takes 1/3 width */}
-                        <div className="bg-gradient-to-br from-white/10 to-white/5 rounded-xl p-6 border border-white/10 backdrop-blur-sm">
-                          <div className="flex items-center justify-between mb-4">
-                            <h4 className="text-white font-semibold text-lg">Artist Profile</h4>
-                            <svg className="w-5 h-5 text-[#1DB954]" fill="currentColor" viewBox="0 0 24 24">
+                        <div className="bg-gradient-to-br from-white/10 to-white/5 rounded-xl border border-white/10 backdrop-blur-sm" style={{ padding: '24px', width: '352px' }}>
+                          <div className="flex items-center justify-between" style={{ marginBottom: '16px' }}>
+                            <h4 className="text-white font-semibold" style={{ fontSize: '18px' }}>Artist Profile</h4>
+                            <svg className="text-[#1DB954]" fill="currentColor" viewBox="0 0 24 24" style={{ width: '20px', height: '20px' }}>
                               <path d="M12 0C5.4 0 0 5.4 0 12s5.4 12 12 12 12-5.4 12-12S18.66 0 12 0zm5.521 17.34c-.24.359-.66.48-1.021.24-2.82-1.74-6.36-2.101-10.561-1.141-.418.122-.84-.179-.959-.539-.12-.421.18-.78.54-.9 4.56-1.021 8.52-.6 11.64 1.32.42.18.479.659.361 1.02zm1.44-3.3c-.301.42-.841.6-1.262.3-3.239-1.98-8.159-2.58-11.939-1.38-.479.12-1.02-.12-1.14-.6-.12-.48.12-1.021.6-1.141C9.6 9.9 15 10.561 18.72 12.84c.361.181.54.78.241 1.2zm.12-3.36C15.24 8.4 8.82 8.16 5.16 9.301c-.6.179-1.2-.181-1.38-.721-.18-.601.18-1.2.72-1.381 4.26-1.26 11.28-1.02 15.721 1.621.539.3.719 1.02.42 1.56-.299.421-1.02.599-1.559.3z"/>
                             </svg>
                           </div>
                           
                           {/* Artist Info */}
-                          <div className="text-center mb-6">
-                            <img src="/weekend1.jpg" alt="The Weeknd" className="w-20 h-20 rounded-full mx-auto mb-3 border-2 border-[#14c0ff]/50" />
-                            <h5 className="text-white font-bold text-lg">The Weeknd</h5>
-                            <p className="text-gray-400 text-sm">Verified Artist</p>
+                          <div className="text-center" style={{ marginBottom: '24px' }}>
+                            <img src="/weekend1.jpg" alt="The Weeknd" className="rounded-full mx-auto border-2 border-[#14c0ff]/50" style={{ width: '80px', height: '80px', marginBottom: '12px' }} />
+                            <h5 className="text-white font-bold" style={{ fontSize: '18px' }}>The Weeknd</h5>
+                            <p className="text-gray-400" style={{ fontSize: '14px' }}>Verified Artist</p>
                           </div>
                           
                           {/* Artist Stats */}
-                          <div className="space-y-4">
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
                             <div className="flex justify-between items-center">
-                              <span className="text-gray-400 text-sm">Monthly Listeners</span>
+                              <span className="text-gray-400" style={{ fontSize: '14px' }}>Monthly Listeners</span>
                               <span className="text-white font-semibold">94.2M</span>
                           </div>
                             <div className="flex justify-between items-center">
-                              <span className="text-gray-400 text-sm">Followers</span>
+                              <span className="text-gray-400" style={{ fontSize: '14px' }}>Followers</span>
                               <span className="text-white font-semibold">47.8M</span>
                         </div>
                             <div className="flex justify-between items-center">
-                              <span className="text-gray-400 text-sm">World Rank</span>
+                              <span className="text-gray-400" style={{ fontSize: '14px' }}>World Rank</span>
                               <span className="text-white font-semibold">#7</span>
                       </div>
                           </div>
@@ -2767,9 +2813,10 @@ export default function Home() {
                 </div>
                 </div>
               </div>
+              </div>
 
               {/* CTA Button */}
-              <div className="text-center mt-16" style={{ marginTop: '-180px', marginBottom: '180px' }}>
+              <div className="text-center mt-16 mb-20 md:mb-0" style={{ marginTop: '-180px', marginBottom: '180px' }}>
                 <button
                   onClick={scrollToTrackInput}
                   className="px-12 py-4 bg-gradient-to-r from-[#59e3a5] via-[#14c0ff] to-[#8b5cf6] text-white font-bold rounded-2xl hover:shadow-2xl hover:shadow-[#14c0ff]/30 transition-all duration-700 transform hover:scale-105 active:scale-95 relative overflow-hidden group text-lg"
@@ -2782,7 +2829,7 @@ export default function Home() {
           </section>
 
           {/* Shape Divider - Copy of the one under Start Your Campaign */}
-          <div className="relative z-30 pb-16" style={{ height: '200px', width: '110vw', left: '-5vw', position: 'relative', transform: 'rotate(-8deg) translateY(-280px)', background: 'transparent' }}>
+          <div className="relative z-30 pb-16 mt-40 md:mt-0" style={{ height: '200px', width: '120vw', left: '-10vw', position: 'relative', transform: 'rotate(-8deg) translateY(-280px)', background: 'transparent' }}>
             {/* All background elements removed for full transparency */}
             
             {/* Base layer - darkest */}
