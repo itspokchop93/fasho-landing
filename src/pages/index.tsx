@@ -160,6 +160,7 @@ export default function Home() {
   const [currentTestimonialIndex, setCurrentTestimonialIndex] = useState(0);
   const [isCarouselPaused, setIsCarouselPaused] = useState(false);
   const [resumeTimeout, setResumeTimeout] = useState<NodeJS.Timeout | null>(null);
+  const [isMobile, setIsMobile] = useState(false);
 
   // Logo carousel state
   const [logoIndex, setLogoIndex] = useState(0);
@@ -323,7 +324,17 @@ export default function Home() {
     }
   }, [currentTestimonialIndex, testimonials.length]);
 
-
+  // Mobile detection for responsive carousel
+  useEffect(() => {
+    const checkIsMobile = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+    
+    checkIsMobile(); // Check on mount
+    window.addEventListener('resize', checkIsMobile);
+    
+    return () => window.removeEventListener('resize', checkIsMobile);
+  }, []);
 
   // Viewport animation hooks for PAS section
 
@@ -406,10 +417,15 @@ export default function Home() {
   const [stepProgress, setStepProgress] = useState(0); // 0-1 progress within current step
   const [isStepSectionPinned, setIsStepSectionPinned] = useState(false);
 
-    // ScrollMagic-style Step Section Animation System
+    // ScrollMagic-style Step Section Animation System - Desktop Only
   useEffect(() => {
     const section = phoneSectionRef.current;
     if (!section) return;
+    
+    // Only run scroll animation on desktop (lg+) screens
+    const checkIsDesktop = () => window.innerWidth >= 1024;
+    let isDesktop = checkIsDesktop();
+    if (!isDesktop) return;
 
     // ScrollMagic-style Scene Controller
     class StepSceneController {
@@ -1041,27 +1057,27 @@ export default function Home() {
     // Calculate scroll animation transform
     let scrollTransform = 'translateY(0px)';
     if (dashboardRef.current) {
-      const element = dashboardRef.current;
-      const rect = element.getBoundingClientRect();
-      const elementTop = window.scrollY + rect.top;
-      const elementHeight = rect.height;
-      const windowHeight = window.innerHeight;
-      
-      // Start animation when element is 95% into view (maximum early trigger)
-      const startPoint = elementTop - windowHeight * 0.95;
-      // End animation much higher - when element is just past center view
-      const endPoint = elementTop + elementHeight * 0.3;
-      
-      const scrollProgress = (scrollY - startPoint) / (endPoint - startPoint);
-      const clampedProgress = Math.max(0, Math.min(1, scrollProgress));
-      
-      // Eased progress using cubic-bezier for smooth transition
-      const easedProgress = clampedProgress * clampedProgress * (3 - 2 * clampedProgress);
-      
-      // Maximum transform distance
-      const maxTransform = 300;
-      const transformY = easedProgress * maxTransform;
-      
+    const element = dashboardRef.current;
+    const rect = element.getBoundingClientRect();
+    const elementTop = window.scrollY + rect.top;
+    const elementHeight = rect.height;
+    const windowHeight = window.innerHeight;
+    
+    // Start animation when element is 95% into view (maximum early trigger)
+    const startPoint = elementTop - windowHeight * 0.95;
+    // End animation much higher - when element is just past center view
+    const endPoint = elementTop + elementHeight * 0.3;
+    
+    const scrollProgress = (scrollY - startPoint) / (endPoint - startPoint);
+    const clampedProgress = Math.max(0, Math.min(1, scrollProgress));
+    
+    // Eased progress using cubic-bezier for smooth transition
+    const easedProgress = clampedProgress * clampedProgress * (3 - 2 * clampedProgress);
+    
+      // Maximum transform distance (reduced for less sensitivity)
+      const maxTransform = 180;
+    const transformY = easedProgress * maxTransform;
+    
       scrollTransform = `translateY(-${transformY}px)`;
     }
     
@@ -1156,41 +1172,41 @@ export default function Home() {
                 {/* Main Heading with SplitText Animation */}
                 <h1 className="text-4xl xs:text-5xl sm:text-6xl md:text-7xl lg:text-8xl font-black mb-8 leading-none" style={{ whiteSpace: 'normal' }}>
                   <div className="whitespace-nowrap mb-1 md:mb-0" style={{ fontSize: '1.2em' }}>
-                    <SplitText
-                      text="#1 Spotify"
-                      className="block drop-shadow-[0_8px_16px_rgba(0,0,0,0.6)]"
-                      delay={80}
-                      duration={0.8}
-                      ease="power3.out"
-                      splitType="chars"
-                      from={{ opacity: 0, y: 50 }}
-                      to={{ opacity: 1, y: 0 }}
-                      threshold={0.2}
-                      rootMargin="-50px"
-                      textAlign="center"
-                      gradientFrom="#59e3a5"
-                      gradientVia="#14c0ff"
-                      gradientTo="#8b5cf6"
-                      gradientDirection="to-r"
-                    />
+                  <SplitText
+                    text="#1 Spotify"
+                    className="block drop-shadow-[0_8px_16px_rgba(0,0,0,0.6)]"
+                    delay={80}
+                    duration={0.8}
+                    ease="power3.out"
+                    splitType="chars"
+                    from={{ opacity: 0, y: 50 }}
+                    to={{ opacity: 1, y: 0 }}
+                    threshold={0.2}
+                    rootMargin="-50px"
+                    textAlign="center"
+                    gradientFrom="#59e3a5"
+                    gradientVia="#14c0ff"
+                    gradientTo="#8b5cf6"
+                    gradientDirection="to-r"
+                  />
                   </div>
                   <div className="whitespace-nowrap">
-                    <SplitText
-                      text="Music Promotion"
-                      className="block drop-shadow-[0_8px_16px_rgba(0,0,0,0.6)]"
-                      delay={80}
-                      duration={0.8}
-                      ease="power3.out"
-                      splitType="chars"
-                      from={{ opacity: 0, y: 50 }}
-                      to={{ opacity: 1, y: 0 }}
-                      threshold={0.2}
-                      rootMargin="-50px"
-                      textAlign="center"
-                      gradientFrom="#ffffff"
-                      gradientTo="#9ca3af"
-                      gradientDirection="to-b"
-                    />
+                  <SplitText
+                    text="Music Promotion"
+                    className="block drop-shadow-[0_8px_16px_rgba(0,0,0,0.6)]"
+                    delay={80}
+                    duration={0.8}
+                    ease="power3.out"
+                    splitType="chars"
+                    from={{ opacity: 0, y: 50 }}
+                    to={{ opacity: 1, y: 0 }}
+                    threshold={0.2}
+                    rootMargin="-50px"
+                    textAlign="center"
+                    gradientFrom="#ffffff"
+                    gradientTo="#9ca3af"
+                    gradientDirection="to-b"
+                  />
                   </div>
                 </h1>
 
@@ -2038,8 +2054,8 @@ export default function Home() {
             </svg>
           </div>
 
-          {/* Phone Mockup Section */}
-          <section id={PHONE_SECTION_ID} ref={phoneSectionRef} className="py-20 px-4 relative z-20 -mt-24" style={{ marginTop: '50px' }}>
+          {/* Desktop How It Works Section (scroll animation) - Hidden on Mobile */}
+          <section id={PHONE_SECTION_ID} ref={phoneSectionRef} className="hidden lg:block py-20 px-4 relative z-20 -mt-24" style={{ marginTop: '50px' }}>
             <div className="max-w-7xl mx-auto">
               <div className="grid lg:grid-cols-2 gap-12 items-center">
                 {/* Left Column - All 4 Steps, animated by scroll progress */}
@@ -2266,9 +2282,9 @@ export default function Home() {
                             {/* Package Selection Mockup */}
                             <div className="flex flex-col" style={{ gap: '12px' }}>
                               <div className="bg-white/5 rounded-lg border border-white/10 flex flex-col items-center relative package-card-clickable" style={{ padding: '12px' }}>
-                                <div className="text-white font-bold" style={{ fontSize: '14px', marginBottom: '3px' }}>Premium Package</div>
-                                <div className="text-white font-black" style={{ fontSize: '18px', marginBottom: '3px' }}>$199</div>
-                                <div className="text-white/80" style={{ fontSize: '11px' }}>Best for viral growth</div>
+                                <div className="text-white font-bold" style={{ fontSize: '14px', marginBottom: '3px' }}>UNSTOPPABLE</div>
+                                <div className="text-white font-black" style={{ fontSize: '18px', marginBottom: '3px' }}>$259</div>
+                                <div className="text-white/80" style={{ fontSize: '11px' }}>45k - 50k Streams</div>
                                 {/* Green checkmark in corner */}
                                 <div className="absolute bg-[#59e3a5] rounded-full flex items-center justify-center package-checkmark" style={{ top: '8px', right: '8px', width: '14px', height: '14px' }}>
                                   <svg className="text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" style={{ width: '8px', height: '8px' }}>
@@ -2277,9 +2293,9 @@ export default function Home() {
             </div>
                               </div>
                               <div className="bg-white/5 rounded-lg border border-white/10 flex flex-col items-center" style={{ padding: '12px' }}>
-                                <div className="text-white font-bold" style={{ fontSize: '14px', marginBottom: '3px' }}>Standard Package</div>
-                                <div className="text-white font-black" style={{ fontSize: '18px', marginBottom: '3px' }}>$99</div>
-                                <div className="text-white/80" style={{ fontSize: '11px' }}>Solid starter boost</div>
+                                <div className="text-white font-bold" style={{ fontSize: '14px', marginBottom: '3px' }}>DOMINATE</div>
+                                <div className="text-white font-black" style={{ fontSize: '18px', marginBottom: '3px' }}>$149</div>
+                                <div className="text-white/80" style={{ fontSize: '11px' }}>18k - 20k Streams</div>
                               </div>
                               {/* Next Step Button */}
                               <button className="w-full bg-gradient-to-r from-[#59e3a5] via-[#14c0ff] to-[#8b5cf6] text-white font-bold rounded-xl shadow-lg hover:scale-105 active:scale-95 transition-transform duration-200" style={{ padding: '12px', fontSize: '14px' }}>
@@ -2389,8 +2405,389 @@ export default function Home() {
             </div> {/* End max-w-7xl */}
           </section>
 
-          {/* Track Your Success Section */}
-          <section className={`pb-24 px-4 relative z-10 transition-all duration-500 ${isStepSectionPinned ? 'pt-32 mt-16' : 'pt-20 -mt-16'}`}>
+          {/* Mobile How It Works Sections (individual static sections) - Only visible on Mobile */}
+          
+                        {/* Mobile Step 1 Section */}
+              <section className="block lg:hidden py-16 px-4 relative z-20">
+                <div className="max-w-4xl mx-auto">
+                  <div className="text-center mb-12">
+                    <h2 className="font-black bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] bg-clip-text text-transparent mb-4" style={{ fontSize: '3rem', lineHeight: '1.2' }}>
+                      STEP 1
+                    </h2>
+                <h3 className="text-2xl md:text-3xl font-black text-white mb-6" style={{ lineHeight: '1.2' }}>
+                  Find Your Song
+                </h3>
+                <p className="text-base md:text-lg text-gray-300 leading-relaxed max-w-2xl mx-auto">
+                  Search your song or drop a direct link to your track and we'll analyze everything - your genre, style, energy, mood, and vibe. Our team scans through thousands of trending playlists in our exclusive network to find the EXACT ones where your music fits perfectly.
+                </p>
+              </div>
+
+              {/* Mobile Phone Mockup for Step 1 */}
+              <div className="flex justify-center mb-16">
+                {/* Background Glow Effect */}
+                <div className="relative">
+                  <div className="absolute inset-0 -m-8 bg-gradient-to-br from-[#59e3a5]/30 via-[#14c0ff]/40 to-[#8b5cf6]/30 rounded-full blur-3xl opacity-80 animate-pulse"></div>
+                  
+                  {/* Phone Frame */}
+                  <div className="relative w-64 h-[480px] md:w-80 md:h-[600px] bg-gradient-to-br from-gray-900 via-black to-gray-800 rounded-[3rem] p-2 shadow-2xl border border-gray-700/50">
+                    <div className="w-full h-full bg-gradient-to-br from-[#18192a] to-[#0a0a13] rounded-[2.5rem] relative overflow-hidden flex flex-col">
+                      {/* Status Bar */}
+                      <div className="flex justify-between items-center px-8 py-4 text-white text-sm relative">
+                        <span>9:41</span>
+                        <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 flex flex-col items-center">
+                          <div className="w-12 h-2 bg-white rounded-full opacity-80" style={{marginBottom: '2px'}}></div>
+                        </div>
+                        <div className="flex items-center space-x-1">
+                          <div className="w-6 h-3 border border-white rounded-sm">
+                            <div className="w-4 h-1 bg-white rounded-sm m-0.5"></div>
+                          </div>
+                        </div>
+                      </div>
+                      
+                      {/* App Header */}
+                      <div className="px-4 md:px-8 py-4 border-b border-white/10">
+                        <div className="flex items-center space-x-2 md:space-x-3">
+                          <img src="/fasho-logo-wide.png" alt="Fasho" className="w-8 md:w-10 h-auto" />
+                          <h3 className="text-white font-bold whitespace-nowrap text-xs md:text-lg">Find Your Song</h3>
+                        </div>
+                      </div>
+                      
+                      {/* Screen Content - Copied from Desktop */}
+                      <div className="flex-1 relative">
+                        <div style={{ padding: '20px 16px', overflow: 'visible' }}>
+                          <div className="relative" style={{ overflow: 'visible' }}>
+                            {/* Search Input Field */}
+                            <div className="w-full bg-white/10 backdrop-blur-xl border border-white/20 rounded-xl text-white placeholder-gray-400 transition-all duration-300" style={{ padding: '12px', fontSize: '13px' }}>
+                              {/* Animated typing effect */}
+                              <div className="flex items-center">
+                                <span className="text-white typing-animation" style={{minWidth: 0, fontSize: '13px'}}>The Weeknd</span>
+                                <div style={{ marginLeft: '3px', width: '1.5px', height: '16px', backgroundColor: '#14c0ff' }} className="cursor-blink"></div>
+                              </div>
+                            </div>
+                            {/* Animated search results */}
+                            <div className="search-results" style={{ marginTop: '12px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                              <div className="bg-white/5 rounded-lg border border-white/5 result-item result-card-clickable" style={{ padding: '12px' }}>
+                                <div className="flex items-center" style={{ gap: '10px' }}>
+                                  <img src="/weekend1.jpg" alt="Starboy" className="rounded-md object-cover" style={{ width: '40px', height: '40px' }} />
+                                  <div className="flex-1">
+                                    <div className="text-white font-medium" style={{ fontSize: '14px' }}>Starboy</div>
+                                    <div className="text-gray-400" style={{ fontSize: '12px' }}>The Weeknd ft. Daft Punk</div>
+                                  </div>
+                                  {/* Green checkmark in corner */}
+                                  <div className="bg-[#59e3a5] rounded-full flex items-center justify-center result-checkmark" style={{ width: '16px', height: '16px' }}>
+                                    <svg className="text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" style={{ width: '10px', height: '10px' }}>
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                                    </svg>
+                                  </div>
+                                </div>
+                              </div>
+                              <div className="bg-white/5 rounded-lg border border-white/5 result-item" style={{ padding: '12px' }}>
+                                <div className="flex items-center" style={{ gap: '10px' }}>
+                                  <img src="/weekend2.jpg" alt="Can't Feel My Face" className="rounded-md object-cover" style={{ width: '40px', height: '40px' }} />
+                                  <div className="flex-1">
+                                    <div className="text-white font-medium" style={{ fontSize: '14px' }}>Can't Feel My Face</div>
+                                    <div className="text-gray-400" style={{ fontSize: '12px' }}>The Weeknd</div>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                            {/* Static Magnifying Glass Icon */}
+                            <div className="flex justify-center" style={{ marginTop: '20px' }}>
+                              <div className="bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] rounded-full flex items-center justify-center shadow-lg" style={{ width: '40px', height: '40px' }}>
+                                <svg className="text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" style={{ width: '20px', height: '20px' }}>
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                                </svg>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </section>
+
+                        {/* Mobile Step 2 Section */}
+              <section className="block lg:hidden py-16 px-4 relative z-20">
+                <div className="max-w-4xl mx-auto">
+                  <div className="text-center mb-12">
+                    <h2 className="font-black bg-gradient-to-r from-[#14c0ff] to-[#8b5cf6] bg-clip-text text-transparent mb-4" style={{ fontSize: '3rem', lineHeight: '1.2' }}>
+                      STEP 2
+                    </h2>
+                <h3 className="text-2xl md:text-3xl font-black text-white mb-6" style={{ lineHeight: '1.2' }}>
+                  Choose Your Package
+                </h3>
+                <p className="text-base md:text-lg text-gray-300 leading-relaxed max-w-2xl mx-auto">
+                  Pick the campaign that matches where you're at in your career. Each package is built different - from starter campaigns to our highest tier packages that put you in front of MILLIONS of new listeners.
+                </p>
+              </div>
+
+              {/* Mobile Phone Mockup for Step 2 */}
+              <div className="flex justify-center mb-16">
+                <div className="relative">
+                  <div className="absolute inset-0 -m-8 bg-gradient-to-br from-[#14c0ff]/30 via-[#8b5cf6]/40 to-[#59e3a5]/30 rounded-full blur-3xl opacity-80 animate-pulse"></div>
+                  
+                  <div className="relative w-64 h-[480px] md:w-80 md:h-[600px] bg-gradient-to-br from-gray-900 via-black to-gray-800 rounded-[3rem] p-2 shadow-2xl border border-gray-700/50">
+                    <div className="w-full h-full bg-gradient-to-br from-[#18192a] to-[#0a0a13] rounded-[2.5rem] relative overflow-hidden flex flex-col">
+                      {/* Status Bar */}
+                      <div className="flex justify-between items-center px-8 py-4 text-white text-sm relative">
+                        <span>9:41</span>
+                        <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 flex flex-col items-center">
+                          <div className="w-12 h-2 bg-white rounded-full opacity-80" style={{marginBottom: '2px'}}></div>
+                        </div>
+                        <div className="flex items-center space-x-1">
+                          <div className="w-6 h-3 border border-white rounded-sm">
+                            <div className="w-4 h-1 bg-white rounded-sm m-0.5"></div>
+                          </div>
+                        </div>
+                      </div>
+                      
+                      {/* App Header */}
+                      <div className="px-4 md:px-8 py-4 border-b border-white/10">
+                        <div className="flex items-center space-x-2 md:space-x-3">
+                          <img src="/fasho-logo-wide.png" alt="Fasho" className="w-8 md:w-10 h-auto" />
+                          <h3 className="text-white font-bold whitespace-nowrap text-xs md:text-lg">Build Your Package</h3>
+                        </div>
+                      </div>
+                      
+                      {/* Screen Content - Copied from Desktop */}
+                      <div className="flex-1 relative">
+                        <div className="flex flex-col h-full" style={{ padding: '20px' }}>
+                          {/* Song Info Card */}
+                          <div className="bg-gradient-to-r from-[#59e3a5] via-[#14c0ff] to-[#8b5cf6] rounded-xl shadow-[0_8px_32px_0_rgba(20,192,255,0.35)] relative" style={{ padding: '1px', marginBottom: '20px' }}>
+                            {/* 25% OFF Badge */}
+                            <div className="absolute bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] text-black font-semibold rounded-md z-10" style={{ top: '-8px', right: '-8px', fontSize: '10px', padding: '3px 6px' }}>
+                              25% OFF
+                            </div>
+                            <div className="flex items-center w-full bg-gradient-to-r from-[#23272f] to-[#1a1a2e] rounded-xl" style={{ padding: '12px', gap: '12px' }}>
+                              <img src="/weekend1.jpg" alt="Starboy" className="rounded-lg object-cover shadow-md border border-white/10 flex-shrink-0" style={{ width: '48px', height: '48px' }} />
+                              <div className="flex-1 min-w-0">
+                                <div className="font-bold text-white truncate text-left" style={{ fontSize: '14px' }}>Starboy</div>
+                                <div className="text-gray-300 truncate text-left" style={{ fontSize: '12px' }}>The Weeknd ft. Daft Punk</div>
+                              </div>
+                            </div>
+                          </div>
+                          {/* Package Selection Mockup */}
+                                                     <div className="flex flex-col" style={{ gap: '12px' }}>
+                             <div className="bg-white/5 rounded-lg border border-white/10 flex flex-col items-center relative package-card-clickable" style={{ padding: '12px' }}>
+                               <div className="text-white font-bold" style={{ fontSize: '14px', marginBottom: '3px' }}>UNSTOPPABLE</div>
+                               <div className="text-white font-black" style={{ fontSize: '18px', marginBottom: '3px' }}>$259</div>
+                               <div className="text-white/80" style={{ fontSize: '11px' }}>45k - 50k Streams</div>
+                               {/* Green checkmark in corner */}
+                               <div className="absolute bg-[#59e3a5] rounded-full flex items-center justify-center package-checkmark" style={{ top: '8px', right: '8px', width: '14px', height: '14px' }}>
+                                 <svg className="text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" style={{ width: '8px', height: '8px' }}>
+                                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                                 </svg>
+                               </div>
+                             </div>
+                             <div className="bg-white/5 rounded-lg border border-white/10 flex flex-col items-center" style={{ padding: '12px' }}>
+                               <div className="text-white font-bold" style={{ fontSize: '14px', marginBottom: '3px' }}>DOMINATE</div>
+                               <div className="text-white font-black" style={{ fontSize: '18px', marginBottom: '3px' }}>$149</div>
+                               <div className="text-white/80" style={{ fontSize: '11px' }}>18k - 20k Streams</div>
+                             </div>
+                            {/* Next Step Button */}
+                            <button className="w-full bg-gradient-to-r from-[#59e3a5] via-[#14c0ff] to-[#8b5cf6] text-white font-bold rounded-xl shadow-lg hover:scale-105 active:scale-95 transition-transform duration-200" style={{ padding: '12px', fontSize: '14px' }}>
+                              Next Step
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </section>
+
+                        {/* Mobile Step 3 Section */}
+              <section className="block lg:hidden py-16 px-4 relative z-20">
+                <div className="max-w-4xl mx-auto">
+                  <div className="text-center mb-12">
+                    <h2 className="font-black bg-gradient-to-r from-[#8b5cf6] to-[#59e3a5] bg-clip-text text-transparent mb-4" style={{ fontSize: '3rem', lineHeight: '1.2' }}>
+                      STEP 3
+                    </h2>
+                <h3 className="text-2xl md:text-3xl font-black text-white mb-6" style={{ lineHeight: '1.2' }}>
+                  We Go To Work For You
+                </h3>
+                <p className="text-base md:text-lg text-gray-300 leading-relaxed max-w-2xl mx-auto">
+                  This is where the magic happens. Our team gets on the phone with playlist curators who TRUST us. We're having real conversations with real people who control the biggest playlists on Spotify.
+                </p>
+              </div>
+
+              {/* Mobile Phone Mockup for Step 3 */}
+              <div className="flex justify-center mb-16">
+                <div className="relative">
+                  <div className="absolute inset-0 -m-8 bg-gradient-to-br from-[#8b5cf6]/30 via-[#59e3a5]/40 to-[#14c0ff]/30 rounded-full blur-3xl opacity-80 animate-pulse"></div>
+                  
+                  <div className="relative w-64 h-[480px] md:w-80 md:h-[600px] bg-gradient-to-br from-gray-900 via-black to-gray-800 rounded-[3rem] p-2 shadow-2xl border border-gray-700/50">
+                    <div className="w-full h-full bg-gradient-to-br from-[#18192a] to-[#0a0a13] rounded-[2.5rem] relative overflow-hidden flex flex-col">
+                      {/* Status Bar */}
+                      <div className="flex justify-between items-center px-8 py-4 text-white text-sm relative">
+                        <span>9:41</span>
+                        <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 flex flex-col items-center">
+                          <div className="w-12 h-2 bg-white rounded-full opacity-80" style={{marginBottom: '2px'}}></div>
+                        </div>
+                        <div className="flex items-center space-x-1">
+                          <div className="w-6 h-3 border border-white rounded-sm">
+                            <div className="w-4 h-1 bg-white rounded-sm m-0.5"></div>
+                          </div>
+                        </div>
+                      </div>
+                      
+                      {/* App Header */}
+                      <div className="px-4 md:px-8 py-4 border-b border-white/10">
+                        <div className="flex items-center space-x-2 md:space-x-3">
+                          <img src="/fasho-logo-wide.png" alt="Fasho" className="w-8 md:w-10 h-auto" />
+                          <h3 className="text-white font-bold whitespace-nowrap text-xs md:text-lg">Let's Get You Placed</h3>
+                        </div>
+                      </div>
+                      
+                      {/* Screen Content - Copied from Desktop */}
+                      <div className="flex-1 relative">
+                        <div className="flex flex-col h-full" style={{ padding: '4px', paddingBottom: '6px' }}>
+                          {/* Lottie Animation - Large size positioned at very top */}
+                          <div className="w-full flex items-start justify-center" style={{ marginBottom: '4px', marginTop: '-8px' }}>
+                            {step3Lottie && (
+                              <Lottie
+                                autoplay
+                                loop
+                                animationData={step3Lottie}
+                                style={{ width: '110%', height: '110%' }}
+                                rendererSettings={{ preserveAspectRatio: 'xMidYMid slice' }}
+                              />
+                            )}
+                          </div>
+                          
+                          {/* Text content with gradient and drop shadow */}
+                          <div className="text-center" style={{ marginTop: '8px' }}>
+                            <p className="font-bold leading-relaxed bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] bg-clip-text text-transparent" style={{ filter: 'drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3))', fontSize: '12px' }}>
+                              Direct access to curators of the world's biggest playlists. They know us, they trust us, and they love our artists.
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          {/* Mobile Step 4 Section */}
+          <section className="block lg:hidden py-16 px-4 relative z-20">
+            <div className="max-w-4xl mx-auto">
+              <div className="text-center mb-12">
+                                 <h2 className="font-black bg-gradient-to-r from-[#59e3a5] to-[#8b5cf6] bg-clip-text text-transparent mb-4" style={{ fontSize: '3rem', lineHeight: '1.2' }}>
+                    STEP 4
+                  </h2>
+                <h3 className="text-2xl md:text-3xl font-black text-white mb-6" style={{ lineHeight: '1.2' }}>
+                  Watch Your Career Transform
+                </h3>
+                <p className="text-base md:text-lg text-gray-300 leading-relaxed max-w-2xl mx-auto">
+                  Within 48 hours, your campaign goes live and everything shifts. Major playlists start adding your track. Thousands of new listeners discovering your music every day.
+                </p>
+              </div>
+
+              {/* Mobile Phone Mockup for Step 4 */}
+              <div className="flex justify-center mb-16">
+                <div className="relative">
+                  <div className="absolute inset-0 -m-8 bg-gradient-to-br from-[#59e3a5]/30 via-[#8b5cf6]/40 to-[#14c0ff]/30 rounded-full blur-3xl opacity-80 animate-pulse"></div>
+                  
+                  <div className="relative w-64 h-[480px] md:w-80 md:h-[600px] bg-gradient-to-br from-gray-900 via-black to-gray-800 rounded-[3rem] p-2 shadow-2xl border border-gray-700/50">
+                    <div className="w-full h-full bg-gradient-to-br from-[#18192a] to-[#0a0a13] rounded-[2.5rem] relative overflow-hidden flex flex-col">
+                      {/* Status Bar */}
+                      <div className="flex justify-between items-center px-8 py-4 text-white text-sm relative">
+                        <span>9:41</span>
+                        <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 flex flex-col items-center">
+                          <div className="w-12 h-2 bg-white rounded-full opacity-80" style={{marginBottom: '2px'}}></div>
+                        </div>
+                        <div className="flex items-center space-x-1">
+                          <div className="w-6 h-3 border border-white rounded-sm">
+                            <div className="w-4 h-1 bg-white rounded-sm m-0.5"></div>
+                          </div>
+                        </div>
+                      </div>
+                      
+                      {/* App Header */}
+                      <div className="px-4 md:px-8 py-4 border-b border-white/10">
+                        <div className="flex items-center space-x-2 md:space-x-3">
+                          <img src="/fasho-logo-wide.png" alt="Fasho" className="w-8 md:w-10 h-auto" />
+                          <h3 className="text-white font-bold whitespace-nowrap text-xs md:text-lg">Watch Your Success</h3>
+                        </div>
+                      </div>
+                      
+                      {/* Screen Content - Copied from Desktop */}
+                      <div className="flex-1 relative">
+                        <div className="flex flex-col h-full" style={{ padding: '12px', paddingBottom: '6px' }}>
+                          {/* Lottie Animation - Large size positioned at very top */}
+                          <div className="w-full flex items-start justify-center" style={{ marginBottom: '12px' }}>
+                            {step4Lottie && (
+                              <Lottie
+                                autoplay
+                                loop
+                                animationData={step4Lottie}
+                                style={{ width: '110%', height: '110%' }}
+                                rendererSettings={{ preserveAspectRatio: 'xMidYMid slice' }}
+                              />
+                            )}
+                          </div>
+                          
+                          {/* Chat Message Mockup */}
+                          <div className="text-center" style={{ marginTop: '40px' }}>
+                            <div className="bg-white/10 backdrop-blur-sm rounded-xl relative border border-white/20" style={{ padding: '12px', margin: '0 12px' }}>
+                              {/* Chat bubble tail - single downward arrow */}
+                              <div className="absolute bg-white/10 rotate-45 border-r border-b border-white/20" style={{ bottom: '-6px', left: '18px', width: '12px', height: '12px' }}></div>
+                              
+                              {/* Message content */}
+                              <div className="flex items-center" style={{ marginBottom: '8px' }}>
+                                {/* Avatar */}
+                                <div className="bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] rounded-full flex items-center justify-center flex-shrink-0" style={{ width: '24px', height: '24px', marginRight: '8px' }}>
+                                  <span className="text-white font-bold" style={{ fontSize: '11px' }}>J</span>
+                                </div>
+                                {/* Message Text */}
+                                <div className="flex-1 text-center">
+                                  <p className="text-white font-medium" style={{ fontSize: '12px', lineHeight: '1.3' }}>
+                                    Dude you're going<br />viral! 🔥
+                                  </p>
+                                </div>
+                              </div>
+                              
+                              {/* Timestamp at bottom right */}
+                              <div className="flex justify-end">
+                                <span className="text-gray-400" style={{ fontSize: '9px' }}>just now</span>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          {/* Mobile CTA Section */}
+          <section className="block lg:hidden py-16 px-4 relative z-20">
+            <div className="max-w-4xl mx-auto text-center">
+              <h3 className="text-xl md:text-2xl font-black text-white max-w-3xl mx-auto leading-relaxed mb-8 -mt-5">
+                Forget everything you think you know about playlist marketing. We've made it stupid simple. You submit, we connect, you grow. That's it.
+              </h3>
+              
+              <button
+                onClick={scrollToTrackInput}
+                className="px-12 py-4 bg-gradient-to-r from-[#59e3a5] via-[#14c0ff] to-[#8b5cf6] text-white font-bold rounded-2xl hover:shadow-2xl hover:shadow-[#14c0ff]/30 transition-all duration-700 transform hover:scale-105 active:scale-95 relative overflow-hidden group text-lg"
+              >
+                <span className="relative z-10">I'M READY TO BLOW UP</span>
+                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-700"></div>
+              </button>
+            </div>
+          </section>
+
+          {/* Track Your Success Section - Desktop Only */}
+          <section className={`hidden lg:block pb-24 px-4 relative z-10 transition-all duration-500 ${isStepSectionPinned ? 'pt-32 mt-16' : 'pt-20 -mt-16'}`}>
             <div className="max-w-7xl mx-auto">
               <div className="text-center mb-20">
                 <h3 
@@ -2424,7 +2821,7 @@ export default function Home() {
               <div className="text-center mb-4 md:mb-16">
                 <h2 
                   ref={commandCenterRef}
-                  className={`text-4xl md:text-5xl lg:text-6xl font-black mb-4 md:mb-8 bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] bg-clip-text text-transparent transition-all duration-700 ${commandCenterInView ? 'animate-fade-in-up' : 'opacity-0 translate-y-8'}`} 
+                  className={`text-4xl md:text-5xl lg:text-6xl font-black mb-4 md:mb-8 bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] bg-clip-text text-transparent transition-all duration-700 mt-[15px] md:mt-0 ${commandCenterInView ? 'animate-fade-in-up' : 'opacity-0 translate-y-8'}`} 
                   style={{ lineHeight: '1.3' }}
                 >
                   Your Personal Command Center
@@ -2432,6 +2829,14 @@ export default function Home() {
                 <p 
                   ref={dashboardDescRef}
                   className={`text-xl text-gray-300 max-w-3xl mx-auto leading-relaxed transition-all duration-700 ${dashboardDescInView ? 'animate-fade-in-up' : 'opacity-0 translate-y-8'}`}
+                  style={{ 
+                    hyphens: 'none', 
+                    WebkitHyphens: 'none', 
+                    MozHyphens: 'none', 
+                    msHyphens: 'none', 
+                    wordBreak: 'keep-all', 
+                    overflowWrap: 'break-word' 
+                  }}
                 >
                   Everything you need in one clean dashboard. Launch campaigns, track your playlist placements, monitor your growth, and hit us up when you need anything - all from one spot.
                 </p>
@@ -2451,7 +2856,7 @@ export default function Home() {
                       width: '1200px',
                       transformOrigin: 'top center'
                     }}
-                  >
+                >
                   {/* Browser Header */}
                   <div className="bg-gradient-to-r from-[#59e3a5] via-[#14c0ff] to-[#8b5cf6] rounded-t-2xl border-b border-white/10" style={{ padding: '12px 16px' }}>
                       <div className="flex items-center justify-between">
@@ -2766,12 +3171,12 @@ export default function Home() {
                               </button>
                   </div>
                   </div>
+                  </div>
                 </div>
                   </div>
                   </div>
                 </div>
                 </div>
-              </div>
               </div>
 
               {/* CTA Button */}
@@ -3143,66 +3548,96 @@ export default function Home() {
                   </div>
 
                     {/* Mobile 2-column layout */}
-                    <div className="md:hidden grid grid-cols-2 gap-6 justify-items-center relative">
-                                             {/* First Column - Mobile */}
-                       <div className="space-y-4">
-                         {[
-                           'Hip-Hop & Rap',
-                           'Pop', 
-                           'R&B',
-                           'Electronic/EDM',
-                           'Rock',
-                           'Indie',
-                           'Latin',
-                           'Country',
-                           'Jazz',
-                           'Classical',
-                           'Reggaeton',
-                           'K-Pop',
-                           'Afrobeats',
-                           'House',
-                           'Techno'
-                         ].map((genre, index) => (
-                           <div key={index} className="flex items-center space-x-3">
-                             {/* Green Gradient Checkmark */}
-                             <div className="w-7 h-7 bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] rounded-full flex items-center justify-center flex-shrink-0 drop-shadow-[0_4px_8px_rgba(0,0,0,0.4)]">
-                               <svg className="w-4 h-4 text-white drop-shadow-[0_2px_4px_rgba(0,0,0,0.6)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
-                               </svg>
-                             </div>
-                             <span className="text-white text-lg font-medium drop-shadow-[0_2px_4px_rgba(0,0,0,0.6)]">{genre}</span>
-                           </div>
-                         ))}
-                      </div>
+                    <div className="md:hidden w-full max-w-lg mx-auto px-2 relative">
+                      <div className="grid grid-cols-2 gap-5 items-start">
+                        {/* First Column - Mobile */}
+                        <div className="space-y-3 w-full">
+                          {[
+                            'Hip-Hop & Rap',
+                            'Pop', 
+                            'R&B',
+                            'EDM',
+                            'Rock',
+                            'Indie',
+                            'Latin',
+                            'Country',
+                            'Jazz',
+                            'Classical',
+                            'Reggaeton',
+                            'K-Pop',
+                            'Afrobeats',
+                            'House',
+                            'Techno'
+                          ].map((genre, index) => (
+                            <div key={index} className="flex items-center space-x-2 w-full">
+                              {/* Green Gradient Checkmark - Smaller */}
+                              <div className="w-4 h-4 bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] rounded-full flex items-center justify-center flex-shrink-0 drop-shadow-[0_4px_8px_rgba(0,0,0,0.4)]">
+                                <svg className="w-2.5 h-2.5 text-white drop-shadow-[0_2px_4px_rgba(0,0,0,0.6)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                                </svg>
+                              </div>
+                              <span 
+                                className="text-white font-medium drop-shadow-[0_2px_4px_rgba(0,0,0,0.6)] flex-1 min-w-0"
+                                style={{ 
+                                  fontSize: '0.985rem',
+                                  hyphens: 'none', 
+                                  WebkitHyphens: 'none', 
+                                  MozHyphens: 'none', 
+                                  msHyphens: 'none', 
+                                  wordBreak: 'keep-all', 
+                                  overflowWrap: 'break-word',
+                                  lineHeight: '1.2'
+                                }}
+                              >
+                                {genre}
+                              </span>
+                            </div>
+                          ))}
+                        </div>
 
-                                             {/* Second Column - Mobile */}
-                       <div className="space-y-4">
-                         {[
-                           'Trap',
-                           'Lo-fi',
-                           'Punk',
-                           'Metal',
-                           'Folk',
-                           'Soul',
-                           'Funk',
-                           'Reggae',
-                           'Gospel',
-                           'Blues',
-                           'Podcast/Spoken Word',
-                           'Meditation',
-                           'Workout',
-                           'Study Music'
-                         ].map((genre, index) => (
-                           <div key={index} className="flex items-center space-x-3">
-                             {/* Green Gradient Checkmark */}
-                             <div className="w-7 h-7 bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] rounded-full flex items-center justify-center flex-shrink-0 drop-shadow-[0_4px_8px_rgba(0,0,0,0.4)]">
-                               <svg className="w-4 h-4 text-white drop-shadow-[0_2px_4px_rgba(0,0,0,0.6)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
-                               </svg>
-                             </div>
-                             <span className="text-white text-lg font-medium drop-shadow-[0_2px_4px_rgba(0,0,0,0.6)]">{genre}</span>
-                           </div>
-                         ))}
+                        {/* Second Column - Mobile */}
+                        <div className="space-y-3 w-full">
+                          {[
+                            'Trap',
+                            'Lo-fi',
+                            'Punk',
+                            'Metal',
+                            'Folk',
+                            'Soul',
+                            'Funk',
+                            'Reggae',
+                            'Gospel',
+                            'Blues',
+                            'Podcast/Spoken Word',
+                            'Meditation',
+                            'Workout',
+                            'Study Music'
+                          ].map((genre, index) => (
+                            <div key={index} className="flex items-center space-x-2 w-full">
+                              {/* Green Gradient Checkmark - Smaller */}
+                              <div className="w-4 h-4 bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] rounded-full flex items-center justify-center flex-shrink-0 drop-shadow-[0_4px_8px_rgba(0,0,0,0.4)]">
+                                <svg className="w-2.5 h-2.5 text-white drop-shadow-[0_2px_4px_rgba(0,0,0,0.6)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                                </svg>
+                              </div>
+                              <span 
+                                className="text-white font-medium drop-shadow-[0_2px_4px_rgba(0,0,0,0.6)] flex-1 min-w-0"
+                                style={{ 
+                                  fontSize: '0.985rem',
+                                  hyphens: 'none', 
+                                  WebkitHyphens: 'none', 
+                                  MozHyphens: 'none', 
+                                  msHyphens: 'none', 
+                                  wordBreak: 'keep-all', 
+                                  overflowWrap: 'break-word',
+                                  lineHeight: '1.2'
+                                }}
+                              >
+                                {genre}
+                              </span>
+                            </div>
+                          ))}
+                        </div>
                       </div>
                     </div>
                 </GlareHover>
@@ -3234,7 +3669,7 @@ export default function Home() {
           </section>
 
           {/* What Playlists We Have Section */}
-          <section className="py-32 px-4 pb-48 relative overflow-hidden">
+          <section className="py-32 px-4 pb-48 relative overflow-visible">
             {/* Animated Background Elements */}
             <div className="absolute inset-0 bg-gradient-to-br from-[#0a0a13] via-[#16213e] to-[#1a1a2e]"></div>
             
@@ -3275,7 +3710,8 @@ export default function Home() {
               {/* Playlist Grid with Creative Layout */}
               <div 
                 ref={playlistsGridRef}
-                className={`grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8 mb-16 transition-all duration-700 ${playlistsGridInView ? 'animate-fade-in-up' : 'opacity-0 translate-y-8'}`}
+                className={`grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-8 mb-16 transition-all duration-700 relative z-20 opacity-100 md:opacity-100 ${playlistsGridInView ? 'animate-fade-in-up' : 'md:opacity-0 md:translate-y-8'}`}
+                style={{ minHeight: '200px' }}
               >
                 {[
                   { name: 'RapCaviar', followers: '11M+ followers', gradient: 'from-[#e6d3b7] to-[#d4c5a9]', icon: '🎤' },
@@ -3295,22 +3731,22 @@ export default function Home() {
                   { name: 'Mood Booster', followers: '5M+ followers', gradient: 'from-[#ffa502] to-[#ff6348]', icon: '☀️' },
                   { name: 'Mega Hit Mix', followers: '7M+ followers', gradient: 'from-[#ff3838] to-[#ff9500]', icon: '💥' }
                 ].map((playlist, index) => (
-                  <div key={index} className="relative group">
+                  <div key={index} className="relative group w-full max-w-sm mx-auto">
                     {/* Glow Effect Background */}
                     <div className={`absolute inset-0 bg-gradient-to-r ${playlist.gradient} rounded-2xl blur-xl opacity-30 group-hover:opacity-60 transition-all duration-500 transform group-hover:scale-110`}></div>
                     
                     {/* Card Content */}
-                    <div className="relative bg-gradient-to-br from-[#1a1a2e]/95 via-[#16213e]/90 to-[#0a0a13]/95 rounded-2xl p-6 border-2 border-white/10 backdrop-blur-sm hover:border-white/30 transition-all duration-500 group-hover:transform group-hover:scale-105 shadow-2xl">
+                    <div className="relative bg-gradient-to-br from-[#1a1a2e]/95 via-[#16213e]/90 to-[#0a0a13]/95 rounded-2xl p-4 md:p-6 border-2 border-white/10 backdrop-blur-sm hover:border-white/30 transition-all duration-500 group-hover:transform group-hover:scale-105 shadow-2xl min-h-[180px] flex flex-col justify-center">
                       {/* Playlist Icon */}
-                      <div className="text-4xl mb-4 text-center">{playlist.icon}</div>
+                      <div className="text-3xl md:text-4xl mb-3 md:mb-4 text-center">{playlist.icon}</div>
                       
                       {/* Playlist Name */}
-                      <h3 className={`${playlist.name === 'New Music Friday' || playlist.name === "Today's Top Hits" ? 'text-2xl' : 'text-3xl'} font-black text-center mb-2 bg-gradient-to-r ${playlist.gradient} bg-clip-text text-transparent`}>
+                      <h3 className={`${playlist.name === 'New Music Friday' || playlist.name === "Today's Top Hits" ? 'text-lg md:text-2xl' : 'text-xl md:text-3xl'} font-black text-center mb-2 bg-gradient-to-r ${playlist.gradient} bg-clip-text text-transparent leading-tight`}>
                         {playlist.name}
                       </h3>
                       
                       {/* Follower Count */}
-                      <p className="text-gray-300 text-center font-bold text-lg">
+                      <p className="text-gray-300 text-center font-bold text-sm md:text-lg">
                         {playlist.followers}
                       </p>
                       
@@ -3329,10 +3765,13 @@ export default function Home() {
                 className={`text-center mb-16 mt-5 transition-all duration-700 ${thousandsMoreInView ? 'animate-fade-in-up' : 'opacity-0 translate-y-8'}`}
               >
                 <div className="relative inline-block">
-                  {/* Glow Effect Behind Text */}
-                  <div className="absolute inset-0 bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] blur-2xl opacity-30 animate-pulse"></div>
+                  {/* Glow Effect Behind Text - Hidden on mobile */}
+                  <div className="hidden md:block absolute inset-0 bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] blur-2xl opacity-30 animate-pulse"></div>
                   
-                  <p className="relative text-3xl md:text-4xl lg:text-5xl font-black text-white leading-relaxed">
+                  <p 
+                    className="relative md:text-4xl lg:text-5xl font-black text-white leading-relaxed" 
+                    style={{ fontSize: '1.475rem' }}
+                  >
                     + Literally{' '}
                     <span className="bg-gradient-to-r from-[#59e3a5] via-[#14c0ff] to-[#8b5cf6] bg-clip-text text-transparent drop-shadow-2xl animate-pulse">
                       THOUSANDS
@@ -3351,7 +3790,7 @@ export default function Home() {
                   onClick={scrollToTrackInput}
                   className="px-16 py-5 bg-gradient-to-r from-[#59e3a5] via-[#14c0ff] to-[#8b5cf6] text-white font-bold rounded-2xl hover:shadow-2xl hover:shadow-[#14c0ff]/30 transition-all duration-300 transform hover:scale-105 active:scale-95 relative overflow-hidden group text-xl"
                 >
-                  <span className="relative z-10">PUT ME ON PLAYLISTS TODAY</span>
+                  <span className="relative z-10">PUT ME ON PLAYLISTS</span>
                   <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-700"></div>
                 </button>
               </div>
@@ -3693,7 +4132,7 @@ export default function Home() {
           </section>
 
           {/* Testimonials Section */}
-          <section className="py-64 px-4 relative z-30 overflow-visible" style={{ background: 'transparent' }}>
+          <section className="pt-44 pb-64 px-4 relative z-30 overflow-visible" style={{ background: 'transparent' }}>
             <div className="max-w-screen-2xl mx-auto overflow-visible">
               {/* Section Header */}
               <div className="text-center mb-20">
@@ -3717,13 +4156,13 @@ export default function Home() {
                 <div 
                   className="testimonial-carousel flex transition-transform duration-[2000ms] ease-in-out"
                   style={{ 
-                    transform: `translateX(-${currentTestimonialIndex * 24.5}vw)`,
-                    width: `${(testimonials.length * 2) * 24.5}vw`
+                    transform: `translateX(-${currentTestimonialIndex * (isMobile ? 66.67 : 24.5)}vw)`,
+                    width: `${(testimonials.length * 2) * (isMobile ? 66.67 : 24.5)}vw`
                   }}
                 >
                   {/* Render testimonials twice for seamless loop */}
                   {[...testimonials, ...testimonials].map((testimonial, index) => (
-                    <div key={index} className="flex-shrink-0 px-2" style={{ width: '24.5vw' }}>
+                    <div key={index} className="flex-shrink-0 px-2 w-[66.67vw] md:w-[24.5vw]">
                       <div 
                         className="relative group max-w-xs mx-auto"
                         onMouseEnter={() => {
@@ -3779,7 +4218,10 @@ export default function Home() {
                           </div>
 
                           {/* Testimonial */}
-                          <blockquote className="text-gray-300 leading-relaxed text-center italic" style={{ fontSize: '1.07rem' }}>
+                          <blockquote 
+                            className="text-gray-300 leading-relaxed text-center italic" 
+                            style={{ fontSize: isMobile ? '0.92rem' : '1.07rem' }}
+                          >
                             "{testimonial.quote}"
                           </blockquote>
                         </div>
@@ -3828,7 +4270,7 @@ export default function Home() {
             <div className="absolute top-1/2 right-1/4 text-lg text-[#59e3a5] opacity-40 animate-bounce" style={{ animationDelay: '5s' }}>💫</div>
             
             <div className="relative z-10 max-w-7xl mx-auto">
-              <div className="grid lg:grid-cols-[45%_55%] gap-12 items-center">
+              <div className="flex flex-col-reverse lg:grid lg:grid-cols-[45%_55%] gap-12 items-center">
                 
                 {/* Left Side - Kendrick Image */}
                 <div className="relative group">
@@ -3842,7 +4284,7 @@ export default function Home() {
                       <img 
                         src="/kendr.jpg" 
                         alt="Kendrick Lamar - FASHO Success Story" 
-                        className="w-full h-[855px] object-cover object-top transition-transform duration-700 group-hover:scale-105"
+                        className="w-full aspect-square object-cover object-top transition-transform duration-700 group-hover:scale-105"
                         onError={(e) => {
                           e.currentTarget.src = "/fasho-logo-wide.png";
                         }}
@@ -3873,12 +4315,20 @@ export default function Home() {
                 <div className="space-y-8 pr-2 pl-2">
                   {/* Header */}
                   <div className="space-y-6">
-                    <h2 className="font-black leading-tight text-center" style={{ fontSize: 'calc(1.25rem + 1.4rem)' }}>
+                    <h2 
+                      className="font-black leading-tight text-center -mt-[95px] md:mt-0" 
+                      style={{ fontSize: isMobile ? '2.3rem' : 'calc(1.25rem + 1.4rem)' }}
+                    >
                       <span className="bg-gradient-to-r from-[#8b5cf6] via-[#14c0ff] to-[#59e3a5] bg-clip-text text-transparent drop-shadow-2xl">
                         What Do You Actually Get?
                       </span>
                       <br />
-                      <span className="text-white">Let's Break It Down.</span>
+                      <span 
+                        className="text-white" 
+                        style={{ fontSize: isMobile ? '1.8rem' : 'inherit' }}
+                      >
+                        Let's Break It Down.
+                      </span>
                     </h2>
                     <div className="w-24 h-1 bg-gradient-to-r from-[#8b5cf6] to-[#14c0ff] rounded-full mx-auto"></div>
                   </div>

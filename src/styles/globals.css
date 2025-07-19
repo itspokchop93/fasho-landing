@@ -22,11 +22,15 @@ body {
   padding: 0;
 }
 
-/* Text overflow prevention */
+/* Text overflow prevention - no hyphenation */
 h1, h2, h3, h4, h5, h6, p, div {
   word-wrap: break-word;
   overflow-wrap: break-word;
-  hyphens: auto;
+  hyphens: none;
+  -webkit-hyphens: none;
+  -moz-hyphens: none;
+  -ms-hyphens: none;
+  word-break: keep-all;
 }
 
 /* Autofill styling override - preserves dropdown functionality */
