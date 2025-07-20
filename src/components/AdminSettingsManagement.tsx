@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from 'react';
 
-interface ZapierSettings {
+interface AdminSettings {
   webhook_url: string;
 }
 
 const AdminSettingsManagement: React.FC = () => {
-  const [settings, setSettings] = useState<ZapierSettings>({ webhook_url: '' });
+  const [settings, setSettings] = useState<AdminSettings>({ 
+    webhook_url: ''
+  });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [success, setSuccess] = useState<string | null>(null);
@@ -101,6 +103,8 @@ const AdminSettingsManagement: React.FC = () => {
   const handleWebhookUrlChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSettings({ ...settings, webhook_url: e.target.value });
   };
+
+
 
   const testWebhook = async () => {
     if (!settings.webhook_url.trim()) {

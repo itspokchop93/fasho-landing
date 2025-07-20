@@ -6,6 +6,7 @@ import { useRouter } from 'next/router';
 import { createClient } from '../utils/supabase/client';
 import Header from '../components/Header';
 import VerticalShapeDivider from '../components/VerticalShapeDivider';
+import * as gtag from '../utils/gtag';
 
 export default function SignUpPage() {
   const [isLogin, setIsLogin] = useState(false);
@@ -347,6 +348,11 @@ export default function SignUpPage() {
             setMessage(`Login failed: ${error.message}`);
           }
         } else {
+          // Track for Google Analytics 4
+          gtag.trackGA4Event('login', {
+            method: 'email'
+          });
+          
           setMessage('Login successful! Redirecting...');
           router.push('/dashboard');
         }
@@ -384,6 +390,18 @@ export default function SignUpPage() {
           setMessage(`Signup failed: ${error.message}`);
         } else {
           setMessage('Please check your email for a verification link before signing in.');
+          
+          // Track signup conversion for Google Ads
+          gtag.trackEvent('sign_up', {
+            method: 'email',
+            event_category: 'engagement',
+            event_label: 'User Registration'
+          });
+
+          // Track for Google Analytics 4
+          gtag.trackGA4Signup('email');
+
+          console.log('🎯 GOOGLE ADS: User signup tracked');
           
           // Send Zapier webhook for user signup
           try {

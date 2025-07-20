@@ -10,6 +10,7 @@ import Header from "../components/Header";
 import Footer from "../components/Footer";
 import { createClient } from '../utils/supabase/client';
 import { createPortal } from 'react-dom';
+import * as gtag from '../utils/gtag';
 
 export default function AddSongsPage() {
   const router = useRouter();
@@ -54,6 +55,12 @@ export default function AddSongsPage() {
 
   // Track when component is mounted for portal
   useEffect(() => { setIsMounted(true); }, []);
+
+  // Track Initialize Checkout conversion when page loads
+  useEffect(() => {
+    // Fire the initialize checkout conversion
+    gtag.trackInitializeCheckout();
+  }, []);
 
   // Update position on focus, showSearchResults, or input change
   useEffect(() => {

@@ -14,6 +14,7 @@ import { createClient } from '../utils/supabase/client';
 import HeroParticles from '../components/HeroParticles';
 import GlareHover from '../components/GlareHover';
 import Lottie from 'lottie-react';
+import * as gtag from '../utils/gtag';
 
 
 // Custom hook for viewport intersection
@@ -891,6 +892,23 @@ export default function Home() {
     const selectedTrack = track || previewTrack;
     if (!selectedTrack) return;
 
+    // Track track selection for Google Ads
+    gtag.trackEvent('search', {
+      search_term: selectedTrack.title,
+      event_category: 'engagement',
+      event_label: 'Track Selection',
+      value: 1
+    });
+
+    // Track for Google Analytics 4
+    gtag.trackGA4ButtonClick('Launch Campaign', 'hero_section');
+    gtag.trackGA4Event('search', {
+      search_term: selectedTrack.title,
+      content_type: 'music_track'
+    });
+
+    console.log('🎯 GOOGLE ADS: Track search/selection tracked:', selectedTrack.title);
+
     setLoading(true);
     try {
       // Redirect to /add page with the selected track
@@ -1478,9 +1496,9 @@ export default function Home() {
                   </div>
                 </div>
 
-                {/* Infinite Logo Carousel - Pure CSS Implementation */}
-                <div className="py-16 px-0 sm:px-2 md:px-4 relative w-full max-w-full -mb-9" style={{ background: 'transparent' }}>
-                  <div className="w-full max-w-full sm:max-w-[calc(100vw-1rem)] md:max-w-[calc(100vw-2rem)] lg:max-w-7xl mx-auto" style={{ background: 'transparent' }}>
+                {/* Infinite Logo Carousel - Pure CSS Implementation - BREAK OUT TO FULL WIDTH */}
+                <div className="relative w-screen left-1/2 right-1/2 -ml-[50vw] -mr-[50vw] py-16 -mb-9" style={{ background: 'transparent' }}>
+                  <div className="w-full" style={{ background: 'transparent' }}>
                     {/* Section Header */}
                     <div className="text-center mb-12" style={{ background: 'transparent' }}>
                       <h2 className="text-2xl md:text-3xl font-black text-white mb-4" style={{ background: 'transparent' }}>
@@ -4875,7 +4893,15 @@ export default function Home() {
                 Join thousands of artists who've already gone from unknown to unstoppable with FASHO. Your career changing moment is waiting - let's make it happen.
               </p>
                 <button
-                  onClick={scrollToTrackInput}
+                  onClick={() => {
+                    // Track CTA click for Google Ads
+                    gtag.trackEvent('click', {
+                      event_category: 'engagement',
+                      event_label: 'Launch Campaign CTA',
+                      value: 1
+                    });
+                    scrollToTrackInput();
+                  }}
                 className="px-16 py-5 bg-gradient-to-r from-[#59e3a5] via-[#14c0ff] to-[#8b5cf6] text-white font-bold rounded-2xl hover:shadow-2xl hover:shadow-[#14c0ff]/30 transition-all duration-300 transform hover:scale-105 active:scale-95 relative overflow-hidden group text-xl"
               >
                 <span className="relative z-10">Launch Your Campaign Now</span>

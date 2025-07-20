@@ -1196,4 +1196,27 @@ input:-webkit-autofill:active {
   }
 }
 
+/* Spark travel animation for album border */
+@keyframes spark-travel {
+  0% { 
+    transform: translateX(-100%);
+    opacity: 0;
+  }
+  5% {
+    opacity: 1;
+  }
+  95% {
+    opacity: 1;
+  }
+  100% { 
+    transform: translateX(100%);
+    opacity: 0;
+  }
+}
+
+.animate-spark-travel {
+  animation: spark-travel 3s ease-in-out infinite;
+  animation-delay: 2s;
+}
+
 

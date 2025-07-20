@@ -6,6 +6,7 @@ import { Track } from "../types/track";
 import Header from "../components/Header";
 import dynamic from 'next/dynamic';
 import { createClient } from '../utils/supabase/client';
+import * as gtag from '../utils/gtag';
 
 const Lottie = dynamic(() => import('lottie-react'), { ssr: false });
 
@@ -197,6 +198,29 @@ export default function PackagesPage() {
       setTimeout(() => {
         setConfettiAnimation(null);
       }, 2000);
+
+      // Track package selection for Google Ads
+      const selectedPkg = packages.find(pkg => pkg.id === packageId);
+      if (selectedPkg) {
+        gtag.trackPackageSelect({
+          id: selectedPkg.id,
+          name: selectedPkg.name,
+          price: selectedPkg.price
+        });
+
+        // Track for Google Analytics 4
+        gtag.trackGA4Event('select_item', {
+          item_list_id: 'fasho_packages',
+          item_list_name: 'FASHO Packages',
+          items: [{
+            item_id: selectedPkg.id,
+            item_name: `FASHO ${selectedPkg.name}`,
+            item_category: 'Music Promotion',
+            price: selectedPkg.price,
+            quantity: 1
+          }]
+        });
+      }
     }
     
     setPreviousPackage(selectedPackage);
@@ -413,6 +437,25 @@ export default function PackagesPage() {
 
     if (isLastSong || isOnlySong) {
       try {
+        // Track begin checkout for Google Ads
+        const checkoutItems = tracks.map((track, index) => {
+          const packageId = selectedPackages[index];
+          const selectedPkg = packages.find(pkg => pkg.id === packageId);
+          return {
+            id: `${track.id}_${packageId}`,
+            packageName: selectedPkg?.name || 'UNKNOWN',
+            price: selectedPkg?.price || 0,
+            quantity: 1
+          };
+        }).filter(item => item.packageName !== 'UNKNOWN');
+
+        const totalAmount = checkoutItems.reduce((sum, item) => sum + item.price, 0);
+
+        gtag.trackBeginCheckout({
+          totalAmount,
+          items: checkoutItems
+        });
+
         // Create secure checkout session with user ID if logged in
         const response = await fetch('/api/create-checkout-session', {
           method: 'POST',
@@ -751,31 +794,40 @@ export default function PackagesPage() {
           <div className="block md:hidden">
             {/* Mobile: Album art and track info at top */}
             <div className="text-center mb-8">
-              <div className="mb-6">
-                <p 
-                  key={songIndicatorKey}
-                  className="text-white/70 mb-2 text-lg font-semibold animate-drop-bounce"
-                >
-                  Song {currentSongIndex + 1} of {tracks.length}
-                </p>
-                <div className="w-2 h-2 bg-[#59e3a5] rounded-full mx-auto"></div>
-              </div>
-              
-              <div className="relative inline-block group">
+                            {tracks.length > 1 && (
+                <div className="mb-6">
+                  <p 
+                    key={songIndicatorKey}
+                    className="text-white/70 mb-2 text-lg font-semibold animate-drop-bounce"
+                  >
+                    Song {currentSongIndex + 1} of {tracks.length}
+                  </p>
+                  <div className="w-2 h-2 bg-[#59e3a5] rounded-full mx-auto"></div>
+                </div>
+              )}
+
+              <div className={`relative inline-block group ${tracks.length === 1 ? 'pt-5' : ''}`}>
                 {/* 25% OFF badge for discounted songs */}
                 {isDiscountedSong && (
                   <div className="absolute -top-3 -right-3 bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] text-black text-sm font-bold px-3 py-1 rounded-full shadow-lg z-10 animate-pulse">
                     25% OFF
                   </div>
                 )}
-                <Image
-                  src={currentTrack.imageUrl}
-                  alt={currentTrack.title}
-                  width={300}
-                  height={300}
-                  className="rounded-2xl shadow-2xl mx-auto transition-transform duration-300 group-hover:-translate-y-2 album-warp-3d"
-                  unoptimized
-                />
+                {/* Gradient border container that moves with the image */}
+                <div className="relative bg-gradient-to-r from-[#59e3a5] via-[#14c0ff] to-[#8b5cf6] p-[3px] rounded-2xl transition-transform duration-300 group-hover:-translate-y-2 album-warp-3d overflow-hidden">
+                  {/* Spark animation overlay */}
+                  <div className="absolute inset-0 rounded-2xl overflow-hidden">
+                    <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/80 to-transparent w-[200%] h-full animate-spark-travel rounded-2xl"></div>
+                  </div>
+                  <Image
+                    src={currentTrack.imageUrl}
+                    alt={currentTrack.title}
+                    width={300}
+                    height={300}
+                    className="rounded-2xl shadow-2xl mx-auto relative z-10"
+                    unoptimized
+                  />
+                </div>
               </div>
               
               <div className="mt-6 mb-8">
@@ -812,10 +864,12 @@ export default function PackagesPage() {
               
               <div 
                 ref={carouselRef}
-                className="overflow-x-auto scrollbar-hide cursor-grab active:cursor-grabbing pb-3"
+                className="overflow-x-auto scrollbar-hide cursor-grab active:cursor-grabbing pb-3 relative"
                 style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
                 onScroll={checkScrollArrows}
               >
+                {/* Subtle gradient glow behind mobile cards */}
+                <div className="absolute inset-0 bg-gradient-to-r from-[#59e3a5]/10 via-[#14c0ff]/10 to-[#8b5cf6]/10 rounded-2xl blur-xl -z-10"></div>
                 <div className="flex gap-4 px-4 py-6" style={{ width: 'max-content' }}>
                   {packages.map((pkg) => (
                     <div
@@ -825,15 +879,14 @@ export default function PackagesPage() {
                         pkg.popular ? '' : 'border-2'
                       } ${
                         selectedPackage === pkg.id && !pkg.popular
-                          ? 'border-[#59e3a5] bg-[#59e3a5]/5'
+                          ? 'border-[#59e3a5] bg-gradient-to-br from-[#59e3a5]/20 via-gray-900/95 to-gray-800/95'
                           : !pkg.popular
-                          ? 'border-white/20 bg-white/5 hover:border-white/40'
+                          ? 'border-white/20 bg-gradient-to-br from-gray-800/95 via-gray-900/95 to-gray-800/95 hover:border-white/40'
                           : ''
                       }`}
                       style={{ 
                         width: '240px', 
-                        height: '240px',
-                        aspectRatio: '1 / 1' 
+                        height: isDiscountedSong ? '250px' : '240px'
                       }}
                     >
                       {/* Confetti Animation Overlay */}
@@ -888,7 +941,7 @@ export default function PackagesPage() {
                       )}
                       
                       {/* Content container - Vertical baseball card layout */}
-                      <div className={`h-full p-2 pb-4 flex flex-col ${pkg.popular ? 'relative z-20 bg-gray-900 rounded-xl border' : ''} ${
+                      <div className={`h-full p-2 pb-4 flex flex-col ${pkg.popular ? 'relative z-20 bg-gradient-to-br from-gray-800/95 via-gray-900/95 to-gray-800/95 rounded-xl border' : ''} ${
                         pkg.popular && selectedPackage === pkg.id ? 'border-[#59e3a5]' : pkg.popular ? 'border-white/20' : ''
                       }`}>
                         
@@ -899,7 +952,7 @@ export default function PackagesPage() {
                           </div>
                           <div>
                             {isDiscountedSong ? (
-                              <div className="space-y-1">
+                              <div className="space-y-0">
                                 <div className="text-xs text-white/50 line-through">${pkg.price}</div>
                                 <div className="text-lg font-bold bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] bg-clip-text text-transparent" style={{fontSize: 'calc(1.125rem + 0.15rem + 0.25rem)'}}>
                                   ${getDiscountedPrice(pkg.price)}
@@ -928,7 +981,7 @@ export default function PackagesPage() {
                               </div>
                               <span>{pkg.plays}</span>
                             </div>
-                            <div className="flex items-center text-white/80 justify-center" style={{fontSize: 'calc(0.75rem + 0.2rem)', fontWeight: '700', marginBottom: '8px'}}>
+                            <div className="flex items-center text-white/80 justify-center" style={{fontSize: 'calc(0.75rem + 0.2rem)', fontWeight: '700', marginBottom: '4px'}}>
                               <div className="w-3 h-3 bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] rounded-full flex items-center justify-center mr-2 flex-shrink-0">
                                 <span className="text-black text-xs font-bold">✓</span>
                               </div>
@@ -1108,7 +1161,9 @@ export default function PackagesPage() {
             {/* Left side - Package selection */}
             <div className="space-y-8">
               {/* Package cards - Baseball card style */}
-              <div className="space-y-6 mb-4">
+              <div className="space-y-6 mb-4 relative">
+                {/* Subtle gradient glow behind cards */}
+                <div className="absolute inset-0 bg-gradient-to-br from-[#59e3a5]/10 via-[#14c0ff]/10 to-[#8b5cf6]/10 rounded-2xl blur-xl -z-10"></div>
                 {/* Helper function to format streams with K */}
                 {(() => {
                   const formatStreamsForDisplay = (streams: string) => {
@@ -1126,16 +1181,16 @@ export default function PackagesPage() {
                           <div
                             key={pkg.id}
                             onClick={() => handlePackageSelect(pkg.id)}
-                            className={`relative cursor-pointer rounded-xl transition-all duration-300 hover:-translate-y-1 ${
+                                                        className={`relative cursor-pointer rounded-xl transition-all duration-300 hover:-translate-y-1 ${
                               pkg.popular ? '' : 'border-2'
                             } ${
                               selectedPackage === pkg.id && !pkg.popular
-                                ? 'border-[#59e3a5] bg-[#59e3a5]/5'
+                                ? 'border-[#59e3a5] bg-gradient-to-br from-[#59e3a5]/20 via-gray-900/95 to-gray-800/95'
                                 : !pkg.popular
-                                ? 'border-white/20 bg-white/5 hover:border-white/40'
+                                ? 'border-white/20 bg-gradient-to-br from-gray-800/95 via-gray-900/95 to-gray-800/95 hover:border-white/40'
                                 : ''
-                                                            }`}
-                                style={{ minHeight: '200px', aspectRatio: '1 / 1.1' }}
+                            }`}
+                                style={{ minHeight: isDiscountedSong ? '205px' : '200px' }}
                               >
                                 {/* Confetti Animation Overlay */}
                                 {confettiAnimation === pkg.id && confettiData && (
@@ -1188,7 +1243,7 @@ export default function PackagesPage() {
                             )}
                             
                             {/* Content container */}
-                            <div className={`h-full ${pkg.popular ? `relative z-20 bg-gray-900 rounded-xl p-5 pb-8 border flex flex-col ${selectedPackage === pkg.id ? 'border-[#59e3a5]' : 'border-white/20'}` : 'p-5 pb-8 flex flex-col'}`}>
+                            <div className={`h-full ${pkg.popular ? `relative z-20 bg-gradient-to-br from-gray-800/95 via-gray-900/95 to-gray-800/95 rounded-xl px-3 pt-4 pb-6 border flex flex-col ${selectedPackage === pkg.id ? 'border-[#59e3a5]' : 'border-white/20'}` : 'px-3 pt-4 pb-6 flex flex-col'}`}>
                               {/* Top - Icon and Price */}
                               <div className="flex flex-col items-center text-center mb-2">
                                 <div className="w-18 h-18 flex items-center justify-center mb-3">
@@ -1196,7 +1251,7 @@ export default function PackagesPage() {
                                 </div>
                                 <div>
                                   {isDiscountedSong ? (
-                                    <div className="space-y-1">
+                                    <div className="space-y-0">
                                       <div className="text-sm text-white/50 line-through">${pkg.price}</div>
                                       <div className="font-bold bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] bg-clip-text text-transparent" style={{fontSize: 'calc(1.25rem + 0.35rem - 0.12rem)'}}>
                                         ${getDiscountedPrice(pkg.price)}
@@ -1209,19 +1264,19 @@ export default function PackagesPage() {
                               </div>
                               
                               {/* Middle - Package Name */}
-                              <div className="text-center mb-4">
+                              <div className="text-center mb-2">
                                 <h3 className="font-bold bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] bg-clip-text text-transparent" style={{fontSize: ['legendary', 'dominate', 'momentum'].includes(pkg.id) ? 'calc(1rem + 0.2rem + 0.18rem)' : pkg.id === 'unstoppable' ? 'calc(1rem + 0.2rem + 0.12rem)' : 'calc(1rem + 0.2rem)'}}>{pkg.name}</h3>
                               </div>
                               
                                                              {/* Bottom - Features with checkmarks */}
                                <div className="space-y-2">
-                                 <div className="flex items-center text-sm text-white/90">
+                                 <div className="flex items-center justify-center text-sm text-white/90">
                                    <div className="w-4 h-4 bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] rounded-full flex items-center justify-center mr-2 flex-shrink-0">
                                      <span className="text-black text-xs font-bold">✓</span>
                                    </div>
                                    <span>{formatStreamsForDisplay(pkg.plays)}</span>
                                  </div>
-                                 <div className={`flex items-center text-sm text-white/90 ${['unstoppable', 'dominate'].includes(pkg.id) ? '' : 'mb-4'}`}>
+                                 <div className={`flex items-center justify-center text-sm text-white/90 ${['unstoppable', 'dominate'].includes(pkg.id) ? '' : 'mb-1'}`}>
                                    <div className="w-4 h-4 bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] rounded-full flex items-center justify-center mr-2 flex-shrink-0">
                                      <span className="text-black text-xs font-bold">✓</span>
                                    </div>
@@ -1234,18 +1289,17 @@ export default function PackagesPage() {
                       </div>
                       
                       {/* Bottom row - 2 packages centered */}
-                      <div className="flex justify-center">
-                        <div className="grid grid-cols-2 gap-6 max-w-2xl">
-                          {packages.slice(3, 5).map((pkg) => (
+                      <div className="flex justify-center gap-6">
+                                                      {packages.slice(3, 5).map((pkg) => (
                             <div
                               key={pkg.id}
                               onClick={() => handlePackageSelect(pkg.id)}
-                              className={`relative cursor-pointer rounded-xl transition-all duration-300 hover:-translate-y-1 border-2 ${
+                              className={`relative cursor-pointer rounded-xl transition-all duration-300 hover:-translate-y-1 border-2 w-[240px] ${
                                 selectedPackage === pkg.id
-                                  ? 'border-[#59e3a5] bg-[#59e3a5]/5'
-                                  : 'border-white/20 bg-white/5 hover:border-white/40'
+                                  ? 'border-[#59e3a5] bg-gradient-to-br from-[#59e3a5]/20 via-gray-900/95 to-gray-800/95'
+                                  : 'border-white/20 bg-gradient-to-br from-gray-800/95 via-gray-900/95 to-gray-800/95 hover:border-white/40'
                               }`}
-                              style={{ minHeight: '200px', aspectRatio: '1 / 1.1' }}
+                              style={{ minHeight: isDiscountedSong ? '205px' : '200px' }}
                             >
                               {/* Confetti Animation Overlay */}
                               {confettiAnimation === pkg.id && confettiData && (
@@ -1276,7 +1330,7 @@ export default function PackagesPage() {
                               )}
                               
                               {/* Content container */}
-                              <div className="h-full p-5 pb-8 flex flex-col">
+                              <div className="h-full px-3 pt-4 pb-6 flex flex-col">
                                 {/* Top - Icon and Price */}
                                 <div className="flex flex-col items-center text-center mb-2">
                                   <div className="w-18 h-18 flex items-center justify-center mb-3">
@@ -1284,7 +1338,7 @@ export default function PackagesPage() {
                                   </div>
                                   <div>
                                     {isDiscountedSong ? (
-                                      <div className="space-y-1">
+                                      <div className="space-y-0">
                                         <div className="text-sm text-white/50 line-through">${pkg.price}</div>
                                         <div className="font-bold bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] bg-clip-text text-transparent" style={{fontSize: 'calc(1.25rem + 0.35rem)'}}>
                                           ${getDiscountedPrice(pkg.price)}
@@ -1297,19 +1351,19 @@ export default function PackagesPage() {
                                 </div>
                                 
                                 {/* Middle - Package Name */}
-                                <div className="text-center mb-4">
+                                <div className="text-center mb-2">
                                   <h3 className="font-bold bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] bg-clip-text text-transparent" style={{fontSize: ['legendary', 'dominate', 'momentum'].includes(pkg.id) ? 'calc(1rem + 0.2rem + 0.18rem)' : pkg.id === 'unstoppable' ? 'calc(1rem + 0.2rem + 0.12rem)' : 'calc(1rem + 0.2rem)'}}>{pkg.name}</h3>
                                 </div>
                                 
                                                                  {/* Bottom - Features with checkmarks */}
                                  <div className="space-y-2">
-                                   <div className="flex items-center text-sm text-white/90">
+                                   <div className="flex items-center justify-center text-sm text-white/90">
                                      <div className="w-4 h-4 bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] rounded-full flex items-center justify-center mr-2 flex-shrink-0">
                                        <span className="text-black text-xs font-bold">✓</span>
                                      </div>
                                      <span>{formatStreamsForDisplay(pkg.plays)}</span>
                                    </div>
-                                   <div className={`flex items-center text-sm text-white/90 ${['unstoppable', 'dominate'].includes(pkg.id) ? '' : 'mb-4'}`}>
+                                   <div className={`flex items-center justify-center text-sm text-white/90 ${['unstoppable', 'dominate'].includes(pkg.id) ? '' : 'mb-1'}`}>
                                      <div className="w-4 h-4 bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] rounded-full flex items-center justify-center mr-2 flex-shrink-0">
                                        <span className="text-black text-xs font-bold">✓</span>
                                      </div>
@@ -1319,7 +1373,6 @@ export default function PackagesPage() {
                                </div>
                              </div>
                            ))}
-                         </div>
                        </div>
                     </>
                   );
@@ -1440,31 +1493,40 @@ export default function PackagesPage() {
 
             {/* Right side - Album art and track info */}
             <div className="text-center">
-              <div className="mb-4">
-                <p 
-                  key={songIndicatorKey}
-                  className="text-white/70 mb-2 text-lg font-semibold animate-drop-bounce"
-                >
-                  Song {currentSongIndex + 1} of {tracks.length}
-                </p>
-                <div className="w-2 h-2 bg-[#59e3a5] rounded-full mx-auto"></div>
-              </div>
-              
-              <div className="relative inline-block group">
+                            {tracks.length > 1 && (
+                <div className="mb-4">
+                  <p 
+                    key={songIndicatorKey}
+                    className="text-white/70 mb-2 text-lg font-semibold animate-drop-bounce"
+                  >
+                    Song {currentSongIndex + 1} of {tracks.length}
+                  </p>
+                  <div className="w-2 h-2 bg-[#59e3a5] rounded-full mx-auto"></div>
+                </div>
+              )}
+
+              <div className={`relative inline-block group ${tracks.length === 1 ? 'pt-5' : ''}`}>
                 {/* 25% OFF badge for discounted songs */}
                 {isDiscountedSong && (
                   <div className="absolute -top-4 -right-4 bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] text-black text-lg font-bold px-4 py-2 rounded-full shadow-lg z-10 animate-pulse">
                     25% OFF
                   </div>
                 )}
-                <Image
-                  src={currentTrack.imageUrl}
-                  alt={currentTrack.title}
-                  width={320}
-                  height={320}
-                  className="rounded-2xl shadow-2xl mx-auto transition-transform duration-300 group-hover:-translate-y-2 album-warp-3d"
-                  unoptimized
-                />
+                {/* Gradient border container that moves with the image */}
+                <div className="relative bg-gradient-to-r from-[#59e3a5] via-[#14c0ff] to-[#8b5cf6] p-[3px] rounded-2xl transition-transform duration-300 group-hover:-translate-y-2 album-warp-3d overflow-hidden">
+                  {/* Spark animation overlay */}
+                  <div className="absolute inset-0 rounded-2xl overflow-hidden">
+                    <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/80 to-transparent w-[200%] h-full animate-spark-travel rounded-2xl"></div>
+                  </div>
+                  <Image
+                    src={currentTrack.imageUrl}
+                    alt={currentTrack.title}
+                    width={320}
+                    height={320}
+                    className="rounded-2xl shadow-2xl mx-auto relative z-10"
+                    unoptimized
+                  />
+                </div>
               </div>
               
                              <div className="mt-4 mb-6">

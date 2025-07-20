@@ -1,8 +1,24 @@
 import "../styles/globals.css";
 import type { AppProps } from "next/app";
 import { useEffect } from "react";
+import { useRouter } from "next/router";
+import * as gtag from "../utils/gtag";
 
 export default function App({ Component, pageProps }: AppProps) {
+  const router = useRouter();
+
+  useEffect(() => {
+    // Google Analytics page view tracking
+    const handleRouteChange = (url: string) => {
+      gtag.pageview(url);
+    };
+
+    router.events.on('routeChangeComplete', handleRouteChange);
+    return () => {
+      router.events.off('routeChangeComplete', handleRouteChange);
+    };
+  }, [router.events]);
+
   useEffect(() => {
     // Only load stagewise in development and on client side
     if (process.env.NODE_ENV === 'development' && typeof window !== 'undefined') {

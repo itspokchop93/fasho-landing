@@ -7,6 +7,7 @@ import Lottie from 'lottie-react';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
 import IntakeFormModal from '../components/IntakeFormModal';
+import * as gtag from '../utils/gtag';
 
 interface OrderItem {
   track: {
@@ -55,6 +56,48 @@ interface OrderData {
   couponCode?: string | null;
   couponDiscount?: number;
 }
+
+// Function to track purchase event for Google Ads
+const trackPurchaseEvent = (orderData: OrderData) => {
+  if (!orderData) return;
+
+  try {
+    // Prepare tracking data - ensure no Spotify data is sent
+    const trackingItems = orderData.items.map((item, index) => ({
+      id: `${item.track.id}_${item.package.id}`,
+      packageName: item.package.name,
+      price: item.isDiscounted ? item.discountedPrice : item.originalPrice,
+      quantity: 1
+    }));
+
+    // Add addon items if they exist
+    if (orderData.addOnItems && orderData.addOnItems.length > 0) {
+      orderData.addOnItems.forEach(addon => {
+        trackingItems.push({
+          id: addon.id,
+          packageName: addon.name,
+          price: addon.price,
+          quantity: 1
+        });
+      });
+    }
+
+    // Track the purchase
+    gtag.trackPurchase({
+      orderId: orderData.orderNumber || orderData.orderId || `order_${Date.now()}`,
+      totalAmount: orderData.total,
+      items: trackingItems
+    });
+
+    console.log('🎯 GOOGLE ADS: Purchase tracked successfully', {
+      orderId: orderData.orderNumber || orderData.orderId,
+      total: orderData.total,
+      itemCount: trackingItems.length
+    });
+  } catch (error) {
+    console.error('🎯 GOOGLE ADS: Error tracking purchase:', error);
+  }
+};
 
 export default function ThankYouPage() {
   const router = useRouter();
@@ -107,6 +150,10 @@ export default function ThankYouPage() {
 
             setOrderData(apiOrderData);
             setTimeRemaining(data.timeRemaining || 0);
+            
+            // Track purchase for Google Ads
+            trackPurchaseEvent(apiOrderData);
+            
             setIsLoading(false);
             return;
           } else if (response.status === 410 || data.expired) {
@@ -153,6 +200,9 @@ export default function ThankYouPage() {
           const parsedOrder = JSON.parse(storedOrder) as OrderData;
           console.log('🔍 THANK YOU PAGE: Parsed order data from sessionStorage:', parsedOrder);
           setOrderData(parsedOrder);
+          
+          // Track purchase for Google Ads
+          trackPurchaseEvent(parsedOrder);
           
           // If we have an order number, update the URL for persistence
           if (parsedOrder.orderNumber) {
