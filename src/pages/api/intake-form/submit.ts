@@ -157,6 +157,15 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       // Add total spent to intake form data
       intakeFormData['Total Spent'] = formatCurrency(totalSpent);
 
+      // Get phone number from latest order billing info if available
+      let phoneNumber: string | undefined;
+      if (latestOrder && latestOrder.billing_info) {
+        const billingInfo = latestOrder.billing_info;
+        if (billingInfo.countryCode && billingInfo.phoneNumber) {
+          phoneNumber = `${billingInfo.countryCode}${billingInfo.phoneNumber}`;
+        }
+      }
+
       // Send single webhook with all intake form data
       const webhookPayload = {
         event_type: eventType,
@@ -164,7 +173,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         customer_data: {
           first_name,
           last_name,
-          email: user.email
+          email: user.email,
+          phone: phoneNumber
         },
         ...(orderData && { order_data: orderData }),
         intake_form_data: intakeFormData

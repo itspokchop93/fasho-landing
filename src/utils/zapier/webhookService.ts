@@ -5,6 +5,7 @@ interface WebhookPayload {
     first_name?: string;
     last_name?: string;
     email: string;
+    phone?: string;
     billing_address?: {
       line1?: string;
       line2?: string;
@@ -44,13 +45,21 @@ export async function sendZapierWebhook(payload: WebhookPayload): Promise<boolea
 
     console.log('🔗 ZAPIER-WEBHOOK: Sending webhook to Zapier...');
     
+    // Prepare headers with phone number if available
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+      'User-Agent': 'FASHO.co-Webhook/1.0'
+    };
+    
+    // Add phone number header if available
+    if (payload.customer_data.phone) {
+      headers['PHONE'] = payload.customer_data.phone;
+    }
+    
     // Send the webhook
     const webhookResponse = await fetch(webhookUrl, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'User-Agent': 'FASHO.co-Webhook/1.0'
-      },
+      headers,
       body: JSON.stringify(payload)
     });
 
@@ -92,13 +101,21 @@ export async function sendZapierWebhookServer(payload: WebhookPayload, supabase:
     const webhookUrl = settings.setting_value;
     console.log('🔗 ZAPIER-WEBHOOK-SERVER: Sending webhook to Zapier...');
     
+    // Prepare headers with phone number if available
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+      'User-Agent': 'FASHO.co-Webhook/1.0'
+    };
+    
+    // Add phone number header if available
+    if (payload.customer_data.phone) {
+      headers['PHONE'] = payload.customer_data.phone;
+    }
+    
     // Send the webhook
     const webhookResponse = await fetch(webhookUrl, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'User-Agent': 'FASHO.co-Webhook/1.0'
-      },
+      headers,
       body: JSON.stringify(payload)
     });
 

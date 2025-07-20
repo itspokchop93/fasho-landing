@@ -329,7 +329,7 @@ export default function Home() {
     const checkIsMobile = () => {
       setIsMobile(window.innerWidth < 768);
     };
-    
+
     checkIsMobile(); // Check on mount
     window.addEventListener('resize', checkIsMobile);
     
@@ -1190,7 +1190,10 @@ export default function Home() {
                     gradientDirection="to-r"
                   />
                   </div>
-                  <div className="whitespace-nowrap">
+                  <div 
+                    className="whitespace-nowrap" 
+                    style={{ fontSize: isMobile ? 'calc(1em + 0.15rem)' : 'inherit' }}
+                  >
                   <SplitText
                     text="Music Promotion"
                     className="block drop-shadow-[0_8px_16px_rgba(0,0,0,0.6)]"
@@ -1316,6 +1319,103 @@ export default function Home() {
                             {(focused || showSearchResults) && (
                               <div className="absolute -bottom-1 left-1/2 transform -translate-x-1/2 w-2 h-2 bg-gradient-to-r from-[#59e3a5] via-[#14c0ff] to-[#8b5cf6] rounded-full animate-pulse"></div>
                             )}
+                            
+                            {/* Mobile Search Results - positioned directly below input */}
+                            {isMobile && showSearchResults && (
+                              <div
+                                ref={searchDropdownRef}
+                                className="absolute top-full left-0 right-0 mt-1 z-[9999] bg-gradient-to-br from-[#23272f] to-[#1a1a2e] border border-white/20 rounded-2xl shadow-2xl backdrop-blur-xl overflow-hidden"
+                                style={{ maxHeight: '400px' }}
+                              >
+                                {/* Header */}
+                                <div className="px-4 py-3 border-b border-white/10 bg-gradient-to-r from-[#59e3a5]/10 to-[#14c0ff]/10">
+                                  <h3 className="text-white font-semibold text-sm">
+                                    {isSearching ? 'Searching...' : `Found ${searchResults.length} tracks`}
+                                  </h3>
+                                </div>
+                                
+                                {/* Results */}
+                                <div className="max-h-80 overflow-y-auto custom-scrollbar">
+                                  {isSearching ? (
+                                    <div className="p-8 text-center">
+                                      <div className="w-8 h-8 border-2 border-[#14c0ff] border-t-transparent rounded-full animate-spin mx-auto mb-3"></div>
+                                      <p className="text-gray-400">Searching Spotify...</p>
+                                    </div>
+                                  ) : searchResults.length > 0 ? (
+                                    searchResults.map((track, index) => (
+                                      <div
+                                        key={index}
+                                        onClick={() => selectTrackFromSearch(track)}
+                                        className="p-4 hover:bg-white/5 cursor-pointer transition-all duration-200 border-b border-white/5 last:border-b-0 group"
+                                      >
+                                        <div className="flex items-center space-x-3">
+                                          <img
+                                            src={track.imageUrl}
+                                            alt={track.title}
+                                            className="w-12 h-12 rounded-lg object-cover shadow-md border border-white/10 group-hover:scale-105 transition-transform duration-200"
+                                          />
+                                          <div className="flex-1 min-w-0">
+                                            <div className="font-semibold text-white truncate group-hover:text-[#14c0ff] transition-colors duration-200">
+                                              {track.title}
+                                            </div>
+                                            <div className="text-gray-400 text-sm truncate">
+                                              {track.artist}
+                                            </div>
+                                          </div>
+                                          <svg className="w-5 h-5 text-gray-400 group-hover:text-[#14c0ff] transition-colors duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                                          </svg>
+                                        </div>
+                                      </div>
+                                    ))
+                                  ) : hasSearched ? (
+                                    <div className="p-8 text-center">
+                                      <div className="w-16 h-16 bg-gray-800 rounded-full flex items-center justify-center mx-auto mb-4">
+                                        <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.172 16.172a4 4 0 015.656 0M9 12h6m-6-4h6m2 5.291A7.962 7.962 0 0112 15c-2.87 0-5.431.967-7.5 2.591" />
+                                        </svg>
+                                      </div>
+                                      <p className="text-gray-400 mb-2">No tracks found</p>
+                                      <p className="text-gray-500 text-sm">Try searching with different keywords</p>
+                                    </div>
+                                  ) : null}
+                                </div>
+                              </div>
+                            )}
+                            
+                            {/* Mobile Preview Track - positioned directly below input */}
+                            {isMobile && previewTrack && !isSpotifyUrlCheck(url) && (
+                              <div 
+                                className="absolute top-full left-0 right-0 mt-1 z-[9999] bg-gradient-to-br from-[#23272f] to-[#1a1a2e] border border-white/20 rounded-2xl shadow-2xl backdrop-blur-xl overflow-hidden"
+                              >
+                                {/* Header */}
+                                <div className="px-4 py-3 border-b border-white/10 bg-gradient-to-r from-[#59e3a5]/10 to-[#14c0ff]/10">
+                                  <h3 className="text-white font-semibold text-sm">Selected Track</h3>
+                                </div>
+                                
+                                {/* Track Preview */}
+                                <div className="p-4">
+                                  <div className="flex items-center space-x-3 mb-4">
+                                    <img
+                                      src={previewTrack.imageUrl}
+                                      alt={previewTrack.title}
+                                      className="w-16 h-16 rounded-xl object-cover shadow-md border border-white/10"
+                                    />
+                                    <div className="flex-1 min-w-0">
+                                      <div className="font-bold text-white truncate text-lg">{previewTrack.title}</div>
+                                      <div className="text-gray-300 truncate">{previewTrack.artist}</div>
+                                    </div>
+                                  </div>
+                                  
+                                  <button
+                                    onClick={handleConfirm}
+                                    className="w-full py-3 bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] text-white font-bold rounded-xl hover:shadow-lg hover:shadow-[#14c0ff]/25 transition-all duration-300 transform hover:scale-[1.02] active:scale-95"
+                                  >
+                                    Continue with this track
+                                  </button>
+                                </div>
+                              </div>
+                            )}
                           </div>
                           {/* Launch Campaign Button - Always normal color, pulse when filled */}
                           <button
@@ -1345,8 +1445,18 @@ export default function Home() {
                                 className="w-20 h-20 rounded-xl object-cover shadow-md border border-white/10 flex-shrink-0"
                               />
                               <div className="flex-1 min-w-0 overflow-hidden">
-                                <div className="font-bold text-white text-left truncate" style={{ fontSize: '1rem' }}>{previewTrack.title}</div>
-                                <div className="text-gray-300 text-left truncate" style={{ fontSize: '0.9rem' }}>{previewTrack.artist}</div>
+                                <div 
+                                  className="font-bold text-white text-left truncate" 
+                                  style={{ fontSize: !isMobile ? 'calc(1rem + 0.25rem)' : '1rem' }}
+                                >
+                                  {previewTrack.title}
+                                </div>
+                                <div 
+                                  className="text-gray-300 text-left truncate" 
+                                  style={{ fontSize: !isMobile ? 'calc(0.9rem + 0.25rem)' : '0.9rem' }}
+                                >
+                                  {previewTrack.artist}
+                                </div>
                               </div>
                               {/* Green checkmark Lottie animation */}
                               {checkmarkLottie && (
@@ -3638,8 +3748,8 @@ export default function Home() {
                             </div>
                           ))}
                         </div>
-                      </div>
-                    </div>
+                </div>
+                  </div>
                 </GlareHover>
                 </div>
               </div>
@@ -4779,8 +4889,8 @@ export default function Home() {
         {/* Footer */}
         <Footer />
 
-        {/* Search Results Portal */}
-        {isMounted && showSearchResults && (
+                {/* Desktop Search Results Portal */}
+        {isMounted && !isMobile && showSearchResults && (
           createPortal(
         <div
           ref={searchDropdownRef}
@@ -4850,8 +4960,8 @@ export default function Home() {
           )
         )}
 
-        {/* Preview Track Portal */}
-        {isMounted && previewTrack && !isSpotifyUrlCheck(url) && (
+        {/* Desktop Preview Track Portal */}
+        {isMounted && !isMobile && previewTrack && !isSpotifyUrlCheck(url) && (
           createPortal(
             <div 
               className="fixed z-[9999] bg-gradient-to-br from-[#23272f] to-[#1a1a2e] border border-white/20 rounded-2xl shadow-2xl backdrop-blur-xl overflow-hidden"

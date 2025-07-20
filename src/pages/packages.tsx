@@ -1468,7 +1468,7 @@ export default function PackagesPage() {
               </div>
               
                              <div className="mt-4 mb-6">
-                 <h2 className="text-3xl font-black mb-2">{currentTrack.title}</h2>
+                 <h2 className="text-3xl font-black mb-2" style={{ fontSize: 'calc(1.875rem - 0.4rem)', marginTop: '18px' }}>{currentTrack.title}</h2>
                  <p className="text-base text-white/60">{currentTrack.artist}</p>
                </div>
 
