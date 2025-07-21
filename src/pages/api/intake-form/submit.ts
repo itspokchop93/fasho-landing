@@ -193,6 +193,44 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       // Don't fail the entire form submission if webhook fails
     }
 
+    // Send AirTable record for intake form submission
+    try {
+      console.log('📊 INTAKE-FORM-SUBMIT: Sending AirTable record for intake form submission...');
+      
+      const AirTableService = await import('../../../utils/airtable/airtableService');
+      const { formatCustomerName } = await import('../../../utils/zapier/webhookService');
+      
+      // Get user's profile data
+      const { data: profile } = await supabase.auth.getUser();
+      const userMetadata = profile.user?.user_metadata || {};
+      const customerName = userMetadata.full_name || user.email;
+      
+      // Format customer name
+      const { first_name, last_name } = formatCustomerName(customerName);
+      
+      // Extract phone from responses if available
+      const phoneResponse = responses['phone-number'] || responses['phone'] || responses['phoneNumber'];
+      
+      // Create or update AirTable record with intake form data
+      const airtableResult = await AirTableService.default.createIntakeFormRecord(
+        first_name,
+        last_name,
+        user.email,
+        phoneResponse || undefined,
+        responses  // Pass the actual intake form responses
+      );
+
+      if (airtableResult) {
+        console.log('📊 INTAKE-FORM-SUBMIT: ✅ AirTable record created successfully');
+      } else {
+        console.log('📊 INTAKE-FORM-SUBMIT: ❌ AirTable record creation failed');
+      }
+
+    } catch (airtableError) {
+      console.error('📊 INTAKE-FORM-SUBMIT: ❌ Error creating AirTable record:', airtableError);
+      // Don't fail the entire form submission if AirTable fails
+    }
+
     return res.status(200).json({
       success: true,
       message: 'Intake form submitted successfully',

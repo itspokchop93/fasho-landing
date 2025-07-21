@@ -3,6 +3,7 @@ import type { AppProps } from "next/app";
 import { useEffect } from "react";
 import { useRouter } from "next/router";
 import * as gtag from "../utils/gtag";
+import LeadTracker from "../utils/leadTracking";
 
 export default function App({ Component, pageProps }: AppProps) {
   const router = useRouter();
@@ -18,6 +19,17 @@ export default function App({ Component, pageProps }: AppProps) {
       router.events.off('routeChangeComplete', handleRouteChange);
     };
   }, [router.events]);
+
+  useEffect(() => {
+    // Initialize lead tracking on first page load
+    if (typeof window !== 'undefined') {
+      try {
+        LeadTracker.captureLeadData();
+      } catch (error) {
+        console.error('Lead tracking initialization failed:', error);
+      }
+    }
+  }, []);
 
   useEffect(() => {
     // Only load stagewise in development and on client side

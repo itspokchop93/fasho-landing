@@ -398,6 +398,44 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       // Don't fail the entire order creation if webhook fails
     }
 
+    // Send AirTable record for successful checkout
+    try {
+      console.log('📊 CREATE-ORDER: Sending AirTable record for checkout success...');
+      
+      const AirTableService = await import('../../utils/airtable/airtableService');
+      const { formatCustomerName } = await import('../../utils/zapier/webhookService');
+      
+      // Format customer name
+      const { first_name, last_name } = formatCustomerName(customerName);
+      
+      // Prepare packages ordered list
+      const packagesOrdered = items.map(item => item.package.name).join(', ');
+      
+      // Create AirTable record
+      const airtableResult = await AirTableService.default.createCheckoutRecord(
+        first_name,
+        last_name,
+        customerEmail,
+        billingInfo?.countryCode && billingInfo?.phoneNumber 
+          ? `${billingInfo.countryCode}${billingInfo.phoneNumber}`
+          : undefined,
+        billingInfo,
+        packagesOrdered,
+        order.total,
+        order.order_number
+      );
+
+      if (airtableResult) {
+        console.log('📊 CREATE-ORDER: ✅ AirTable record created successfully');
+      } else {
+        console.log('📊 CREATE-ORDER: ❌ AirTable record creation failed');
+      }
+
+    } catch (airtableError) {
+      console.error('📊 CREATE-ORDER: ❌ Error creating AirTable record:', airtableError);
+      // Don't fail the entire order creation if AirTable fails
+    }
+
     return res.status(200).json({
       success: true,
       order: {
