@@ -328,6 +328,32 @@ const PricingPage = () => {
             <p className="text-xl text-gray-300" style={{ marginBottom: '20px' }}>
               Compare all features across our packages
             </p>
+            
+            {/* Mobile Swipe Indicator */}
+            <div className="md:hidden flex justify-end pr-4 mb-1">
+              <div className="flex items-center space-x-2 text-gray-400 text-sm" style={{ fontFamily: 'Comic Sans MS, cursive, sans-serif' }}>
+                <div className="animate-pulse" style={{ animation: 'bounceLeft 1.5s infinite' }}>
+                  <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clipRule="evenodd" />
+                  </svg>
+                </div>
+                <span>Swipe Left</span>
+              </div>
+            </div>
+            
+            <style jsx>{`
+              @keyframes bounceLeft {
+                0%, 20%, 50%, 80%, 100% {
+                  transform: translateX(0);
+                }
+                40% {
+                  transform: translateX(-4px);
+                }
+                60% {
+                  transform: translateX(-2px);
+                }
+              }
+            `}</style>
           </div>
 
           <div className="bg-gradient-to-br from-white/10 to-white/5 backdrop-blur-sm rounded-2xl border border-white/20 overflow-hidden">

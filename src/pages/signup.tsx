@@ -28,14 +28,57 @@ export default function SignUpPage() {
   const router = useRouter();
   const supabase = createClient();
 
-  const images = [
-    '/auto1.jpg',
-    '/auto2.jpg',
-    '/auto3.jpg'
+  // All available signup images
+  const allImages = [
+    '/signup-pics/haybeeth.jpg',
+    '/signup-pics/eyupcan.jpg',
+    '/signup-pics/aaronnicc.jpg',
+    '/signup-pics/lebele.jpg',
+    '/signup-pics/wesleydavi.jpg',
+    '/signup-pics/kleber.jpg',
+    '/signup-pics/jean-daniel.jpg',
+    '/signup-pics/yankruko.jpg',
+    '/signup-pics/hinrichsen.jpg',
+    '/signup-pics/a-darmel.jpg',
+    '/signup-pics/eduardo.jpg',
+    '/signup-pics/jc-siller.jpg',
+    '/signup-pics/zac-osori.jpg',
+    '/signup-pics/olanma.jpg',
+    '/signup-pics/bgcortez.jpg',
+    '/signup-pics/collins.jpg',
+    '/signup-pics/cottonbr.jpg',
+    '/signup-pics/brett.jpg',
+    '/signup-pics/neplokhov.jpg',
+    '/signup-pics/ficky.jpg',
+    '/signup-pics/guitarist-plays-in-a-smokey-venue.jpg',
+    '/signup-pics/dj-in-blue-light.jpg',
+    '/signup-pics/crowd-loving-music.jpg',
+    '/signup-pics/indie-music-concert.jpg'
   ];
+
+  // Randomized images state
+  const [images, setImages] = useState<string[]>([]);
+
+  // Randomize images on component mount
+  useEffect(() => {
+    const shuffleArray = (array: string[]) => {
+      const shuffled = [...array];
+      for (let i = shuffled.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+      }
+      return shuffled;
+    };
+
+    // Randomize the images and select the first 6 for slideshow
+    const randomizedImages = shuffleArray(allImages).slice(0, 6);
+    setImages(randomizedImages);
+  }, []);
 
   // Auto-rotate images every 4 seconds
   useEffect(() => {
+    if (images.length === 0) return;
+
     const interval = setInterval(() => {
       setCurrentImageIndex((prev) => (prev + 1) % images.length);
     }, 4000);
@@ -740,8 +783,40 @@ export default function SignUpPage() {
             <div className="absolute inset-0 bg-gradient-to-l from-transparent via-black/20 to-black/60 z-10"></div>
             <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-black/20 z-10"></div>
             
+            {/* Lens glow gradient overlay - dual light sources */}
+            <div className="absolute inset-0 z-20 pointer-events-none">
+              {/* Top-right light source */}
+              <div 
+                className="absolute inset-0 opacity-85"
+                style={{
+                  background: `radial-gradient(ellipse 80% 60% at 85% 15%, 
+                    rgba(89, 227, 165, 0.375) 0%, 
+                    rgba(20, 192, 255, 0.31) 15%, 
+                    rgba(89, 227, 165, 0.19) 30%, 
+                    rgba(20, 192, 255, 0.125) 45%, 
+                    rgba(89, 227, 165, 0.063) 60%, 
+                    rgba(20, 192, 255, 0.025) 80%, 
+                    transparent 100%)`
+                }}
+              ></div>
+              {/* Middle-left light source (20% up from bottom) */}
+              <div 
+                className="absolute inset-0 opacity-70"
+                style={{
+                  background: `radial-gradient(ellipse 80% 60% at 35% 65%, 
+                    rgba(20, 192, 255, 0.375) 0%, 
+                    rgba(89, 227, 165, 0.31) 15%, 
+                    rgba(20, 192, 255, 0.19) 30%, 
+                    rgba(89, 227, 165, 0.125) 45%, 
+                    rgba(20, 192, 255, 0.063) 60%, 
+                    rgba(89, 227, 165, 0.025) 80%, 
+                    transparent 100%)`
+                }}
+              ></div>
+            </div>
+            
             {/* Images */}
-            {images.map((src, index) => (
+            {images.length > 0 && images.map((src, index) => (
               <div
                 key={src}
                 className={`absolute inset-0 transition-opacity duration-1000 ${
@@ -752,19 +827,13 @@ export default function SignUpPage() {
                   src={src}
                   alt={`Artist ${index + 1}`}
                   fill
-                  className="object-cover"
+                  className="object-cover brightness-140 contrast-110"
                   priority={index === 0}
                 />
               </div>
             ))}
 
-            {/* Artist info overlay */}
-            <div className="absolute bottom-8 right-8 z-20">
-              <div className="text-white text-right">
-                <h3 className="text-2xl font-bold">Rising Artist</h3>
-                <p className="text-white/80">100k monthly listeners</p>
-              </div>
-            </div>
+
           </div>
         </div>
 

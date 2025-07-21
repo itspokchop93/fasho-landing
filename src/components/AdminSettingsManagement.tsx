@@ -2,11 +2,15 @@ import React, { useState, useEffect } from 'react';
 
 interface AdminSettings {
   webhook_url: string;
+  site_title: string;
+  site_description: string;
 }
 
 const AdminSettingsManagement: React.FC = () => {
   const [settings, setSettings] = useState<AdminSettings>({ 
-    webhook_url: ''
+    webhook_url: '',
+    site_title: 'FASHO.co – Promotion for Artists, Labels & Podcasters',
+    site_description: 'Amplify your reach with FASHO.co. We connect artists, podcasters & labels to top playlists, grow real audiences, and help create your career.'
   });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -27,11 +31,15 @@ const AdminSettingsManagement: React.FC = () => {
       }
       const data = await response.json();
       
-      // Extract webhook URL from settings object, with default value
+      // Extract settings from data object, with default values
       const webhookUrl = data.settings?.zapier_webhook_url || 'https://hooks.zapier.com/hooks/catch/23839455/u2wp0la/';
+      const siteTitle = data.settings?.site_title || 'FASHO.co – Promotion for Artists, Labels & Podcasters';
+      const siteDescription = data.settings?.site_description || 'Amplify your reach with FASHO.co. We connect artists, podcasters & labels to top playlists, grow real audiences, and help create your career.';
       
       setSettings({
-        webhook_url: webhookUrl
+        webhook_url: webhookUrl,
+        site_title: siteTitle,
+        site_description: siteDescription
       });
       
       // If no webhook URL was saved yet, save the default one
@@ -102,6 +110,68 @@ const AdminSettingsManagement: React.FC = () => {
 
   const handleWebhookUrlChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSettings({ ...settings, webhook_url: e.target.value });
+  };
+
+  const handleSiteTitleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setSettings({ ...settings, site_title: e.target.value });
+  };
+
+  const handleSiteDescriptionChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    setSettings({ ...settings, site_description: e.target.value });
+  };
+
+  const handleSaveSiteSettings = async () => {
+    try {
+      setSaving(true);
+      setError(null);
+      setSuccess(null);
+
+      // Save site title
+      const titleResponse = await fetch('/api/admin/admin-settings', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+        body: JSON.stringify({
+          setting_key: 'site_title',
+          setting_value: settings.site_title
+        }),
+      });
+
+      if (!titleResponse.ok) {
+        const errorData = await titleResponse.json();
+        throw new Error(errorData.error || 'Failed to save site title');
+      }
+
+      // Save site description
+      const descriptionResponse = await fetch('/api/admin/admin-settings', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+        body: JSON.stringify({
+          setting_key: 'site_description',
+          setting_value: settings.site_description
+        }),
+      });
+
+      if (!descriptionResponse.ok) {
+        const errorData = await descriptionResponse.json();
+        throw new Error(errorData.error || 'Failed to save site description');
+      }
+
+      setSuccess('Site settings saved successfully!');
+      
+      // Clear success message after 3 seconds
+      setTimeout(() => setSuccess(null), 3000);
+    } catch (err) {
+      console.error('Error saving site settings:', err);
+      setError(err instanceof Error ? err.message : 'Failed to save site settings');
+    } finally {
+      setSaving(false);
+    }
   };
 
 
@@ -263,6 +333,88 @@ const AdminSettingsManagement: React.FC = () => {
               <div className="flex items-start">
                 <span className="font-medium text-indigo-600 w-32 flex-shrink-0">Intake Form:</span>
                 <span>Form responses plus customer info and order details</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Site Settings Section */}
+      <div className="bg-white rounded-xl p-6 shadow-lg border border-gray-100">
+        <div className="flex items-center mb-6">
+          <div className="flex-shrink-0">
+            <div className="w-10 h-10 bg-indigo-100 rounded-lg flex items-center justify-center">
+              <svg className="w-6 h-6 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9v-9m0-9v9m0 9c-5 0-9-4-9-9s4-9 9-9" />
+              </svg>
+            </div>
+          </div>
+          <div className="ml-4">
+            <h2 className="text-xl font-semibold text-gray-900">Site Settings</h2>
+            <p className="text-gray-600">Configure global site title and description for SEO and branding.</p>
+          </div>
+        </div>
+
+        <div className="space-y-6">
+          {/* Site Title Input */}
+          <div>
+            <label htmlFor="site-title" className="block text-sm font-medium text-gray-700 mb-2">
+              Site Title
+            </label>
+            <input
+              id="site-title"
+              type="text"
+              value={settings.site_title}
+              onChange={handleSiteTitleChange}
+              placeholder="Enter site title..."
+              className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+            />
+            <p className="mt-2 text-sm text-gray-500">
+              This appears in browser tabs, search results, and social media shares.
+            </p>
+          </div>
+
+          {/* Site Description Input */}
+          <div>
+            <label htmlFor="site-description" className="block text-sm font-medium text-gray-700 mb-2">
+              Site Description
+            </label>
+            <textarea
+              id="site-description"
+              value={settings.site_description}
+              onChange={handleSiteDescriptionChange}
+              placeholder="Enter site description..."
+              rows={3}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+            />
+            <p className="mt-2 text-sm text-gray-500">
+              This appears in search results and social media shares. Keep it under 160 characters for best SEO results.
+            </p>
+          </div>
+
+          {/* Save Button */}
+          <div className="pt-4 border-t border-gray-200">
+            <button
+              onClick={handleSaveSiteSettings}
+              disabled={saving}
+              className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {saving ? 'Saving...' : 'Save Site Settings'}
+            </button>
+          </div>
+
+          {/* Preview Information */}
+          <div className="bg-gray-50 rounded-lg p-4">
+            <h3 className="text-sm font-medium text-gray-900 mb-3">Preview</h3>
+            <div className="space-y-2 text-sm text-gray-600">
+              <div>
+                <span className="font-medium text-gray-900">Title:</span> {settings.site_title}
+              </div>
+              <div>
+                <span className="font-medium text-gray-900">Description:</span> {settings.site_description}
+              </div>
+              <div className="mt-3 pt-3 border-t border-gray-200">
+                <span className="text-xs text-gray-500">Note: Changes will be applied globally across the entire website.</span>
               </div>
             </div>
           </div>

@@ -15,6 +15,7 @@ import HeroParticles from '../components/HeroParticles';
 import GlareHover from '../components/GlareHover';
 import Lottie from 'lottie-react';
 import * as gtag from '../utils/gtag';
+import { fetchSiteSettings, SiteSettings, defaultSiteSettings } from '../utils/siteSettings';
 
 
 // Custom hook for viewport intersection
@@ -169,6 +170,9 @@ export default function Home() {
   // User authentication state
   const [currentUser, setCurrentUser] = useState<any>(null);
 
+  // Site settings state
+  const [siteSettings, setSiteSettings] = useState<SiteSettings>(defaultSiteSettings);
+
   // Testimonial data
   const testimonials = [
     {
@@ -281,7 +285,7 @@ export default function Home() {
     };
   }, [resumeTimeout]);
 
-  // Check for authentication state
+  // Check for authentication state and fetch site settings
   useEffect(() => {
     const checkUser = async () => {
       try {
@@ -293,7 +297,18 @@ export default function Home() {
       }
     };
     
+    const loadSiteSettings = async () => {
+      try {
+        const settings = await fetchSiteSettings();
+        setSiteSettings(settings);
+      } catch (error) {
+        console.error('Error loading site settings:', error);
+        setSiteSettings(defaultSiteSettings);
+      }
+    };
+    
     checkUser();
+    loadSiteSettings();
 
     // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
@@ -1106,10 +1121,10 @@ export default function Home() {
   return (
     <>
       <Head>
-        <title>Fasho – #1 Spotify Music Promotion</title>
+        <title>{siteSettings.site_title}</title>
         <meta
           name="description"
-          content="#1 Spotify music promotion platform. Professional marketing campaigns that get your tracks heard by the right audience."
+          content={siteSettings.site_description}
         />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
       </Head>
@@ -1522,9 +1537,7 @@ export default function Home() {
                           animation: logoScroll 30s linear infinite;
                         }
                         
-                        .logo-carousel-track:hover {
-                          animation-play-state: paused;
-                        }
+
                         
                         .logo-item {
                           width: 120px;

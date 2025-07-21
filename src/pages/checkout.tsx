@@ -7,6 +7,7 @@ import Header from '../components/Header';
 import { createClient } from '../utils/supabase/client';
 import { userProfileService, UserProfileData, ArtistProfile } from '../utils/userProfile';
 import LegalModal from '../components/LegalModal';
+import SpotlightCard from '../components/SpotlightCard';
 
 interface Package {
   id: string;
@@ -91,15 +92,26 @@ const packages: Package[] = [
 
 const addOnProducts: AddOnProduct[] = [
   {
-    id: "apple-music",
-    name: "Promote on Apple Music (50% OFF)",
-    description: ["🔴 Get added to an Apple Music playlist", "🎵 Apple Music add-on reduced if not placed in 7 days"],
-    originalPrice: 94,
-    salePrice: 47,
-    emoji: "🍎",
-    color: "text-pink-400",
-    borderColor: "border-pink-500/50",
-    bgGradient: "bg-gradient-to-r from-pink-500/10 to-purple-500/10"
+    id: "express-launch",
+    name: "EXPRESS LAUNCH: 8hr Placement Boost",
+    description: ["Get your campaign launched within only 8 hours instead of standard 24-48h turnaround. INSTANT results and INSTANT gratification."],
+    originalPrice: 28,
+    salePrice: 14,
+    emoji: "⚡️",
+    color: "text-yellow-400",
+    borderColor: "border-yellow-500/50",
+    bgGradient: "bg-gradient-to-r from-yellow-500/10 to-orange-500/10"
+  },
+  {
+    id: "discover-weekly-push",
+    name: "Guaranteed 'Discover Weekly' Push",
+    description: ["Priority playlist targeting to maximize chances at Spotify's algorithmic playlists (Discover Weekly/Release Radar)."],
+    originalPrice: 38,
+    salePrice: 19,
+    emoji: "🔥",
+    color: "text-red-400",
+    borderColor: "border-red-500/50",
+    bgGradient: "bg-gradient-to-r from-red-500/10 to-pink-500/10"
   }
 ];
 
@@ -2342,12 +2354,19 @@ export default function CheckoutPage() {
                         {/* Change Song Button */}
                         <button
                           onClick={() => changeSong(index)}
-                          className="absolute -top-1 -right-1 bg-blue-500/50 hover:bg-blue-600/70 text-white text-xs px-2 py-1 rounded-full transition-colors shadow-lg border-2 border-white/50 z-20 text-xs"
+                          className="absolute -top-1 -right-1 bg-blue-500/50 hover:bg-blue-600/70 text-white text-xs px-2 py-1 rounded-full transition-colors shadow-lg border-2 border-white/50 z-30 text-xs"
                           title="Change this song"
                           style={{ fontSize: '10px' }}
                         >
                           Change Song
                         </button>
+                        
+                        {/* 25% OFF Flag */}
+                        {item.isDiscounted && (
+                          <div className="absolute top-2 left-2 bg-[#59e3a5] text-black text-[10px] font-bold px-2 py-1 rounded-full whitespace-nowrap z-20">
+                            25% OFF
+                          </div>
+                        )}
                         
                         <div className="relative">
                           <Image
@@ -2358,11 +2377,6 @@ export default function CheckoutPage() {
                             className="rounded-lg"
                             unoptimized
                           />
-                          {item.isDiscounted && (
-                            <div className="absolute -top-2 -right-2 bg-[#59e3a5] text-black text-xs font-bold px-2 py-1 rounded-full whitespace-nowrap">
-                              25% OFF
-                            </div>
-                          )}
                         </div>
                         
                         <div className="flex-1">
@@ -2387,11 +2401,11 @@ export default function CheckoutPage() {
                     
                     {/* Add-on Items */}
                     {addOnOrderItems.map((item, index) => (
-                      <div key={`addon-${index}`} className="flex items-center space-x-4 p-4 bg-white/5 rounded-lg relative">
+                      <div key={`addon-${index}`} className="flex items-center space-x-3 p-4 bg-white/5 rounded-lg relative">
                         {/* Remove Add-on Button */}
                         <button
                           onClick={() => removeAddOn(item.id)}
-                          className="absolute -top-2 -right-2 w-5 h-5 bg-red-500/50 hover:bg-red-600/70 text-white rounded-full flex items-center justify-center shadow-lg transition-colors z-20 border-2 border-white/50"
+                          className="absolute -top-2 -right-2 w-5 h-5 bg-red-500/50 hover:bg-red-600/70 text-white rounded-full flex items-center justify-center shadow-lg transition-colors z-30 border-2 border-white/50"
                           title="Remove add-on"
                         >
                           <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -2399,22 +2413,27 @@ export default function CheckoutPage() {
                           </svg>
                         </button>
                         
+                        {/* 50% OFF Flag */}
+                        {item.isOnSale && (
+                          <div className="absolute top-2 left-2 bg-[#59e3a5] text-black text-[10px] font-bold px-2.5 py-1 rounded-full whitespace-nowrap z-20">
+                            50% OFF
+                          </div>
+                        )}
+                        
                         <div className="relative">
                           <div className="w-[60px] h-[60px] bg-gradient-to-br from-purple-500/20 to-pink-500/20 rounded-lg flex items-center justify-center text-2xl border border-white/10">
                             {item.emoji}
                           </div>
-                          {item.isOnSale && (
-                            <div className="absolute -top-2 -right-2 bg-[#59e3a5] text-black text-xs font-bold px-2 py-1 rounded-full">
-                              SALE
-                            </div>
-                          )}
                         </div>
                         
-                        <div className="flex-1">
-                          <h3 className="font-semibold text-sm">{item.name.replace(/ \(.*\)/, '')}</h3>
-                          <p className="text-white/60 text-sm">Add-on Service</p>
+                        <div className="flex-1 min-w-0">
+                          <h3 className="font-semibold text-sm leading-tight">{item.name.replace(/ \(.*\)/, '')}</h3>
                           <p className="text-[#59e3a5] text-sm font-medium">Premium Add-on</p>
-                          <p className="text-white/50 text-xs">Enhanced promotion package</p>
+                          <p className="text-white/50 text-xs">
+                            {item.id === 'express-launch' ? 'Express campaign launch' : 
+                             item.id === 'discover-weekly-push' ? 'Algorithmic playlist targeting' : 
+                             'Premium add-on service'}
+                          </p>
                         </div>
                         
                         <div className="text-right">
@@ -2521,44 +2540,51 @@ export default function CheckoutPage() {
 
                 {/* Popular Add-ons */}
                 <div className="bg-white/5 rounded-xl p-6 border border-white/20">
-                  <h3 className="text-lg font-semibold mb-4">Popular add-ons 🔥</h3>
+                  <h3 className="text-lg font-semibold mb-4">Level Up Your Launch 🔥</h3>
                   
                   <div className="space-y-4">
-                    <div className="border border-pink-500/50 rounded-lg p-4 bg-gradient-to-r from-pink-500/10 to-purple-500/10">
-                      <div className="flex items-start justify-between mb-2">
-                        <div>
-                          <h4 className="font-semibold text-pink-400">Promote on Apple Music (50% OFF)</h4>
-                          <div className="text-sm text-white/70">
-                            <p>🔴 Get added to an Apple Music playlist</p>
-                            <p>🎵 Apple Music add-on reduced if not placed in 7 days</p>
+                    {addOnProducts.map((addOn, index) => (
+                      <SpotlightCard 
+                        key={`spotlight-${addOn.id}-${index}`} 
+                        className={`border ${addOn.borderColor} pt-3 pl-3 pr-4 pb-4 ${addOn.bgGradient} rounded-lg !border-opacity-100`}
+                        spotlightColor={addOn.id === 'express-launch' ? 'rgba(255, 193, 7, 0.3)' : 'rgba(220, 53, 69, 0.3)'}
+                      >
+                        <div className="flex items-start justify-between mb-2 pointer-events-none">
+                          <div className="pr-4 flex-1">
+                            <h4 className={`font-semibold ${addOn.color}`}>{addOn.emoji} {addOn.name}</h4>
+                            <div className="text-sm text-white/70 mt-1 pr-8">
+                              <p>{addOn.description[0]}</p>
+                            </div>
                           </div>
+                          <button 
+                            onClick={() => toggleAddOn(addOn.id)}
+                            className={`p-2 rounded-lg transition-colors flex-shrink-0 pointer-events-auto ${
+                              selectedAddOns.has(addOn.id) 
+                                ? 'bg-[#59e3a5] text-black hover:bg-[#4bc995]' 
+                                : 'bg-white/20 hover:bg-white/30 text-white'
+                            }`}
+                          >
+                            {selectedAddOns.has(addOn.id) ? (
+                              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                              </svg>
+                            ) : (
+                              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                              </svg>
+                            )}
+                          </button>
                         </div>
-                        <button 
-                          onClick={() => toggleAddOn('apple-music')}
-                          className={`p-2 rounded-lg transition-colors ${
-                            selectedAddOns.has('apple-music') 
-                              ? 'bg-[#59e3a5] text-black hover:bg-[#4bc995]' 
-                              : 'bg-white/20 hover:bg-white/30 text-white'
-                          }`}
-                        >
-                          {selectedAddOns.has('apple-music') ? (
-                            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                            </svg>
-                          ) : (
-                            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-                            </svg>
-                          )}
-                        </button>
-                      </div>
-                      <div className="flex items-center space-x-2">
-                        <span className="text-white/50 line-through">$94</span>
-                        <span className="font-bold text-pink-400">$47</span>
-                      </div>
-                    </div>
-
-
+                        <div className="flex items-center space-x-2 pointer-events-none">
+                          <span className="text-white/50 line-through">${addOn.originalPrice}</span>
+                          <span className={`font-bold ${addOn.color}`}>${addOn.salePrice}</span>
+                        </div>
+                        {/* 50% OFF badge in bottom right corner */}
+                        <div className="absolute bottom-2 right-2 bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] text-black text-xs font-bold px-2 py-1 rounded-full pointer-events-none">
+                          50% OFF
+                        </div>
+                      </SpotlightCard>
+                    ))}
                   </div>
                 </div>
               </div>

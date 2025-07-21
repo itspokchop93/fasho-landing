@@ -1153,6 +1153,42 @@ export default function PackagesPage() {
                   Previous Song
                 </button>
               )}
+
+              {/* Mobile Campaign Features Section */}
+              <div className="mt-6 bg-gradient-to-br from-white/5 via-white/3 to-white/5 rounded-2xl p-4 border border-white/10 backdrop-blur-sm relative overflow-hidden">
+                {/* Subtle gradient glow */}
+                <div className="absolute inset-0 bg-gradient-to-br from-[#59e3a5]/5 via-[#14c0ff]/5 to-[#8b5cf6]/5 rounded-2xl blur-xl opacity-60"></div>
+                
+                {/* Content */}
+                <div className="relative z-10">
+                  <div className="grid grid-cols-1 gap-2">
+                    {[
+                      'Campaign starts within only 24-48 hours',
+                      'All streams achieved in only 7-10 days', 
+                      'Established playlist curators',
+                      'All genres supported',
+                      'Spotify-safe guarantee',
+                      'Dashboard tracking included',
+                      'Priority curator outreach',
+                      'Major playlist targeting',
+                      'VIP curator network access',
+                      'Dedicated account manager'
+                    ].map((feature, index) => (
+                      <div key={index} className="flex items-start space-x-2 group">
+                        {/* Green checkmark icon */}
+                        <div className="w-3 h-3 bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] rounded-full flex-shrink-0 flex items-center justify-center mt-0.5 shadow-sm group-hover:scale-110 transition-transform duration-200">
+                          <svg className="w-1.5 h-1.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                          </svg>
+                        </div>
+                        <span className="text-white/90 text-xs leading-relaxed group-hover:text-white transition-colors duration-200 text-left">
+                          {feature}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
 
@@ -1570,6 +1606,43 @@ export default function PackagesPage() {
                    </button>
                  )}
                </div>
+
+               {/* Campaign Features Section */}
+               <div className="mt-8 bg-gradient-to-br from-white/5 via-white/3 to-white/5 rounded-2xl p-6 border border-white/10 backdrop-blur-sm relative overflow-hidden">
+                 {/* Subtle gradient glow */}
+                 <div className="absolute inset-0 bg-gradient-to-br from-[#59e3a5]/5 via-[#14c0ff]/5 to-[#8b5cf6]/5 rounded-2xl blur-xl opacity-60"></div>
+                 
+                 {/* Content */}
+                 <div className="relative z-10">
+                   
+                   <div className="grid grid-cols-2 gap-x-4 gap-y-3">
+                     {[
+                       'Campaign starts within only 24-48 hours',
+                       'All streams achieved in only 7-10 days', 
+                       'Established playlist curators',
+                       'All genres supported',
+                       'Spotify-safe guarantee',
+                       'Dashboard tracking included',
+                       'Priority curator outreach',
+                       'Major playlist targeting',
+                       'VIP curator network access',
+                       'Dedicated account manager'
+                     ].map((feature, index) => (
+                       <div key={index} className="flex items-start space-x-2 group">
+                         {/* Green checkmark icon */}
+                         <div className="w-4 h-4 bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] rounded-full flex items-center justify-center flex-shrink-0 mt-0.5 shadow-md group-hover:scale-110 transition-transform duration-200">
+                           <svg className="w-2.5 h-2.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                           </svg>
+                         </div>
+                         <span className="text-white/90 text-xs leading-relaxed group-hover:text-white transition-colors duration-200 text-left">
+                           {feature}
+                         </span>
+                       </div>
+                     ))}
+                   </div>
+                 </div>
+               </div>
             </div>
           </div>
         </div>
@@ -1682,6 +1755,32 @@ export default function PackagesPage() {
               <p className="text-xl text-gray-300">
                 Compare all features across our packages
               </p>
+              
+              {/* Mobile Swipe Indicator */}
+              <div className="md:hidden flex justify-end pr-4 mb-1">
+                <div className="flex items-center space-x-2 text-gray-400 text-sm" style={{ fontFamily: 'Comic Sans MS, cursive, sans-serif' }}>
+                  <div className="animate-pulse" style={{ animation: 'bounceLeft 1.5s infinite' }}>
+                    <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clipRule="evenodd" />
+                    </svg>
+                  </div>
+                  <span>Swipe Left</span>
+                </div>
+              </div>
+              
+              <style jsx>{`
+                @keyframes bounceLeft {
+                  0%, 20%, 50%, 80%, 100% {
+                    transform: translateX(0);
+                  }
+                  40% {
+                    transform: translateX(-4px);
+                  }
+                  60% {
+                    transform: translateX(-2px);
+                  }
+                }
+              `}</style>
             </div>
 
             <div className="bg-black rounded-2xl border border-white/40 overflow-hidden relative z-30">
