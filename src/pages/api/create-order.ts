@@ -50,6 +50,8 @@ interface CreateOrderRequest {
     state: string;
     zip: string;
     country: string;
+    countryCode?: string;
+    phoneNumber?: string;
   };
   paymentData: {
     transactionId: string;
@@ -363,6 +365,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           first_name,
           last_name,
           email: customerEmail,
+          phone: billingInfo?.countryCode && billingInfo?.phoneNumber 
+            ? `${billingInfo.countryCode}${billingInfo.phoneNumber}`
+            : undefined,
           billing_address: {
             line1: billingInfo?.address,
             line2: billingInfo?.address2,

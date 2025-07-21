@@ -7,7 +7,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     return res.status(405).json({ error: `Method ${req.method} not allowed` })
   }
 
-  const supabase = createClient()
+  const supabase = createClient(req, res)
 
   try {
     console.log('🌐 SITE-SETTINGS: Fetching site settings...')
