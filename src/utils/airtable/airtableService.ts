@@ -509,7 +509,8 @@ class AirTableService {
       return { success: true, message: 'Connection successful', data: result };
     } catch (error) {
       console.error('AirTable connection test failed:', error);
-      return { success: false, message: error.message, error };
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+      return { success: false, message: errorMessage, error };
     }
   }
 }
