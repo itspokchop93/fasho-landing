@@ -93,8 +93,8 @@ const packages: Package[] = [
 const addOnProducts: AddOnProduct[] = [
   {
     id: "express-launch",
-    name: "EXPRESS LAUNCH: 8hr Placement Boost",
-    description: ["Get your campaign launched within only 8 hours instead of standard 24-48h turnaround. INSTANT results and INSTANT gratification."],
+    name: "EXPRESS: 8hr Rapid Launch",
+    description: ["Get your campaign launched within only 8 hours instead of the standard 24-48hr turnaround. INSTANT placements for INSTANT results."],
     originalPrice: 28,
     salePrice: 14,
     emoji: "⚡️",
@@ -2511,13 +2511,13 @@ export default function CheckoutPage() {
                   <div className="space-y-3">
                     <div className="flex justify-between">
                       <span className="text-white/70">Subtotal</span>
-                      <span>${subtotal}</span>
+                      <span>${subtotal.toFixed(2)}</span>
                     </div>
                     
                     {discount > 0 && (
                       <div className="flex justify-between text-[#59e3a5]">
                         <span>Multi-song discount (25% off)</span>
-                        <span>-${discount}</span>
+                        <span>-${discount.toFixed(2)}</span>
                       </div>
                     )}
                     
@@ -2532,7 +2532,7 @@ export default function CheckoutPage() {
                     <div className="border-t border-white/20 pt-3">
                       <div className="flex justify-between text-xl font-bold">
                         <span>Total</span>
-                        <span className="text-[#59e3a5]">${total}</span>
+                        <span className="text-[#59e3a5]">${total.toFixed(2)}</span>
                       </div>
                     </div>
                   </div>
@@ -2554,35 +2554,35 @@ export default function CheckoutPage() {
                             <h4 className={`font-semibold ${addOn.color}`}>{addOn.emoji} {addOn.name}</h4>
                             <div className="text-sm text-white/70 mt-1 pr-8">
                               <p>{addOn.description[0]}</p>
-                            </div>
                           </div>
-                          <button 
+                        </div>
+                        <button 
                             onClick={() => toggleAddOn(addOn.id)}
                             className={`p-2 rounded-lg transition-colors flex-shrink-0 pointer-events-auto ${
                               selectedAddOns.has(addOn.id) 
-                                ? 'bg-[#59e3a5] text-black hover:bg-[#4bc995]' 
-                                : 'bg-white/20 hover:bg-white/30 text-white'
-                            }`}
-                          >
+                              ? 'bg-[#59e3a5] text-black hover:bg-[#4bc995]' 
+                              : 'bg-white/20 hover:bg-white/30 text-white'
+                          }`}
+                        >
                             {selectedAddOns.has(addOn.id) ? (
-                              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                              </svg>
-                            ) : (
-                              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-                              </svg>
-                            )}
-                          </button>
-                        </div>
+                            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                            </svg>
+                          ) : (
+                            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                            </svg>
+                          )}
+                        </button>
+                      </div>
                         <div className="flex items-center space-x-2 pointer-events-none">
                           <span className="text-white/50 line-through">${addOn.originalPrice}</span>
                           <span className={`font-bold ${addOn.color}`}>${addOn.salePrice}</span>
-                        </div>
+                      </div>
                         {/* 50% OFF badge in bottom right corner */}
                         <div className="absolute bottom-2 right-2 bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] text-black text-xs font-bold px-2 py-1 rounded-full pointer-events-none">
                           50% OFF
-                        </div>
+                    </div>
                       </SpotlightCard>
                     ))}
                   </div>
@@ -2611,7 +2611,7 @@ export default function CheckoutPage() {
                           disabled={isLoading}
                           className="w-full bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] text-black font-semibold py-4 px-6 rounded-lg hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
                         >
-                          {isLoading ? 'Processing...' : `Continue to Payment · $${total}`}
+                          {isLoading ? 'Processing...' : `Continue to Payment · $${total.toFixed(2)}`}
                         </button>
                       </div>
                     </form>

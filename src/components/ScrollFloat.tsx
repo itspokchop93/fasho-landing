@@ -11,7 +11,7 @@ if (typeof window !== 'undefined') {
   }).then((scrollTriggerModule) => {
     ScrollTrigger = scrollTriggerModule.ScrollTrigger;
     if (gsap && ScrollTrigger) {
-      gsap.registerPlugin(ScrollTrigger);
+gsap.registerPlugin(ScrollTrigger);
     }
   }).catch(console.error);
 }
@@ -103,45 +103,45 @@ const ScrollFloat: React.FC<ScrollFloatProps> = ({
         return;
       }
 
-      const scroller =
-        scrollContainerRef && scrollContainerRef.current
-          ? scrollContainerRef.current
-          : window;
+    const scroller =
+      scrollContainerRef && scrollContainerRef.current
+        ? scrollContainerRef.current
+        : window;
 
-      const charElements = el.querySelectorAll(".inline-block");
+    const charElements = el.querySelectorAll(".inline-block");
 
       if (charElements.length === 0) {
         console.warn("No character elements found for animation");
-        return;
-      }
+      return;
+    }
 
-      gsap.fromTo(
-        charElements,
-        {
-          willChange: "opacity, transform",
-          opacity: 0,
-          yPercent: 120,
-          scaleY: 2.3,
-          scaleX: 0.7,
-          transformOrigin: "50% 0%"
+    gsap.fromTo(
+      charElements,
+      {
+        willChange: "opacity, transform",
+        opacity: 0,
+        yPercent: 120,
+        scaleY: 2.3,
+        scaleX: 0.7,
+        transformOrigin: "50% 0%"
+      },
+      {
+        duration: animationDuration,
+        ease: ease,
+        opacity: 1,
+        yPercent: 0,
+        scaleY: 1,
+        scaleX: 1,
+        stagger: stagger,
+        scrollTrigger: {
+          trigger: el,
+          scroller,
+          start: scrollStart,
+          end: scrollEnd,
+          scrub: true
         },
-        {
-          duration: animationDuration,
-          ease: ease,
-          opacity: 1,
-          yPercent: 0,
-          scaleY: 1,
-          scaleX: 1,
-          stagger: stagger,
-          scrollTrigger: {
-            trigger: el,
-            scroller,
-            start: scrollStart,
-            end: scrollEnd,
-            scrub: true
-          },
-        }
-      );
+      }
+    );
     };
 
     // Start the animation initialization

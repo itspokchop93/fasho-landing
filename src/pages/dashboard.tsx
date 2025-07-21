@@ -714,6 +714,12 @@ export default function Dashboard({ user }: DashboardProps) {
 
   const renderDashboardContent = () => (
     <div className="space-y-4 lg:space-y-8 pb-8">
+      {/* Mobile-only gradient heading above stats cards */}
+      <div className="block md:hidden mb-2 mt-2 text-center">
+        <h2 className="text-lg font-black text-white inline-block" style={{letterSpacing: '0.01em', fontSize: '1.5rem'}}>
+          Your Growth Hub
+        </h2>
+      </div>
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 lg:gap-6">
         <div className="bg-gradient-to-br from-gray-950/90 to-gray-900/90 backdrop-blur-sm rounded-2xl p-4 lg:p-6 border border-gray-800/30 relative z-10">
@@ -1470,21 +1476,21 @@ export default function Dashboard({ user }: DashboardProps) {
                   <div className="bg-gray-800/50 rounded-xl overflow-hidden">
                   {/* Collapsed Order Row - Column Layout */}
                   <div 
-                    className="grid grid-cols-12 gap-4 p-4 cursor-pointer hover:bg-gray-700/50 transition-colors items-center"
-                  onClick={() => toggleOrderExpansion(order.id)}
-                >
-                    {/* Column 1: Album Artwork Thumbnails (2x2 Grid) */}
-                    <div className="col-span-2 flex justify-center items-center" style={{ width: '110px', height: '110px' }}>
+                    className="flex flex-col md:grid md:grid-cols-12 gap-4 p-4 cursor-pointer hover:bg-gray-700/50 transition-colors items-center"
+                    onClick={() => toggleOrderExpansion(order.id)}
+                  >
+                    {/* Album Artwork - 25% smaller on mobile, stacked on top */}
+                    <div className="w-[123px] h-[123px] md:col-span-2 flex-shrink-0 flex justify-center items-center mb-3 md:mb-0" style={{ width: '123px', height: '123px' }}>
                       {order.items && order.items.length > 0 ? (
-                        <div className={`w-full h-full ${order.items.length === 1 ? '' : 'grid grid-cols-2 grid-rows-2 gap-1'}`}>
+                        <div className={`w-full h-full ${order.items.length === 1 ? '' : 'grid grid-cols-2 grid-rows-2 gap-1'}`}> 
                           {order.items.map((item: any, idx: number) => (
                             <div key={idx} className={`${getArtworkSize(order.items.length)} rounded-lg overflow-hidden bg-gray-800`}>
-                            <img 
-                              src={item.track.imageUrl} 
-                              alt={item.track.title}
-                              className="w-full h-full object-cover"
-                            />
-                          </div>
+                              <img 
+                                src={item.track.imageUrl} 
+                                alt={item.track.title}
+                                className="w-full h-full object-cover"
+                              />
+                            </div>
                           ))}
                         </div>
                       ) : (
@@ -1493,14 +1499,13 @@ export default function Dashboard({ user }: DashboardProps) {
                         </div>
                       )}
                     </div>
-                    
-                    {/* Column 2: Order Info & Progress Bar (Flexible Width) */}
-                    <div className="col-span-6">
-                      <p className="text-white font-semibold mb-2 text-lg">
+                    {/* Order Info & Progress Bar - stacked below artwork on mobile */}
+                    <div className="flex-1 md:col-span-6 w-full">
+                      <p className="text-white font-semibold mb-2 text-lg text-center md:text-left mt-2 md:mt-0">
                         Order #{order.orderNumber} • <span className="text-gray-400 font-normal text-xs">${Math.round(order.total)} • {new Date(order.createdAt).toLocaleDateString()}</span>
                       </p>
                       {/* Campaign Progress Bar Container - Small size for collapsed view */}
-                      <div className="bg-gray-800/30 rounded-lg p-3 mt-2 border border-gray-700/30 md:block hidden" style={{ width: '500px', maxWidth: '100%' }}>
+                      <div className="bg-gray-800/30 rounded-lg p-3 mt-2 border border-gray-700/30 hidden md:block" style={{ width: '500px', maxWidth: '100%' }}>
                         <CampaignProgressBar 
                           orderCreatedAt={order.createdAt}
                           orderStatus={order.status}
@@ -1508,93 +1513,91 @@ export default function Dashboard({ user }: DashboardProps) {
                           size="small"
                           className="w-full"
                         />
+                      </div>
                     </div>
-                  </div>
-                  
-                    {/* Column 3: Status & Expand Button (Fixed Width) */}
-                    <div className="col-span-4 flex items-center justify-end space-x-4">
-                    <div className="flex items-center space-x-2">
+                    {/* Status & Expand Button - stacked below on mobile, right on desktop */}
+                    <div className="flex md:col-span-4 items-center justify-between md:justify-end w-full mt-3 md:mt-0 space-x-4">
+                      <div className="flex items-center space-x-2">
                         <div className={`w-3 h-3 rounded-full animate-pulse ${getStatusBgClass(order.status)}`} 
-                             style={{
-                               animation: 'glow 2s infinite',
-                               filter: 'drop-shadow(0 0 4px currentColor)',
-                             }}></div>
-                      <span className={`text-sm font-medium ${getStatusTextClass(order.status)}`}>
-                        {getStatusLabel(order.status)}
-                      </span>
+                          style={{
+                            animation: 'glow 2s infinite',
+                            filter: 'drop-shadow(0 0 4px currentColor)',
+                          }}></div>
+                        <span className={`text-sm font-medium ${getStatusTextClass(order.status)}`}>
+                          {getStatusLabel(order.status)}
+                        </span>
+                      </div>
+                      <svg 
+                        className={`w-5 h-5 text-gray-400 transition-transform ${
+                          expandedOrders.has(order.id) ? 'rotate-180' : ''
+                        }`}
+                        fill="none" 
+                        stroke="currentColor" 
+                        viewBox="0 0 24 24"
+                      >
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                      </svg>
                     </div>
-                    
-                    <svg 
-                      className={`w-5 h-5 text-gray-400 transition-transform ${
-                        expandedOrders.has(order.id) ? 'rotate-180' : ''
-                      }`}
-                      fill="none" 
-                      stroke="currentColor" 
-                      viewBox="0 0 24 24"
-                    >
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                    </svg>
                   </div>
-                </div>
                 
-                {/* Expanded Order Details */}
-                {expandedOrders.has(order.id) && (
-                  <div className="border-t border-gray-700/50 p-4 bg-gray-800/30">
-                    {/* Campaign Progress Bar - Medium size for expanded view */}
-                    <div className="mb-6" style={{ width: '500px', maxWidth: '100%' }}>
-                      <CampaignProgressBar 
-                        orderCreatedAt={order.createdAt}
-                        orderStatus={order.status}
-                        showMessage={true}
-                        size="medium"
-                      />
-                    </div>
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                      {/* Song Cards */}
-                      {order.items && order.items.map((item: any, idx: number) => (
-                        <div key={idx} className="bg-gray-900/50 rounded-xl p-4 border border-gray-700/30">
-                          <div className="flex flex-col items-center space-y-3">
-                            <div className="w-20 h-20 rounded-lg overflow-hidden bg-gray-800">
-                              <img 
-                                src={item.track.imageUrl} 
-                                alt={item.track.title}
-                                className="w-full h-full object-cover"
-                              />
-                            </div>
-                            <div className="text-center">
-                              <h4 className="text-white font-medium text-sm mb-1">{item.track.title}</h4>
-                              <p className="text-gray-400 text-xs mb-2">{item.package.name} Package</p>
-                              <div className="bg-gradient-to-r from-green-500/20 to-green-600/20 border border-green-500/30 rounded-lg p-2">
-                                <p className="text-green-400 text-xs font-medium">{item.package.plays}</p>
-                                <p className="text-green-400 text-xs">{item.package.placements}</p>
+                  {/* Expanded Order Details */}
+                  {expandedOrders.has(order.id) && (
+                    <div className="border-t border-gray-700/50 p-4 bg-gray-800/30">
+                      {/* Campaign Progress Bar - Medium size for expanded view */}
+                      <div className="mb-6" style={{ width: '500px', maxWidth: '100%' }}>
+                        <CampaignProgressBar 
+                          orderCreatedAt={order.createdAt}
+                          orderStatus={order.status}
+                          showMessage={true}
+                          size="medium"
+                        />
+                      </div>
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                        {/* Song Cards */}
+                        {order.items && order.items.map((item: any, idx: number) => (
+                          <div key={idx} className="bg-gray-900/50 rounded-xl p-4 border border-gray-700/30">
+                            <div className="flex flex-col items-center space-y-3">
+                              <div className="w-20 h-20 rounded-lg overflow-hidden bg-gray-800">
+                                <img 
+                                  src={item.track.imageUrl} 
+                                  alt={item.track.title}
+                                  className="w-full h-full object-cover"
+                                />
+                              </div>
+                              <div className="text-center">
+                                <h4 className="text-white font-medium text-sm mb-1">{item.track.title}</h4>
+                                <p className="text-gray-400 text-xs mb-2">{item.package.name} Package</p>
+                                <div className="bg-gradient-to-r from-green-500/20 to-green-600/20 border border-green-500/30 rounded-lg p-2">
+                                  <p className="text-green-400 text-xs font-medium">{item.package.plays}</p>
+                                  <p className="text-green-400 text-xs">{item.package.placements}</p>
+                                </div>
                               </div>
                             </div>
                           </div>
-                        </div>
-                      ))}
-                    </div>
-                    
-                    {/* Add-ons Section */}
-                    {order.addOnItems && order.addOnItems.length > 0 && (
-                      <div className="mt-4 pt-4 border-t border-gray-700/50">
-                        <h4 className="text-white font-medium mb-3">Add-ons</h4>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                                                  {order.addOnItems.map((addon: any, idx: number) => (
-                          <div key={idx} className="flex items-center space-x-3 bg-gray-900/30 rounded-lg p-3 border border-gray-700/30">
-                            <div className="w-8 h-8 bg-gray-800 rounded-full flex items-center justify-center">
-                              <span className="text-sm">{addon.emoji}</span>
-                            </div>
-                            <div className="flex-1">
-                              <p className="text-white text-sm font-medium">{addon.name}</p>
-                              <p className="text-green-400 text-xs">${addon.price >= 600 ? Math.round(addon.price / 100) : addon.price}</p>
-                            </div>
-                          </div>
                         ))}
-                        </div>
                       </div>
-                    )}
-                  </div>
-                )}
+                      
+                      {/* Add-ons Section */}
+                      {order.addOnItems && order.addOnItems.length > 0 && (
+                        <div className="mt-4 pt-4 border-t border-gray-700/50">
+                          <h4 className="text-white font-medium mb-3">Add-ons</h4>
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                                    {order.addOnItems.map((addon: any, idx: number) => (
+                            <div key={idx} className="flex items-center space-x-3 bg-gray-900/30 rounded-lg p-3 border border-gray-700/30">
+                              <div className="w-8 h-8 bg-gray-800 rounded-full flex items-center justify-center">
+                                <span className="text-sm">{addon.emoji}</span>
+                              </div>
+                              <div className="flex-1">
+                                <p className="text-white text-sm font-medium">{addon.name}</p>
+                                <p className="text-green-400 text-xs">${addon.price >= 600 ? Math.round(addon.price / 100) : addon.price}</p>
+                              </div>
+                            </div>
+                          ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
                   </div>
                 </div>
                 
@@ -1657,7 +1660,7 @@ export default function Dashboard({ user }: DashboardProps) {
                 <div className="bg-gray-900/95 backdrop-blur-sm rounded-2xl overflow-hidden">
                 {/* Collapsed Order Row - Column Layout */}
                 <div 
-                  className="grid grid-cols-12 gap-4 p-4 cursor-pointer hover:bg-gray-800/50 transition-colors items-center"
+                  className="flex flex-col md:grid md:grid-cols-12 gap-4 p-4 cursor-pointer hover:bg-gray-800/50 transition-colors items-center"
                 onClick={() => toggleOrderExpansion(order.id)}
               >
                   {/* Column 1: Album Artwork Thumbnails (2x2 Grid) */}
@@ -1699,29 +1702,28 @@ export default function Dashboard({ user }: DashboardProps) {
                 </div>
                 
                   {/* Column 3: Status & Expand Button (Fixed Width) */}
-                  <div className="col-span-4 flex items-center justify-end space-x-4">
-                  <div className="flex items-center space-x-2">
-                      <div className={`w-3 h-3 rounded-full animate-pulse ${getStatusBgClass(order.status)}`} 
-                           style={{
-                             animation: 'glow 2s infinite',
-                             filter: 'drop-shadow(0 0 4px currentColor)',
-                           }}></div>
-                    <span className={`text-sm font-medium ${getStatusTextClass(order.status)}`}>
-                      {getStatusLabel(order.status)}
-                    </span>
+                  <div className="w-full md:col-span-4 flex flex-row items-center justify-between md:justify-end mt-2 md:mt-0">
+                    <div className="flex items-center space-x-2">
+                      <div className={`w-3 h-3 rounded-full animate-pulse ${getStatusBgClass(order.status)}`}
+                        style={{
+                          animation: 'glow 2s infinite',
+                          filter: 'drop-shadow(0 0 4px currentColor)',
+                        }}></div>
+                      <span className={`text-sm font-medium ${getStatusTextClass(order.status)}`}>
+                        {getStatusLabel(order.status)}
+                      </span>
+                    </div>
+                    <svg
+                      className={`w-5 h-5 text-gray-400 transition-transform ${
+                        expandedOrders.has(order.id) ? 'rotate-180' : ''
+                      }`}
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                    </svg>
                   </div>
-                  
-                  <svg 
-                    className={`w-5 h-5 text-gray-400 transition-transform ${
-                      expandedOrders.has(order.id) ? 'rotate-180' : ''
-                    }`} 
-                    fill="none" 
-                    stroke="currentColor" 
-                    viewBox="0 0 24 24"
-                  >
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                  </svg>
-                </div>
               </div>
               
               {/* Expanded Order Details */}
@@ -1848,7 +1850,7 @@ export default function Dashboard({ user }: DashboardProps) {
 
   const renderFAQContent = () => (
     <div className="space-y-6 pb-8">
-      <h2 className="text-2xl font-bold text-white">Frequently Asked Questions</h2>
+      <h2 className="block md:hidden text-2xl font-bold text-white text-center mt-8 mb-8">Frequently Asked Questions</h2>
       
       <div className="space-y-4">
         {[
@@ -1908,11 +1910,12 @@ export default function Dashboard({ user }: DashboardProps) {
 
   const renderContactContent = () => (
     <div className="space-y-6 pb-8">
-      <h2 className="text-2xl font-bold text-white">Contact Support</h2>
+      {/* Mobile-only Contact Support heading */}
+      <h2 className="block md:hidden text-2xl font-bold text-white text-center mt-8 mb-8">Contact Support</h2>
       
       <div className="grid md:grid-cols-2 gap-8">
         <div className="bg-gradient-to-br from-gray-950/90 to-gray-900/90 backdrop-blur-sm rounded-2xl p-6 border border-gray-800/30">
-          <h3 className="text-xl font-semibold text-white mb-6">Get in Touch</h3>
+          <h3 className="text-xl font-semibold text-white mb-6">Speak To Our Team ✉️</h3>
           
           {/* Success/Error Message */}
           {contactFormMessage && (
@@ -2280,6 +2283,10 @@ export default function Dashboard({ user }: DashboardProps) {
 
     return (
       <div className="space-y-8 pb-8">
+        {/* Heading above Pricing Cards */}
+        <div className="max-w-7xl mx-auto">
+          <h2 className="text-2xl md:text-3xl font-black text-white text-center mt-8 mb-8">Choose Your Next Campaign</h2>
+        </div>
         {/* Pricing Cards */}
         <div className="max-w-7xl mx-auto">
           {/* First Row - 3 Cards */}
@@ -2627,30 +2634,33 @@ export default function Dashboard({ user }: DashboardProps) {
         <div className="flex-1 flex flex-col relative z-10 w-full lg:w-auto min-h-screen lg:min-h-0 overflow-x-hidden">
           {/* Header */}
           <header className="bg-gray-950/95 backdrop-blur-sm border-b border-gray-900/30 p-4 lg:p-6 relative z-50 w-full">
-            <div className="flex items-center justify-between w-full">
-              <div className="min-w-0 flex-1">
-                {/* Mobile Logo */}
-                <div className="lg:hidden mb-2">
+            <div className="flex items-center justify-between w-full lg:items-start">
+              <div className="min-w-0 flex-1 flex items-center lg:block">
+                {/* Mobile Logo - vertically centered with profile */}
+                <div className="lg:hidden flex items-center mb-2" style={{ minHeight: '44px' }}>
                   <img 
                     src="/fasho-logo-wide.png" 
                     alt="FASHO" 
-                    className="h-6 w-auto"
+                    className="h-8 w-auto"
+                    style={{ minHeight: '32px' }}
                   />
                 </div>
-                <h2 className="text-xl lg:text-2xl font-bold text-white">
-                  {activeTab === 'dashboard' && 'Dashboard'}
-                  {activeTab === 'campaigns' && 'Campaigns'}
-                  {activeTab === 'packages' && 'Packages'}
-                  {activeTab === 'faq' && 'Frequently Asked Questions'}
-                  {activeTab === 'contact' && 'Contact'}
-                </h2>
-                <p className="text-sm lg:text-base text-gray-400">
-                  {activeTab === 'dashboard' && 'Welcome back! Here\'s your campaign overview.'}
-                  {activeTab === 'campaigns' && 'Manage and monitor all your music campaigns.'}
-                  {activeTab === 'packages' && 'Choose the perfect plan to launch your music career.'}
-                  {activeTab === 'faq' && 'Get the answers that you need, when you need them.'}
-                  {activeTab === 'contact' && 'Get in touch with our support team.'}
-                </p>
+                <div className="hidden md:block">
+                  <h2 className="text-xl lg:text-2xl font-bold text-white">
+                    {activeTab === 'dashboard' && 'Dashboard'}
+                    {activeTab === 'campaigns' && 'Campaigns'}
+                    {activeTab === 'packages' && 'Packages'}
+                    {activeTab === 'faq' && 'Frequently Asked Questions'}
+                    {activeTab === 'contact' && 'Contact'}
+                  </h2>
+                  <p className="text-sm lg:text-base text-gray-400">
+                    {activeTab === 'dashboard' && 'Welcome back! Here\'s your campaign overview.'}
+                    {activeTab === 'campaigns' && 'Manage and monitor all your music campaigns.'}
+                    {activeTab === 'packages' && 'Choose the perfect plan to launch your music career.'}
+                    {activeTab === 'faq' && 'Get the answers that you need, when you need them.'}
+                    {activeTab === 'contact' && 'Get in touch with our support team.'}
+                  </p>
+                </div>
               </div>
               {/* User Profile Dropdown - Top Right */}
               <div className="flex-shrink-0 ml-4">

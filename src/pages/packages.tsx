@@ -1161,7 +1161,14 @@ export default function PackagesPage() {
                 
                 {/* Content */}
                 <div className="relative z-10">
-                  <div className="grid grid-cols-1 gap-2">
+                  {/* Mobile-only gradient heading */}
+                  <div className="block md:hidden mb-6 text-center">
+                    <h3 className="text-lg font-black bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] bg-clip-text text-transparent inline-block" style={{letterSpacing: '0.01em', fontSize: 'calc(1.125rem + 0.25rem)'}}>
+                      Inside Your Campaign 🚀
+                    </h3>
+                  </div>
+                  {/* Featured list - 1 column, left-aligned on mobile, with 15px left padding */}
+                  <div className="grid grid-cols-1 gap-y-3 justify-items-start text-left pl-[15px] md:grid-cols-2 md:justify-items-start md:text-left md:pl-0">
                     {[
                       'Campaign starts within only 24-48 hours',
                       'All streams achieved in only 7-10 days', 
@@ -1174,14 +1181,14 @@ export default function PackagesPage() {
                       'VIP curator network access',
                       'Dedicated account manager'
                     ].map((feature, index) => (
-                      <div key={index} className="flex items-start space-x-2 group">
+                      <div key={index} className="flex items-start space-x-2 group justify-center md:justify-start">
                         {/* Green checkmark icon */}
-                        <div className="w-3 h-3 bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] rounded-full flex-shrink-0 flex items-center justify-center mt-0.5 shadow-sm group-hover:scale-110 transition-transform duration-200">
-                          <svg className="w-1.5 h-1.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <div className="w-4 h-4 bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] rounded-full flex items-center justify-center flex-shrink-0 mt-0.5 shadow-md group-hover:scale-110 transition-transform duration-200">
+                          <svg className="w-2.5 h-2.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
                           </svg>
                         </div>
-                        <span className="text-white/90 text-xs leading-relaxed group-hover:text-white transition-colors duration-200 text-left">
+                        <span className="text-white/90 text-xs leading-relaxed group-hover:text-white transition-colors duration-200 text-center md:text-left" style={{ fontSize: 'calc(0.875rem + 0.15rem)' }}>
                           {feature}
                         </span>
                       </div>
@@ -1250,10 +1257,10 @@ export default function PackagesPage() {
                               </div>
                             )}
                             
-                            {/* Lens flare animation for Popular package with reduced opacity */}
+                            {/* Lens flare animation for Popular package */}
                             {pkg.popular && (
                               <>
-                                {/* Outer glow layer - reduced spread (blur-md to blur-sm, -inset-1 to -inset-0.5) */}
+                                {/* Outer glow layer */}
                                 <div className="absolute -inset-0.5 bg-gradient-to-r from-blue-400 via-cyan-500 to-blue-600 rounded-2xl blur-sm opacity-30 animate-pulse"></div>
                                 
                                 {/* Animated border layer */}
@@ -1614,8 +1621,14 @@ export default function PackagesPage() {
                  
                  {/* Content */}
                  <div className="relative z-10">
-                   
-                   <div className="grid grid-cols-2 gap-x-4 gap-y-3">
+                   {/* Mobile-only gradient heading */}
+                   <div className="block md:hidden mb-6 text-center">
+                     <h3 className="text-lg font-black bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] bg-clip-text text-transparent inline-block" style={{letterSpacing: '0.01em', fontSize: 'calc(1.125rem + 0.25rem)'}}>
+                       Inside Your Campaign 🚀
+                     </h3>
+                   </div>
+                   {/* Featured list - 1 column, left-aligned on mobile, with 15px left padding */}
+                   <div className="grid grid-cols-1 gap-y-3 justify-items-start text-left pl-[15px] md:grid-cols-2 md:justify-items-start md:text-left md:pl-0">
                      {[
                        'Campaign starts within only 24-48 hours',
                        'All streams achieved in only 7-10 days', 
@@ -1628,14 +1641,14 @@ export default function PackagesPage() {
                        'VIP curator network access',
                        'Dedicated account manager'
                      ].map((feature, index) => (
-                       <div key={index} className="flex items-start space-x-2 group">
+                       <div key={index} className="flex items-start space-x-2 group justify-center md:justify-start">
                          {/* Green checkmark icon */}
                          <div className="w-4 h-4 bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] rounded-full flex items-center justify-center flex-shrink-0 mt-0.5 shadow-md group-hover:scale-110 transition-transform duration-200">
                            <svg className="w-2.5 h-2.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
                            </svg>
                          </div>
-                         <span className="text-white/90 text-xs leading-relaxed group-hover:text-white transition-colors duration-200 text-left">
+                         <span className="text-white/90 text-xs leading-relaxed group-hover:text-white transition-colors duration-200 text-center md:text-left" style={{ fontSize: 'calc(0.875rem + 0.15rem)' }}>
                            {feature}
                          </span>
                        </div>
@@ -1757,9 +1770,9 @@ export default function PackagesPage() {
               </p>
               
               {/* Mobile Swipe Indicator */}
-              <div className="md:hidden flex justify-end pr-4 mb-1">
+              <div className="md:hidden flex justify-end pr-4 mt-[10px] mb-[-8px]">
                 <div className="flex items-center space-x-2 text-gray-400 text-sm" style={{ fontFamily: 'Comic Sans MS, cursive, sans-serif' }}>
-                  <div className="animate-pulse" style={{ animation: 'bounceLeft 1.5s infinite' }}>
+                  <div className="animate-bounce-left animate-pulse">
                     <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
                       <path fillRule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clipRule="evenodd" />
                     </svg>
@@ -1767,23 +1780,9 @@ export default function PackagesPage() {
                   <span>Swipe Left</span>
                 </div>
               </div>
-              
-              <style jsx>{`
-                @keyframes bounceLeft {
-                  0%, 20%, 50%, 80%, 100% {
-                    transform: translateX(0);
-                  }
-                  40% {
-                    transform: translateX(-4px);
-                  }
-                  60% {
-                    transform: translateX(-2px);
-                  }
-                }
-              `}</style>
             </div>
 
-            <div className="bg-black rounded-2xl border border-white/40 overflow-hidden relative z-30">
+            <div className="bg-black rounded-2xl border border-white/40 overflow-hidden relative z-30 mt-[-30px] md:mt-0">
               <div className="overflow-x-auto">
                 <table className="w-full relative z-20">
                   <thead>
@@ -2268,7 +2267,7 @@ export default function PackagesPage() {
           <div className="max-w-7xl mx-auto px-4 py-20">
             {/* Why FASHO.co Gets Results */}
             <div className="text-center mb-16 relative z-50">
-              <h2 className="font-black mb-6 text-white leading-tight px-4 relative z-50 md:text-5xl" style={{ fontSize: 'calc(2.25rem + 0.35rem)' }}>
+              <h2 className="font-black mb-6 text-white leading-tight px-4 relative z-50 text-4xl md:text-5xl">
                 <span className="text-4xl md:text-5xl">🎯</span>{' '}
                 <span style={{
                   background: 'linear-gradient(to right, #59e3a5, #14c0ff)',
