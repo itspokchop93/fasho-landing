@@ -7,11 +7,32 @@
 </head>
 <body>
     <script type="text/javascript">
-        console.log('🔧 IFRAME COMMUNICATOR: Loaded successfully!');
+        console.log('🔧 IFRAME COMMUNICATOR: ===== LOADED SUCCESSFULLY =====');
         console.log('🔧 IFRAME COMMUNICATOR: window.location.href:', window.location.href);
         console.log('🔧 IFRAME COMMUNICATOR: document.referrer:', document.referrer);
         console.log('🔧 IFRAME COMMUNICATOR: window.parent === window.top:', window.parent === window.top);
         console.log('🔧 IFRAME COMMUNICATOR: AuthorizeNetIFrame object created:', typeof window.AuthorizeNetIFrame);
+        
+        // Send immediate test message to confirm iframe communicator is loaded
+        setTimeout(function() {
+            console.log('🔧 IFRAME COMMUNICATOR: Sending immediate test message to confirm loading');
+            if (window.parent && window.parent.postMessage) {
+                window.parent.postMessage({
+                    type: 'IFRAME_COMMUNICATOR_LOADED',
+                    message: 'Iframe communicator is loaded and ready',
+                    timestamp: new Date().toISOString()
+                }, '*');
+                console.log('🔧 IFRAME COMMUNICATOR: Test message sent to parent');
+            }
+            if (window.top && window.top !== window && window.top.postMessage) {
+                window.top.postMessage({
+                    type: 'IFRAME_COMMUNICATOR_LOADED',
+                    message: 'Iframe communicator is loaded and ready',
+                    timestamp: new Date().toISOString()
+                }, '*');
+                console.log('🔧 IFRAME COMMUNICATOR: Test message sent to top');
+            }
+        }, 500);
         
         // Test if we can communicate with parent immediately
         setTimeout(function() {
@@ -21,6 +42,17 @@
                 message: 'Iframe communicator is ready'
             });
         }, 1000);
+        
+        // Additional test for localhost development
+        if (window.location.href.includes('localhost') || window.location.href.includes('127.0.0.1')) {
+            console.log('🔧 IFRAME COMMUNICATOR: Localhost detected - sending test message');
+            setTimeout(function() {
+                sendToAllParents({
+                    type: 'TEST_MESSAGE',
+                    message: 'Localhost test message from iframe communicator'
+                });
+            }, 2000);
+        }
         
         // Parse query string function
         function parseQueryString(str) {
@@ -40,32 +72,27 @@
             console.log('🔧 IFRAME COMMUNICATOR: ===== SENDING SINGLE MESSAGE TO PARENT =====');
             console.log('🔧 IFRAME COMMUNICATOR: Message to send:', message);
             console.log('🔧 IFRAME COMMUNICATOR: Current window location:', window.location.href);
+            console.log('🔧 IFRAME COMMUNICATOR: window.parent === window.top:', window.parent === window.top);
             
             var messageSent = false;
             
-            // Try to send to window.parent first (most common case)
-            if (window.parent && window.parent.postMessage && !messageSent) {
-                console.log('🔧 IFRAME COMMUNICATOR: Sending to window.parent with wildcard origin');
-                try {
-                    window.parent.postMessage(message, '*');
-                    messageSent = true;
-                    console.log('🔧 IFRAME COMMUNICATOR: ✅ Successfully sent to window.parent - DONE');
-                    return; // Exit immediately after first successful send
-                } catch (e) {
-                    console.error('🔧 IFRAME COMMUNICATOR: ❌ Failed to send to window.parent:', e);
-                }
-            }
+            // Try multiple targets to ensure message gets through
+            var targets = [
+                { name: 'window.top', target: window.top },
+                { name: 'window.parent', target: window.parent }
+            ];
             
-            // Fallback to window.top only if parent failed
-            if (window.top && window.top !== window && window.top.postMessage && !messageSent) {
-                console.log('🔧 IFRAME COMMUNICATOR: Fallback - sending to window.top');
-                try {
-                    window.top.postMessage(message, '*');
-                    messageSent = true;
-                    console.log('🔧 IFRAME COMMUNICATOR: ✅ Successfully sent to window.top - DONE');
-                    return; // Exit immediately after successful send
-                } catch (e) {
-                    console.error('🔧 IFRAME COMMUNICATOR: ❌ Failed to send to window.top:', e);
+            for (var i = 0; i < targets.length && !messageSent; i++) {
+                var target = targets[i];
+                if (target.target && target.target !== window && target.target.postMessage) {
+                    console.log('🔧 IFRAME COMMUNICATOR: Attempting to send to ' + target.name);
+                    try {
+                        target.target.postMessage(message, '*');
+                        messageSent = true;
+                        console.log('🔧 IFRAME COMMUNICATOR: ✅ Successfully sent to ' + target.name + ' - DONE');
+                    } catch (e) {
+                        console.error('🔧 IFRAME COMMUNICATOR: ❌ Failed to send to ' + target.name + ':', e);
+                    }
                 }
             }
             

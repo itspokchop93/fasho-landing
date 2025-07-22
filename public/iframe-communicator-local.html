@@ -1,24 +1,24 @@
-<!-- Force redeploy: 2024-06-08 for CSP header propagation -->
+<!-- Local development iframe communicator for localhost testing -->
 <!DOCTYPE html>
 <html>
 <head>
     <meta charset="utf-8">
-    <title>Payment Communicator</title>
+    <title>Payment Communicator (Local)</title>
 </head>
 <body>
     <script type="text/javascript">
-        console.log('🔧 IFRAME COMMUNICATOR: Loaded successfully!');
-        console.log('🔧 IFRAME COMMUNICATOR: window.location.href:', window.location.href);
-        console.log('🔧 IFRAME COMMUNICATOR: document.referrer:', document.referrer);
-        console.log('🔧 IFRAME COMMUNICATOR: window.parent === window.top:', window.parent === window.top);
-        console.log('🔧 IFRAME COMMUNICATOR: AuthorizeNetIFrame object created:', typeof window.AuthorizeNetIFrame);
+        console.log('🔧 LOCAL IFRAME COMMUNICATOR: Loaded successfully!');
+        console.log('🔧 LOCAL IFRAME COMMUNICATOR: window.location.href:', window.location.href);
+        console.log('🔧 LOCAL IFRAME COMMUNICATOR: document.referrer:', document.referrer);
+        console.log('🔧 LOCAL IFRAME COMMUNICATOR: window.parent === window.top:', window.parent === window.top);
+        console.log('🔧 LOCAL IFRAME COMMUNICATOR: AuthorizeNetIFrame object created:', typeof window.AuthorizeNetIFrame);
         
         // Test if we can communicate with parent immediately
         setTimeout(function() {
-            console.log('🔧 IFRAME COMMUNICATOR: Testing parent communication...');
+            console.log('🔧 LOCAL IFRAME COMMUNICATOR: Testing parent communication...');
             sendToAllParents({
                 type: 'IFRAME_LOADED',
-                message: 'Iframe communicator is ready'
+                message: 'Local iframe communicator is ready'
             });
         }, 1000);
         
@@ -35,58 +35,59 @@
             return vars;
         }
 
-        // Send message to parent windows with enhanced targeting for localhost
+        // Send message to parent windows - SINGLE MESSAGE ONLY to prevent duplicates
         function sendToAllParents(message) {
-            console.log('🔧 IFRAME COMMUNICATOR: Sending message to parents:', message);
+            console.log('🔧 LOCAL IFRAME COMMUNICATOR: ===== SENDING SINGLE MESSAGE TO PARENT =====');
+            console.log('🔧 LOCAL IFRAME COMMUNICATOR: Message to send:', message);
+            console.log('🔧 LOCAL IFRAME COMMUNICATOR: Current window location:', window.location.href);
             
-            // Send to window.parent (immediate parent)
-            if (window.parent && window.parent.postMessage) {
-                console.log('🔧 IFRAME COMMUNICATOR: Sending to window.parent');
-                window.parent.postMessage(message, '*'); // Use '*' for development
-            }
+            var messageSent = false;
             
-            // Send to window.top (top-level window)
-            if (window.top && window.top !== window && window.top.postMessage) {
-                console.log('🔧 IFRAME COMMUNICATOR: Sending to window.top');
-                window.top.postMessage(message, '*'); // Use '*' for development
-            }
-            
-            // Also try specific localhost origins for development
-            var localhostOrigins = [
-                'http://localhost:3000',
-                'http://localhost:3001',
-                'http://127.0.0.1:3000',
-                'http://127.0.0.1:3001'
-            ];
-            
-            localhostOrigins.forEach(function(origin) {
+            // Try to send to window.parent first (most common case)
+            if (window.parent && window.parent.postMessage && !messageSent) {
+                console.log('🔧 LOCAL IFRAME COMMUNICATOR: Sending to window.parent with wildcard origin');
                 try {
-                    if (window.parent && window.parent.postMessage) {
-                        console.log('🔧 IFRAME COMMUNICATOR: Sending to parent with origin:', origin);
-                        window.parent.postMessage(message, origin);
-                    }
-                    if (window.top && window.top !== window && window.top.postMessage) {
-                        console.log('🔧 IFRAME COMMUNICATOR: Sending to top with origin:', origin);
-                        window.top.postMessage(message, origin);
-                    }
+                    window.parent.postMessage(message, '*');
+                    messageSent = true;
+                    console.log('🔧 LOCAL IFRAME COMMUNICATOR: ✅ Successfully sent to window.parent - DONE');
+                    return; // Exit immediately after first successful send
                 } catch (e) {
-                    console.log('🔧 IFRAME COMMUNICATOR: Failed to send to origin:', origin, e.message);
+                    console.error('🔧 LOCAL IFRAME COMMUNICATOR: ❌ Failed to send to window.parent:', e);
                 }
-            });
+            }
+            
+            // Fallback to window.top only if parent failed
+            if (window.top && window.top !== window && window.top.postMessage && !messageSent) {
+                console.log('🔧 LOCAL IFRAME COMMUNICATOR: Fallback - sending to window.top');
+                try {
+                    window.top.postMessage(message, '*');
+                    messageSent = true;
+                    console.log('🔧 LOCAL IFRAME COMMUNICATOR: ✅ Successfully sent to window.top - DONE');
+                    return; // Exit immediately after successful send
+                } catch (e) {
+                    console.error('🔧 LOCAL IFRAME COMMUNICATOR: ❌ Failed to send to window.top:', e);
+                }
+            }
+            
+            if (!messageSent) {
+                console.error('🔧 LOCAL IFRAME COMMUNICATOR: ❌ Failed to send message to any parent window');
+            }
+            
+            console.log('🔧 LOCAL IFRAME COMMUNICATOR: ===== MESSAGE SENDING COMPLETE =====');
         }
 
         // Create the AuthorizeNetIFrame global object as required by the API
         window.AuthorizeNetIFrame = {
             onReceiveCommunication: function(querystr) {
-                console.log('🔧 IFRAME COMMUNICATOR: ==============================');
-                console.log('🔧 IFRAME COMMUNICATOR: AuthorizeNetIFrame.onReceiveCommunication called with:', querystr);
+                console.log('🔧 LOCAL IFRAME COMMUNICATOR: ==============================');
+                console.log('🔧 LOCAL IFRAME COMMUNICATOR: AuthorizeNetIFrame.onReceiveCommunication called with:', querystr);
                 
                 var params = parseQueryString(querystr);
-                console.log('🔧 IFRAME COMMUNICATOR: Parsed params:', params);
+                console.log('🔧 LOCAL IFRAME COMMUNICATOR: Parsed params:', params);
                 
                 switch (params["action"]) {
                     case "successfulSave":
-                        console.log('🔧 IFRAME COMMUNICATOR: Payment profile saved successfully');
+                        console.log('🔧 LOCAL IFRAME COMMUNICATOR: Payment profile saved successfully');
                         sendToAllParents({
                             type: 'PAYMENT_SUCCESS',
                             action: 'successfulSave'
@@ -94,7 +95,7 @@
                         break;
                     
                     case "cancel":
-                        console.log('🔧 IFRAME COMMUNICATOR: Payment was cancelled by user');
+                        console.log('🔧 LOCAL IFRAME COMMUNICATOR: Payment was cancelled by user');
                         sendToAllParents({
                             type: 'PAYMENT_CANCELLED',
                             action: 'cancel'
@@ -103,25 +104,25 @@
                     
                     case "transactResponse":
                         // Transaction completed
-                        console.log('🔧 IFRAME COMMUNICATOR: Transaction response received:', params["response"]);
+                        console.log('🔧 LOCAL IFRAME COMMUNICATOR: Transaction response received:', params["response"]);
                         var response = JSON.parse(params["response"]);
-                        console.log('🔧 IFRAME COMMUNICATOR: Parsed transaction response:', response);
+                        console.log('🔧 LOCAL IFRAME COMMUNICATOR: Parsed transaction response:', response);
                         
-                        console.log('🚀 IFRAME COMMUNICATOR: Sending PAYMENT_COMPLETE message to parent and top');
+                        console.log('🚀 LOCAL IFRAME COMMUNICATOR: Sending PAYMENT_COMPLETE message to parent and top');
                         var messageToSend = {
                             type: 'PAYMENT_COMPLETE',
                             action: 'transactResponse',
                             response: response
                         };
                         sendToAllParents(messageToSend);
-                        console.log('🚀 IFRAME COMMUNICATOR: Message sent successfully to all parent targets');
+                        console.log('🚀 LOCAL IFRAME COMMUNICATOR: Message sent successfully to all parent targets');
                         break;
                     
                     case "resizeWindow":
                         // Resize iframe
                         var w = parseInt(params["width"]);
                         var h = parseInt(params["height"]);
-                        console.log('🔧 IFRAME COMMUNICATOR: Resize request:', w, 'x', h);
+                        console.log('🔧 LOCAL IFRAME COMMUNICATOR: Resize request:', w, 'x', h);
                         sendToAllParents({
                             type: 'RESIZE_IFRAME',
                             action: 'resizeWindow',
@@ -131,23 +132,23 @@
                         break;
                     
                     default:
-                        console.log('🔧 IFRAME COMMUNICATOR: Unknown action received:', params["action"]);
-                        console.log('🔧 IFRAME COMMUNICATOR: All params:', params);
+                        console.log('🔧 LOCAL IFRAME COMMUNICATOR: Unknown action received:', params["action"]);
+                        console.log('🔧 LOCAL IFRAME COMMUNICATOR: All params:', params);
                         break;
                 }
-                console.log('🔧 IFRAME COMMUNICATOR: ==============================');
+                console.log('🔧 LOCAL IFRAME COMMUNICATOR: ==============================');
             }
         };
 
         // Also keep the message event listener as backup
         function receiveMessage(event) {
-            console.log('🔧 IFRAME COMMUNICATOR: Message event received:', event);
-            console.log('🔧 IFRAME COMMUNICATOR: Event origin:', event.origin);
-            console.log('🔧 IFRAME COMMUNICATOR: Event data:', event.data);
+            console.log('🔧 LOCAL IFRAME COMMUNICATOR: Message event received:', event);
+            console.log('🔧 LOCAL IFRAME COMMUNICATOR: Event origin:', event.origin);
+            console.log('🔧 LOCAL IFRAME COMMUNICATOR: Event data:', event.data);
             
             // Verify origin for security
             if (event.origin !== "https://test.authorize.net" && event.origin !== "https://accept.authorize.net") {
-                console.log('🔧 IFRAME COMMUNICATOR: Origin not allowed:', event.origin);
+                console.log('🔧 LOCAL IFRAME COMMUNICATOR: Origin not allowed:', event.origin);
                 return;
             }
 

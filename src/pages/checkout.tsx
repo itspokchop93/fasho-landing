@@ -819,6 +819,7 @@ export default function CheckoutPage() {
              billingData.city && 
              billingData.state && 
              billingData.zip &&
+             billingData.phoneNumber &&
              termsAgreed;
     }
     
@@ -887,13 +888,29 @@ export default function CheckoutPage() {
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
+    console.log('🚀 CHECKOUT: ===== FORM SUBMISSION ATTEMPTED =====');
+    console.log('🚀 CHECKOUT: Event type:', e.type);
+    console.log('🚀 CHECKOUT: Event target:', e.target);
+    console.log('🚀 CHECKOUT: Current user exists:', !!currentUser);
+    console.log('🚀 CHECKOUT: Order items count:', orderItems.length);
+    console.log('🚀 CHECKOUT: Billing data exists:', !!billingData);
+    
     e.preventDefault();
+    console.log('🚀 CHECKOUT: ===== FORM SUBMISSION STARTED =====');
+    console.log('🚀 CHECKOUT: Form validation:', isFormValid());
+    console.log('🚀 CHECKOUT: Current user:', currentUser);
+    console.log('🚀 CHECKOUT: Order items:', orderItems);
+    console.log('🚀 CHECKOUT: Billing info:', billingData);
+    console.log('🚀 CHECKOUT: About to start payment processing...');
     setIsLoading(true);
     setFormError('');
 
     // Check if form is valid
+    console.log('🚀 CHECKOUT: Checking form validation...');
     if (!isFormValid()) {
+      console.log('🚀 CHECKOUT: Form validation failed!');
       const firstMissingField = getFirstMissingField();
+      console.log('🚀 CHECKOUT: First missing field:', firstMissingField);
       let errorMessage = 'Please complete all required fields before continuing.';
       
       // Scroll to the first missing field
@@ -925,7 +942,9 @@ export default function CheckoutPage() {
     }
 
     // Process payment directly
+    console.log('🚀 CHECKOUT: About to call handlePaymentSubmit...');
     await handlePaymentSubmit();
+    console.log('🚀 CHECKOUT: handlePaymentSubmit completed');
   };
 
   // Check if user is already logged in
@@ -1068,12 +1087,15 @@ export default function CheckoutPage() {
         'https://www.fasho.co',
         'https://fasho-landing.vercel.app',
         window.location.origin,
-        'http://localhost:3000'
+        'http://localhost:3000',
+        'http://localhost:3001',
+        'https://test.authorize.net',
+        'https://accept.authorize.net'
       ];
       
-      // For development, we'll be more permissive but still log everything
+      // For development, accept all origins but log everything
       if (process.env.NODE_ENV === 'development') {
-        console.log('🔍 PARENT PAGE: Development mode - accepting all origins but logging. Origin:', event.origin);
+        console.log('🔍 PARENT PAGE: Development mode - accepting all origins. Origin:', event.origin);
       } else {
         if (!allowedOrigins.includes(event.origin)) {
           console.log('🚫 PARENT PAGE: Message origin not allowed. Expected one of:', allowedOrigins, 'Got:', event.origin);
@@ -1161,6 +1183,20 @@ export default function CheckoutPage() {
           break;
         case 'IFRAME_LOADED':
           console.log('🔧 PARENT PAGE: Iframe communicator loaded successfully:', data.message);
+          break;
+        case 'TEST_MESSAGE':
+          console.log('🔧 PARENT PAGE: Test message received from iframe communicator:', data.message);
+          console.log('🔧 PARENT PAGE: This confirms iframe communicator is loading and can send messages');
+          break;
+        case 'IFRAME_LOADED':
+          console.log('🔧 PARENT PAGE: Iframe communicator loaded successfully:', data.message);
+          console.log('🔧 PARENT PAGE: Iframe communication is working');
+          break;
+        case 'IFRAME_COMMUNICATOR_LOADED':
+          console.log('🔧 PARENT PAGE: ===== IFRAME COMMUNICATOR LOADED =====');
+          console.log('🔧 PARENT PAGE: Message:', data.message);
+          console.log('🔧 PARENT PAGE: Timestamp:', data.timestamp);
+          console.log('🔧 PARENT PAGE: Iframe communicator is loaded and ready');
           break;
         default:
           console.log('❓ PARENT PAGE: Unknown message type:', data.type, '| Full data:', data);
@@ -1548,6 +1584,14 @@ export default function CheckoutPage() {
         console.error('🎯 CHECKOUT: Iframe not found!');
       }
       
+      // Check if token is actually in the form
+      const tokenInput = form.querySelector('input[name="token"]') as HTMLInputElement;
+      if (tokenInput) {
+        console.log('🎯 CHECKOUT: Token input found, value length:', tokenInput.value.length);
+      } else {
+        console.error('🎯 CHECKOUT: Token input not found in form!');
+      }
+      
       form.submit();
       console.log('🎯 CHECKOUT: Form submitted successfully');
       
@@ -1608,7 +1652,10 @@ export default function CheckoutPage() {
       });
 
       const data = await response.json();
-      console.log('Payment token response:', data);
+      console.log('🔍 CHECKOUT: Payment token response received:', data);
+      console.log('🔍 CHECKOUT: Response success property:', data.success);
+      console.log('🔍 CHECKOUT: Response has token:', !!data.token);
+      console.log('🔍 CHECKOUT: Response has paymentFormUrl:', !!data.paymentFormUrl);
 
       if (!data.success) {
         console.error('Payment token generation failed:', data);
@@ -1616,6 +1663,8 @@ export default function CheckoutPage() {
         setFormError(data.message || 'Payment setup failed');
         return;
       }
+
+      console.log('✅ CHECKOUT: Payment token generation successful, proceeding to show form');
 
       // Store order data for after payment completion
       const orderData = {
@@ -1742,12 +1791,33 @@ export default function CheckoutPage() {
       }
 
       // Show payment iframe with the token
+      console.log('🚀 CHECKOUT: Setting payment token and showing form');
+      console.log('🚀 CHECKOUT: Payment form URL:', data.paymentFormUrl);
+      console.log('🚀 CHECKOUT: Token length:', data.token.length);
       setPaymentToken(data.token);
       setPaymentFormUrl(data.paymentFormUrl);
       setShowPaymentForm(true);
+      console.log('🚀 CHECKOUT: Form state variables set, showPaymentForm should be true now');
+      
+      // Add debugging for iframe load
+      setTimeout(() => {
+        const iframe = document.getElementById('paymentIframe') as HTMLIFrameElement;
+        if (iframe) {
+          console.log('🔍 CHECKOUT: Iframe element found:', iframe);
+          console.log('🔍 CHECKOUT: Iframe src:', iframe.src);
+          console.log('🔍 CHECKOUT: Iframe loaded state:', iframe.contentWindow ? 'Loaded' : 'Not loaded');
+        } else {
+          console.error('🔍 CHECKOUT: Iframe element not found!');
+        }
+      }, 2000);
       
     } catch (error) {
-      console.error('Error processing payment:', error);
+      console.error('❌ CHECKOUT: Error processing payment:', error);
+      console.error('❌ CHECKOUT: Error details:', {
+        message: error instanceof Error ? error.message : 'Unknown error',
+        stack: error instanceof Error ? error.stack : 'No stack trace',
+        type: typeof error
+      });
       setFormError(error instanceof Error ? error.message : 'Payment processing failed. Please try again.');
     } finally {
       setIsLoading(false);
@@ -1770,10 +1840,14 @@ export default function CheckoutPage() {
   // Auto-submit the payment form when token is available
   useEffect(() => {
     if (paymentToken && showPaymentForm) {
-      console.log('Auto-submitting payment form with token');
+      console.log('🚀 CHECKOUT: Auto-submitting payment form with token');
+      console.log('🚀 CHECKOUT: Token available:', !!paymentToken);
+      console.log('🚀 CHECKOUT: Show payment form:', showPaymentForm);
+      console.log('🚀 CHECKOUT: Payment form URL:', paymentFormUrl);
       setTimeout(() => {
+        console.log('🚀 CHECKOUT: Calling submitTokenToIframe...');
         submitTokenToIframe();
-      }, 500); // Small delay to ensure iframe is ready
+      }, 1000); // Increased delay to ensure iframe is ready
     }
   }, [paymentToken, showPaymentForm]);
 
@@ -2763,7 +2837,7 @@ export default function CheckoutPage() {
                 {!showPaymentForm ? (
                   // Account validation form (before payment)
                   <div className="max-w-md mx-auto">
-                    <form onSubmit={isLoginMode ? handleLogin : handleSubmit} className="space-y-4">
+                    <form onSubmit={currentUser ? handleSubmit : (isLoginMode ? handleLogin : handleSubmit)} className="space-y-4">
                       {/* Error Message */}
                       {formError && (
                         <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-4 mb-4">
@@ -2823,18 +2897,23 @@ export default function CheckoutPage() {
                         frameBorder="0" 
                         scrolling="auto"
                         onLoad={(e) => {
-                          console.log('Iframe loaded');
+                          console.log('🎯 CHECKOUT: Iframe onLoad event triggered');
                           const iframe = e.target as HTMLIFrameElement;
+                          console.log('🎯 CHECKOUT: Iframe element:', iframe);
+                          console.log('🎯 CHECKOUT: Iframe src:', iframe.src);
+                          console.log('🎯 CHECKOUT: Iframe name:', iframe.name);
+                          
                           try {
-                            console.log('Iframe URL:', iframe.contentWindow?.location.href);
+                            console.log('🎯 CHECKOUT: Iframe URL:', iframe.contentWindow?.location.href);
                           } catch (err) {
-                            console.log('Cannot access iframe URL (cross-origin)');
+                            console.log('🎯 CHECKOUT: Cannot access iframe URL (cross-origin)');
                           }
                           
                           // Hide the loading overlay
                           const loader = document.getElementById('iframeLoader');
                           if (loader) {
                             loader.style.display = 'none';
+                            console.log('🎯 CHECKOUT: Loading overlay hidden');
                           }
                         }}
                         className="rounded-lg border border-white/20 w-full block bg-white"

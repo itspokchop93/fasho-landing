@@ -169,9 +169,13 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     }
 
     // Determine base URL for iframe communicator and return URLs based on environment
-    // NOTE: Authorize.net requires HTTPS for all URLs, even iframe communicator in development
-    const iframeCommunicatorBaseUrl = 'https://www.fasho.co'; // Always use production HTTPS URL
-    const returnBaseUrl = 'https://www.fasho.co'; // Use the main production domain
+    // For localhost development, we need to use a different approach
+    let iframeCommunicatorBaseUrl, returnBaseUrl;
+    
+    // Always use production URLs for Authorize.net (they require HTTPS)
+    iframeCommunicatorBaseUrl = 'https://www.fasho.co';
+    returnBaseUrl = 'https://www.fasho.co';
+    console.log('🔧 PAYMENT-TOKEN: Using production URLs for iframe communicator and return URLs');
 
     console.log('🔧 PAYMENT-TOKEN: Using base URL for iframe communicator:', iframeCommunicatorBaseUrl);
 
