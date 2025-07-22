@@ -38,12 +38,15 @@ input:-webkit-autofill,
 input:-webkit-autofill:hover,
 input:-webkit-autofill:focus,
 input:-webkit-autofill:active {
-  -webkit-box-shadow: 0 0 0 30px transparent inset !important;
+  -webkit-box-shadow: 0 0 0 1000px transparent inset !important;
   -webkit-text-fill-color: white !important;
   background-color: transparent !important;
   background-image: none !important;
-  transition: background-color 5000s ease-in-out 0s !important;
+  background-attachment: fixed !important;
+  transition: background-color 99999s ease-in-out 0s !important;
   caret-color: white !important;
+  color: white !important;
+  border-color: inherit !important;
 }
 
 input[type="email"]:-webkit-autofill,

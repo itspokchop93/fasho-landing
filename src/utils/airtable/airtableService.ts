@@ -175,7 +175,7 @@ class AirTableService {
   /**
    * Create or update a record in AirTable (upsert functionality)
    */
-  public static async createRecord(customerData: CustomerData): Promise<any> {
+  public static async createRecord(customerData: CustomerData, intakeFormResponses?: any): Promise<any> {
     const leadData = customerData.leadData || LeadTracker.processLeadDataForSubmission();
     
     // First, try to find existing record
@@ -189,7 +189,7 @@ class AirTableService {
       return await this.updateExistingRecord(existingRecord, customerData, leadData, leadSourceId);
     } else {
       console.log('📊 AIRTABLE: Creating new record for:', customerData.email);
-      return await this.createNewRecord(customerData, leadData, leadSourceId);
+      return await this.createNewRecord(customerData, leadData, leadSourceId, intakeFormResponses);
     }
   }
 
@@ -288,7 +288,8 @@ class AirTableService {
   private static async createNewRecord(
     customerData: CustomerData, 
     leadData: any, 
-    leadSourceId: string | undefined
+    leadSourceId: string | undefined,
+    intakeFormResponses?: any
   ): Promise<any> {
     // Map customer data to AirTable fields based on actual Leads table structure
     const record: AirTableRecord = {
@@ -320,6 +321,70 @@ class AirTableService {
         'Current Status': 'New'
       }
     };
+
+    // Add intake form data if available
+    if (intakeFormResponses) {
+      console.log('📊 AIRTABLE: Adding intake form data to new record:', intakeFormResponses);
+      
+      // How Long Creating? (maps to music_experience)
+      const creatingTime = intakeFormResponses['music_experience'] || 
+                          intakeFormResponses['how-long-creating'] || 
+                          intakeFormResponses['creating-time'] || 
+                          intakeFormResponses['experience'];
+      if (creatingTime) {
+        record.fields['How Long Creating?'] = creatingTime;
+        console.log('📊 AIRTABLE: Adding music experience:', creatingTime);
+      }
+
+      // Genre (maps to primary_genre)
+      const genre = intakeFormResponses['primary_genre'] ||
+                   intakeFormResponses['genre'] || 
+                   intakeFormResponses['music-genre'] || 
+                   intakeFormResponses['style'];
+      if (genre) {
+        record.fields['Genre'] = genre;
+        console.log('📊 AIRTABLE: Adding genre:', genre);
+      }
+
+      // Age (maps to age_range)
+      const age = intakeFormResponses['age_range'] ||
+                 intakeFormResponses['age'] || 
+                 intakeFormResponses['artist-age'];
+      if (age) {
+        record.fields['Age'] = age.toString();
+        console.log('📊 AIRTABLE: Adding age:', age);
+      }
+
+      // Release QTY (maps to spotify_releases)
+      const releaseQty = intakeFormResponses['spotify_releases'] ||
+                        intakeFormResponses['release-quantity'] || 
+                        intakeFormResponses['releases'] || 
+                        intakeFormResponses['songs-released'];
+      if (releaseQty) {
+        record.fields['Release QTY'] = releaseQty.toString();
+        console.log('📊 AIRTABLE: Adding release qty:', releaseQty);
+      }
+
+      // Promo Platform (maps to promotion_platform)
+      const promoplatform = intakeFormResponses['promotion_platform'] ||
+                           intakeFormResponses['promo-platform'] || 
+                           intakeFormResponses['platforms'] || 
+                           intakeFormResponses['promotion-platforms'];
+      if (promoplatform) {
+        record.fields['Promo Platform'] = Array.isArray(promoplatform) ? promoplatform.join(', ') : promoplatform;
+        console.log('📊 AIRTABLE: Adding promo platform:', promoplatform);
+      }
+
+      // Online Time (maps to online_activity_time)
+      const onlineTime = intakeFormResponses['online_activity_time'] ||
+                        intakeFormResponses['online-time'] || 
+                        intakeFormResponses['time-online'] || 
+                        intakeFormResponses['daily-time'];
+      if (onlineTime) {
+        record.fields['Online Time'] = onlineTime;
+        console.log('📊 AIRTABLE: Adding online time:', onlineTime);
+      }
+    }
 
     // Add Lead Source as linked record if we have an ID
     if (leadSourceId) {
@@ -396,7 +461,7 @@ class AirTableService {
         orderDate: new Date().toISOString().split('T')[0]
       };
 
-      return await this.createRecord(customerData);
+      return await this.createRecord(customerData, intakeFormResponses);
     }
   }
 
@@ -425,51 +490,65 @@ class AirTableService {
 
     // Map intake form responses to AirTable fields
     if (intakeFormResponses) {
-      // How Long Creating?
-      const creatingTime = intakeFormResponses['how-long-creating'] || 
+      console.log('📊 AIRTABLE: Processing intake form responses:', intakeFormResponses);
+      
+      // How Long Creating? (maps to music_experience)
+      const creatingTime = intakeFormResponses['music_experience'] || 
+                          intakeFormResponses['how-long-creating'] || 
                           intakeFormResponses['creating-time'] || 
                           intakeFormResponses['experience'];
       if (creatingTime && !currentFields['How Long Creating?']) {
         updateFields['How Long Creating?'] = creatingTime;
+        console.log('📊 AIRTABLE: Mapping music experience:', creatingTime);
       }
 
-      // Genre
-      const genre = intakeFormResponses['genre'] || 
+      // Genre (maps to primary_genre)
+      const genre = intakeFormResponses['primary_genre'] ||
+                   intakeFormResponses['genre'] || 
                    intakeFormResponses['music-genre'] || 
                    intakeFormResponses['style'];
       if (genre && !currentFields['Genre']) {
         updateFields['Genre'] = genre;
+        console.log('📊 AIRTABLE: Mapping genre:', genre);
       }
 
-      // Age
-      const age = intakeFormResponses['age'] || 
+      // Age (maps to age_range)
+      const age = intakeFormResponses['age_range'] ||
+                 intakeFormResponses['age'] || 
                  intakeFormResponses['artist-age'];
       if (age && !currentFields['Age']) {
         updateFields['Age'] = age.toString();
+        console.log('📊 AIRTABLE: Mapping age:', age);
       }
 
-      // Release QTY
-      const releaseQty = intakeFormResponses['release-quantity'] || 
+      // Release QTY (maps to spotify_releases)
+      const releaseQty = intakeFormResponses['spotify_releases'] ||
+                        intakeFormResponses['release-quantity'] || 
                         intakeFormResponses['releases'] || 
                         intakeFormResponses['songs-released'];
       if (releaseQty && !currentFields['Release QTY']) {
         updateFields['Release QTY'] = releaseQty.toString();
+        console.log('📊 AIRTABLE: Mapping release qty:', releaseQty);
       }
 
-      // Promo Platform
-      const promoplatform = intakeFormResponses['promo-platform'] || 
+      // Promo Platform (maps to promotion_platform)
+      const promoplatform = intakeFormResponses['promotion_platform'] ||
+                           intakeFormResponses['promo-platform'] || 
                            intakeFormResponses['platforms'] || 
                            intakeFormResponses['promotion-platforms'];
       if (promoplatform && !currentFields['Promo Platform']) {
         updateFields['Promo Platform'] = Array.isArray(promoplatform) ? promoplatform.join(', ') : promoplatform;
+        console.log('📊 AIRTABLE: Mapping promo platform:', promoplatform);
       }
 
-      // Online Time
-      const onlineTime = intakeFormResponses['online-time'] || 
+      // Online Time (maps to online_activity_time)
+      const onlineTime = intakeFormResponses['online_activity_time'] ||
+                        intakeFormResponses['online-time'] || 
                         intakeFormResponses['time-online'] || 
                         intakeFormResponses['daily-time'];
       if (onlineTime && !currentFields['Online Time']) {
         updateFields['Online Time'] = onlineTime;
+        console.log('📊 AIRTABLE: Mapping online time:', onlineTime);
       }
     }
 

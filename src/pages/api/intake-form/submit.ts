@@ -212,6 +212,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       const phoneResponse = responses['phone-number'] || responses['phone'] || responses['phoneNumber'];
       
       // Create or update AirTable record with intake form data
+      console.log('📊 INTAKE-FORM-SUBMIT: Calling AirTable with responses:', responses);
+      console.log('📊 INTAKE-FORM-SUBMIT: First name:', first_name, 'Last name:', last_name);
+      console.log('📊 INTAKE-FORM-SUBMIT: Email:', user.email, 'Phone:', phoneResponse);
+      
       const airtableResult = await AirTableService.default.createIntakeFormRecord(
         first_name,
         last_name,

@@ -390,7 +390,7 @@ export default function Header({ transparent = false, hideSignUp = false }: Head
                 </div>
               ) : (
                 <Link href="/signup" className="bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] text-black font-semibold px-6 py-2 rounded-md hover:opacity-90 transition-opacity">
-                  Sign Up
+                  Login
                 </Link>
               )
             )}
@@ -568,7 +568,7 @@ export default function Header({ transparent = false, hideSignUp = false }: Head
                     </div>
                   ) : (
                     <Link href="/signup" className="bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] text-black font-semibold px-6 py-2 rounded-md hover:opacity-90 transition-opacity">
-                      Sign Up
+                      Login
                     </Link>
                   )
                 )}

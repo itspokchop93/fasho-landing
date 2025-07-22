@@ -150,10 +150,9 @@ export default function CheckoutPage() {
   const [paymentToken, setPaymentToken] = useState<string>('');
   const [paymentFormUrl, setPaymentFormUrl] = useState<string>('');
   const [loginError, setLoginError] = useState('');
-  const [emailStatus, setEmailStatus] = useState<null | 'available' | 'exists' | 'unverified' | 'invalid' | 'error'>(null);
+  const [emailStatus, setEmailStatus] = useState<null | 'available' | 'exists' | 'invalid' | 'error'>(null);
   const [loginInfoMessage, setLoginInfoMessage] = useState<string | null>(null);
-  const [resendLoading, setResendLoading] = useState(false);
-  const [resendError, setResendError] = useState<string | null>(null);
+
   const [lastSessionId, setLastSessionId] = useState<string>('');
   const [artistProfile, setArtistProfile] = useState<ArtistProfile | null>(null);
 
@@ -186,6 +185,9 @@ export default function CheckoutPage() {
   const [showPrivacyModal, setShowPrivacyModal] = useState(false);
   const [showDisclaimerModal, setShowDisclaimerModal] = useState(false);
   const [showRefundModal, setShowRefundModal] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [showPasswordRequirements, setShowPasswordRequirements] = useState(false);
 
   // Helper functions for profile avatar
   const getUserInitials = (user: any) => {
@@ -260,6 +262,16 @@ export default function CheckoutPage() {
     const hasUpperCase = /[A-Z]/.test(password);
     const hasNumber = /\d/.test(password);
     return hasUpperCase && hasNumber;
+  };
+
+  // Get password requirements status
+  const getPasswordRequirements = (password: string) => {
+    return {
+      minLength: password.length >= 8,
+      hasUpperCase: /[A-Z]/.test(password),
+      hasLowerCase: /[a-z]/.test(password),
+      hasSpecialChar: /[@$!%*?&]/.test(password),
+    };
   };
 
   // Calculate discounted price (25% off, rounded up)
@@ -781,11 +793,7 @@ export default function CheckoutPage() {
       const data = await response.json();
       if (response.ok) {
         if (data.exists) {
-          if (data.verified) {
-            setEmailStatus('exists');
-          } else {
-            setEmailStatus('unverified');
-          }
+          setEmailStatus('exists');
         } else {
           setEmailStatus('available');
         }
@@ -1318,6 +1326,29 @@ export default function CheckoutPage() {
             email: authData.user?.email,
             emailConfirmed: authData.user?.email_confirmed_at
           });
+          
+          // Auto-confirm the user to bypass email verification
+          try {
+            console.log('🔧 CHECKOUT: Auto-confirming user email...');
+            const confirmResponse = await fetch('/api/auto-confirm-user', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({ email: formData.email }),
+            });
+
+            const confirmResult = await confirmResponse.json();
+            
+            if (confirmResponse.ok) {
+              console.log('🔧 CHECKOUT: ✅ User auto-confirmed successfully');
+            } else {
+              console.error('🔧 CHECKOUT: ❌ Auto-confirm failed:', confirmResult);
+            }
+          } catch (confirmError) {
+            console.error('🔧 CHECKOUT: ❌ Error auto-confirming user:', confirmError);
+          }
+          
           newAccountCreated = true;
           userId = authData.user?.id || null;
         }
@@ -1605,6 +1636,28 @@ export default function CheckoutPage() {
               email: authData.user?.email,
               emailConfirmed: authData.user?.email_confirmed_at
             });
+            
+            // Auto-confirm the user to bypass email verification
+            try {
+              console.log('🔧 CHECKOUT: Auto-confirming user email...');
+              const confirmResponse = await fetch('/api/auto-confirm-user', {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ email: formData.email }),
+              });
+
+              const confirmResult = await confirmResponse.json();
+              
+              if (confirmResponse.ok) {
+                console.log('🔧 CHECKOUT: ✅ User auto-confirmed successfully');
+              } else {
+                console.error('🔧 CHECKOUT: ❌ Auto-confirm failed:', confirmResult);
+              }
+            } catch (confirmError) {
+              console.error('🔧 CHECKOUT: ❌ Error auto-confirming user:', confirmError);
+            }
           }
         }
       } else {
@@ -1801,8 +1854,6 @@ export default function CheckoutPage() {
                           setFormError('');
                           setFieldErrors({});
                           setLoginInfoMessage(null);
-                          setResendError(null);
-                          setResendLoading(false);
                           setEmailStatus(null);
                         }}
                         className="text-[#59e3a5] hover:text-[#14c0ff] text-sm transition-colors"
@@ -1855,41 +1906,7 @@ export default function CheckoutPage() {
                             instead
                           </p>
                         )}
-                        {emailStatus === 'unverified' && !loginInfoMessage && (
-                          <div className="text-red-400 flex flex-col gap-2">
-                            <span>You have an account but haven't verified your email yet!</span>
-                            <button
-                              type="button"
-                              disabled={resendLoading}
-                              onClick={async () => {
-                                setResendLoading(true);
-                                setResendError(null);
-                                try {
-                                  const { error } = await supabase.auth.resend({
-                                    type: 'signup',
-                                    email: formData.email,
-                                  });
-                                  if (!error) {
-                                    setLoginInfoMessage('Verification Email sent!');
-                                    setIsLoginMode(true);
-                                    setResendError(null);
-                                    setEmailStatus(null);
-                                  } else {
-                                    setResendError(error.message || 'Failed to resend verification email. Please try again.');
-                                  }
-                                } catch (error: any) {
-                                  setResendError(error?.message || 'Failed to resend verification email. Please try again.');
-                                } finally {
-                                  setResendLoading(false);
-                                }
-                              }}
-                              className="text-[#59e3a5] hover:text-[#14c0ff] underline transition-colors w-fit disabled:opacity-50 disabled:cursor-not-allowed"
-                            >
-                              {resendLoading ? 'Sending...' : 'Resend Verification'}
-                            </button>
-                            {resendError && <span className="text-red-400 text-xs mt-1">{resendError}</span>}
-                          </div>
-                        )}
+
                         {emailStatus === 'available' && (
                           <div className="flex items-center text-green-400">
                             <svg className="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
@@ -1910,21 +1927,83 @@ export default function CheckoutPage() {
                         <label htmlFor="password" className="block text-sm text-white/70 mb-2">
                           Password {!isLoginMode && <span className="text-red-400">*</span>}
                         </label>
-                        <input
-                          type="password"
-                          id="password"
-                          name="password"
-                          value={formData.password}
-                          onChange={handleInputChange}
-                          onBlur={(e) => !isLoginMode && handleFieldBlur('password', e.target.value)}
-                          required
-                          className={`w-full bg-white/10 border rounded-lg py-3 px-4 text-white placeholder-white/50 focus:outline-none transition-colors ${
-                            fieldErrors.password ? 'border-red-500' : 'border-white/20 focus:border-[#59e3a5]'
-                          }`}
-                          placeholder={isLoginMode ? 'Enter your password' : 'Create a password'}
-                        />
+                        <div className="relative">
+                          <input
+                            type={showPassword ? "text" : "password"}
+                            id="password"
+                            name="password"
+                            value={formData.password}
+                            onChange={handleInputChange}
+                            onFocus={() => !isLoginMode && setShowPasswordRequirements(true)}
+                            onBlur={(e) => {
+                              if (!isLoginMode) {
+                                handleFieldBlur('password', e.target.value);
+                                setShowPasswordRequirements(false);
+                              }
+                            }}
+                            required
+                            className={`w-full bg-white/10 border rounded-lg py-3 px-4 pr-12 text-white placeholder-white/50 focus:outline-none transition-colors ${
+                              fieldErrors.password ? 'border-red-500' : 'border-white/20 focus:border-[#59e3a5]'
+                            }`}
+                            placeholder={isLoginMode ? 'Enter your password' : 'Create a password'}
+                          />
+                          <button
+                            type="button"
+                            onClick={() => setShowPassword(!showPassword)}
+                            className="absolute right-3 top-1/2 transform -translate-y-1/2 text-white/60 hover:text-white transition-colors"
+                          >
+                            {showPassword ? (
+                              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.878 9.878L3 3m6.878 6.878L12 12m-3.122-3.122l4.242 4.242M12 12l6.878 6.878" />
+                              </svg>
+                            ) : (
+                              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                              </svg>
+                            )}
+                          </button>
+                        </div>
                         {fieldErrors.password && !isLoginMode && (
                           <p className="text-red-400 text-sm mt-1">{fieldErrors.password}</p>
+                        )}
+                        
+                        {/* Password requirements checklist */}
+                        {!isLoginMode && showPasswordRequirements && (
+                          <div className="mt-3 p-3 bg-white/5 rounded-lg border border-white/10">
+                            <p className="text-white/80 text-sm mb-2 font-medium">Password requirements:</p>
+                            {(() => {
+                              const requirements = getPasswordRequirements(formData.password);
+                              return (
+                                <div className="space-y-1">
+                                  <div className={`flex items-center text-sm ${requirements.minLength ? 'text-green-400' : 'text-white/60'}`}>
+                                    <svg className={`w-3 h-3 mr-2 ${requirements.minLength ? 'text-green-400' : 'text-white/40'}`} fill="currentColor" viewBox="0 0 20 20">
+                                      <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd"/>
+                                    </svg>
+                                    Minimum 8 characters
+                                  </div>
+                                  <div className={`flex items-center text-sm ${requirements.hasSpecialChar ? 'text-green-400' : 'text-white/60'}`}>
+                                    <svg className={`w-3 h-3 mr-2 ${requirements.hasSpecialChar ? 'text-green-400' : 'text-white/40'}`} fill="currentColor" viewBox="0 0 20 20">
+                                      <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd"/>
+                                    </svg>
+                                    At least 1 special character (@, $, !, %, *, ?, &)
+                                  </div>
+                                  <div className={`flex items-center text-sm ${requirements.hasUpperCase ? 'text-green-400' : 'text-white/60'}`}>
+                                    <svg className={`w-3 h-3 mr-2 ${requirements.hasUpperCase ? 'text-green-400' : 'text-white/40'}`} fill="currentColor" viewBox="0 0 20 20">
+                                      <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd"/>
+                                    </svg>
+                                    At least 1 uppercase letter
+                                  </div>
+                                  <div className={`flex items-center text-sm ${requirements.hasLowerCase ? 'text-green-400' : 'text-white/60'}`}>
+                                    <svg className={`w-3 h-3 mr-2 ${requirements.hasLowerCase ? 'text-green-400' : 'text-white/40'}`} fill="currentColor" viewBox="0 0 20 20">
+                                      <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd"/>
+                                    </svg>
+                                    At least 1 lowercase letter
+                                  </div>
+                                </div>
+                              );
+                            })()}
+                          </div>
                         )}
                       </div>
                       
@@ -1933,19 +2012,37 @@ export default function CheckoutPage() {
                           <label htmlFor="confirmPassword" className="block text-sm text-white/70 mb-2">
                             Confirm Password <span className="text-red-400">*</span>
                           </label>
-                          <input
-                            type="password"
-                            id="confirmPassword"
-                            name="confirmPassword"
-                            value={formData.confirmPassword}
-                            onChange={handleInputChange}
-                            onBlur={(e) => handleFieldBlur('confirmPassword', e.target.value)}
-                            required
-                            className={`w-full bg-white/10 border rounded-lg py-3 px-4 text-white placeholder-white/50 focus:outline-none transition-colors ${
-                              fieldErrors.confirmPassword ? 'border-red-500' : 'border-white/20 focus:border-[#59e3a5]'
-                            }`}
-                            placeholder="Confirm your password"
-                          />
+                          <div className="relative">
+                            <input
+                              type={showConfirmPassword ? "text" : "password"}
+                              id="confirmPassword"
+                              name="confirmPassword"
+                              value={formData.confirmPassword}
+                              onChange={handleInputChange}
+                              onBlur={(e) => handleFieldBlur('confirmPassword', e.target.value)}
+                              required
+                              className={`w-full bg-white/10 border rounded-lg py-3 px-4 pr-12 text-white placeholder-white/50 focus:outline-none transition-colors ${
+                                fieldErrors.confirmPassword ? 'border-red-500' : 'border-white/20 focus:border-[#59e3a5]'
+                              }`}
+                              placeholder="Confirm your password"
+                            />
+                            <button
+                              type="button"
+                              onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                              className="absolute right-3 top-1/2 transform -translate-y-1/2 text-white/60 hover:text-white transition-colors"
+                            >
+                              {showConfirmPassword ? (
+                                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.878 9.878L3 3m6.878 6.878L12 12m-3.122-3.122l4.242 4.242M12 12l6.878 6.878" />
+                                </svg>
+                              ) : (
+                                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                                </svg>
+                              )}
+                            </button>
+                          </div>
                           {fieldErrors.confirmPassword && (
                             <p className="text-red-400 text-sm mt-1">{fieldErrors.confirmPassword}</p>
                           )}

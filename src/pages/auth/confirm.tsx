@@ -7,36 +7,27 @@ export default function ConfirmPage() {
   const supabase = createClient()
 
   useEffect(() => {
-    const handleEmailConfirmation = async () => {
-      const { token_hash, type } = router.query
-
-      if (token_hash && type) {
-        try {
-          const { error } = await supabase.auth.verifyOtp({
-            type: type as any,
-            token_hash: token_hash as string,
-          })
-
-          if (error) {
-            console.error('Confirmation error:', error)
-            // Redirect to signup with error message
-            router.push('/signup?message=confirmation_failed')
-          } else {
-            // Successful confirmation - redirect to signup with success message
-            router.push('/signup?message=email_verified')
-          }
-        } catch (error) {
-          console.error('Unexpected error during confirmation:', error)
-          router.push('/signup?message=confirmation_failed')
+    // Email verification is now disabled, redirect users to dashboard if logged in, otherwise to signup
+    const checkAuthAndRedirect = async () => {
+      try {
+        const { data: { user } } = await supabase.auth.getUser()
+        
+        if (user) {
+          // User is logged in, redirect to dashboard
+          router.push('/dashboard')
+        } else {
+          // User not logged in, redirect to signup
+          router.push('/signup')
         }
-      } else {
-        // No proper parameters - redirect to signup
+      } catch (error) {
+        console.error('Error checking auth status:', error)
+        // Fallback to signup page
         router.push('/signup')
       }
     }
 
     if (router.isReady) {
-      handleEmailConfirmation()
+      checkAuthAndRedirect()
     }
   }, [router, supabase.auth])
 
@@ -45,10 +36,10 @@ export default function ConfirmPage() {
       <div className="text-center">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#59e3a5] mx-auto mb-4"></div>
         <h2 className="text-xl font-semibold text-white mb-2">
-          Confirming your email...
+          Redirecting...
         </h2>
         <p className="text-gray-400">
-          Please wait while we verify your account.
+          Please wait while we redirect you.
         </p>
       </div>
     </div>

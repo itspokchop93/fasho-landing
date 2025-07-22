@@ -467,10 +467,10 @@ export default function ThankYouPage() {
               )}
               {orderData.newAccountCreated && (
                 <>
-                  <p className="text-white/60 mb-4">Your account has been created! Please check your email for a verification link so you can login to track your campaigns.</p>
+                  <p className="text-white/60 mb-4">Your account has been created! You can now log in to track your campaigns.</p>
                   <div className="bg-[#59e3a5]/10 border border-[#59e3a5]/20 rounded-lg p-4 text-center">
-                    <p className="text-[#59e3a5] font-semibold">📧 Verification Email Sent!</p>
-                    <p className="text-white/70 text-sm mt-1">Check your inbox and click the verification link to activate your account</p>
+                    <p className="text-[#59e3a5] font-semibold">🎉 Account Ready!</p>
+                    <p className="text-white/70 text-sm mt-1">Your account is active and ready to use</p>
                   </div>
                 </>
               )}
@@ -528,8 +528,7 @@ export default function ThankYouPage() {
             {/* Track Your Campaign Section */}
             <div className="bg-gradient-to-r from-[#59e3a5]/10 to-[#14c0ff]/10 border border-[#59e3a5]/20 rounded-xl p-6 mb-8 text-center">
               <h2 className="text-2xl font-bold mb-4">📱 Track Your Campaign</h2>
-              <p className="text-white/70 mb-4 text-lg"><strong>Check your email right away!</strong> We just sent you a confirmation email that you'll need to click to activate your account. Once you confirm, you can login to your dashboard using the email and password you created during checkout.</p>
-              <p className="text-white/70 mb-6 text-lg">Your personal dashboard is locked and loaded! Monitor your progress, launch new campaigns, and see your success happen in real-time.</p>
+              <p className="text-white/70 mb-6 text-lg">Your personal dashboard is locked and loaded! Monitor your progress, launch new campaigns, and see your success happen in real-time. Login to your dashboard using the email and password you created during checkout.</p>
               <Link href="/dashboard" className="inline-block bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] text-black font-bold py-3 px-8 rounded-lg hover:opacity-90 transition-opacity">
                 GO TO DASHBOARD
               </Link>

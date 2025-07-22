@@ -31,9 +31,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     const user = data?.users?.find((u: any) => u.email?.toLowerCase() === email.toLowerCase());
     if (user) {
-      return res.status(200).json({ exists: true, verified: !!user.email_confirmed_at });
+      return res.status(200).json({ exists: true });
     } else {
-      return res.status(200).json({ exists: false, verified: false });
+      return res.status(200).json({ exists: false });
     }
   } catch (err) {
     const errMsg = typeof err === 'object' && err && 'message' in err ? err.message : String(err);
