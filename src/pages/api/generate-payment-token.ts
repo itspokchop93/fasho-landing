@@ -168,6 +168,15 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       return res.status(400).json({ success: false, message: 'City is too long (max 40 characters)' });
     }
 
+    // Determine URLs for different purposes
+    const iframeCommunicatorBaseUrl = 'https://fasho-landing.vercel.app'; // Always use production for iframe communicator
+    const returnBaseUrl = process.env.NODE_ENV === 'production' 
+      ? 'https://fasho-landing.vercel.app'
+      : 'http://localhost:3000'; // Use localhost for return URLs in development
+
+    console.log('🔧 PAYMENT-TOKEN: Using iframe communicator URL:', iframeCommunicatorBaseUrl);
+    console.log('🔧 PAYMENT-TOKEN: Using return URLs base:', returnBaseUrl);
+
     // Create the Accept Hosted request
     const acceptHostedRequest = {
       "getHostedPaymentPageRequest": {
@@ -191,11 +200,17 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           "setting": [
             {
               "settingName": "hostedPaymentReturnOptions",
-              "settingValue": "{\"showReceipt\": false, \"url\": \"https://fasho-landing.vercel.app/thank-you\", \"cancelUrl\": \"https://fasho-landing.vercel.app/checkout\"}"
+              "settingValue": JSON.stringify({
+                showReceipt: false,
+                url: `${returnBaseUrl}/thank-you`,
+                cancelUrl: `${returnBaseUrl}/checkout`
+              })
             },
             {
               "settingName": "hostedPaymentIFrameCommunicatorUrl",
-              "settingValue": "{\"url\": \"https://fasho-landing.vercel.app/iframe-communicator.html\"}"
+              "settingValue": JSON.stringify({
+                url: `${iframeCommunicatorBaseUrl}/iframe-communicator.html`
+              })
             },
                         {
               "settingName": "hostedPaymentStyleOptions",

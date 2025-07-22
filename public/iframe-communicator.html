@@ -35,16 +35,44 @@
             return vars;
         }
 
-        // Send message to parent windows
+        // Send message to parent windows with enhanced targeting for localhost
         function sendToAllParents(message) {
+            console.log('🔧 IFRAME COMMUNICATOR: Sending message to parents:', message);
+            
+            // Send to window.parent (immediate parent)
             if (window.parent && window.parent.postMessage) {
-                console.log('Sending message to window.parent');
-                window.parent.postMessage(message, '*');
+                console.log('🔧 IFRAME COMMUNICATOR: Sending to window.parent');
+                window.parent.postMessage(message, '*'); // Use '*' for development
             }
+            
+            // Send to window.top (top-level window)
             if (window.top && window.top !== window && window.top.postMessage) {
-                console.log('Sending message to window.top');
-                window.top.postMessage(message, '*');
+                console.log('🔧 IFRAME COMMUNICATOR: Sending to window.top');
+                window.top.postMessage(message, '*'); // Use '*' for development
             }
+            
+            // Also try specific localhost origins for development
+            var localhostOrigins = [
+                'http://localhost:3000',
+                'http://localhost:3001',
+                'http://127.0.0.1:3000',
+                'http://127.0.0.1:3001'
+            ];
+            
+            localhostOrigins.forEach(function(origin) {
+                try {
+                    if (window.parent && window.parent.postMessage) {
+                        console.log('🔧 IFRAME COMMUNICATOR: Sending to parent with origin:', origin);
+                        window.parent.postMessage(message, origin);
+                    }
+                    if (window.top && window.top !== window && window.top.postMessage) {
+                        console.log('🔧 IFRAME COMMUNICATOR: Sending to top with origin:', origin);
+                        window.top.postMessage(message, origin);
+                    }
+                } catch (e) {
+                    console.log('🔧 IFRAME COMMUNICATOR: Failed to send to origin:', origin, e.message);
+                }
+            });
         }
 
         // Create the AuthorizeNetIFrame global object as required by the API
@@ -54,11 +82,11 @@
                 console.log('🔧 IFRAME COMMUNICATOR: AuthorizeNetIFrame.onReceiveCommunication called with:', querystr);
                 
                 var params = parseQueryString(querystr);
-                console.log('Parsed params:', params);
+                console.log('🔧 IFRAME COMMUNICATOR: Parsed params:', params);
                 
                 switch (params["action"]) {
                     case "successfulSave":
-                        console.log('Payment profile saved successfully');
+                        console.log('🔧 IFRAME COMMUNICATOR: Payment profile saved successfully');
                         sendToAllParents({
                             type: 'PAYMENT_SUCCESS',
                             action: 'successfulSave'
@@ -66,7 +94,7 @@
                         break;
                     
                     case "cancel":
-                        console.log('Payment was cancelled by user');
+                        console.log('🔧 IFRAME COMMUNICATOR: Payment was cancelled by user');
                         sendToAllParents({
                             type: 'PAYMENT_CANCELLED',
                             action: 'cancel'
@@ -75,25 +103,25 @@
                     
                     case "transactResponse":
                         // Transaction completed
-                        console.log('Transaction response received:', params["response"]);
+                        console.log('🔧 IFRAME COMMUNICATOR: Transaction response received:', params["response"]);
                         var response = JSON.parse(params["response"]);
-                        console.log('Parsed transaction response:', response);
+                        console.log('🔧 IFRAME COMMUNICATOR: Parsed transaction response:', response);
                         
-                        console.log('🚀 IFRAME: Sending PAYMENT_COMPLETE message to parent and top');
+                        console.log('🚀 IFRAME COMMUNICATOR: Sending PAYMENT_COMPLETE message to parent and top');
                         var messageToSend = {
                             type: 'PAYMENT_COMPLETE',
                             action: 'transactResponse',
                             response: response
                         };
                         sendToAllParents(messageToSend);
-                        console.log('🚀 IFRAME: Message sent successfully to parent and top');
+                        console.log('🚀 IFRAME COMMUNICATOR: Message sent successfully to all parent targets');
                         break;
                     
                     case "resizeWindow":
                         // Resize iframe
                         var w = parseInt(params["width"]);
                         var h = parseInt(params["height"]);
-                        console.log('Resize request:', w, 'x', h);
+                        console.log('🔧 IFRAME COMMUNICATOR: Resize request:', w, 'x', h);
                         sendToAllParents({
                             type: 'RESIZE_IFRAME',
                             action: 'resizeWindow',
@@ -103,23 +131,23 @@
                         break;
                     
                     default:
-                        console.log('Unknown action received:', params["action"]);
-                        console.log('All params:', params);
+                        console.log('🔧 IFRAME COMMUNICATOR: Unknown action received:', params["action"]);
+                        console.log('🔧 IFRAME COMMUNICATOR: All params:', params);
                         break;
                 }
-                console.log('==============================');
+                console.log('🔧 IFRAME COMMUNICATOR: ==============================');
             }
         };
 
         // Also keep the message event listener as backup
         function receiveMessage(event) {
-            console.log('Message event received:', event);
-            console.log('Event origin:', event.origin);
-            console.log('Event data:', event.data);
+            console.log('🔧 IFRAME COMMUNICATOR: Message event received:', event);
+            console.log('🔧 IFRAME COMMUNICATOR: Event origin:', event.origin);
+            console.log('🔧 IFRAME COMMUNICATOR: Event data:', event.data);
             
             // Verify origin for security
             if (event.origin !== "https://test.authorize.net" && event.origin !== "https://accept.authorize.net") {
-                console.log('Origin not allowed:', event.origin);
+                console.log('🔧 IFRAME COMMUNICATOR: Origin not allowed:', event.origin);
                 return;
             }
 

@@ -1059,7 +1059,10 @@ export default function CheckoutPage() {
       console.log('🎯 PARENT PAGE: Received message from iframe:', event);
       console.log('🎯 PARENT PAGE: Message origin:', event.origin);
       console.log('🎯 PARENT PAGE: Message data:', event.data);
-      // TEMP: Remove origin check for debugging
+      console.log('🎯 PARENT PAGE: Current window location:', window.location.href);
+      
+      // TEMP: Accept messages from any origin for debugging
+      // TODO: Re-enable origin checking in production
       // const allowedOrigins = [
       //   'https://fasho-landing.vercel.app',
       //   window.location.origin
@@ -1069,11 +1072,14 @@ export default function CheckoutPage() {
       //   return;
       // }
       // console.log('✅ PARENT PAGE: Message origin check passed. Origin:', event.origin);
+      
       const data = event.data;
       console.log('🎯 PARENT PAGE: Processing message type:', data?.type, '| typeof:', typeof data, '| Full data:', data);
+      
       switch (data.type) {
         case 'PAYMENT_COMPLETE':
           console.log('🚀 PARENT PAGE: Payment completed, processing response:', data.response);
+          console.log('🚀 PARENT PAGE: handleSuccessfulPaymentRef exists:', !!handleSuccessfulPaymentRef.current);
           // Use ref to always get latest function
           const response = data.response;
           console.log('🔍 PAYMENT: Iframe response received:', response);
@@ -1091,8 +1097,13 @@ export default function CheckoutPage() {
 
           if (response.responseCode === '1') {
             // Transaction successful
-            console.log('🔍 PAYMENT: Transaction approved');
-            handleSuccessfulPaymentRef.current(response);
+            console.log('🔍 PAYMENT: Transaction approved, calling handleSuccessfulPayment');
+            try {
+              handleSuccessfulPaymentRef.current(response);
+            } catch (error) {
+              console.error('🔍 PAYMENT: Error in handleSuccessfulPayment:', error);
+              setError('Payment was successful but there was an error processing your order. Please contact support.');
+            }
           } else {
             // Transaction failed - provide more specific error messages
             console.error('🔍 PAYMENT: Transaction failed with code:', response.responseCode);
@@ -1148,14 +1159,17 @@ export default function CheckoutPage() {
         origin: event.origin,
         data: event.data,
         source: event.source,
-        type: typeof event.data
+        type: typeof event.data,
+        timestamp: new Date().toISOString()
       });
     };
     
+    console.log('🎯 PARENT PAGE: Setting up enhanced message listeners');
     window.addEventListener('message', handleMessage);
     window.addEventListener('message', debugMessageHandler);
     
     return () => {
+      console.log('🎯 PARENT PAGE: Cleaning up message listeners');
       window.removeEventListener('message', handleMessage);
       window.removeEventListener('message', debugMessageHandler);
     };
@@ -1174,15 +1188,45 @@ export default function CheckoutPage() {
       // Set a timeout to check if payment is stuck
       const paymentTimeout = setTimeout(() => {
         console.log('Payment timeout reached - no response received');
+        console.log('This may indicate iframe communication failure');
         // You can uncomment the lines below if you want automatic timeout handling
         // setError('Payment processing timed out. Please try again or contact support.');
         // setShowPaymentForm(false);
         // setIsLoading(false);
       }, 300000); // 5 minutes timeout
       
+      // Add a shorter timeout to detect if iframe communication is failing
+      const communicationCheckTimeout = setTimeout(() => {
+        console.log('⚠️ CHECKOUT: No iframe communication received after 60 seconds');
+        console.log('⚠️ CHECKOUT: This may indicate iframe communication failure');
+        console.log('⚠️ CHECKOUT: If payment was successful, please check your email for order confirmation');
+        
+        // Show a message to the user
+        const messageDiv = document.createElement('div');
+        messageDiv.className = 'fixed top-4 right-4 bg-yellow-100 border border-yellow-400 text-yellow-700 px-4 py-3 rounded z-50 max-w-md';
+        messageDiv.innerHTML = `
+          <div class="flex items-start">
+            <span class="mr-2">⚠️</span>
+            <div>
+              <strong>Payment Processing</strong><br/>
+              If your payment was successful, you should receive an email confirmation shortly. You can also check your bank statement.
+            </div>
+          </div>
+        `;
+        document.body.appendChild(messageDiv);
+        
+        setTimeout(() => {
+          if (document.body.contains(messageDiv)) {
+            document.body.removeChild(messageDiv);
+          }
+        }, 10000);
+        
+      }, 60000); // 60 seconds
+      
       return () => {
         clearTimeout(timer);
         clearTimeout(paymentTimeout);
+        clearTimeout(communicationCheckTimeout);
       };
     }
   }, [showPaymentForm, paymentToken]);
