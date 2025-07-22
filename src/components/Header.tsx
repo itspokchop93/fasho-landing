@@ -15,8 +15,14 @@ export default function Header({ transparent = false, hideSignUp = false }: Head
   const [artistProfile, setArtistProfile] = useState<ArtistProfile | null>(null);
   const [showProfileDropdown, setShowProfileDropdown] = useState(false);
   const [showSignOutModal, setShowSignOutModal] = useState(false);
+  const [userFirstName, setUserFirstName] = useState<string>('User');
   const dropdownRef = useRef<HTMLDivElement>(null);
   const supabase = createClient();
+
+  // Debug: Log when userFirstName changes
+  useEffect(() => {
+    console.log('🔐 HEADER: userFirstName state changed to:', userFirstName);
+  }, [userFirstName]);
 
 
 
@@ -26,12 +32,66 @@ export default function Header({ transparent = false, hideSignUp = false }: Head
     return user.email.substring(0, 2).toUpperCase();
   };
 
-  const getUserFirstName = (user: any) => {
-    if (!user?.email) return 'User';
-    // Extract first name from email (part before @ and any numbers/dots)
-    const emailPart = user.email.split('@')[0];
-    const cleanName = emailPart.replace(/[0-9]/g, '').replace(/[._]/g, '');
-    return cleanName.charAt(0).toUpperCase() + cleanName.slice(1);
+  // Fetch user's first name from API
+  const fetchUserFirstName = async (user: any) => {
+    console.log('🔐 HEADER: fetchUserFirstName called with user:', user?.email);
+    if (!user?.email) {
+      console.log('🔐 HEADER: No user email, setting to User');
+      setUserFirstName('User');
+      return;
+    }
+
+    // Check if user is authenticated by getting current session
+    const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+    if (sessionError || !session) {
+      console.log('🔐 HEADER: No valid session, falling back to email extraction');
+      const emailPart = user.email.split('@')[0];
+      const cleanName = emailPart.replace(/[0-9]/g, '').replace(/[._]/g, '');
+      setUserFirstName(cleanName.charAt(0).toUpperCase() + cleanName.slice(1));
+      return;
+    }
+
+    // Debug: Log user metadata
+    console.log('🔐 HEADER: User metadata:', user.user_metadata);
+    console.log('🔐 HEADER: User full_name from metadata:', user.user_metadata?.full_name);
+
+    // First, try to get first name from user metadata (signup)
+    if (user.user_metadata?.full_name) {
+      const fullName = user.user_metadata.full_name;
+      console.log('🔐 HEADER: Found full_name in metadata:', fullName);
+      // Extract first name from full name
+      const nameParts = fullName.trim().split(' ');
+      if (nameParts.length > 0) {
+        const firstName = nameParts[0];
+        console.log('🔐 HEADER: Setting firstName from metadata:', firstName);
+        setUserFirstName(firstName);
+        return;
+      }
+    }
+
+    try {
+      console.log('🔐 HEADER: Fetching user first name from API...');
+      const response = await fetch('/api/get-user-first-name');
+      console.log('🔐 HEADER: API response status:', response.status);
+      
+      if (response.ok) {
+        const data = await response.json();
+        console.log('🔐 HEADER: API response data:', data);
+        setUserFirstName(data.firstName);
+      } else {
+        console.log('🔐 HEADER: API failed, falling back to email extraction');
+        // Fallback to email-based extraction
+        const emailPart = user.email.split('@')[0];
+        const cleanName = emailPart.replace(/[0-9]/g, '').replace(/[._]/g, '');
+        setUserFirstName(cleanName.charAt(0).toUpperCase() + cleanName.slice(1));
+      }
+    } catch (error) {
+      console.error('🔐 HEADER: Error fetching user first name:', error);
+      // Fallback to email-based extraction
+      const emailPart = user.email.split('@')[0];
+      const cleanName = emailPart.replace(/[0-9]/g, '').replace(/[._]/g, '');
+      setUserFirstName(cleanName.charAt(0).toUpperCase() + cleanName.slice(1));
+    }
   };
 
   const getUserProfileImage = () => {
@@ -148,6 +208,7 @@ export default function Header({ transparent = false, hideSignUp = false }: Head
           console.log('🔐 HEADER: Valid user found, setting currentUser:', user.email);
           setCurrentUser(user);
           fetchArtistProfile(user);
+          fetchUserFirstName(user);
           return;
         }
         
@@ -160,6 +221,7 @@ export default function Header({ transparent = false, hideSignUp = false }: Head
           console.log('🔐 HEADER: Valid session found, setting user:', session.user.email);
           setCurrentUser(session.user);
           fetchArtistProfile(session.user);
+          fetchUserFirstName(session.user);
           return;
         }
         
@@ -173,6 +235,7 @@ export default function Header({ transparent = false, hideSignUp = false }: Head
             console.log('🔐 HEADER: Refreshed session found, setting user:', refreshedSession.user.email);
             setCurrentUser(refreshedSession.user);
             fetchArtistProfile(refreshedSession.user);
+            fetchUserFirstName(refreshedSession.user);
             return;
           }
         }
@@ -200,9 +263,11 @@ export default function Header({ transparent = false, hideSignUp = false }: Head
       } else if (event === 'SIGNED_IN' && session?.user) {
         setCurrentUser(session.user);
         fetchArtistProfile(session.user);
+        fetchUserFirstName(session.user);
       } else if (event === 'TOKEN_REFRESHED' && session?.user) {
         setCurrentUser(session.user);
         fetchArtistProfile(session.user);
+        fetchUserFirstName(session.user);
       } else {
         // For any other event, re-check the user
         checkUser();
@@ -377,7 +442,7 @@ export default function Header({ transparent = false, hideSignUp = false }: Head
                       onClick={() => setShowProfileDropdown(!showProfileDropdown)}
                       className="text-white font-medium hover:text-[#59e3a5] transition-colors cursor-pointer"
                     >
-                      Hey, {getUserFirstName(currentUser)}!
+                      Hey, {userFirstName}!
                     </button>
                     <button
                       onClick={() => setShowProfileDropdown(!showProfileDropdown)}
@@ -478,7 +543,7 @@ export default function Header({ transparent = false, hideSignUp = false }: Head
                           onClick={() => setShowProfileDropdown(!showProfileDropdown)}
                           className="text-white font-medium text-sm hover:text-[#59e3a5] transition-colors cursor-pointer"
                         >
-                          Hey, {getUserFirstName(currentUser)}!
+                          Hey, {userFirstName}!
                         </button>
                         <button
                           onClick={() => setShowProfileDropdown(!showProfileDropdown)}

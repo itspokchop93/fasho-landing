@@ -157,6 +157,8 @@ export default function CheckoutPage() {
   const [artistProfile, setArtistProfile] = useState<ArtistProfile | null>(null);
   const [isProcessingPayment, setIsProcessingPayment] = useState(false); // Prevent duplicate processing
   const [processedTransactionIds, setProcessedTransactionIds] = useState<Set<string>>(new Set()); // Track processed transactions
+  const [showProcessingPopup, setShowProcessingPopup] = useState(false); // Show processing payment popup
+  const [hasShownProcessingPopup, setHasShownProcessingPopup] = useState(false); // Track if popup has been shown
 
   // Form state
   const [formData, setFormData] = useState({
@@ -1115,6 +1117,13 @@ export default function CheckoutPage() {
           console.log('🚨 MESSAGE: Payment completed, processing response:', data.response);
           console.log('🚨 MESSAGE: handleSuccessfulPaymentRef exists:', !!handleSuccessfulPaymentRef.current);
           
+          // Show processing popup only once when payment is submitted
+          if (!hasShownProcessingPopup) {
+            console.log('🔄 PARENT PAGE: Showing processing popup for first time');
+            setShowProcessingPopup(true);
+            setHasShownProcessingPopup(true);
+          }
+          
           // Use ref to always get latest function
           const response = data.response;
           console.log('🔍 PAYMENT: Iframe response received:', response);
@@ -1124,6 +1133,7 @@ export default function CheckoutPage() {
             setError('No payment response received. Please try again.');
             setIsLoading(false);
             setShowPaymentForm(false);
+            setShowProcessingPopup(false);
             return;
           }
 
@@ -1139,6 +1149,7 @@ export default function CheckoutPage() {
             } catch (error) {
               console.error('🔍 PAYMENT: Error in handleSuccessfulPayment:', error);
               setError('Payment was successful but there was an error processing your order. Please contact support.');
+              setShowProcessingPopup(false);
             }
           } else {
             // Transaction failed - provide more specific error messages
@@ -1160,6 +1171,7 @@ export default function CheckoutPage() {
             setError(errorMessage);
             setIsLoading(false);
             setShowPaymentForm(false);
+            setShowProcessingPopup(false);
           }
           break;
         case 'PAYMENT_CANCELLED':
@@ -1167,11 +1179,13 @@ export default function CheckoutPage() {
           setError('Payment was cancelled');
           setIsLoading(false);
           setShowPaymentForm(false);
+          setShowProcessingPopup(false);
           break;
         case 'PAYMENT_SUCCESS':
           console.log('✅ PARENT PAGE: Payment success event received');
           // Handle successful save if needed
           break;
+
         case 'RESIZE_IFRAME':
           console.log('📏 PARENT PAGE: Resize iframe request:', data.width, 'x', data.height);
           // Resize iframe if needed
@@ -1542,6 +1556,10 @@ export default function CheckoutPage() {
       localStorage.removeItem('selectedAddOns');
       
       console.log('🚀 CHECKOUT: completedOrder stored, redirecting to thank-you with order number');
+      
+      // Hide processing popup before redirect
+      setShowProcessingPopup(false);
+      
       // Redirect to thank you page with order number for persistence
       router.push(`/thank-you?order=${orderResult.order.orderNumber}`);
       console.log('🔓 CHECKOUT: Payment processing completed successfully');
@@ -1550,6 +1568,9 @@ export default function CheckoutPage() {
       setError('Payment was successful but there was an error processing your order. Please contact support.');
       orderProcessingFlag.current = false; // Unlock on error using ref
       console.log('🔓 CHECKOUT: Order processing unlocked due to error (ref flag reset)');
+      
+      // Hide processing popup on error
+      setShowProcessingPopup(false);
     }
   };
 
@@ -1797,6 +1818,7 @@ export default function CheckoutPage() {
       setPaymentToken(data.token);
       setPaymentFormUrl(data.paymentFormUrl);
       setShowPaymentForm(true);
+      setHasShownProcessingPopup(false); // Reset popup flag when showing new payment form
       console.log('🚀 CHECKOUT: Form state variables set, showPaymentForm should be true now');
       
       // Add debugging for iframe load
@@ -2940,6 +2962,7 @@ export default function CheckoutPage() {
                           setShowPaymentForm(false);
                           setPaymentToken('');
                           setError('');
+                          setShowProcessingPopup(false);
                         }}
                         className="text-white/60 hover:text-white text-sm transition-colors"
                       >
@@ -2950,8 +2973,8 @@ export default function CheckoutPage() {
                       <button
                         type="button"
                         onClick={() => {
-                          console.log('Manual submit triggered');
-                          submitTokenToIframe();
+                          console.log('Page refresh triggered');
+                          window.location.reload();
                         }}
                         className="text-[#59e3a5] hover:text-[#14c0ff] text-sm transition-colors"
                       >
@@ -3422,6 +3445,36 @@ export default function CheckoutPage() {
           </div>
         </div>
       </LegalModal>
+
+      {/* Processing Payment Popup */}
+      {showProcessingPopup && (
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50">
+          <div className="bg-gradient-to-br from-gray-900/95 to-gray-800/95 backdrop-blur-xl rounded-2xl p-8 border border-gray-600/30 shadow-2xl max-w-md w-full mx-4">
+            <div className="text-center space-y-6">
+              {/* Animated Spinner */}
+              <div className="flex justify-center">
+                <div className="relative">
+                  <div className="w-16 h-16 border-4 border-gray-600 rounded-full animate-pulse"></div>
+                  <div className="absolute top-0 left-0 w-16 h-16 border-4 border-transparent border-t-[#59e3a5] rounded-full animate-spin"></div>
+                </div>
+              </div>
+              
+              {/* Text */}
+              <div className="space-y-2">
+                <h3 className="text-2xl font-bold text-white">Processing Payment...</h3>
+                <p className="text-gray-300 text-sm">Please wait while we process your payment securely. Do not close this window.</p>
+              </div>
+              
+              {/* Progress dots */}
+              <div className="flex justify-center space-x-2">
+                <div className="w-2 h-2 bg-[#59e3a5] rounded-full animate-bounce"></div>
+                <div className="w-2 h-2 bg-[#59e3a5] rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
+                <div className="w-2 h-2 bg-[#59e3a5] rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 } 
