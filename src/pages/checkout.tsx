@@ -1066,6 +1066,7 @@ export default function CheckoutPage() {
       // Accept messages from allowed origins
       const allowedOrigins = [
         'https://www.fasho.co',
+        'https://fasho-landing.vercel.app',
         window.location.origin,
         'http://localhost:3000'
       ];

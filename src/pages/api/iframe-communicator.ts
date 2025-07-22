@@ -51,7 +51,7 @@ export default function handler(req: NextApiRequest, res: NextApiResponse) {
                             window.parent.postMessage({
                                 type: 'PAYMENT_SUCCESS',
                                 action: 'successfulSave'
-                            }, 'https://www.fasho.co');
+                            }, 'https://fasho-landing.vercel.app');
                         }
                         break;
                     
@@ -62,7 +62,7 @@ export default function handler(req: NextApiRequest, res: NextApiResponse) {
                             window.parent.postMessage({
                                 type: 'PAYMENT_CANCELLED',
                                 action: 'cancel'
-                            }, 'https://www.fasho.co');
+                            }, 'https://fasho-landing.vercel.app');
                         }
                         break;
                     
@@ -79,8 +79,8 @@ export default function handler(req: NextApiRequest, res: NextApiResponse) {
                                 action: 'transactResponse',
                                 response: response
                             };
-                            window.parent.postMessage(messageToSend, 'https://www.fasho.co');
-                            console.log('🚀 IFRAME: Message sent successfully to https://www.fasho.co');
+                            window.parent.postMessage(messageToSend, 'https://fasho-landing.vercel.app');
+                            console.log('🚀 IFRAME: Message sent successfully to https://fasho-landing.vercel.app');
                         }
                         break;
                     
@@ -95,7 +95,7 @@ export default function handler(req: NextApiRequest, res: NextApiResponse) {
                                 action: 'resizeWindow',
                                 width: w,
                                 height: h
-                            }, 'https://www.fasho.co');
+                            }, 'https://fasho-landing.vercel.app');
                         }
                         break;
                     
