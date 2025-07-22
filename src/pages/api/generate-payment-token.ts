@@ -168,14 +168,12 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       return res.status(400).json({ success: false, message: 'City is too long (max 40 characters)' });
     }
 
-    // Determine URLs for different purposes
-    const iframeCommunicatorBaseUrl = 'https://fasho-landing.vercel.app'; // Always use production for iframe communicator
-    const returnBaseUrl = process.env.NODE_ENV === 'production' 
-      ? 'https://fasho-landing.vercel.app'
-      : 'http://localhost:3000'; // Use localhost for return URLs in development
+    // Determine base URL for iframe communicator and return URLs based on environment
+    // NOTE: Authorize.net requires HTTPS for all URLs, even iframe communicator in development
+    const iframeCommunicatorBaseUrl = 'https://www.fasho.co'; // Always use production HTTPS URL
+    const returnBaseUrl = 'https://www.fasho.co'; // Use the main production domain
 
-    console.log('🔧 PAYMENT-TOKEN: Using iframe communicator URL:', iframeCommunicatorBaseUrl);
-    console.log('🔧 PAYMENT-TOKEN: Using return URLs base:', returnBaseUrl);
+    console.log('🔧 PAYMENT-TOKEN: Using base URL for iframe communicator:', iframeCommunicatorBaseUrl);
 
     // Create the Accept Hosted request
     const acceptHostedRequest = {

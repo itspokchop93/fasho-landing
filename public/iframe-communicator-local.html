@@ -35,45 +35,44 @@
             return vars;
         }
 
-        // Send message to parent windows - SINGLE MESSAGE ONLY to prevent duplicates
+        // Send message to parent windows with enhanced targeting for localhost
         function sendToAllParents(message) {
-            console.log('🔧 IFRAME COMMUNICATOR: ===== SENDING SINGLE MESSAGE TO PARENT =====');
-            console.log('🔧 IFRAME COMMUNICATOR: Message to send:', message);
-            console.log('🔧 IFRAME COMMUNICATOR: Current window location:', window.location.href);
+            console.log('🔧 IFRAME COMMUNICATOR: Sending message to parents:', message);
             
-            var messageSent = false;
+            // Send to window.parent (immediate parent)
+            if (window.parent && window.parent.postMessage) {
+                console.log('🔧 IFRAME COMMUNICATOR: Sending to window.parent');
+                window.parent.postMessage(message, '*'); // Use '*' for development
+            }
             
-            // Try to send to window.parent first (most common case)
-            if (window.parent && window.parent.postMessage && !messageSent) {
-                console.log('🔧 IFRAME COMMUNICATOR: Sending to window.parent with wildcard origin');
+            // Send to window.top (top-level window)
+            if (window.top && window.top !== window && window.top.postMessage) {
+                console.log('🔧 IFRAME COMMUNICATOR: Sending to window.top');
+                window.top.postMessage(message, '*'); // Use '*' for development
+            }
+            
+            // Also try specific localhost origins for development
+            var localhostOrigins = [
+                'http://localhost:3000',
+                'http://localhost:3001',
+                'http://127.0.0.1:3000',
+                'http://127.0.0.1:3001'
+            ];
+            
+            localhostOrigins.forEach(function(origin) {
                 try {
-                    window.parent.postMessage(message, '*');
-                    messageSent = true;
-                    console.log('🔧 IFRAME COMMUNICATOR: ✅ Successfully sent to window.parent - DONE');
-                    return; // Exit immediately after first successful send
+                    if (window.parent && window.parent.postMessage) {
+                        console.log('🔧 IFRAME COMMUNICATOR: Sending to parent with origin:', origin);
+                        window.parent.postMessage(message, origin);
+                    }
+                    if (window.top && window.top !== window && window.top.postMessage) {
+                        console.log('🔧 IFRAME COMMUNICATOR: Sending to top with origin:', origin);
+                        window.top.postMessage(message, origin);
+                    }
                 } catch (e) {
-                    console.error('🔧 IFRAME COMMUNICATOR: ❌ Failed to send to window.parent:', e);
+                    console.log('🔧 IFRAME COMMUNICATOR: Failed to send to origin:', origin, e.message);
                 }
-            }
-            
-            // Fallback to window.top only if parent failed
-            if (window.top && window.top !== window && window.top.postMessage && !messageSent) {
-                console.log('🔧 IFRAME COMMUNICATOR: Fallback - sending to window.top');
-                try {
-                    window.top.postMessage(message, '*');
-                    messageSent = true;
-                    console.log('🔧 IFRAME COMMUNICATOR: ✅ Successfully sent to window.top - DONE');
-                    return; // Exit immediately after successful send
-                } catch (e) {
-                    console.error('🔧 IFRAME COMMUNICATOR: ❌ Failed to send to window.top:', e);
-                }
-            }
-            
-            if (!messageSent) {
-                console.error('🔧 IFRAME COMMUNICATOR: ❌ Failed to send message to any parent window');
-            }
-            
-            console.log('🔧 IFRAME COMMUNICATOR: ===== MESSAGE SENDING COMPLETE =====');
+            });
         }
 
         // Create the AuthorizeNetIFrame global object as required by the API

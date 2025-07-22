@@ -51,7 +51,7 @@ export default function handler(req: NextApiRequest, res: NextApiResponse) {
                             window.parent.postMessage({
                                 type: 'PAYMENT_SUCCESS',
                                 action: 'successfulSave'
-                            }, 'https://fasho-landing.vercel.app');
+                            }, 'https://www.fasho.co');
                         }
                         break;
                     
@@ -62,7 +62,7 @@ export default function handler(req: NextApiRequest, res: NextApiResponse) {
                             window.parent.postMessage({
                                 type: 'PAYMENT_CANCELLED',
                                 action: 'cancel'
-                            }, 'https://fasho-landing.vercel.app');
+                            }, 'https://www.fasho.co');
                         }
                         break;
                     
@@ -79,8 +79,8 @@ export default function handler(req: NextApiRequest, res: NextApiResponse) {
                                 action: 'transactResponse',
                                 response: response
                             };
-                            window.parent.postMessage(messageToSend, 'https://fasho-landing.vercel.app');
-                            console.log('🚀 IFRAME: Message sent successfully to https://fasho-landing.vercel.app');
+                            window.parent.postMessage(messageToSend, 'https://www.fasho.co');
+                            console.log('🚀 IFRAME: Message sent successfully to https://www.fasho.co');
                         }
                         break;
                     
@@ -95,7 +95,7 @@ export default function handler(req: NextApiRequest, res: NextApiResponse) {
                                 action: 'resizeWindow',
                                 width: w,
                                 height: h
-                            }, 'https://fasho-landing.vercel.app');
+                            }, 'https://www.fasho.co');
                         }
                         break;
                     

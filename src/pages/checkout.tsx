@@ -155,6 +155,8 @@ export default function CheckoutPage() {
 
   const [lastSessionId, setLastSessionId] = useState<string>('');
   const [artistProfile, setArtistProfile] = useState<ArtistProfile | null>(null);
+  const [isProcessingPayment, setIsProcessingPayment] = useState(false); // Prevent duplicate processing
+  const [processedTransactionIds, setProcessedTransactionIds] = useState<Set<string>>(new Set()); // Track processed transactions
 
   // Form state
   const [formData, setFormData] = useState({
@@ -1061,25 +1063,35 @@ export default function CheckoutPage() {
       console.log('🎯 PARENT PAGE: Message data:', event.data);
       console.log('🎯 PARENT PAGE: Current window location:', window.location.href);
       
-      // TEMP: Accept messages from any origin for debugging
-      // TODO: Re-enable origin checking in production
-      // const allowedOrigins = [
-      //   'https://fasho-landing.vercel.app',
-      //   window.location.origin
-      // ];
-      // if (!allowedOrigins.includes(event.origin)) {
-      //   console.log('🚫 PARENT PAGE: Message origin not allowed. Expected one of:', allowedOrigins, 'Got:', event.origin);
-      //   return;
-      // }
-      // console.log('✅ PARENT PAGE: Message origin check passed. Origin:', event.origin);
+      // Accept messages from allowed origins
+      const allowedOrigins = [
+        'https://www.fasho.co',
+        window.location.origin,
+        'http://localhost:3000'
+      ];
+      
+      // For development, we'll be more permissive but still log everything
+      if (process.env.NODE_ENV === 'development') {
+        console.log('🔍 PARENT PAGE: Development mode - accepting all origins but logging. Origin:', event.origin);
+      } else {
+        if (!allowedOrigins.includes(event.origin)) {
+          console.log('🚫 PARENT PAGE: Message origin not allowed. Expected one of:', allowedOrigins, 'Got:', event.origin);
+          return;
+        }
+      }
+      console.log('✅ PARENT PAGE: Message origin check passed. Origin:', event.origin);
       
       const data = event.data;
       console.log('🎯 PARENT PAGE: Processing message type:', data?.type, '| typeof:', typeof data, '| Full data:', data);
       
       switch (data.type) {
         case 'PAYMENT_COMPLETE':
-          console.log('🚀 PARENT PAGE: Payment completed, processing response:', data.response);
-          console.log('🚀 PARENT PAGE: handleSuccessfulPaymentRef exists:', !!handleSuccessfulPaymentRef.current);
+          console.log('🚨 MESSAGE: ===== PAYMENT_COMPLETE MESSAGE RECEIVED =====');
+          console.log('🚨 MESSAGE: Message event origin:', event.origin);
+          console.log('🚨 MESSAGE: Message timestamp:', new Date().toISOString());
+          console.log('🚨 MESSAGE: Payment completed, processing response:', data.response);
+          console.log('🚨 MESSAGE: handleSuccessfulPaymentRef exists:', !!handleSuccessfulPaymentRef.current);
+          
           // Use ref to always get latest function
           const response = data.response;
           console.log('🔍 PAYMENT: Iframe response received:', response);
@@ -1098,6 +1110,7 @@ export default function CheckoutPage() {
           if (response.responseCode === '1') {
             // Transaction successful
             console.log('🔍 PAYMENT: Transaction approved, calling handleSuccessfulPayment');
+            console.log('🚨 MESSAGE: ABOUT TO CALL handleSuccessfulPayment WITH:', response?.transId);
             try {
               handleSuccessfulPaymentRef.current(response);
             } catch (error) {
@@ -1153,25 +1166,12 @@ export default function CheckoutPage() {
       }
     };
 
-    // Add a global message listener to catch ALL messages for debugging
-    const debugMessageHandler = (event: MessageEvent) => {
-      console.log('🔍 DEBUG: ANY message received:', {
-        origin: event.origin,
-        data: event.data,
-        source: event.source,
-        type: typeof event.data,
-        timestamp: new Date().toISOString()
-      });
-    };
-    
-    console.log('🎯 PARENT PAGE: Setting up enhanced message listeners');
+    console.log('🎯 PARENT PAGE: Setting up single message listener');
     window.addEventListener('message', handleMessage);
-    window.addEventListener('message', debugMessageHandler);
     
     return () => {
-      console.log('🎯 PARENT PAGE: Cleaning up message listeners');
+      console.log('🎯 PARENT PAGE: Cleaning up message listener');
       window.removeEventListener('message', handleMessage);
-      window.removeEventListener('message', debugMessageHandler);
     };
   }, []);
 
@@ -1188,45 +1188,15 @@ export default function CheckoutPage() {
       // Set a timeout to check if payment is stuck
       const paymentTimeout = setTimeout(() => {
         console.log('Payment timeout reached - no response received');
-        console.log('This may indicate iframe communication failure');
         // You can uncomment the lines below if you want automatic timeout handling
         // setError('Payment processing timed out. Please try again or contact support.');
         // setShowPaymentForm(false);
         // setIsLoading(false);
       }, 300000); // 5 minutes timeout
       
-      // Add a shorter timeout to detect if iframe communication is failing
-      const communicationCheckTimeout = setTimeout(() => {
-        console.log('⚠️ CHECKOUT: No iframe communication received after 60 seconds');
-        console.log('⚠️ CHECKOUT: This may indicate iframe communication failure');
-        console.log('⚠️ CHECKOUT: If payment was successful, please check your email for order confirmation');
-        
-        // Show a message to the user
-        const messageDiv = document.createElement('div');
-        messageDiv.className = 'fixed top-4 right-4 bg-yellow-100 border border-yellow-400 text-yellow-700 px-4 py-3 rounded z-50 max-w-md';
-        messageDiv.innerHTML = `
-          <div class="flex items-start">
-            <span class="mr-2">⚠️</span>
-            <div>
-              <strong>Payment Processing</strong><br/>
-              If your payment was successful, you should receive an email confirmation shortly. You can also check your bank statement.
-            </div>
-          </div>
-        `;
-        document.body.appendChild(messageDiv);
-        
-        setTimeout(() => {
-          if (document.body.contains(messageDiv)) {
-            document.body.removeChild(messageDiv);
-          }
-        }, 10000);
-        
-      }, 60000); // 60 seconds
-      
       return () => {
         clearTimeout(timer);
         clearTimeout(paymentTimeout);
-        clearTimeout(communicationCheckTimeout);
       };
     }
   }, [showPaymentForm, paymentToken]);
@@ -1312,6 +1282,38 @@ export default function CheckoutPage() {
 
   // Handle successful payment response
   const handleSuccessfulPayment = async (response: any) => {
+    console.log('🚨 CHECKOUT: ===== handleSuccessfulPayment CALLED =====');
+    console.log('🚨 CHECKOUT: Call stack:', new Error().stack);
+    console.log('🚨 CHECKOUT: Transaction ID:', response?.transId);
+    console.log('🚨 CHECKOUT: Current orderProcessingFlag:', orderProcessingFlag.current);
+    console.log('🚨 CHECKOUT: Processed transaction IDs:', Array.from(processedTransactionIdsRef.current));
+    
+    // AGGRESSIVE duplicate prevention using refs (not React state)
+    if (orderProcessingFlag.current) {
+      console.log('🚫 CHECKOUT: Order already being processed (ref flag), ignoring duplicate call');
+      console.log('🚫 CHECKOUT: This call will be IGNORED - RETURNING IMMEDIATELY');
+      return;
+    }
+    
+    // Check if this transaction has already been processed
+    const transactionId = response?.transId;
+    if (transactionId && processedTransactionIdsRef.current.has(transactionId)) {
+      console.log('🚫 CHECKOUT: Transaction', transactionId, 'already processed (ref check), ignoring duplicate');
+      console.log('🚫 CHECKOUT: This call will be IGNORED - RETURNING IMMEDIATELY');
+      return;
+    }
+    
+    // Lock processing immediately using refs
+    orderProcessingFlag.current = true;
+    if (transactionId) {
+      processedTransactionIdsRef.current.add(transactionId);
+      console.log('🔒 CHECKOUT: LOCKED order processing with ref flags for transaction:', transactionId);
+    } else {
+      console.log('🔒 CHECKOUT: LOCKED order processing with ref flags (no transaction ID)');
+    }
+    
+    console.log('🚨 CHECKOUT: PROCEEDING WITH ORDER CREATION...');
+    
     try {
       console.log('🚀 CHECKOUT: handleSuccessfulPayment called with response:', response);
       console.log('🚀 CHECKOUT: Current user state:', { 
@@ -1505,25 +1507,48 @@ export default function CheckoutPage() {
       console.log('🚀 CHECKOUT: completedOrder stored, redirecting to thank-you with order number');
       // Redirect to thank you page with order number for persistence
       router.push(`/thank-you?order=${orderResult.order.orderNumber}`);
+      console.log('🔓 CHECKOUT: Payment processing completed successfully');
     } catch (error) {
       console.error('Error processing successful payment:', error);
       setError('Payment was successful but there was an error processing your order. Please contact support.');
+      orderProcessingFlag.current = false; // Unlock on error using ref
+      console.log('🔓 CHECKOUT: Order processing unlocked due to error (ref flag reset)');
     }
   };
 
   // Payment form submission function
   const submitTokenToIframe = () => {
     if (!paymentToken) {
-      console.error('No payment token available');
+      console.error('🎯 CHECKOUT: No payment token available');
       return;
     }
     
-    console.log('Submitting token to iframe:', paymentToken.substring(0, 20) + '...');
+    console.log('🎯 CHECKOUT: Submitting token to iframe:', paymentToken.substring(0, 20) + '...');
+    console.log('🎯 CHECKOUT: Payment form URL:', paymentFormUrl);
     
     const form = document.getElementById('paymentIframeForm') as HTMLFormElement;
     if (form) {
-      console.log('Submitting form to iframe');
+      console.log('🎯 CHECKOUT: Form found, submitting to iframe');
+      console.log('🎯 CHECKOUT: Form action:', form.action);
+      console.log('🎯 CHECKOUT: Form target:', form.target);
+      console.log('🎯 CHECKOUT: Form method:', form.method);
+      
+      // Debug the iframe state
+      const iframe = document.getElementById('paymentIframe') as HTMLIFrameElement;
+      if (iframe) {
+        console.log('🎯 CHECKOUT: Iframe found:', {
+          name: iframe.name,
+          id: iframe.id,
+          src: iframe.src,
+          width: iframe.width,
+          height: iframe.height
+        });
+      } else {
+        console.error('🎯 CHECKOUT: Iframe not found!');
+      }
+      
       form.submit();
+      console.log('🎯 CHECKOUT: Form submitted successfully');
       
       // Hide loading overlay after form submission
       setTimeout(() => {
@@ -1531,9 +1556,13 @@ export default function CheckoutPage() {
         if (loader) {
           loader.style.display = 'none';
         }
+        console.log('🎯 CHECKOUT: Loading overlay hidden');
       }, 3000);
     } else {
-      console.error('Payment iframe form not found');
+      console.error('🎯 CHECKOUT: Payment iframe form not found in DOM!');
+      // Debug: List all forms in the document
+      const allForms = document.querySelectorAll('form');
+      console.log('🎯 CHECKOUT: All forms found:', Array.from(allForms).map(f => ({ id: f.id, action: f.action })));
     }
   };
 
@@ -1726,16 +1755,11 @@ export default function CheckoutPage() {
 
 
 
-  useEffect(() => {
-    // Global debug listener for ALL messages
-    const globalDebugListener = (event: MessageEvent) => {
-      console.log('GLOBAL DEBUG: Parent received message:', event);
-    };
-    window.addEventListener('message', globalDebugListener);
-    return () => {
-      window.removeEventListener('message', globalDebugListener);
-    };
-  }, []);
+  // Removed duplicate global debug listener to prevent double message processing
+
+  // Create a singleton order processing flag outside of React state
+  const orderProcessingFlag = useRef(false);
+  const processedTransactionIdsRef = useRef(new Set<string>());
 
   const handleSuccessfulPaymentRef = useRef(handleSuccessfulPayment);
   useEffect(() => {
