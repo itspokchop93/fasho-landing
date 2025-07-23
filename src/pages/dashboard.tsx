@@ -7,6 +7,7 @@ import { useRouter } from 'next/router'
 import Lottie from 'lottie-react'
 import CampaignProgressBar from '../components/CampaignProgressBar'
 import IntakeFormModal from '../components/IntakeFormModal'
+import { createPortal } from 'react-dom'
 
 interface DashboardProps {
   user: {
@@ -26,6 +27,7 @@ export default function Dashboard({ user }: DashboardProps) {
   const [expandedOrders, setExpandedOrders] = useState<Set<string>>(new Set())
   const [activeTab, setActiveTab] = useState('dashboard')
   const [showSignOutModal, setShowSignOutModal] = useState(false)
+  const [showResetModal, setShowResetModal] = useState(false)
   const [animatedData, setAnimatedData] = useState<{ day: number; plays: number }[]>([])
   const [chartAnimating, setChartAnimating] = useState(false)
   const [lottieAnimationData, setLottieAnimationData] = useState(null)
@@ -55,6 +57,64 @@ export default function Dashboard({ user }: DashboardProps) {
   // Intake form state
   const [showIntakeForm, setShowIntakeForm] = useState(false)
   const [checkingIntakeStatus, setCheckingIntakeStatus] = useState(true)
+
+  // Curator Connect+ state
+  const [curatorData, setCuratorData] = useState<any[]>([])
+  const [curatorDataLoading, setCuratorDataLoading] = useState(true)
+  const [contactedCurators, setContactedCurators] = useState<Record<number, any>>({})
+  const [curatorFilters, setCuratorFilters] = useState({
+    genres: [] as string[],
+    minSaves: '',
+    maxSaves: '',
+    status: 'all'
+  })
+  const [curatorSort, setCuratorSort] = useState({
+    field: 'playlistSaves',
+    direction: 'desc'
+  })
+  const [curatorSearch, setCuratorSearch] = useState('')
+  const [showGenreDropdown, setShowGenreDropdown] = useState(false)
+  const [showStatusDropdown, setShowStatusDropdown] = useState(false)
+  const [isMounted, setIsMounted] = useState(false)
+  const [genreDropdownPosition, setGenreDropdownPosition] = useState({ top: 0, left: 0, width: 0 })
+  const [statusDropdownPosition, setStatusDropdownPosition] = useState({ top: 0, left: 0, width: 0 })
+  const genreDropdownRef = useRef<HTMLButtonElement>(null)
+  const statusDropdownRef = useRef<HTMLButtonElement>(null)
+  const genrePortalRef = useRef<HTMLDivElement>(null)
+  const statusPortalRef = useRef<HTMLDivElement>(null)
+
+  // Track when component is mounted for portal
+  useEffect(() => { setIsMounted(true); }, [])
+
+  // Handle click outside to close dropdowns - temporarily disabled to test dropdown functionality
+  // useEffect(() => {
+  //   const handleClickOutside = (event: MouseEvent) => {
+  //     const target = event.target as Element
+  //     
+  //     // Check if click is outside genre dropdown
+  //     if (showGenreDropdown) {
+  //       const genreDropdown = document.querySelector('[data-dropdown="genre"]')
+  //       if (genreDropdown && !genreDropdown.contains(target) && !genreDropdownRef.current?.contains(target)) {
+  //         setShowGenreDropdown(false)
+  //       }
+  //     }
+  //     
+  //     // Check if click is outside status dropdown
+  //     if (showStatusDropdown) {
+  //       const statusDropdown = document.querySelector('[data-dropdown="status"]')
+  //       if (statusDropdown && !statusDropdown.contains(target) && !statusDropdownRef.current?.contains(target)) {
+  //         setShowStatusDropdown(false)
+  //       }
+  //     }
+  //   }
+
+  //   if (showGenreDropdown || showStatusDropdown) {
+  //     document.addEventListener('mousedown', handleClickOutside)
+  //     return () => {
+  //       document.removeEventListener('mousedown', handleClickOutside)
+  //     }
+  //   }
+  // }, [showGenreDropdown, showStatusDropdown])
 
   // Check intake form status on component mount
   useEffect(() => {
@@ -89,6 +149,43 @@ export default function Dashboard({ user }: DashboardProps) {
 
     checkIntakeFormStatus();
   }, []); // Run once on component mount
+
+  // Fetch curator data when tab is active
+  useEffect(() => {
+    if (activeTab === 'curator-connect') {
+      fetchCuratorData();
+      fetchContactedCurators();
+    }
+  }, [activeTab]);
+
+  // Close dropdowns when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as Node;
+      
+      // Check if click is outside genre dropdown
+      if (showGenreDropdown && 
+          genreDropdownRef.current && !genreDropdownRef.current.contains(target) &&
+          genrePortalRef.current && !genrePortalRef.current.contains(target)) {
+        setShowGenreDropdown(false);
+      }
+      
+      // Check if click is outside status dropdown  
+      if (showStatusDropdown && 
+          statusDropdownRef.current && !statusDropdownRef.current.contains(target) &&
+          statusPortalRef.current && !statusPortalRef.current.contains(target)) {
+        setShowStatusDropdown(false);
+      }
+    };
+
+    if (showGenreDropdown || showStatusDropdown) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [showGenreDropdown, showStatusDropdown]);
 
   // Get user initials or profile image
   const getUserInitials = () => {
@@ -706,10 +803,10 @@ export default function Dashboard({ user }: DashboardProps) {
   const sidebarItems = [
     { id: 'dashboard', label: 'Dashboard', icon: 'M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2H5a2 2 0 00-2-2z' },
     { id: 'campaigns', label: 'Campaigns', icon: 'M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z' },
+    { id: 'curator-connect', label: 'Curator Connect+', icon: 'M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z' },
     { id: 'packages', label: 'Packages', icon: 'M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4' },
     { id: 'faq', label: 'FAQ', icon: 'M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z' },
     { id: 'contact', label: 'Contact Us', icon: 'M3 8l7.89 4.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z' },
-    { id: 'signout', label: 'Sign Out', icon: 'M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1' },
   ]
 
   const renderDashboardContent = () => (
@@ -1019,18 +1116,18 @@ export default function Dashboard({ user }: DashboardProps) {
           </div>
           <div className="relative h-48 bg-black/20 rounded-lg">
             {/* Y-axis labels - positioned absolutely */}
-            <div className="absolute left-1 top-2 h-[calc(100%-1rem)] flex flex-col justify-between text-xs text-gray-400 w-6 text-right pr-1 z-10">
-              <span className={`transition-opacity duration-500 ${totalPlays > 0 ? 'opacity-100' : 'opacity-30'} text-xs`}>
+            <div className="absolute left-1 top-2 h-[calc(100%-1rem)] flex flex-col justify-between text-[9px] text-gray-400 w-10 text-right pr-1 z-10">
+              <span className={`transition-opacity duration-500 ${totalPlays > 0 ? 'opacity-100' : 'opacity-30'} whitespace-nowrap`}>
                 {yAxisLabels[0]}
               </span>
-              <span className={`transition-opacity duration-500 ${totalPlays > 0 ? 'opacity-100' : 'opacity-30'} text-xs`}>
+              <span className={`transition-opacity duration-500 ${totalPlays > 0 ? 'opacity-100' : 'opacity-30'} whitespace-nowrap`}>
                 {yAxisLabels[1]}
               </span>
-              <span className="text-xs">{yAxisLabels[2]}</span>
+              <span className="whitespace-nowrap">{yAxisLabels[2]}</span>
             </div>
             
             {/* Chart area with proper padding for Y-axis labels and no right margin */}
-            <div className="absolute inset-0 pl-8 pr-0">
+            <div className="absolute inset-0 pl-12 pr-0">
               <svg className="w-full h-full" viewBox="0 0 120 40" preserveAspectRatio="none">
                 <defs>
                   <linearGradient id="mobileChartGradient" x1="0%" y1="0%" x2="100%" y2="0%">
@@ -1084,7 +1181,7 @@ export default function Dashboard({ user }: DashboardProps) {
           </div>
           
           {/* Chart Labels */}
-          <div className="flex justify-between mt-3 text-xs text-gray-400 pl-6">
+          <div className="flex justify-between mt-3 text-xs text-gray-400 pl-12">
             <span>Day 1</span>
             <span>Day 15</span>
             <span>Day 30</span>
@@ -1367,18 +1464,18 @@ export default function Dashboard({ user }: DashboardProps) {
           </div>
           <div className="relative h-64 bg-black/20 rounded-lg">
             {/* Y-axis labels - positioned absolutely */}
-            <div className="absolute left-2 top-4 h-[calc(100%-2rem)] flex flex-col justify-between text-xs text-gray-400 w-8 text-right pr-1 z-10">
-              <span className={`transition-opacity duration-500 ${totalPlays > 0 ? 'opacity-100' : 'opacity-30'}`}>
+            <div className="absolute left-2 top-4 h-[calc(100%-2rem)] flex flex-col justify-between text-[10px] text-gray-400 w-12 text-right pr-1 z-10">
+              <span className={`transition-opacity duration-500 ${totalPlays > 0 ? 'opacity-100' : 'opacity-30'} whitespace-nowrap`}>
                 {yAxisLabels[0]}
               </span>
-              <span className={`transition-opacity duration-500 ${totalPlays > 0 ? 'opacity-100' : 'opacity-30'}`}>
+              <span className={`transition-opacity duration-500 ${totalPlays > 0 ? 'opacity-100' : 'opacity-30'} whitespace-nowrap`}>
                 {yAxisLabels[1]}
               </span>
-              <span>{yAxisLabels[2]}</span>
+              <span className="whitespace-nowrap">{yAxisLabels[2]}</span>
             </div>
             
             {/* Chart area with proper padding for Y-axis labels and no right margin */}
-            <div className="absolute inset-0 pl-12 pr-0">
+            <div className="absolute inset-0 pl-16 pr-0">
               <svg className="w-full h-full" viewBox="0 0 120 40" preserveAspectRatio="none">
                 <defs>
                   <linearGradient id="chartGradient" x1="0%" y1="0%" x2="100%" y2="0%">
@@ -1432,7 +1529,7 @@ export default function Dashboard({ user }: DashboardProps) {
           </div>
           
           {/* Chart Labels */}
-          <div className="flex justify-between mt-4 text-sm text-gray-400 pl-10">
+          <div className="flex justify-between mt-4 text-sm text-gray-400 pl-16">
             <span>Day 1</span>
             <span>Day 15</span>
             <span>Day 30</span>
@@ -2128,6 +2225,33 @@ export default function Dashboard({ user }: DashboardProps) {
     </div>
   )
 
+  const renderResetModal = () => (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+      <div className="bg-gray-900 rounded-2xl p-8 border border-gray-700 max-w-md w-full mx-4">
+        <h3 className="text-xl font-semibold text-white mb-4">Reset Contact Status</h3>
+        <p className="text-gray-300 mb-6">
+          This will erase the "Contacted" checkmark from all the curators you've already reached out to. 
+          You won't know which curators you've already emailed.
+        </p>
+        
+        <div className="flex space-x-4">
+          <button
+            onClick={() => setShowResetModal(false)}
+            className="flex-1 bg-gray-600 hover:bg-gray-500 text-white py-3 rounded-xl font-semibold transition-colors"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={handleResetContactStatus}
+            className="flex-1 bg-red-600 hover:bg-red-700 text-white py-3 rounded-xl font-semibold transition-colors"
+          >
+            Reset
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+
   const renderPackagesContent = () => {
     // Package data from pricing page
     const packages = [
@@ -2503,6 +2627,8 @@ export default function Dashboard({ user }: DashboardProps) {
         return renderDashboardContent()
       case 'campaigns':
         return renderCampaignsContent()
+      case 'curator-connect':
+        return renderCuratorConnectContent()
       case 'packages':
         return renderPackagesContent()
       case 'faq':
@@ -2596,6 +2722,678 @@ export default function Dashboard({ user }: DashboardProps) {
     setShowIntakeForm(false);
   };
 
+  // Curator Connect+ functions
+  const fetchCuratorData = async () => {
+    try {
+      setCuratorDataLoading(true)
+      const response = await fetch('/api/curator-connect')
+      const data = await response.json()
+      
+      if (data.success) {
+        setCuratorData(data.data)
+        console.log('🎵 DASHBOARD: Fetched curator data:', data.data.length, 'entries')
+      } else {
+        console.error('🚨 DASHBOARD: Failed to fetch curator data:', data.error)
+      }
+    } catch (error) {
+      console.error('🚨 DASHBOARD: Error fetching curator data:', error)
+    } finally {
+      setCuratorDataLoading(false)
+    }
+  }
+
+  // Helper function to parse genres from comma-separated string
+  const parseGenres = (genreString: string): string[] => {
+    if (!genreString) return []
+    return genreString.split(',').map(genre => genre.trim()).filter(Boolean)
+  }
+
+  // Helper function to get all unique genres from curator data
+  const getAllUniqueGenres = (): string[] => {
+    const allGenres = curatorData.flatMap(curator => parseGenres(curator.genre))
+    return [...new Set(allGenres)].sort()
+  }
+
+  // Helper function to handle genre bubble click
+  // Calculate dropdown positions
+  const updateGenreDropdownPosition = () => {
+    if (genreDropdownRef.current) {
+      const rect = genreDropdownRef.current.getBoundingClientRect()
+      setGenreDropdownPosition({
+        top: rect.bottom + 4,
+        left: rect.left,
+        width: rect.width
+      })
+    }
+  }
+
+  const updateStatusDropdownPosition = () => {
+    if (statusDropdownRef.current) {
+      const rect = statusDropdownRef.current.getBoundingClientRect()
+      setStatusDropdownPosition({
+        top: rect.bottom + 4,
+        left: rect.left,
+        width: rect.width
+      })
+    }
+  }
+
+  // Update dropdown positions on scroll and resize
+  useEffect(() => {
+    if (showGenreDropdown || showStatusDropdown) {
+      const handleScroll = () => {
+        if (showGenreDropdown) updateGenreDropdownPosition()
+        if (showStatusDropdown) updateStatusDropdownPosition()
+      }
+      
+      const handleResize = () => {
+        if (showGenreDropdown) updateGenreDropdownPosition()
+        if (showStatusDropdown) updateStatusDropdownPosition()
+      }
+
+      window.addEventListener('scroll', handleScroll, true)
+      window.addEventListener('resize', handleResize)
+      
+      return () => {
+        window.removeEventListener('scroll', handleScroll, true)
+        window.removeEventListener('resize', handleResize)
+      }
+    }
+  }, [showGenreDropdown, showStatusDropdown])
+
+  const handleGenreClick = (genre: string) => {
+    setCuratorFilters(prev => {
+      // If this is the first genre being selected, replace all filters
+      if (prev.genres.length === 0) {
+        return {
+          ...prev,
+          genres: [genre]
+        }
+      }
+      // Otherwise, add to existing filters (toggle if already present)
+      return {
+        ...prev,
+        genres: prev.genres.includes(genre)
+          ? prev.genres.filter(g => g !== genre)
+          : [...prev.genres, genre]
+      }
+    })
+  }
+
+  // Helper function to handle genre filter toggle
+  const toggleGenreFilter = (genre: string) => {
+    setCuratorFilters(prev => ({
+      ...prev,
+      genres: prev.genres.includes(genre)
+        ? prev.genres.filter(g => g !== genre)
+        : [...prev.genres, genre]
+    }))
+  }
+
+  // Toggle dropdown functions with position calculation
+  const toggleGenreDropdown = () => {
+    if (!showGenreDropdown) {
+      updateGenreDropdownPosition()
+    }
+    setShowGenreDropdown(!showGenreDropdown)
+  }
+
+  const toggleStatusDropdown = () => {
+    if (!showStatusDropdown) {
+      updateStatusDropdownPosition()
+    }
+    setShowStatusDropdown(!showStatusDropdown)
+  }
+
+  const fetchContactedCurators = async () => {
+    try {
+      console.log('🎵 DASHBOARD: Fetching contacted curators for user:', user.id)
+      const response = await fetch(`/api/curator-contacts?userId=${user.id}`)
+      const data = await response.json()
+      
+      console.log('🎵 DASHBOARD: Fetch response:', data)
+      
+      if (data.success) {
+        setContactedCurators(data.data)
+        console.log('🎵 DASHBOARD: Fetched contacted curators:', Object.keys(data.data).length, 'entries')
+      } else {
+        console.error('🚨 DASHBOARD: Failed to fetch contacted curators:', data.error)
+      }
+    } catch (error) {
+      console.error('🚨 DASHBOARD: Error fetching contacted curators:', error)
+    }
+  }
+
+  const handleContactCurator = async (curator: any) => {
+    try {
+      // Track the contact
+      await fetch('/api/curator-contact-track', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ curatorId: curator.id, userId: user.id })
+      })
+
+      // Update local state
+      setContactedCurators(prev => ({
+        ...prev,
+        [curator.id]: {
+          contacted: true,
+          contactedAt: new Date().toISOString(),
+          contactCount: (prev[curator.id]?.contactCount || 0) + 1
+        }
+      }))
+
+      // Create email body with placeholders
+      const emailBody = `Hey there!
+
+Hope you're having a great day!
+
+My name is [Your Name], and I'm an independent artist looking to connect with new listeners. I found your playlist and I think my latest release would be a perfect fit for your audience.
+
+The playlist name is:  
+${curator.playlistName}
+
+Here's a link to it:  
+${curator.playlistUrl}
+
+
+Here's my song that I think would fit perfectly on your playlist: 
+
+Song Title:  
+[Your Song Title]
+
+Spotify Song Link:  
+[Your Spotify Song Link]
+
+A little about my music:  
+[Short intro about your sound, style, or what makes this track special]
+
+If you have a moment to check it out, I'd really appreciate any feedback or the chance to be included in your playlist. Thanks for supporting indie artists like me and helping new music get discovered!
+
+Looking forward to hearing from you.
+
+Best regards,  
+[Your Name or Artist Name]  
+[Optional: Instagram/Twitter handle or contact info]`
+
+      // Open email client with subject and body
+      const mailtoUrl = `mailto:${curator.contactEmail}?subject=Playlist Submission Request&body=${encodeURIComponent(emailBody)}`
+      window.open(mailtoUrl, '_blank')
+      
+      console.log('🎵 DASHBOARD: Contacted curator:', curator.id)
+    } catch (error) {
+      console.error('🚨 DASHBOARD: Error contacting curator:', error)
+    }
+  }
+
+  const handleResetContactStatus = async () => {
+    try {
+      console.log('🎵 DASHBOARD: Starting reset for user:', user.id)
+      
+      // Reset in database via API
+      const response = await fetch(`/api/curator-contacts-reset?userId=${user.id}`, {
+        method: 'DELETE'
+      })
+
+      const responseData = await response.json()
+      console.log('🎵 DASHBOARD: Reset API response:', responseData)
+
+      if (!response.ok) {
+        console.error('🚨 DASHBOARD: Error resetting contact status:', responseData)
+        return
+      }
+
+      // Reset local state
+      setContactedCurators({})
+      setShowResetModal(false)
+      
+      // Refresh the contacted curators data to ensure UI is updated
+      await fetchContactedCurators()
+      
+      console.log('🎵 DASHBOARD: Reset contact status completed for user:', user.id)
+    } catch (error) {
+      console.error('🚨 DASHBOARD: Error resetting contact status:', error)
+    }
+  }
+
+  const getFilteredAndSortedCurators = () => {
+    let filtered = curatorData.filter(curator => {
+      // Search filter
+      if (curatorSearch && !curator.playlistName.toLowerCase().includes(curatorSearch.toLowerCase())) {
+        return false
+      }
+      
+      // Genre filter - check if any of the curator's genres match the selected genres
+      if (curatorFilters.genres.length > 0) {
+        const curatorGenres = parseGenres(curator.genre)
+        const hasMatchingGenre = curatorFilters.genres.some(selectedGenre => 
+          curatorGenres.includes(selectedGenre)
+        )
+        if (!hasMatchingGenre) {
+          return false
+        }
+      }
+      
+      // Saves range filter
+      if (curatorFilters.minSaves && curator.playlistSaves < parseInt(curatorFilters.minSaves)) {
+        return false
+      }
+      if (curatorFilters.maxSaves && curator.playlistSaves > parseInt(curatorFilters.maxSaves)) {
+        return false
+      }
+      
+      // Status filter
+      if (curatorFilters.status === 'contacted' && !contactedCurators[curator.id]) {
+        return false
+      }
+      if (curatorFilters.status === 'not-contacted' && contactedCurators[curator.id]) {
+        return false
+      }
+      
+      return true
+    })
+
+    // Sort
+    filtered.sort((a, b) => {
+      let aVal = a[curatorSort.field]
+      let bVal = b[curatorSort.field]
+      
+      if (curatorSort.field === 'playlistSaves') {
+        aVal = parseInt(aVal) || 0
+        bVal = parseInt(bVal) || 0
+      }
+      
+      if (curatorSort.direction === 'asc') {
+        return aVal > bVal ? 1 : -1
+      } else {
+        return aVal < bVal ? 1 : -1
+      }
+    })
+
+    return filtered
+  }
+
+  const renderCuratorConnectContent = () => {
+    const filteredCurators = getFilteredAndSortedCurators()
+    const allUniqueGenres = getAllUniqueGenres()
+
+    return (
+      <div className="space-y-6">
+        {/* Header */}
+        <div className="bg-gradient-to-br from-gray-950/90 to-gray-900/90 backdrop-blur-sm rounded-2xl p-6 border border-gray-800/30">
+                      <h3 className="text-xl font-bold text-white mb-2">
+              <span className="hidden lg:inline">Spotify Playlist Curators</span>
+              <span className="lg:hidden">Curator Connect+</span>
+            </h3>
+                          <p className="text-gray-400">Dive into our exclusive indie playlist network. Handpicked, always fresh, and 100% FREE for FASHO.co members. Find your vibe, hit "Contact," and get your music in front of real curators. This is your personal plug to playlists that break new artists.</p>
+        </div>
+
+        {/* Filters and Search */}
+        <div className="bg-gradient-to-br from-gray-950/90 to-gray-900/90 backdrop-blur-sm rounded-2xl p-6 border border-gray-800/30">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            {/* Search */}
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-2">Search Playlists</label>
+              <input
+                type="text"
+                placeholder="Search by playlist name..."
+                value={curatorSearch}
+                onChange={(e) => setCuratorSearch(e.target.value)}
+                className="w-full px-3 py-2 bg-gray-800/50 border border-gray-700 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-green-500"
+              />
+            </div>
+
+            {/* Genre Filter */}
+            <div className="relative genre-dropdown-container">
+              <label className="block text-sm font-medium text-gray-300 mb-2">Genre</label>
+              <button
+                ref={genreDropdownRef}
+                onClick={toggleGenreDropdown}
+                className="w-full px-3 py-2 bg-gray-800/50 border border-gray-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-green-500 flex items-center justify-between"
+              >
+                <span className={curatorFilters.genres.length > 0 ? 'text-white' : 'text-gray-400'}>
+                  {curatorFilters.genres.length > 0 
+                    ? `${curatorFilters.genres.length} selected` 
+                    : 'All Genres'
+                  }
+                </span>
+                <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                </svg>
+              </button>
+            </div>
+
+            {/* Min Followers */}
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-2">Min Followers</label>
+              <input
+                type="number"
+                placeholder="Minimum followers"
+                value={curatorFilters.minSaves}
+                onChange={(e) => setCuratorFilters(prev => ({ ...prev, minSaves: e.target.value }))}
+                className="w-full px-3 py-2 bg-gray-800/50 border border-gray-700 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-green-500"
+              />
+            </div>
+
+            {/* Status Filter */}
+            <div className="relative status-dropdown-container">
+              <label className="block text-sm font-medium text-gray-300 mb-2">Status</label>
+              <button
+                ref={statusDropdownRef}
+                onClick={toggleStatusDropdown}
+                className="w-full px-3 py-2 bg-gray-800/50 border border-gray-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-green-500 flex items-center justify-between"
+              >
+                <span className={curatorFilters.status !== 'all' ? 'text-white' : 'text-gray-400'}>
+                  {curatorFilters.status === 'all' && 'All'}
+                  {curatorFilters.status === 'not-contacted' && 'Not Contacted'}
+                  {curatorFilters.status === 'contacted' && 'Already Contacted'}
+                </span>
+                <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                </svg>
+              </button>
+            </div>
+          </div>
+
+          {/* Sort Controls */}
+          <div className="mt-4 flex flex-wrap gap-4 items-center">
+            <span className="text-sm font-medium text-gray-300">Sort by:</span>
+            <button
+              onClick={() => setCuratorSort({ field: 'playlistSaves', direction: curatorSort.direction === 'asc' ? 'desc' : 'asc' })}
+              className={`px-3 py-1 rounded-lg text-sm font-medium transition-colors ${
+                curatorSort.field === 'playlistSaves'
+                  ? 'bg-green-600 text-white'
+                  : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+              }`}
+            >
+              Followers {curatorSort.field === 'playlistSaves' && (curatorSort.direction === 'asc' ? '↑' : '↓')}
+            </button>
+            <button
+              onClick={() => setCuratorSort({ field: 'playlistName', direction: curatorSort.direction === 'asc' ? 'desc' : 'asc' })}
+              className={`px-3 py-1 rounded-lg text-sm font-medium transition-colors ${
+                curatorSort.field === 'playlistName'
+                  ? 'bg-green-600 text-white'
+                  : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+              }`}
+            >
+              Name {curatorSort.field === 'playlistName' && (curatorSort.direction === 'asc' ? '↑' : '↓')}
+            </button>
+          </div>
+        </div>
+
+        {/* Results Count */}
+        <div className="flex justify-between items-center">
+          <div className="text-sm text-gray-400">
+            Showing {filteredCurators.length} of {curatorData.length} curators
+          </div>
+          
+          {/* Subtle Reset Button - Only show if there are contacted curators */}
+          {Object.keys(contactedCurators).length > 0 && (
+            <button
+              onClick={() => setShowResetModal(true)}
+              className="text-sm text-red-400 hover:text-red-300 transition-colors underline"
+            >
+              Reset Contact Status
+            </button>
+          )}
+        </div>
+
+        {/* Curators Table - Desktop */}
+        <div className="hidden lg:block bg-gradient-to-br from-gray-950/90 to-gray-900/90 backdrop-blur-sm rounded-2xl border border-gray-800/30 overflow-hidden">
+          {curatorDataLoading ? (
+            <div className="p-8 text-center">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-500 mx-auto"></div>
+              <p className="text-gray-400 mt-2">Loading curator data...</p>
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead className="bg-gray-800/50">
+                  <tr>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Playlist</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Genre</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Followers</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Status</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Action</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-800/30">
+                  {filteredCurators.map((curator) => {
+                    const isContacted = contactedCurators[curator.id]
+                    return (
+                      <tr key={curator.id} className="hover:bg-gray-800/20 transition-colors">
+                        <td className="px-6 py-4">
+                          <div className="flex items-center space-x-3">
+                            <img
+                              src={curator.playlistImageUrl}
+                              alt={curator.playlistName}
+                              className="w-12 h-12 rounded-lg object-cover"
+                              onError={(e) => {
+                                e.currentTarget.src = '/fasho-logo-wide.png'
+                              }}
+                            />
+                            <div className="flex-1">
+                              <a
+                                href={curator.playlistUrl}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-white font-medium hover:text-green-400 transition-colors text-[1.08rem]"
+                              >
+                                {curator.playlistName}
+                              </a>
+                              <div className="mt-1">
+                                <a
+                                  href={curator.playlistUrl}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="inline-flex items-center px-1.5 py-0.5 text-xs font-medium border border-gray-600 text-gray-300 hover:bg-gray-700 hover:text-white rounded transition-colors"
+                                >
+                                  View Playlist
+                                </a>
+                              </div>
+                            </div>
+                          </div>
+                        </td>
+                        <td className="px-6 py-4">
+                          <div className="flex flex-wrap gap-1">
+                            {parseGenres(curator.genre).map((genre, index) => {
+                              const isFiltered = curatorFilters.genres.includes(genre)
+                              return (
+                                <button
+                                  key={index}
+                                  onClick={() => handleGenreClick(genre)}
+                                  className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full transition-colors cursor-pointer ${
+                                    isFiltered
+                                      ? 'bg-gray-700 text-gray-300 border border-green-400/50 shadow-sm'
+                                      : 'bg-gray-700 text-gray-300 hover:bg-gray-600 hover:text-white'
+                                  }`}
+                                  title={`Filter by ${genre}`}
+                                >
+                                  {genre}
+                                </button>
+                              )
+                            })}
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 text-white">
+                          {curator.playlistSaves.toLocaleString()}
+                        </td>
+                        <td className="px-6 py-4">
+                          {isContacted ? (
+                            <div className="flex items-center space-x-2" title="You already contacted this curator">
+                              <svg className="w-5 h-5 text-green-500" fill="currentColor" viewBox="0 0 20 20">
+                                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                              </svg>
+                              <span className="text-sm text-green-400">Contacted</span>
+                            </div>
+                          ) : (
+                            <span className="text-sm text-gray-400">Not contacted</span>
+                          )}
+                        </td>
+                        <td className="px-6 py-4">
+                          <button
+                            onClick={() => handleContactCurator(curator)}
+                            className="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-colors"
+                          >
+                            Contact
+                          </button>
+                        </td>
+                      </tr>
+                    )
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+
+        {/* Curators Cards - Mobile */}
+        <div className="lg:hidden">
+          {curatorDataLoading ? (
+            <div className="bg-gradient-to-br from-gray-950/90 to-gray-900/90 backdrop-blur-sm rounded-2xl border border-gray-800/30 p-8 text-center">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-500 mx-auto"></div>
+              <p className="text-gray-400 mt-2">Loading curator data...</p>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {filteredCurators.map((curator) => {
+                const isContacted = contactedCurators[curator.id]
+                return (
+                  <div 
+                    key={curator.id} 
+                    className="bg-gradient-to-br from-gray-950/90 to-gray-900/90 backdrop-blur-sm rounded-2xl border border-gray-800/30 p-4 hover:bg-gray-800/20 transition-colors"
+                  >
+                    {/* Playlist Header */}
+                    <div className="flex items-start space-x-3 mb-3">
+                      <img
+                        src={curator.playlistImageUrl}
+                        alt={curator.playlistName}
+                        className="w-16 h-16 rounded-lg object-cover flex-shrink-0"
+                        onError={(e) => {
+                          e.currentTarget.src = '/fasho-logo-wide.png'
+                        }}
+                      />
+                      <div className="flex-1 min-w-0">
+                        <a
+                          href={curator.playlistUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-white font-semibold hover:text-green-400 transition-colors text-lg leading-tight block"
+                        >
+                          {curator.playlistName}
+                        </a>
+                        <div className="mt-2">
+                          <a
+                            href={curator.playlistUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center px-2 py-1 text-xs font-medium border border-gray-600 text-gray-300 hover:bg-gray-700 hover:text-white rounded transition-colors"
+                          >
+                            View Playlist
+                          </a>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Genre Tags */}
+                    <div className="my-4">
+                      <div className="flex flex-wrap gap-1">
+                        {parseGenres(curator.genre).map((genre, index) => {
+                          const isFiltered = curatorFilters.genres.includes(genre)
+                          return (
+                            <button
+                              key={index}
+                              onClick={() => handleGenreClick(genre)}
+                              className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full transition-colors cursor-pointer ${
+                                isFiltered
+                                  ? 'bg-gray-700 text-gray-300 border border-green-400/50 shadow-sm'
+                                  : 'bg-gray-700 text-gray-300 hover:bg-gray-600 hover:text-white'
+                              }`}
+                              title={`Filter by ${genre}`}
+                            >
+                              {genre}
+                            </button>
+                          )
+                        })}
+                      </div>
+                    </div>
+
+                    {/* Stats and Action Row */}
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center space-x-6">
+                        <div className="text-center">
+                          <div className="text-white font-semibold text-lg">
+                            {curator.playlistSaves.toLocaleString()}
+                          </div>
+                          <div className="text-xs text-gray-400">Followers</div>
+                        </div>
+                        <div className="text-center">
+                          {isContacted ? (
+                            <div className="flex items-center space-x-1" title="You already contacted this curator">
+                              <svg className="w-4 h-4 text-green-500" fill="currentColor" viewBox="0 0 20 20">
+                                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                              </svg>
+                              <span className="text-xs text-green-400">Contacted</span>
+                            </div>
+                          ) : (
+                            <div className="text-center">
+                              <div className="text-xs text-gray-400">Not contacted</div>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                      <button
+                        onClick={() => handleContactCurator(curator)}
+                        className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-lg text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-colors"
+                      >
+                        Contact
+                      </button>
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          )}
+        </div>
+        
+        {/* Curator Recruitment Section */}
+        <div className="mt-8 p-6 bg-gradient-to-br from-gray-950/90 to-gray-900/90 backdrop-blur-sm rounded-2xl border border-gray-800/30">
+          <div className="text-center">
+            <p className="text-gray-300 mb-4">
+              Want to add your playlist and receive fresh music submissions from our clients?{' '}
+              <a 
+                href={`mailto:support@fasho.co?subject=${encodeURIComponent('Curator Connect Playlist Addition')}&body=${encodeURIComponent(`Hey FASHO,
+
+My name is [name]. I am a playlist owner and would like to feature my playlist(s) on your Curator Connect+ section. 
+
+Here's a link to my playlist(s):
+[Spotify playlist link]
+
+My playlist is in this genre:
+[Genre here]
+
+My playlist has this many followers:
+[Follower count]
+
+Please let me know if I could be featured in your Curator Connect+ section. 
+
+Thank you, 
+[Name]
+[Contact info]`)}`}
+                className="text-green-400 hover:text-green-300 underline font-medium"
+              >
+                Reach Out Now
+              </a>
+            </p>
+          </div>
+        </div>
+
+        {/* Bottom spacing */}
+        <div className="h-[50px]"></div>
+      </div>
+    )
+  }
+
   return (
     <>
       <Head>
@@ -2663,6 +3461,7 @@ export default function Dashboard({ user }: DashboardProps) {
                   <h2 className="text-xl lg:text-2xl font-bold text-white">
                     {activeTab === 'dashboard' && 'Dashboard'}
                     {activeTab === 'campaigns' && 'Campaigns'}
+                    {activeTab === 'curator-connect' && 'Curator Connect+'}
                     {activeTab === 'packages' && 'Packages'}
                     {activeTab === 'faq' && 'Frequently Asked Questions'}
                     {activeTab === 'contact' && 'Contact'}
@@ -2670,6 +3469,7 @@ export default function Dashboard({ user }: DashboardProps) {
                   <p className="text-sm lg:text-base text-gray-400">
                     {activeTab === 'dashboard' && 'Welcome back! Here\'s your campaign overview.'}
                     {activeTab === 'campaigns' && 'Manage and monitor all your music campaigns.'}
+                    {activeTab === 'curator-connect' && 'Connect with Spotify playlist curators and grow your audience.'}
                     {activeTab === 'packages' && 'Choose the perfect plan to launch your music career.'}
                     {activeTab === 'faq' && 'Get the answers that you need, when you need them.'}
                     {activeTab === 'contact' && 'Get in touch with our support team.'}
@@ -2691,40 +3491,159 @@ export default function Dashboard({ user }: DashboardProps) {
         
         {/* Mobile Bottom Navigation */}
         <div className="lg:hidden fixed bottom-0 left-0 right-0 bg-gray-950/95 backdrop-blur-sm border-t border-gray-800/30 px-2 py-1 z-30 safe-area-inset-bottom">
-          <div className="flex items-center justify-around max-w-full">
-            {sidebarItems.map((item) => (
-              <button
-                key={item.id}
-                onClick={() => {
-                  if (item.id === 'signout') {
-                    setShowSignOutModal(true)
-                  } else {
-                    setActiveTab(item.id)
-                  }
-                }}
-                className={`flex flex-col items-center space-y-1 px-1 py-2 rounded-lg transition-all duration-300 min-w-0 flex-1 ${
-                  activeTab === item.id 
-                    ? 'text-green-400' 
-                    : 'text-gray-400 hover:text-white'
-                }`}
-              >
-                <svg className="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={item.icon} />
-                </svg>
-                <span className="text-xs font-medium truncate w-full text-center leading-tight">{item.label}</span>
-              </button>
-            ))}
+          <div className="flex items-center max-w-full">
+            {sidebarItems.map((item) => {
+              // Get mobile-specific label
+              const getMobileLabel = (itemId: string, originalLabel: string) => {
+                if (itemId === 'curator-connect') return 'Curators'
+                return originalLabel
+              }
+              
+              // Get flex basis based on label length
+              const getFlexBasis = (itemId: string) => {
+                if (itemId === 'dashboard' || itemId === 'campaigns' || itemId === 'curator-connect') {
+                  return 'flex-[1.15]' // Slightly less space for longer labels
+                } else if (itemId === 'faq') {
+                  return 'flex-[0.7]' // A bit more space for FAQ
+                } else {
+                  return 'flex-1' // Normal space for others
+                }
+              }
+              
+              return (
+                <button
+                  key={item.id}
+                  onClick={() => {
+                    if (item.id === 'signout') {
+                      setShowSignOutModal(true)
+                    } else {
+                      setActiveTab(item.id)
+                    }
+                  }}
+                  className={`flex flex-col items-center space-y-1 px-1 py-2 rounded-lg transition-all duration-300 min-w-0 ${getFlexBasis(item.id)} ${
+                    activeTab === item.id 
+                      ? 'text-green-400' 
+                      : 'text-gray-400 hover:text-white'
+                  }`}
+                >
+                  <svg className="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={item.icon} />
+                  </svg>
+                  <span className="text-xs font-medium truncate w-full text-center leading-tight">{getMobileLabel(item.id, item.label)}</span>
+                </button>
+              )
+            })}
           </div>
         </div>
         
         {/* Sign Out Modal */}
         {showSignOutModal && renderSignOutModal()}
 
+        {/* Reset Contact Status Modal */}
+        {showResetModal && renderResetModal()}
+
         {/* Intake Form Modal */}
         <IntakeFormModal 
           isOpen={showIntakeForm && !checkingIntakeStatus}
           onComplete={handleIntakeFormComplete}
         />
+
+        {/* Genre Dropdown Portal */}
+        {isMounted && showGenreDropdown && createPortal(
+          <div
+            ref={genrePortalRef}
+            className="fixed z-[9999] bg-gray-800 border border-gray-700 rounded-lg shadow-lg max-h-60 overflow-y-auto"
+            style={{
+              top: genreDropdownPosition.top,
+              left: genreDropdownPosition.left,
+              width: genreDropdownPosition.width
+            }}
+          >
+            <div className="p-3">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-sm font-medium text-gray-300">Select Genres</span>
+                <div className="flex gap-2">
+                  {curatorFilters.genres.length > 0 && (
+                    <button
+                      onClick={() => setCuratorFilters(prev => ({ ...prev, genres: [] }))}
+                      className="text-xs text-green-400 hover:text-green-300"
+                    >
+                      Clear All
+                    </button>
+                  )}
+                  <button
+                    onClick={() => setShowGenreDropdown(false)}
+                    className="text-xs text-gray-400 hover:text-white"
+                  >
+                    ✕
+                  </button>
+                </div>
+              </div>
+              <div className="space-y-1">
+                {getAllUniqueGenres().map((genre: string) => (
+                  <label key={genre} className="flex items-center space-x-2 cursor-pointer hover:bg-gray-700/50 p-2 rounded">
+                    <input
+                      type="checkbox"
+                      checked={curatorFilters.genres.includes(genre)}
+                      onChange={() => toggleGenreFilter(genre)}
+                      className="rounded border-gray-600 text-green-500 focus:ring-green-500 bg-gray-700"
+                    />
+                    <span className="text-sm text-gray-300">{genre}</span>
+                  </label>
+                ))}
+              </div>
+            </div>
+          </div>,
+          document.body
+        )}
+
+        {/* Status Dropdown Portal */}
+        {isMounted && showStatusDropdown && createPortal(
+          <div
+            ref={statusPortalRef}
+            className="fixed z-[9999] bg-gray-800 border border-gray-700 rounded-lg shadow-lg"
+            style={{
+              top: statusDropdownPosition.top,
+              left: statusDropdownPosition.left,
+              width: statusDropdownPosition.width
+            }}
+          >
+            <div className="p-3">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-sm font-medium text-gray-300">Select Status</span>
+                <button
+                  onClick={() => setShowStatusDropdown(false)}
+                  className="text-xs text-gray-400 hover:text-white"
+                >
+                  ✕
+                </button>
+              </div>
+              <div className="space-y-1">
+                {[
+                  { value: 'all', label: 'All' },
+                  { value: 'not-contacted', label: 'Not Contacted' },
+                  { value: 'contacted', label: 'Already Contacted' }
+                ].map(option => (
+                  <button
+                    key={option.value}
+                    onClick={() => {
+                      setCuratorFilters(prev => ({ ...prev, status: option.value }));
+                      setShowStatusDropdown(false);
+                    }}
+                    className={`w-full text-left px-2 py-1 rounded text-sm transition-colors ${
+                      curatorFilters.status === option.value
+                        ? 'bg-green-600 text-white'
+                        : 'text-gray-300 hover:bg-gray-700'
+                    }`}
+                  >
+                    {option.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>,
+          document.body
+        )}
       </div>
     </>
   )

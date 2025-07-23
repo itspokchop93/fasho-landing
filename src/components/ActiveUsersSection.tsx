@@ -207,7 +207,7 @@ export default function ActiveUsersSection({ className = '' }: ActiveUsersSectio
   }
 
   return (
-    <div className={`bg-white rounded-xl shadow-lg border border-gray-200 ${className}`}>
+    <div className={`bg-white rounded-xl shadow-lg border border-gray-200 mb-6 ${className}`}>
       {/* Header with Analytics */}
       <div className="p-6 border-b border-gray-200">
         <div className="flex items-center justify-between mb-6">
