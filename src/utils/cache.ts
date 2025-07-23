@@ -77,7 +77,9 @@ class Cache {
     let cleaned = 0;
     const now = Date.now();
     
-    for (const [key, item] of this.cache.entries()) {
+    // Convert entries to array for better compatibility
+    const entries = Array.from(this.cache.entries());
+    for (const [key, item] of entries) {
       if (now - item.timestamp > item.ttl) {
         this.cache.delete(key);
         cleaned++;
