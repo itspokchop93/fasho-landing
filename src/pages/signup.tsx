@@ -94,18 +94,7 @@ export default function SignUpPage() {
       try {
         console.log('🔐 SIGNUP: Checking if user is logged in...');
         
-        // Start with getUser (most reliable for checking actual auth status)
-        const { data: { user }, error: userError } = await supabase.auth.getUser();
-        console.log('🔐 SIGNUP: getUser() response:', { user: user?.email || null, error: userError });
-        
-        if (user && !userError) {
-          console.log('🔐 SIGNUP: Valid user found, redirecting to dashboard...');
-          router.push('/dashboard');
-          return;
-        }
-        
-        // If getUser fails, try to get session
-        console.log('🔐 SIGNUP: No user from getUser, trying session...');
+        // Simple session check - this is more reliable
         const { data: { session }, error: sessionError } = await supabase.auth.getSession();
         console.log('🔐 SIGNUP: Session check:', { session: session?.user?.email || 'No session', error: sessionError });
         
@@ -115,20 +104,7 @@ export default function SignUpPage() {
           return;
         }
         
-        // If session fails, try to refresh
-        if (sessionError || !session) {
-          console.log('🔐 SIGNUP: No valid session, trying to refresh...');
-          const { data: { session: refreshedSession }, error: refreshError } = await supabase.auth.refreshSession();
-          console.log('🔐 SIGNUP: Refresh result:', { session: refreshedSession?.user?.email || 'No session', error: refreshError });
-          
-          if (refreshedSession?.user && !refreshError) {
-            console.log('🔐 SIGNUP: Refreshed session found, redirecting to dashboard...');
-            router.push('/dashboard');
-            return;
-          }
-        }
-        
-        console.log('🔐 SIGNUP: No user found through any method, staying on signup page');
+        console.log('🔐 SIGNUP: No valid session, staying on signup page');
       } catch (err) {
         console.error('🔐 SIGNUP: Error checking user:', err);
       }

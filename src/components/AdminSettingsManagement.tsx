@@ -6,6 +6,13 @@ interface AdminSettings {
   site_description: string;
 }
 
+interface CacheStats {
+  size: number;
+  keys: string[];
+  keyGroups?: { [key: string]: string[] };
+  timestamp: string;
+}
+
 const AdminSettingsManagement: React.FC = () => {
   const [settings, setSettings] = useState<AdminSettings>({ 
     webhook_url: '',
@@ -16,11 +23,26 @@ const AdminSettingsManagement: React.FC = () => {
   const [saving, setSaving] = useState(false);
   const [success, setSuccess] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [cacheStats, setCacheStats] = useState<CacheStats | null>(null);
+  const [cacheLoading, setCacheLoading] = useState(false);
+  const [autoRefresh, setAutoRefresh] = useState(false);
 
   // Load settings on component mount
   useEffect(() => {
     fetchSettings();
+    fetchCacheStats();
   }, []);
+
+  // Auto-refresh cache stats
+  useEffect(() => {
+    if (!autoRefresh) return;
+
+    const interval = setInterval(() => {
+      fetchCacheStats();
+    }, 5000); // Refresh every 5 seconds
+
+    return () => clearInterval(interval);
+  }, [autoRefresh]);
 
   const fetchSettings = async () => {
     try {
@@ -204,6 +226,63 @@ const AdminSettingsManagement: React.FC = () => {
     } catch (err) {
       console.error('Error testing webhook:', err);
       setError(err instanceof Error ? err.message : 'Failed to test webhook');
+    }
+  };
+
+  const fetchCacheStats = async () => {
+    try {
+      setCacheLoading(true);
+      setError(null);
+      const response = await fetch('/api/admin/cache-management');
+      if (!response.ok) {
+        throw new Error('Failed to fetch cache statistics');
+      }
+      const data = await response.json();
+      setCacheStats(data.stats);
+      console.log('🧹 CACHE-UI: Fetched cache stats:', data.stats);
+    } catch (err) {
+      console.error('Error fetching cache stats:', err);
+      setError(err instanceof Error ? err.message : 'Failed to load cache statistics');
+    } finally {
+      setCacheLoading(false);
+    }
+  };
+
+  const clearCache = async () => {
+    try {
+      setCacheLoading(true);
+      setError(null);
+      setSuccess(null);
+
+      const response = await fetch('/api/admin/cache-management', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+        body: JSON.stringify({
+          action: 'clear_all'
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to clear cache');
+      }
+
+      const data = await response.json();
+      setSuccess(`Cache cleared successfully! ${data.cleared} entries removed.`);
+      
+      // Refresh cache stats
+      await fetchCacheStats();
+      
+      // Clear success message after 5 seconds
+      setTimeout(() => setSuccess(null), 5000);
+    } catch (err) {
+      console.error('Error clearing cache:', err);
+      setError(err instanceof Error ? err.message : 'Failed to clear cache');
+    } finally {
+      setCacheLoading(false);
     }
   };
 
@@ -415,6 +494,152 @@ const AdminSettingsManagement: React.FC = () => {
               </div>
               <div className="mt-3 pt-3 border-t border-gray-200">
                 <span className="text-xs text-gray-500">Note: Changes will be applied globally across the entire website.</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Cache Management Section */}
+      <div className="bg-white rounded-xl p-6 shadow-lg border border-gray-100">
+        <div className="flex items-center mb-6">
+          <div className="flex-shrink-0">
+            <div className="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center">
+              <svg className="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+              </svg>
+            </div>
+          </div>
+          <div className="ml-4">
+            <h2 className="text-xl font-semibold text-gray-900">Cache Management</h2>
+            <p className="text-gray-600">Manage the website's cache to improve performance and clear stale data.</p>
+          </div>
+        </div>
+
+        <div className="space-y-6">
+          {/* Cache Statistics */}
+          <div className="bg-gray-50 rounded-lg p-4">
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="text-sm font-medium text-gray-900">Cache Statistics</h3>
+              <div className="flex items-center space-x-2">
+                <label className="flex items-center text-xs text-gray-600">
+                  <input
+                    type="checkbox"
+                    checked={autoRefresh}
+                    onChange={(e) => setAutoRefresh(e.target.checked)}
+                    className="mr-1 h-3 w-3 text-purple-600 focus:ring-purple-500 border-gray-300 rounded"
+                  />
+                  Auto-refresh
+                </label>
+              </div>
+            </div>
+            {cacheLoading ? (
+              <div className="flex items-center">
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-purple-600 mr-2"></div>
+                <span className="text-sm text-gray-600">Loading cache statistics...</span>
+              </div>
+            ) : cacheStats ? (
+              <div className="space-y-3 text-sm text-gray-600">
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="bg-white p-3 rounded border">
+                    <div className="text-xs text-gray-500 uppercase tracking-wide">Cache Size</div>
+                    <div className="text-lg font-bold text-purple-600">{cacheStats.size}</div>
+                    <div className="text-xs text-gray-500">entries</div>
+                  </div>
+                  <div className="bg-white p-3 rounded border">
+                    <div className="text-xs text-gray-500 uppercase tracking-wide">Last Updated</div>
+                    <div className="text-sm font-medium">{new Date(cacheStats.timestamp).toLocaleTimeString()}</div>
+                    <div className="text-xs text-gray-500">{new Date(cacheStats.timestamp).toLocaleDateString()}</div>
+                  </div>
+                </div>
+                {cacheStats.keys.length > 0 ? (
+                  <div className="space-y-3">
+                    {/* Cache by Type Summary */}
+                    {cacheStats.keyGroups && Object.keys(cacheStats.keyGroups).length > 0 && (
+                      <div>
+                        <div className="text-xs font-medium text-gray-700 mb-2">Cache by Type:</div>
+                        <div className="flex flex-wrap gap-2">
+                          {Object.entries(cacheStats.keyGroups).map(([type, keys]) => (
+                            <div key={type} className="bg-purple-100 text-purple-800 px-2 py-1 rounded text-xs">
+                              {type}: {keys.length}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                    
+                    {/* All Cached Keys */}
+                    <div>
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="font-medium text-gray-900">All Cached Keys ({cacheStats.keys.length})</span>
+                        <span className="text-xs text-gray-500">Scroll to see all</span>
+                      </div>
+                      <div className="max-h-40 overflow-y-auto border border-gray-200 rounded bg-white">
+                        {cacheStats.keys.map((key, index) => (
+                          <div key={index} className="text-xs px-3 py-2 border-b border-gray-100 hover:bg-gray-50">
+                            <div className="font-mono text-gray-700 break-all">{key}</div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="text-center py-4 text-gray-500">
+                    <div className="text-sm">No cached items</div>
+                    <div className="text-xs">Cache will populate as users access the site</div>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div className="text-sm text-gray-500">No cache statistics available</div>
+            )}
+          </div>
+
+          {/* Cache Actions */}
+          <div className="pt-4 border-t border-gray-200">
+            <div className="flex space-x-3">
+              <button
+                onClick={clearCache}
+                disabled={cacheLoading}
+                className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                </svg>
+                {cacheLoading ? 'Clearing...' : 'Clear All Cache'}
+              </button>
+              
+              <button
+                onClick={fetchCacheStats}
+                disabled={cacheLoading}
+                className="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                </svg>
+                Refresh Stats
+              </button>
+            </div>
+            <p className="mt-2 text-sm text-gray-500">
+              Clearing the cache will remove all cached data and may temporarily slow down the website as data is rebuilt.
+            </p>
+          </div>
+
+          {/* Cache Information */}
+          <div className="bg-blue-50 rounded-lg p-4">
+            <h3 className="text-sm font-medium text-blue-900 mb-3">About Caching</h3>
+            <div className="space-y-2 text-sm text-blue-800">
+              <div className="flex items-start">
+                <span className="font-medium text-blue-900 w-32 flex-shrink-0">Purpose:</span>
+                <span>Improves website performance by storing frequently accessed data in memory</span>
+              </div>
+              <div className="flex items-start">
+                <span className="font-medium text-blue-900 w-32 flex-shrink-0">Default TTL:</span>
+                <span>5 minutes (cache entries automatically expire)</span>
+              </div>
+              <div className="flex items-start">
+                <span className="font-medium text-blue-900 w-32 flex-shrink-0">Auto Cleanup:</span>
+                <span>Expired entries are automatically removed every 5 minutes</span>
               </div>
             </div>
           </div>

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react'
+import React, { useState, useEffect, useCallback, useRef } from 'react'
 
 interface ActiveUser {
   id: string
@@ -33,6 +33,9 @@ export default function ActiveUsersSection({ className = '' }: ActiveUsersSectio
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null)
+  const [isConnected, setIsConnected] = useState(true)
+  const retryTimeoutRef = useRef<NodeJS.Timeout | null>(null)
+  const pollIntervalRef = useRef<NodeJS.Timeout | null>(null)
 
   // Fetch active users from API
   const fetchActiveUsers = useCallback(async () => {
@@ -42,7 +45,8 @@ export default function ActiveUsersSection({ className = '' }: ActiveUsersSectio
         headers: {
           'Cache-Control': 'no-cache',
           'Pragma': 'no-cache'
-        }
+        },
+        credentials: 'include' // Include admin session cookie
       })
       
       if (!response.ok) {
@@ -55,6 +59,7 @@ export default function ActiveUsersSection({ className = '' }: ActiveUsersSectio
         setActiveUsers(data.activeUsers || [])
         setError(null)
         setLastUpdated(new Date())
+        setIsConnected(true)
       } else {
         throw new Error(data.error || 'Failed to fetch active users')
       }
@@ -62,6 +67,15 @@ export default function ActiveUsersSection({ className = '' }: ActiveUsersSectio
     } catch (err) {
       console.error('👥 ACTIVE-USERS: Error fetching active users:', err)
       setError(err instanceof Error ? err.message : 'Failed to fetch active users')
+      setIsConnected(false)
+      
+      // Retry after 30 seconds on error
+      if (retryTimeoutRef.current) {
+        clearTimeout(retryTimeoutRef.current)
+      }
+      retryTimeoutRef.current = setTimeout(() => {
+        fetchActiveUsers()
+      }, 30000)
     }
   }, [])
 
@@ -73,7 +87,8 @@ export default function ActiveUsersSection({ className = '' }: ActiveUsersSectio
         headers: {
           'Cache-Control': 'no-cache',
           'Pragma': 'no-cache'
-        }
+        },
+        credentials: 'include' // Include admin session cookie
       })
       
       if (!response.ok) {
@@ -85,6 +100,7 @@ export default function ActiveUsersSection({ className = '' }: ActiveUsersSectio
       if (data.success) {
         setDailyStats(data.stats)
         setError(null)
+        setIsConnected(true)
       } else {
         throw new Error(data.error || 'Failed to fetch daily statistics')
       }
@@ -92,6 +108,7 @@ export default function ActiveUsersSection({ className = '' }: ActiveUsersSectio
     } catch (err) {
       console.error('📊 DAILY-STATS: Error fetching daily statistics:', err)
       setError(err instanceof Error ? err.message : 'Failed to fetch daily statistics')
+      setIsConnected(false)
     }
   }, [])
 
@@ -113,19 +130,32 @@ export default function ActiveUsersSection({ className = '' }: ActiveUsersSectio
     fetchAllData()
   }, [fetchAllData])
 
-  // Set up real-time polling (every 10 seconds)
+  // Set up real-time polling
   useEffect(() => {
-    const interval = setInterval(() => {
-      // Only fetch users more frequently, stats less frequently
+    // Clear any existing intervals
+    if (pollIntervalRef.current) {
+      clearInterval(pollIntervalRef.current)
+    }
+
+    // Set up new polling interval
+    pollIntervalRef.current = setInterval(() => {
+      // Always fetch active users (more frequent updates)
       fetchActiveUsers()
       
-      // Fetch stats every 60 seconds (6 iterations)
+      // Fetch stats every 60 seconds (2 iterations)
       if (Math.floor(Date.now() / 1000) % 60 < 10) {
         fetchDailyStats()
       }
     }, 10000) // 10 seconds
 
-    return () => clearInterval(interval)
+    return () => {
+      if (pollIntervalRef.current) {
+        clearInterval(pollIntervalRef.current)
+      }
+      if (retryTimeoutRef.current) {
+        clearTimeout(retryTimeoutRef.current)
+      }
+    }
   }, [fetchActiveUsers, fetchDailyStats])
 
   // Format time for display
@@ -171,11 +201,25 @@ export default function ActiveUsersSection({ className = '' }: ActiveUsersSectio
     return text.substring(0, maxLength) + '...'
   }
 
+  // Manual refresh function
+  const handleRefresh = () => {
+    fetchAllData()
+  }
+
   return (
     <div className={`bg-white rounded-xl shadow-lg border border-gray-200 ${className}`}>
       {/* Header with Analytics */}
       <div className="p-6 border-b border-gray-200">
-        <h2 className="text-xl font-semibold text-gray-900 mb-6">Active Users & Analytics</h2>
+        <div className="flex items-center justify-between mb-6">
+          <h2 className="text-xl font-semibold text-gray-900">Active Users & Analytics</h2>
+          <button
+            onClick={handleRefresh}
+            disabled={isLoading}
+            className="px-3 py-1 text-sm bg-blue-100 text-blue-700 rounded-md hover:bg-blue-200 transition-colors disabled:opacity-50"
+          >
+            {isLoading ? 'Refreshing...' : 'Refresh'}
+          </button>
+        </div>
         
         {/* Analytics Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
@@ -208,7 +252,7 @@ export default function ActiveUsersSection({ className = '' }: ActiveUsersSectio
               </div>
               <div className="p-2 bg-green-500/20 rounded-lg">
                 <svg className="w-6 h-6 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 919.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
                 </svg>
               </div>
             </div>
@@ -219,8 +263,8 @@ export default function ActiveUsersSection({ className = '' }: ActiveUsersSectio
         <div className="flex items-center justify-between text-sm text-gray-600">
           <div className="flex items-center space-x-4">
             <span className="flex items-center space-x-2">
-              <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-              <span>Live Updates</span>
+              <div className={`w-2 h-2 rounded-full ${isConnected ? 'bg-green-500 animate-pulse' : 'bg-red-500'}`}></div>
+              <span>{isConnected ? 'Live Updates' : 'Connection Lost'}</span>
             </span>
             <span>{activeUsers.length} active user{activeUsers.length !== 1 ? 's' : ''}</span>
           </div>
@@ -252,6 +296,7 @@ export default function ActiveUsersSection({ className = '' }: ActiveUsersSectio
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 919.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
             </svg>
             <p>No active users at the moment</p>
+            <p className="text-sm mt-2">Users will appear here when they visit the site</p>
           </div>
         ) : (
           <div className="space-y-3">

@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { useState, useEffect, useRef } from 'react';
 import { createClient } from '../utils/supabase/client';
 import { userProfileService, ArtistProfile } from '../utils/userProfile';
+import { useAuth } from '../utils/authContext';
 
 interface HeaderProps {
   transparent?: boolean;
@@ -10,7 +11,6 @@ interface HeaderProps {
 
 export default function Header({ transparent = false, hideSignUp = false }: HeaderProps = {}) {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const [currentUser, setCurrentUser] = useState<any>(null);
   const [isScrolled, setIsScrolled] = useState(false);
   const [artistProfile, setArtistProfile] = useState<ArtistProfile | null>(null);
   const [showProfileDropdown, setShowProfileDropdown] = useState(false);
@@ -18,11 +18,23 @@ export default function Header({ transparent = false, hideSignUp = false }: Head
   const [userFirstName, setUserFirstName] = useState<string>('User');
   const dropdownRef = useRef<HTMLDivElement>(null);
   const supabase = createClient();
+  const { user: currentUser, loading: authLoading } = useAuth();
+  
+  console.log('🔐 HEADER: Component rendered with props:', { transparent, hideSignUp });
+  console.log('🔐 HEADER: Current user state:', currentUser?.email || 'null');
+  
+  // Debug: Log Supabase client creation
+  console.log('🔐 HEADER: Supabase client created, URL:', process.env.NEXT_PUBLIC_SUPABASE_URL?.substring(0, 20) + '...');
 
   // Debug: Log when userFirstName changes
   useEffect(() => {
     console.log('🔐 HEADER: userFirstName state changed to:', userFirstName);
   }, [userFirstName]);
+
+  // Debug: Log when currentUser changes
+  useEffect(() => {
+    console.log('🔐 HEADER: currentUser state changed to:', currentUser?.email || 'null');
+  }, [currentUser]);
 
 
 
@@ -192,90 +204,20 @@ export default function Header({ transparent = false, hideSignUp = false }: Head
     }
   };
 
-  // Check if user is logged in
+  // Respond to authentication changes from global context
   useEffect(() => {
-    console.log('🔐 HEADER: useEffect started - checking auth');
+    console.log('🔐 HEADER: Auth context changed - user:', currentUser?.email || 'null');
     
-    const checkUser = async () => {
-      try {
-        console.log('🔐 HEADER: Checking authentication state...');
-        
-        // Start with getUser (most reliable for checking actual auth status)
-        const { data: { user }, error: userError } = await supabase.auth.getUser();
-        console.log('🔐 HEADER: getUser() response:', { user: user?.email || null, error: userError });
-        
-        if (user && !userError) {
-          console.log('🔐 HEADER: Valid user found, setting currentUser:', user.email);
-          setCurrentUser(user);
-          fetchArtistProfile(user);
-          fetchUserFirstName(user);
-          return;
-        }
-        
-        // If getUser fails, try to get session
-        console.log('🔐 HEADER: No user from getUser, trying session...');
-        const { data: { session }, error: sessionError } = await supabase.auth.getSession();
-        console.log('🔐 HEADER: Session check:', { session: session?.user?.email || 'No session', error: sessionError });
-        
-        if (session?.user && !sessionError) {
-          console.log('🔐 HEADER: Valid session found, setting user:', session.user.email);
-          setCurrentUser(session.user);
-          fetchArtistProfile(session.user);
-          fetchUserFirstName(session.user);
-          return;
-        }
-        
-        // If session fails, try to refresh
-        if (sessionError || !session) {
-          console.log('🔐 HEADER: No valid session, trying to refresh...');
-          const { data: { session: refreshedSession }, error: refreshError } = await supabase.auth.refreshSession();
-          console.log('🔐 HEADER: Refresh result:', { session: refreshedSession?.user?.email || 'No session', error: refreshError });
-          
-          if (refreshedSession?.user && !refreshError) {
-            console.log('🔐 HEADER: Refreshed session found, setting user:', refreshedSession.user.email);
-            setCurrentUser(refreshedSession.user);
-            fetchArtistProfile(refreshedSession.user);
-            fetchUserFirstName(refreshedSession.user);
-            return;
-          }
-        }
-        
-        console.log('🔐 HEADER: No user found through any method, clearing state');
-        setCurrentUser(null);
-        setArtistProfile(null);
-      } catch (err) {
-        console.error('🔐 HEADER: Exception in checkUser:', err);
-        setCurrentUser(null);
-        setArtistProfile(null);
-      }
-    };
-    
-    // Initial check
-    checkUser();
-
-    // Listen for auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-      console.log('🔐 HEADER: Auth state changed:', event, session?.user?.email || 'No user');
-      
-      if (event === 'SIGNED_OUT') {
-        setCurrentUser(null);
-        setArtistProfile(null);
-      } else if (event === 'SIGNED_IN' && session?.user) {
-        setCurrentUser(session.user);
-        fetchArtistProfile(session.user);
-        fetchUserFirstName(session.user);
-      } else if (event === 'TOKEN_REFRESHED' && session?.user) {
-        setCurrentUser(session.user);
-        fetchArtistProfile(session.user);
-        fetchUserFirstName(session.user);
-      } else {
-        // For any other event, re-check the user
-        checkUser();
-      }
-    });
-
-    return () => subscription.unsubscribe();
-  }, []);
+    if (currentUser) {
+      console.log('🔐 HEADER: User authenticated, fetching profile data...');
+      fetchArtistProfile(currentUser);
+      fetchUserFirstName(currentUser);
+    } else {
+      console.log('🔐 HEADER: No user, clearing profile data...');
+      setArtistProfile(null);
+      setUserFirstName('User');
+    }
+  }, [currentUser]);
 
   // Handle scroll effect
   useEffect(() => {

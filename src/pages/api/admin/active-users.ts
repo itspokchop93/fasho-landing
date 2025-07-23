@@ -1,21 +1,6 @@
 import { NextApiRequest, NextApiResponse } from 'next'
 import { createClient } from '../../../utils/supabase/server'
-import { requireAdminAuth } from '../../../utils/admin/auth'
-
-interface ActiveUser {
-  id: string
-  session_id: string
-  user_id: string | null
-  ip_address: string
-  user_agent: string
-  current_page: string
-  first_name: string | null
-  last_name: string | null
-  email: string | null
-  is_guest: boolean
-  last_activity: string
-  created_at: string
-}
+import { requireAdminAuth, AdminUser } from '../../../utils/admin/auth'
 
 // Helper function to parse user agent and extract browser info
 function getBrowserInfo(userAgent: string): string {
@@ -63,7 +48,14 @@ function formatPageName(page: string): string {
     'thank-you': 'Thank You',
     'contact': 'Contact',
     'about': 'About',
-    'pricing': 'Pricing'
+    'pricing': 'Pricing',
+    'privacy': 'Privacy Policy',
+    'terms': 'Terms of Service',
+    'refund-policy': 'Refund Policy',
+    'disclaimer': 'Disclaimer',
+    'authenticity-guarantee': 'Authenticity Guarantee',
+    'email-diagnostic': 'Email Diagnostic',
+    'test-signup': 'Test Signup'
   }
   
   if (pageMap[cleanPage]) {
@@ -79,48 +71,52 @@ function formatPageName(page: string): string {
     if (parts[0] === 'admin' && parts[1] === 'emails' && parts[2] === 'edit') {
       return `Edit ${parts[3] || 'Email'} Template`
     }
+    if (parts[0] === 'admin') {
+      return `Admin ${parts[1]?.charAt(0).toUpperCase() + parts[1]?.slice(1) || 'Page'}`
+    }
   }
   
+  // Handle query parameters by removing them for display
+  const pageWithoutQuery = cleanPage.split('?')[0]
+  
   // Default formatting: capitalize first letter and replace dashes/underscores with spaces
-  return cleanPage
+  return pageWithoutQuery
     .split('-')
     .map(word => word.charAt(0).toUpperCase() + word.slice(1))
     .join(' ')
 }
 
-export default requireAdminAuth(async (req: NextApiRequest, res: NextApiResponse, adminUser: any) => {
+async function handler(req: NextApiRequest, res: NextApiResponse, adminUser: AdminUser) {
   if (req.method !== 'GET') {
     return res.status(405).json({ error: 'Method not allowed' })
   }
 
   try {
-    console.log('👥 ACTIVE-USERS-API: Fetching active users for admin:', adminUser.email)
-    
     const supabase = createClient(req, res)
     
-    // Cleanup inactive users first
+    // Clean up inactive users first (more frequent cleanup for better real-time tracking)
     const { error: cleanupError } = await supabase.rpc('cleanup_inactive_users')
     if (cleanupError) {
-      console.warn('👥 ACTIVE-USERS-API: Cleanup warning:', cleanupError)
+      console.error('👥 ACTIVE-USERS: Error cleaning up inactive users:', cleanupError)
     }
     
-    // Fetch active users
+    // Fetch active users directly from table
     const { data: activeUsers, error: fetchError } = await supabase
       .from('active_users')
       .select('*')
       .order('last_activity', { ascending: false })
     
     if (fetchError) {
-      console.error('👥 ACTIVE-USERS-API: Error fetching active users:', fetchError)
+      console.error('👥 ACTIVE-USERS: Error fetching active users:', fetchError)
       return res.status(500).json({ error: 'Failed to fetch active users' })
     }
     
-    // Format the data for frontend consumption
-    const formattedUsers = (activeUsers as ActiveUser[]).map(user => ({
+    // Format the response
+    const formattedUsers = (activeUsers || []).map(user => ({
       id: user.id,
       sessionId: user.session_id,
       accountName: user.is_guest 
-        ? 'Guest' 
+        ? 'Guest User' 
         : `${user.first_name || 'User'} ${user.last_name || ''}`.trim(),
       email: user.is_guest ? 'Guest' : (user.email || 'Unknown'),
       ipAddress: user.ip_address,
@@ -131,8 +127,6 @@ export default requireAdminAuth(async (req: NextApiRequest, res: NextApiResponse
       createdAt: user.created_at
     }))
     
-    console.log('👥 ACTIVE-USERS-API: Found', formattedUsers.length, 'active users')
-    
     return res.status(200).json({
       success: true,
       activeUsers: formattedUsers,
@@ -140,7 +134,9 @@ export default requireAdminAuth(async (req: NextApiRequest, res: NextApiResponse
     })
     
   } catch (error) {
-    console.error('👥 ACTIVE-USERS-API: Unexpected error:', error)
+    console.error('👥 ACTIVE-USERS: Unexpected error:', error)
     return res.status(500).json({ error: 'Internal server error' })
   }
-}) 
+}
+
+export default requireAdminAuth(handler) 

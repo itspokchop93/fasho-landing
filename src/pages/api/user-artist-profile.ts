@@ -94,6 +94,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 async function handleGet(supabase: any, userId: string, res: NextApiResponse) {
   console.log('🔐 USER-ARTIST-PROFILE-GET: Fetching artist profile for user:', userId);
 
+
+
   // First, try to get existing profile
   const { data: existingProfile, error: profileError } = await supabase
     .from('user_artist_profiles')
@@ -108,7 +110,9 @@ async function handleGet(supabase: any, userId: string, res: NextApiResponse) {
 
   if (existingProfile) {
     console.log('🔐 USER-ARTIST-PROFILE-GET: Found existing artist profile:', existingProfile.artist_name);
-    return res.status(200).json({ profile: existingProfile });
+    const result = { profile: existingProfile };
+    
+    return res.status(200).json(result);
   }
 
   // No existing profile found, try to create one from order history
@@ -151,7 +155,9 @@ async function handleGet(supabase: any, userId: string, res: NextApiResponse) {
 
     if (!artistProfileUrl) {
       console.log('🔐 USER-ARTIST-PROFILE-GET: No artist profile URL found in order history');
-      return res.status(200).json({ profile: null });
+      const result = { profile: null };
+      
+      return res.status(200).json(result);
     }
 
     console.log('🔐 USER-ARTIST-PROFILE-GET: Found artist profile URL in orders:', artistProfileUrl);
@@ -160,7 +166,9 @@ async function handleGet(supabase: any, userId: string, res: NextApiResponse) {
     const artistIdMatch = artistProfileUrl.match(/artist\/([a-zA-Z0-9]+)/);
     if (!artistIdMatch) {
       console.log('🔐 USER-ARTIST-PROFILE-GET: Invalid Spotify artist URL format');
-      return res.status(200).json({ profile: null });
+      const result = { profile: null };
+      
+      return res.status(200).json(result);
     }
 
     const artistId = artistIdMatch[1];
@@ -172,7 +180,9 @@ async function handleGet(supabase: any, userId: string, res: NextApiResponse) {
       
       if (!artistData) {
         console.log('🔐 USER-ARTIST-PROFILE-GET: Failed to fetch artist details from Spotify');
-        return res.status(200).json({ profile: null });
+        const result = { profile: null };
+        
+        return res.status(200).json(result);
       }
 
       // Create artist profile from Spotify data
@@ -196,15 +206,25 @@ async function handleGet(supabase: any, userId: string, res: NextApiResponse) {
 
       if (createError) {
         console.error('🔐 USER-ARTIST-PROFILE-GET: Error creating profile:', createError);
-        return res.status(200).json({ profile: null });
+        const result = { profile: null };
+        
+        return res.status(200).json(result);
       }
 
       console.log('🔐 USER-ARTIST-PROFILE-GET: Successfully created profile from order history');
-      return res.status(200).json({ profile: newProfile });
+      const result = { profile: newProfile };
+      
+      return res.status(200).json(result);
 
     } catch (error) {
       console.error('🔐 USER-ARTIST-PROFILE-GET: Error fetching artist from Spotify:', error);
-      return res.status(200).json({ profile: null });
+      const result = { profile: null };
+      
+      // Cache null result for 5 minutes
+      // cache.set(cacheKey, result, 5 * 60 * 1000);
+      console.log('🔐 USER-ARTIST-PROFILE-GET: Cached null profile for user:', userId);
+      
+      return res.status(200).json(result);
     }
 
   } catch (error) {
@@ -261,6 +281,7 @@ async function handlePost(supabase: any, userId: string, body: any, res: NextApi
   }
 
   console.log('🔐 USER-ARTIST-PROFILE-POST: Created artist profile successfully');
+  
   return res.status(201).json({ profile: data });
 }
 
@@ -306,6 +327,7 @@ async function handlePut(supabase: any, userId: string, body: any, res: NextApiR
   }
 
   console.log('🔐 USER-ARTIST-PROFILE-PUT: Updated artist profile successfully');
+  
   return res.status(200).json({ profile: data });
 }
 
@@ -324,5 +346,6 @@ async function handleDelete(supabase: any, userId: string, res: NextApiResponse)
   }
 
   console.log('🔐 USER-ARTIST-PROFILE-DELETE: Deleted artist profile successfully');
+  
   return res.status(200).json({ message: 'Artist profile deleted successfully' });
 } 

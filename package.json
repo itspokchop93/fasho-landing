@@ -24,6 +24,7 @@
     "bcryptjs": "^3.0.2",
     "caniuse-lite": "^1.0.30001727",
     "chart.js": "^4.5.0",
+    "dotenv": "^17.2.0",
     "framer-motion": "^12.23.5",
     "gsap": "^3.13.0",
     "jsonwebtoken": "^9.0.2",

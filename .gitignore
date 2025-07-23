@@ -34,3 +34,4 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 logo-svg.txt
+CACHE_SYSTEM.md

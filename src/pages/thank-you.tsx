@@ -327,7 +327,7 @@ export default function ThankYouPage() {
         <Head>
           <title>Thank You – Fasho.co</title>
         </Head>
-        <Header hideSignUp={true} />
+        <Header />
         
         <main className="min-h-screen relative text-white pt-20 pb-12">
           {/* Background layers */}
@@ -407,7 +407,7 @@ export default function ThankYouPage() {
         <title>Thank You – Fasho.co</title>
       </Head>
       
-      <Header hideSignUp={true} />
+              <Header />
       
       <main className="min-h-screen relative text-white pt-20 pb-12">
         {/* Confetti Animation - Full Screen */}

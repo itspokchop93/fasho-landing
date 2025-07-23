@@ -28,13 +28,17 @@ export function createClient(req: NextApiRequest, res: NextApiResponse) {
     {
       cookies: {
         get(name: string) {
-          return req.cookies[name]
+          return req?.cookies?.[name] || undefined
         },
         set(name: string, value: string, options: any) {
-          res.setHeader('Set-Cookie', `${name}=${value}; ${options ? Object.entries(options).map(([key, val]) => `${key}=${val}`).join('; ') : ''}`)
+          if (res && res.setHeader) {
+            res.setHeader('Set-Cookie', `${name}=${value}; ${options ? Object.entries(options).map(([key, val]) => `${key}=${val}`).join('; ') : ''}`)
+          }
         },
         remove(name: string, options: any) {
-          res.setHeader('Set-Cookie', `${name}=; expires=Thu, 01 Jan 1970 00:00:00 GMT; ${options ? Object.entries(options).map(([key, val]) => `${key}=${val}`).join('; ') : ''}`)
+          if (res && res.setHeader) {
+            res.setHeader('Set-Cookie', `${name}=; expires=Thu, 01 Jan 1970 00:00:00 GMT; ${options ? Object.entries(options).map(([key, val]) => `${key}=${val}`).join('; ') : ''}`)
+          }
         },
       },
     }

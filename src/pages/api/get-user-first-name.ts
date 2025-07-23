@@ -56,7 +56,12 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     return res.status(200).json({ 
       firstName: firstName || 'User',
-      source: firstName ? (user.user_metadata?.full_name ? 'signup' : 'checkout') : 'email'
+      source: firstName ? (user.user_metadata?.full_name ? 'signup' : 'checkout') : 'email',
+      user: {
+        id: user.id,
+        email: user.email,
+        user_metadata: user.user_metadata
+      }
     });
 
   } catch (error) {

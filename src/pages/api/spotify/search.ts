@@ -93,11 +93,13 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     console.log(`🎵 SPOTIFY-SEARCH: Transformed ${tracks.length} tracks for response`);
 
-    return res.status(200).json({
+    const result = {
       success: true,
       tracks: tracks,
       total: searchResults.tracks.total
-    });
+    };
+
+    return res.status(200).json(result);
 
   } catch (error) {
     console.error('🎵 SPOTIFY-SEARCH: Error:', error);

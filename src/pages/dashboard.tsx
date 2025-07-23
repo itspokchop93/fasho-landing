@@ -1480,11 +1480,11 @@ export default function Dashboard({ user }: DashboardProps) {
                     onClick={() => toggleOrderExpansion(order.id)}
                   >
                     {/* Album Artwork - 25% smaller on mobile, stacked on top */}
-                    <div className="w-[123px] h-[123px] md:col-span-2 flex-shrink-0 flex justify-center items-center mb-3 md:mb-0" style={{ width: '123px', height: '123px' }}>
+                    <div className="w-[123px] h-[123px] md:col-span-2 flex-shrink-0 flex justify-center items-center mb-3 md:mb-0 relative" style={{ width: '123px', height: '123px' }}>
                       {order.items && order.items.length > 0 ? (
                         <div className={`w-full h-full ${order.items.length === 1 ? '' : 'grid grid-cols-2 grid-rows-2 gap-1'}`}> 
-                          {order.items.map((item: any, idx: number) => (
-                            <div key={idx} className={`${getArtworkSize(order.items.length)} rounded-lg overflow-hidden bg-gray-800`}>
+                          {order.items.slice(0, 4).map((item: any, idx: number) => (
+                            <div key={idx} className={`${getArtworkSize(Math.min(order.items.length, 4))} rounded-lg overflow-hidden bg-gray-800`}>
                               <img 
                                 src={item.track.imageUrl} 
                                 alt={item.track.title}
@@ -1496,6 +1496,13 @@ export default function Dashboard({ user }: DashboardProps) {
                       ) : (
                         <div className="w-full h-full bg-gray-800 rounded-lg flex items-center justify-center">
                           <span className="text-gray-400 text-xs">🎵</span>
+                        </div>
+                      )}
+                      
+                      {/* Additional songs indicator */}
+                      {order.items && order.items.length > 4 && (
+                        <div className="absolute -top-2 -right-2 w-8 h-8 bg-gradient-to-r from-green-500 to-green-600 rounded-full flex items-center justify-center border-2 border-gray-900 shadow-lg">
+                          <span className="text-white text-xs font-bold px-1">+{order.items.length - 4}</span>
                         </div>
                       )}
                     </div>
@@ -1664,11 +1671,11 @@ export default function Dashboard({ user }: DashboardProps) {
                 onClick={() => toggleOrderExpansion(order.id)}
               >
                   {/* Column 1: Album Artwork Thumbnails (2x2 Grid) */}
-                  <div className="col-span-2 flex justify-center items-center" style={{ width: '110px', height: '110px' }}>
+                  <div className="col-span-2 flex justify-center items-center relative" style={{ width: '110px', height: '110px' }}>
                     {order.items && order.items.length > 0 ? (
                       <div className={`w-full h-full ${order.items.length === 1 ? '' : 'grid grid-cols-2 grid-rows-2 gap-1'}`}>
-                        {order.items.map((item: any, idx: number) => (
-                          <div key={idx} className={`${getArtworkSize(order.items.length)} rounded-lg overflow-hidden bg-gray-800`}>
+                        {order.items.slice(0, 4).map((item: any, idx: number) => (
+                          <div key={idx} className={`${getArtworkSize(Math.min(order.items.length, 4))} rounded-lg overflow-hidden bg-gray-800`}>
                           <img 
                             src={item.track.imageUrl} 
                             alt={item.track.title}
@@ -1680,6 +1687,13 @@ export default function Dashboard({ user }: DashboardProps) {
                     ) : (
                       <div className="w-full h-full bg-gray-800 rounded-lg flex items-center justify-center">
                         <span className="text-gray-400 text-xs">🎵</span>
+                      </div>
+                    )}
+                    
+                    {/* Additional songs indicator */}
+                    {order.items && order.items.length > 4 && (
+                      <div className="absolute -top-2 -right-2 w-8 h-8 bg-gradient-to-r from-green-500 to-green-600 rounded-full flex items-center justify-center border-2 border-gray-900 shadow-lg">
+                        <span className="text-white text-xs font-bold px-1">+{order.items.length - 4}</span>
                       </div>
                     )}
                   </div>
@@ -1709,12 +1723,12 @@ export default function Dashboard({ user }: DashboardProps) {
                           animation: 'glow 2s infinite',
                           filter: 'drop-shadow(0 0 4px currentColor)',
                         }}></div>
-                      <span className={`text-sm font-medium ${getStatusTextClass(order.status)}`}>
+                      <span className={`text-sm font-medium ${getStatusTextClass(order.status)} mr-3`}>
                         {getStatusLabel(order.status)}
                       </span>
                     </div>
                     <svg
-                      className={`w-5 h-5 text-gray-400 transition-transform ${
+                      className={`w-5 h-5 text-gray-400 transition-transform ml-2 ${
                         expandedOrders.has(order.id) ? 'rotate-180' : ''
                       }`}
                       fill="none"

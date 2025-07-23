@@ -108,7 +108,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     console.log(`🎵 TRACK-API: Final track data - Title: "${title}", Artist: "${artist}", Artist Profile: ${artistProfileUrl || 'Not available'}`);
 
-    res.status(200).json({
+    const result = {
       success: true,
       track: {
         id: idMatch ? idMatch[1] : url,
@@ -118,7 +118,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         url,
         artistProfileUrl: artistProfileUrl,
       },
-    });
+    };
+
+    res.status(200).json(result);
   } catch (error: any) {
     res.status(500).json({ success: false, message: error.message });
   }
