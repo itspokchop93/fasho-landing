@@ -1,12 +1,10 @@
 import { NextApiRequest, NextApiResponse } from 'next'
 import { google } from 'googleapis'
-import fs from 'fs'
-import path from 'path'
+import { getGoogleServiceAccount } from '../../utils/googleServiceAccount'
 
 // Initialize Google Sheets API
 const getGoogleSheetsClient = () => {
-  const serviceAccountPath = path.join(process.cwd(), 'googleserviceaccount.json')
-  const serviceAccount = JSON.parse(fs.readFileSync(serviceAccountPath, 'utf8'))
+  const serviceAccount = getGoogleServiceAccount()
   
   const auth = new google.auth.GoogleAuth({
     credentials: serviceAccount,
