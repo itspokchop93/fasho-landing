@@ -1,18 +1,5 @@
 import { NextApiRequest, NextApiResponse } from 'next'
-import { google } from 'googleapis'
-import { getGoogleServiceAccount } from '../../utils/googleServiceAccount'
-
-// Initialize Google Sheets API
-const getGoogleSheetsClient = () => {
-  const serviceAccount = getGoogleServiceAccount()
-  
-  const auth = new google.auth.GoogleAuth({
-    credentials: serviceAccount,
-    scopes: ['https://www.googleapis.com/auth/spreadsheets.readonly'],
-  })
-  
-  return google.sheets({ version: 'v4', auth })
-}
+import { createGoogleSheetsClient } from '../../utils/google/serviceAccount'
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== 'GET') {
@@ -22,7 +9,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   try {
     console.log('🎵 CURATOR-CONNECT-API: Fetching curator data from Google Sheets...')
     
-    const sheets = getGoogleSheetsClient()
+    const sheets = createGoogleSheetsClient()
     const spreadsheetId = '1-N-PleKV-Ml38hkJB3OAfPtYU8Xc49dg-787V3DwYU0'
     const range = 'Sheet1!A:J' // Adjust range based on actual columns
     

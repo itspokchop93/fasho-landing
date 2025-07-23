@@ -27,6 +27,9 @@ yarn-error.log*
 .env.local
 .env
 
+# Google Service Account (contains sensitive credentials)
+googleserviceaccount.json
+
 # Vercel
 .vercel
 
@@ -35,4 +38,5 @@ yarn-error.log*
 next-env.d.ts
 logo-svg.txt
 CACHE_SYSTEM.md
-
+googleserviceaccount.json
+googleserviceaccount.json.backup
