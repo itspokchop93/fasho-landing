@@ -3016,7 +3016,7 @@ export default function Home() {
           <section className="py-0 md:py-24 px-4 pb-0 md:pb-48 relative z-10 overflow-hidden">
             {/* Extended gradient overlay that flows into next section */}
             <div className="absolute inset-0 bg-gradient-to-b from-[#18192a] via-[#16213e] to-[#0a0a13] -z-10"></div>
-            <div className="absolute bottom-0 left-0 right-0 h-64 bg-gradient-to-b from-transparent to-[#0a0a13] -z-5"></div>
+            <div className="absolute bottom-0 left-0 right-0 h-64 bg-gradient-to-b from-transparent to-[#18192a] -z-5"></div>
             <div className="max-w-7xl mx-auto">
               <div className="text-center mb-4 md:mb-16">
                 <h2 
@@ -3400,7 +3400,7 @@ export default function Home() {
           <section className="py-24 px-4 relative z-10 overflow-hidden">
             {/* Extended gradient overlay that flows into next section */}
             <div className="absolute inset-0 bg-gradient-to-b from-[#18192a] via-[#16213e] to-[#0a0a13] -z-10"></div>
-            <div className="absolute bottom-0 left-0 right-0 h-5 bg-gradient-to-b from-transparent to-[#18192a] -z-5"></div>
+            <div className="absolute bottom-0 left-0 right-0 h-5 bg-gradient-to-b from-transparent to-[#0a0a13] -z-5"></div>
             <div className="max-w-7xl mx-auto">
               <div className="text-center mb-16">
                 <h2 className="text-3xl md:text-4xl lg:text-5xl font-black mb-8 bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] bg-clip-text text-transparent" style={{ lineHeight: '1.3' }}>
