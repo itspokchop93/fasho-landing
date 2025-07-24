@@ -3289,8 +3289,8 @@ export default function Home() {
                   onClick={scrollToTrackInput}
                   className="px-12 py-4 bg-gradient-to-r from-[#59e3a5] via-[#14c0ff] to-[#8b5cf6] text-white font-bold rounded-2xl hover:shadow-2xl hover:shadow-[#14c0ff]/30 transition-all duration-700 transform hover:scale-105 active:scale-95 relative overflow-hidden group text-lg"
                   style={{ 
-                    /* DESKTOP ONLY: Add 80px top margin to prevent button from being stuck under browser mockup */
-                    marginTop: typeof window !== 'undefined' && window.innerWidth >= 1024 ? '80px' : '0px'
+                    /* Add 50px top margin for screens larger than mobile */
+                    marginTop: typeof window !== 'undefined' && window.innerWidth >= 768 ? '50px' : '0px'
                   }}
                 >
                   <span className="relative z-10">SHOW ME THE PACKAGES</span>
