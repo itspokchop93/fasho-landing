@@ -2111,7 +2111,7 @@ export default function Home() {
           {/* Desktop How It Works Sections - 4 Separate Sections */}
           
           {/* Step 1 Section - Left Column */}
-          <section className="hidden lg:block py-20 px-4 relative z-20" style={{ background: 'linear-gradient(135deg, #0a0a13 0%, #18192a 50%, #16213e 100%)' }}>
+          <section className="hidden lg:block py-20 px-4 relative z-20" style={{ background: 'transparent' }}>
             <div className="max-w-7xl mx-auto">
               <div className="grid lg:grid-cols-2 gap-12 items-center">
                 {/* Left Column - Step 1 Text */}
@@ -2218,7 +2218,7 @@ export default function Home() {
             </div>
           </section>
           {/* Step 2 Section - Right Column */}
-          <section className="hidden lg:block py-20 px-4 relative z-20" style={{ background: 'linear-gradient(135deg, #16213e 0%, #0a0a13 50%, #18192a 100%)' }}>
+          <section className="hidden lg:block py-20 px-4 relative z-30" style={{ background: 'transparent' }}>
             <div className="max-w-7xl mx-auto">
               <div className="grid lg:grid-cols-2 gap-12 items-center">
                 {/* Left Column - Step 2 Phone Mockup */}
@@ -2318,7 +2318,7 @@ export default function Home() {
           </section>
 
           {/* Step 3 Section - Left Column */}
-          <section className="hidden lg:block py-20 px-4 relative z-20" style={{ background: 'linear-gradient(135deg, #18192a 0%, #16213e 50%, #0a0a13 100%)' }}>
+          <section className="hidden lg:block py-20 px-4 relative z-40" style={{ background: 'transparent' }}>
             <div className="max-w-7xl mx-auto">
               <div className="grid lg:grid-cols-2 gap-12 items-center">
                 {/* Left Column - Step 3 Text */}
@@ -2400,7 +2400,7 @@ export default function Home() {
           </section>
 
           {/* Step 4 Section - Right Column */}
-          <section className="hidden lg:block py-20 px-4 relative z-20" style={{ background: 'linear-gradient(135deg, #0a0a13 0%, #18192a 50%, #16213e 100%)' }}>
+          <section className="hidden lg:block py-20 px-4 relative z-50" style={{ background: 'transparent' }}>
             <div className="max-w-7xl mx-auto">
               <div className="grid lg:grid-cols-2 gap-12 items-center">
                 {/* Left Column - Step 4 Phone Mockup */}
