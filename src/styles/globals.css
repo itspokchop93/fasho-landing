@@ -1291,4 +1291,147 @@ input:-webkit-autofill:active {
   }
 }
 
+/* PAS Section Responsive Font Sizing */
+.pas-text-1-6rem {
+  font-size: 1.6rem;
+}
+.pas-text-1-6rem-plus-0-25rem {
+  font-size: 1.6rem;
+}
+.pas-text-1-5rem {
+  font-size: 1.5rem;
+}
+.pas-text-1-5rem-plus-0-45rem {
+  font-size: 1.5rem;
+}
+.pas-text-1-875rem {
+  font-size: 1.875rem;
+}
+.pas-text-1-875rem-plus-0-10rem-plus-0-25rem {
+  font-size: 1.875rem;
+}
+.pas-text-1-874rem-minus-0-15rem {
+  font-size: calc(1.874rem - 0.15rem);
+}
+.pas-text-1-5rem-plus-0-25rem-plus-0-55rem {
+  font-size: calc(1.5rem + 0.25rem + 0.55rem);
+}
+.pas-text-2-25rem-plus-0-25rem {
+  font-size: 2.25rem;
+}
+.pas-text-1-5rem-plus-0-10rem-plus-0-25rem {
+  font-size: calc(1.5rem + 0.10rem + 0.25rem);
+}
+.pas-text-1-5rem-plus-0-25rem-plus-0-25rem {
+  font-size: calc(1.5rem + 0.25rem + 0.25rem);
+}
+.pas-text-1-5rem-plus-0-15rem-plus-0-25rem {
+  font-size: calc(1.5rem + 0.15rem + 0.25rem);
+}
+.pas-text-1-5rem-plus-0-40rem {
+  font-size: calc(1.5rem + 0.40rem);
+}
+
+/* New classes for specific desktop adjustments */
+.pas-text-2-25rem-plus-0-25rem-plus-0-25rem {
+  font-size: 2.25rem;
+}
+.pas-text-1-874rem-minus-0-15rem-plus-0-25rem {
+  font-size: calc(1.874rem - 0.15rem);
+}
+.pas-text-1-5rem-plus-0-40rem-plus-0-25rem {
+  font-size: calc(1.5rem + 0.40rem);
+}
+.pas-text-1-6rem-minus-0-25rem {
+  font-size: 1.6rem;
+}
+.pas-text-1-5rem-plus-0-25rem-plus-0-55rem-minus-0-25rem {
+  font-size: calc(1.5rem + 0.25rem + 0.55rem);
+}
+.pas-text-1-5rem-plus-0-10rem-plus-0-25rem-minus-0-25rem {
+  font-size: calc(1.5rem + 0.10rem + 0.25rem);
+}
+.pas-text-1-5rem-plus-0-15rem-plus-0-25rem-minus-0-25rem {
+  font-size: calc(1.5rem + 0.15rem + 0.25rem);
+}
+.pas-text-1-6rem-plus-0-25rem-minus-0-3rem {
+  font-size: calc(1.6rem + 0.25rem);
+}
+.pas-text-1-5rem-plus-0-25rem-plus-0-25rem-minus-0-3rem {
+  font-size: calc(1.5rem + 0.25rem + 0.25rem);
+}
+.pas-text-1-5rem-plus-0-15rem-plus-0-25rem-minus-0-3rem {
+  font-size: calc(1.5rem + 0.15rem + 0.25rem);
+}
+.pas-text-1-5rem-plus-0-25rem-plus-0-25rem-plus-0-2rem {
+  font-size: calc(1.5rem + 0.25rem + 0.25rem);
+}
+.pas-text-1-5rem-plus-0-15rem-plus-0-25rem-plus-0-2rem {
+  font-size: calc(1.5rem + 0.15rem + 0.25rem);
+}
+
+@media (min-width: 1024px) {
+  .pas-text-1-6rem-plus-0-25rem {
+    font-size: calc(1.6rem + 0.25rem);
+  }
+  .pas-text-1-5rem-plus-0-45rem {
+    font-size: calc(1.5rem + 0.45rem);
+  }
+  .pas-text-1-875rem-plus-0-10rem-plus-0-25rem {
+    font-size: calc(1.875rem + 0.10rem + 0.25rem);
+  }
+  .pas-text-2-25rem-plus-0-25rem {
+    font-size: calc(2.25rem + 0.25rem);
+  }
+  .pas-text-1-5rem-plus-0-10rem-plus-0-25rem {
+    font-size: calc(1.5rem + 0.10rem + 0.15rem + 0.2rem + 0.25rem);
+  }
+  .pas-text-1-5rem-plus-0-25rem-plus-0-25rem {
+    font-size: calc(1.5rem + 0.25rem + 0.15rem + 0.25rem);
+  }
+  .pas-text-1-5rem-plus-0-15rem-plus-0-25rem {
+    font-size: calc(1.5rem + 0.15rem + 0.15rem + 0.2rem + 0.25rem);
+  }
+  
+  /* Desktop-only increases */
+  .pas-text-2-25rem-plus-0-25rem-plus-0-25rem {
+    font-size: calc(2.25rem + 0.25rem + 0.25rem);
+  }
+  .pas-text-1-874rem-minus-0-15rem-plus-0-25rem {
+    font-size: calc(1.874rem - 0.15rem + 0.25rem);
+  }
+  .pas-text-1-5rem-plus-0-40rem-plus-0-25rem {
+    font-size: calc(1.5rem + 0.40rem + 0.25rem);
+  }
+  .pas-text-1-5rem-plus-0-25rem-plus-0-25rem-plus-0-2rem {
+    font-size: calc(1.5rem + 0.25rem + 0.25rem + 0.2rem);
+  }
+  .pas-text-1-5rem-plus-0-15rem-plus-0-25rem-plus-0-2rem {
+    font-size: calc(1.5rem + 0.15rem + 0.25rem + 0.2rem);
+  }
+  
+  /* Desktop-only decreases */
+  .pas-text-1-6rem-minus-0-25rem {
+    font-size: calc(1.6rem - 0.25rem);
+  }
+  .pas-text-1-5rem-plus-0-25rem-plus-0-55rem-minus-0-25rem {
+    font-size: calc(1.5rem + 0.25rem + 0.55rem - 0.25rem);
+  }
+  .pas-text-1-5rem-plus-0-10rem-plus-0-25rem-minus-0-25rem {
+    font-size: calc(1.5rem + 0.10rem + 0.25rem - 0.25rem);
+  }
+  .pas-text-1-5rem-plus-0-15rem-plus-0-25rem-minus-0-25rem {
+    font-size: calc(1.5rem + 0.15rem + 0.25rem - 0.25rem);
+  }
+  .pas-text-1-6rem-plus-0-25rem-minus-0-3rem {
+    font-size: calc(1.6rem + 0.25rem - 0.3rem);
+  }
+  .pas-text-1-5rem-plus-0-25rem-plus-0-25rem-minus-0-3rem {
+    font-size: calc(1.5rem + 0.25rem + 0.25rem - 0.3rem);
+  }
+  .pas-text-1-5rem-plus-0-15rem-plus-0-25rem-minus-0-3rem {
+    font-size: calc(1.5rem + 0.15rem + 0.25rem - 0.3rem);
+  }
+} 
+
 

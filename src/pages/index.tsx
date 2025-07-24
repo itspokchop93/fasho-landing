@@ -17,6 +17,53 @@ import Lottie from 'lottie-react';
 import * as gtag from '../utils/gtag';
 import { fetchSiteSettings, SiteSettings, defaultSiteSettings } from '../utils/siteSettings';
 
+// CSS for responsive font sizing
+const responsiveFontStyles = `
+  .text-base-mobile-lg-desktop {
+    font-size: 1.6rem;
+  }
+  @media (min-width: 1024px) {
+    .text-base-mobile-lg-desktop {
+      font-size: calc(1.6rem + 0.25rem);
+  }
+  }
+  
+  .text-heading-mobile-lg-desktop {
+    font-size: 1.5rem;
+  }
+  @media (min-width: 1024px) {
+    .text-heading-mobile-lg-desktop {
+      font-size: calc(1.5rem + 0.25rem);
+  }
+  }
+  
+  .text-large-heading-mobile-lg-desktop {
+    font-size: 1.875rem;
+  }
+  @media (min-width: 1024px) {
+    .text-large-heading-mobile-lg-desktop {
+      font-size: calc(1.875rem + 0.25rem);
+  }
+  }
+  
+  .text-damn-mobile-lg-desktop {
+    font-size: 2.25rem;
+  }
+  @media (min-width: 1024px) {
+    .text-damn-mobile-lg-desktop {
+      font-size: calc(2.25rem + 0.25rem);
+    }
+    }
+  
+  .text-catch-mobile-lg-desktop {
+    font-size: calc(1.5rem + 0.25rem + 0.55rem);
+    }
+  @media (min-width: 1024px) {
+    .text-catch-mobile-lg-desktop {
+      font-size: calc(1.5rem + 0.25rem + 0.55rem + 0.7rem + 0.55rem);
+    }
+  }
+`;
 
 // Custom hook for viewport intersection
 const useInView = (options: IntersectionObserverInit & { delay?: number } = {}) => {
@@ -1583,140 +1630,65 @@ export default function Home() {
           </div>
 
           {/* PAS Framework Section */}
-          <div className="max-w-4xl mx-auto px-6 py-20 mt-0" style={{ lineHeight: '1.8', overflow: 'visible', background: 'none', marginTop: '40px', hyphens: 'none', WebkitHyphens: 'none', MozHyphens: 'none', msHyphens: 'none', wordBreak: 'normal', overflowWrap: 'normal' }}>
+          <div className="max-w-4xl mx-auto px-6 py-20 mt-10">
             {/* PAS Final Draft Section - User Provided */}
-            <div className="text-center mb-20" style={{ hyphens: 'none', WebkitHyphens: 'none', MozHyphens: 'none', msHyphens: 'none', wordBreak: 'normal', overflowWrap: 'normal' }}>
-              <p ref={musicFireRef} className={`text-2xl md:text-3xl font-black text-white pb-1 text-center transition-all duration-700 ${musicFireInView ? 'animate-fade-in-up' : 'opacity-0 translate-y-8'}`} style={{ 
-                lineHeight: '1.6', 
-                fontSize: typeof window !== 'undefined' && window.innerWidth >= 1024 ? 'calc(1.5rem + 0.30rem + 0.99rem)' : 'calc(1.5rem + 0.30rem)'
-              }}>
+            <div className="text-center mb-20">
+              <p ref={musicFireRef} className={`text-2xl md:text-3xl lg:text-[2.9rem] font-black text-white pb-1 lg:pb-3 text-center transition-all duration-700 ${musicFireInView ? 'animate-fade-in-up' : 'opacity-0 translate-y-8'} leading-tight lg:leading-tight`}>
                 <span className="block md:inline">Your Music Is Fire,</span>
               </p>
-              <p ref={nobodyHearingRef} className={`text-2xl md:text-3xl font-black text-white pb-12 text-center transition-all duration-700 ${nobodyHearingInView ? 'animate-fade-in-up' : 'opacity-0 translate-y-8'}`} style={{ 
-                lineHeight: '1.6', 
-                fontSize: typeof window !== 'undefined' && window.innerWidth >= 1024 ? 'calc(1.5rem + 0.30rem + 0.99rem)' : 'calc(1.5rem + 0.30rem)'
-              }}>
+              <p ref={nobodyHearingRef} className={`text-2xl md:text-3xl lg:text-[2.9rem] font-black text-white pb-12 lg:pb-[3.5rem] text-center transition-all duration-700 ${nobodyHearingInView ? 'animate-fade-in-up' : 'opacity-0 translate-y-8'} leading-tight lg:leading-tight`}>
                 <span className="block md:inline">But <span className="bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] bg-clip-text text-transparent">Nobody's</span> Hearing It...</span>
               </p>
-              <p ref={text1Ref} className={`text-gray-300 pb-12 font-medium text-center transition-all duration-700 ${text1InView ? 'animate-fade-in-up' : 'opacity-0 translate-y-8'}`} style={{ 
-                fontSize: typeof window !== 'undefined' && window.innerWidth >= 1024 ? 'calc(1.6rem + 0.15rem)' : '1.6rem', 
-                lineHeight: '1.8', 
-                hyphens: 'none', 
-                WebkitHyphens: 'none', 
-                MozHyphens: 'none', 
-                msHyphens: 'none', 
-                wordBreak: 'keep-all', 
-                overflowWrap: 'break-word' 
-              }}>
+              <p ref={text1Ref} className={`text-lg md:text-xl lg:text-[1.75rem] text-gray-300 pb-12 lg:pb-[3.5rem] font-medium text-center transition-all duration-700 ${text1InView ? 'animate-fade-in-up' : 'opacity-0 translate-y-8'} leading-relaxed lg:leading-relaxed`}>
                 You spent days making the best song of your life. Created the dopest cover art for it. All your friends said it slaps harder than Will Smith at the Oscars....
               </p>
-              <p ref={text2Ref} className={`text-2xl md:text-3xl font-bold pb-12 text-center transition-all duration-700 ${text2InView ? 'animate-fade-in-up' : 'opacity-0 translate-y-8'}`} style={{ 
-                lineHeight: '1.6', 
-                fontSize: typeof window !== 'undefined' && window.innerWidth >= 1024 ? 'calc(1.5rem + 0.45rem + 0.15rem)' : 'calc(1.5rem + 0.45rem)'
-              }}>
+              <p ref={text2Ref} className={`text-2xl md:text-3xl lg:text-4xl font-bold pb-12 text-center transition-all duration-700 ${text2InView ? 'animate-fade-in-up' : 'opacity-0 translate-y-8'} leading-tight`}>
                 <span className="block md:inline">But your Spotify still</span>{' '}
                 <span className="block md:inline">says " <span className="bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] bg-clip-text text-transparent">&lt; 1,000</span> " plays</span>
               </p>
-              <p ref={text3Ref} className={`text-gray-300 pb-12 font-medium text-center transition-all duration-700 ${text3InView ? 'animate-fade-in-up' : 'opacity-0 translate-y-8'}`} style={{ 
-                fontSize: typeof window !== 'undefined' && window.innerWidth >= 1024 ? 'calc(1.6rem + 0.15rem)' : '1.6rem', 
-                lineHeight: '1.8', 
-                hyphens: 'none', 
-                WebkitHyphens: 'none', 
-                MozHyphens: 'none', 
-                msHyphens: 'none', 
-                wordBreak: 'keep-all', 
-                overflowWrap: 'break-word' 
-              }}>
+              <p ref={text3Ref} className={`text-lg md:text-xl lg:text-[1.75rem] text-gray-300 pb-12 lg:pb-[3.5rem] font-medium text-center transition-all duration-700 ${text3InView ? 'animate-fade-in-up' : 'opacity-0 translate-y-8'} leading-relaxed lg:leading-relaxed`}>
                 Meanwhile, some dude who recorded his whole album <b>on an iPhone</b> just hit <b>2 million</b> streams and <b>got signed.</b>
               </p>
-              <p ref={text4Ref} className={`text-4xl md:text-5xl font-black pb-5 bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] bg-clip-text text-transparent transition-all duration-700 ${text4InView ? 'animate-fade-in-up' : 'opacity-0 translate-y-8'}`} style={{ 
-                lineHeight: '1.5', 
-                fontSize: typeof window !== 'undefined' && window.innerWidth >= 1024 ? 'calc(2.25rem + 0.25rem + 0.15rem)' : 'calc(2.25rem + 0.25rem)'
-              }}>
+              <p ref={text4Ref} className={`text-4xl md:text-5xl lg:text-[3.5rem] font-black pb-5 lg:pb-[2rem] bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] bg-clip-text text-transparent transition-all duration-700 ${text4InView ? 'animate-fade-in-up' : 'opacity-0 translate-y-8'} leading-tight`}>
                 Damn…
               </p>
-              <p ref={text5Ref} className={`text-3xl md:text-4xl font-black text-white pb-12 pt-1 transition-all duration-700 ${text5InView ? 'animate-fade-in-up' : 'opacity-0 translate-y-8'}`} style={{ 
-                lineHeight: '1.5', 
-                fontSize: typeof window !== 'undefined' && window.innerWidth >= 1024 ? 'calc(1.875rem + 0.00rem + 0.15rem)' : 'calc(1.875rem + 0.00rem)'
-              }}>
+              <p ref={text5Ref} className={`text-3xl md:text-4xl lg:text-[2.15rem] font-black text-white pb-12 lg:pb-[3.5rem] pt-1 lg:pt-[2rem] transition-all duration-700 ${text5InView ? 'animate-fade-in-up' : 'opacity-0 translate-y-8'} leading-tight lg:leading-tight`}>
                 Ready to know the truth?
               </p>
-              <p ref={text6bRef} className={`font-black text-white pb-8 text-center transition-all duration-700 ${text6bInView ? 'animate-fade-in-up' : 'opacity-0 translate-y-8'}`} style={{ 
-                fontSize: typeof window !== 'undefined' && window.innerWidth >= 1024 ? 'calc(1.874rem - 0.15rem + 0.15rem)' : 'calc(1.874rem - 0.15rem)', 
-                lineHeight: '1.5' 
-              }}>
-                Talent and hard work DOES NOT guarantee success on Spotify.
+              <p ref={text6bRef} className={`text-xl md:text-2xl lg:text-[2.0rem] font-black text-white pb-8 lg:pb-[2rem] text-center transition-all duration-700 ${text6bInView ? 'animate-fade-in-up' : 'opacity-0 translate-y-8'} leading-tight lg:leading-tight`}>
+                Talent and hard work DOES NOT guarantee<br className="hidden lg:block" /> success on Spotify.
               </p>
-              <p ref={text6Ref} className={`text-gray-300 pb-12 font-medium text-center transition-all duration-700 ${text6InView ? 'animate-fade-in-up' : 'opacity-0 translate-y-8'}`} style={{ 
-                fontSize: typeof window !== 'undefined' && window.innerWidth >= 1024 ? 'calc(1.6rem + 0.15rem)' : '1.6rem', 
-                lineHeight: '1.8', 
-                hyphens: 'none', 
-                WebkitHyphens: 'none', 
-                MozHyphens: 'none', 
-                msHyphens: 'none', 
-                wordBreak: 'keep-all', 
-                overflowWrap: 'break-word' 
-              }}>
+              <p ref={text6Ref} className={`text-lg md:text-xl lg:text-[1.75rem] text-gray-300 pb-12 lg:pb-[3.5rem] font-medium text-center transition-all duration-700 ${text6InView ? 'animate-fade-in-up' : 'opacity-0 translate-y-8'} leading-relaxed lg:leading-relaxed`}>
                 The platform only pushes artists who <b><i>ALREADY</i></b> have momentum. Big streams, high engagement, and playlist placements. If you've got them, Spotify's algorithm <b>LOVES</b> you. But if you don't? <b>You're invisible.</b>
               </p>
               <div ref={text7Ref} className={`text-center pb-12 transition-all duration-700 ${text7InView ? 'animate-fade-in-up' : 'opacity-0 translate-y-8'}`}>
-                <p className="font-black text-white mb-2" style={{ 
-                  fontSize: typeof window !== 'undefined' && window.innerWidth >= 1024 ? 'calc(1.5rem + 0.25rem + 0.8rem)' : 'calc(1.5rem + 0.25rem)', 
-                  lineHeight: '1.5' 
-                }}>
+                <p className="text-2xl md:text-3xl lg:text-[2.4rem] font-black text-white mb-2 lg:mt-3 leading-tight lg:leading-normal">
                   Here's the <span className="bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] bg-clip-text text-transparent">CATCH</span> that's
                 </p>
-                <p className="font-black text-white" style={{ 
-                  fontSize: typeof window !== 'undefined' && window.innerWidth >= 1024 ? 'calc(1.5rem + 0.25rem + 0.8rem)' : 'calc(1.5rem + 0.25rem)', 
-                  lineHeight: '1.5' 
-                }}>
+                <p className="text-2xl md:text-3xl lg:text-[2.4rem] font-black text-white lg:mb-3 leading-tight lg:leading-normal">
                   <span className="bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] bg-clip-text text-transparent">KILLING</span> independent artists…
                 </p>
               </div>
-              <p ref={text8Ref} className={`text-gray-300 pb-6 font-medium text-center transition-all duration-700 ${text8InView ? 'animate-fade-in-up' : 'opacity-0 translate-y-8'}`} style={{ 
-                fontSize: typeof window !== 'undefined' && window.innerWidth >= 1024 ? 'calc(1.6rem + 0.15rem)' : '1.6rem', 
-                lineHeight: '1.8', 
-                hyphens: 'none', 
-                WebkitHyphens: 'none', 
-                MozHyphens: 'none', 
-                msHyphens: 'none', 
-                wordBreak: 'keep-all', 
-                overflowWrap: 'break-word' 
-              }}>
+              <p ref={text8Ref} className={`text-lg md:text-xl lg:text-[1.75rem] text-gray-300 pb-6 lg:pb-[1.75rem] font-medium text-center transition-all duration-700 ${text8InView ? 'animate-fade-in-up' : 'opacity-0 translate-y-8'} leading-relaxed lg:leading-relaxed`}>
                 Spotify won't promote you if you <b><i><u>DON'T</u></i></b> have streams. But you can't get streams if Spotify <b><i><u>WON'T</u></i></b> promote you!
               </p>
-              <p ref={text8bRef} className={`text-gray-300 pb-12 font-medium text-center transition-all duration-700 ${text8bInView ? 'animate-fade-in-up' : 'opacity-0 translate-y-8'}`} style={{ 
-                fontSize: typeof window !== 'undefined' && window.innerWidth >= 1024 ? 'calc(1.6rem + 0.15rem)' : '1.6rem', 
-                lineHeight: '1.8', 
-                hyphens: 'none', 
-                WebkitHyphens: 'none', 
-                MozHyphens: 'none', 
-                msHyphens: 'none', 
-                wordBreak: 'keep-all', 
-                overflowWrap: 'break-word' 
-              }}>
+              <p ref={text8bRef} className={`text-lg md:text-xl lg:text-[1.75rem] text-gray-300 pb-12 lg:pb-[3.5rem] font-medium text-center transition-all duration-700 ${text8bInView ? 'animate-fade-in-up' : 'opacity-0 translate-y-8'} leading-relaxed lg:leading-relaxed`}>
                 You're trapped in a death loop where the only way to win is to <i><b><span className="bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] bg-clip-text text-transparent">ALREADY</span></b></i> be winning.
               </p>
-              <p ref={text9Ref} className={`text-3xl md:text-4xl font-bold text-white pb-12 transition-all duration-700 ${text9InView ? 'animate-fade-in-up' : 'opacity-0 translate-y-8'}`} style={{ 
-                lineHeight: '1.6', 
-                fontSize: typeof window !== 'undefined' && window.innerWidth >= 1024 ? 'calc(1.875rem + 0.10rem + 0.15rem)' : 'calc(1.875rem + 0.10rem)'
-              }}>
+              <p ref={text9Ref} className={`text-2xl md:text-3xl lg:text-4xl font-bold text-white pb-12 transition-all duration-700 ${text9InView ? 'animate-fade-in-up' : 'opacity-0 translate-y-8'} leading-tight`}>
                 Trust me, we know the struggle.
               </p>
-              <h2 ref={heading3Ref} className={`text-4xl md:text-5xl lg:text-6xl font-black pb-1 pt-2 bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] bg-clip-text text-transparent transition-all duration-700 ${heading3InView ? 'animate-fade-in-up' : 'opacity-0 translate-y-8'}`} style={{ lineHeight: '1.3' }}>
+              <h2 ref={heading3Ref} className={`text-4xl md:text-5xl lg:text-[3.65rem] font-black pb-1 lg:pb-[1.25rem] pt-2 bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] bg-clip-text text-transparent transition-all duration-700 ${heading3InView ? 'animate-fade-in-up' : 'opacity-0 translate-y-8'} leading-tight`}>
                 But it gets worse….
               </h2>
             </div>
             {/* New Icon List */}
-            <div ref={iconListRef} className={`grid md:grid-cols-1 gap-8 mb-16 -mt-12 transition-all duration-700 ${iconListInView ? 'animate-fade-in-up' : 'opacity-0 translate-y-8'}`} style={{ hyphens: 'none', WebkitHyphens: 'none', MozHyphens: 'none', msHyphens: 'none', wordBreak: 'normal', overflowWrap: 'normal' }}>
+            <div ref={iconListRef} className={`grid md:grid-cols-1 gap-8 lg:gap-10 mb-16 lg:mb-20 -mt-12 transition-all duration-700 ${iconListInView ? 'animate-fade-in-up' : 'opacity-0 translate-y-8'}`}>
               <div className="flex items-start space-x-4 text-left">
                 <div className="flex-shrink-0 w-16 h-16 flex items-center justify-center mt-1">
                   <span className="bg-gradient-to-r from-red-500 via-red-400 to-red-500 bg-clip-text text-transparent font-bold text-5xl">✗</span>
                 </div>
-                <p className="text-white font-medium" style={{ 
-                  fontSize: typeof window !== 'undefined' && window.innerWidth >= 1024 ? 'calc(1.6rem + 0.15rem)' : '1.6rem', 
-                  lineHeight: '1.7' 
-                }}>
+                <p className="text-white font-medium text-lg md:text-xl lg:text-[1.65rem] leading-relaxed lg:leading-relaxed">
                   <b>60,000 new songs drop on Spotify EVERY single day</b> - and you're competing against ALL of them (42 new songs were uploaded in the time it took you to read this sentence)
                 </p>
               </div>
@@ -1724,10 +1696,7 @@ export default function Home() {
                 <div className="flex-shrink-0 w-16 h-16 flex items-center justify-center mt-1">
                   <span className="bg-gradient-to-r from-red-500 via-red-400 to-red-500 bg-clip-text text-transparent font-bold text-5xl">✗</span>
                 </div>
-                <p className="text-white font-medium" style={{ 
-                  fontSize: typeof window !== 'undefined' && window.innerWidth >= 1024 ? 'calc(1.6rem + 0.15rem)' : '1.6rem', 
-                  lineHeight: '1.7' 
-                }}>
+                <p className="text-white font-medium text-lg md:text-xl lg:text-[1.65rem] leading-relaxed lg:leading-relaxed">
                   Without getting placed on the <b>RIGHT</b> playlists, you're <b>INVISIBLE</b> to Spotify's algorithm (and everyone else)
                 </p>
               </div>
@@ -1735,10 +1704,7 @@ export default function Home() {
                 <div className="flex-shrink-0 w-16 h-16 flex items-center justify-center mt-1">
                   <span className="bg-gradient-to-r from-red-500 via-red-400 to-red-500 bg-clip-text text-transparent font-bold text-5xl">✗</span>
                 </div>
-                <p className="text-white font-medium" style={{ 
-                  fontSize: typeof window !== 'undefined' && window.innerWidth >= 1024 ? 'calc(1.6rem + 0.15rem)' : '1.6rem', 
-                  lineHeight: '1.7' 
-                }}>
+                <p className="text-white font-medium text-lg md:text-xl lg:text-[1.65rem] leading-relaxed lg:leading-relaxed">
                   It's not 2019 anymore - posting <b>"LINK IN BIO"</b> on Instagram works just as bad as buying an Ad in the newspaper
                 </p>
               </div>
@@ -1746,10 +1712,7 @@ export default function Home() {
                 <div className="flex-shrink-0 w-16 h-16 flex items-center justify-center mt-1">
                   <span className="bg-gradient-to-r from-red-500 via-red-400 to-red-500 bg-clip-text text-transparent font-bold text-5xl">✗</span>
                 </div>
-                <p className="text-white font-medium" style={{ 
-                  fontSize: typeof window !== 'undefined' && window.innerWidth >= 1024 ? 'calc(1.6rem + 0.15rem)' : '1.6rem', 
-                  lineHeight: '1.7' 
-                }}>
+                <p className="text-white font-medium text-lg md:text-xl lg:text-[1.65rem] leading-relaxed lg:leading-relaxed">
                   It takes the average artist <b>4.7 YEARS</b> of trial and error to finally break into the industry (and most quit after year 2)
                 </p>
               </div>
@@ -1757,49 +1720,28 @@ export default function Home() {
                 <div className="flex-shrink-0 w-16 h-16 flex items-center justify-center mt-1">
                   <span className="bg-gradient-to-r from-red-500 via-red-400 to-red-500 bg-clip-text text-transparent font-bold text-5xl">✗</span>
                 </div>
-                <p className="text-white font-medium" style={{ 
-                  fontSize: typeof window !== 'undefined' && window.innerWidth >= 1024 ? 'calc(1.6rem + 0.15rem)' : '1.6rem', 
-                  lineHeight: '1.7' 
-                }}>
+                <p className="text-white font-medium text-lg md:text-xl lg:text-[1.65rem] leading-relaxed lg:leading-relaxed">
                   Artists with <b>HALF your talent</b> are going viral DAILY because they learned how to work <b>SMARTER</b> than you do
                 </p>
               </div>
             </div>
-            <div ref={bottomSectionRef} style={{ hyphens: 'none', WebkitHyphens: 'none', MozHyphens: 'none', msHyphens: 'none', wordBreak: 'normal', overflowWrap: 'normal' }}>
-            <p className={`text-2xl md:text-3xl font-bold text-white pb-12 text-center transition-all duration-700 ${bottomSectionInView ? 'animate-fade-in-up' : 'opacity-0 translate-y-8'}`} style={{ 
-              lineHeight: '1.6', 
-              fontSize: typeof window !== 'undefined' && window.innerWidth >= 1024 ? 'calc(1.5rem + 0.10rem + 0.15rem)' : 'calc(1.5rem + 0.10rem)', 
-              hyphens: 'none', 
-              WebkitHyphens: 'none', 
-              MozHyphens: 'none', 
-              msHyphens: 'none', 
-              wordBreak: 'keep-all', 
-              overflowWrap: 'break-word' 
-            }}>
+            <div ref={bottomSectionRef}>
+            <p className={`text-2xl md:text-3xl lg:text-[1.9rem] font-bold text-white pb-12 text-center transition-all duration-700 ${bottomSectionInView ? 'animate-fade-in-up' : 'opacity-0 translate-y-8'} leading-tight lg:leading-relaxed`}>
               And while you're still wondering if playlist placements are <i>"worth it"</i>, other artists are collecting streaming revenue and booking their first tours.
             </p>
-            <h2 ref={worstPartRef} className={`text-4xl md:text-5xl lg:text-6xl font-black pb-12 pt-8 bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] bg-clip-text text-transparent text-center transition-all duration-700 ${worstPartInView ? 'animate-fade-in-up' : 'opacity-0 translate-y-8'}`} style={{ lineHeight: '1.3' }}>
+            <h2 ref={worstPartRef} className={`text-4xl md:text-5xl lg:text-[3.35rem] font-black pb-12 pt-8 bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] bg-clip-text text-transparent text-center transition-all duration-700 ${worstPartInView ? 'animate-fade-in-up' : 'opacity-0 translate-y-8'} leading-tight`}>
               But The WORST Part Is...
             </h2>
-            <p ref={fakeAgenciesRef} className={`text-2xl md:text-3xl font-bold text-white pb-12 text-center transition-all duration-700 ${fakeAgenciesInView ? 'animate-fade-in-up' : 'opacity-0 translate-y-8'}`} style={{ 
-              lineHeight: '1.6', 
-              fontSize: typeof window !== 'undefined' && window.innerWidth >= 1024 ? 'calc(1.5rem + 0.25rem + 0.15rem)' : 'calc(1.5rem + 0.25rem)'
-            }}>
+            <p ref={fakeAgenciesRef} className={`text-2xl md:text-3xl lg:text-[2.05rem] font-bold text-white pb-12 text-center transition-all duration-700 ${fakeAgenciesInView ? 'animate-fade-in-up' : 'opacity-0 translate-y-8'} leading-tight lg:leading-relaxed`}>
               REAL Spotify growth is trapped behind a field of landmines.
             </p>
-            <p ref={fakeAgenciesParaRef} className={`text-gray-300 pb-12 font-medium text-center transition-all duration-700 ${fakeAgenciesParaInView ? 'animate-fade-in-up' : 'opacity-0 translate-y-8'}`} style={{ 
-              fontSize: typeof window !== 'undefined' && window.innerWidth >= 1024 ? 'calc(1.6rem + 0.15rem)' : '1.6rem', 
-              lineHeight: '1.8' 
-            }}>
+            <p ref={fakeAgenciesParaRef} className={`text-lg md:text-xl lg:text-[1.75rem] text-gray-300 pb-12 lg:pb-[3.5rem] font-medium text-center transition-all duration-700 ${fakeAgenciesParaInView ? 'animate-fade-in-up' : 'opacity-0 translate-y-8'} leading-relaxed lg:leading-relaxed`}>
               Fake agencies charging <b>$99</b> for <b>bot plays</b> from <b>Kazakstan.</b> Scammers in your DMs with <b>"PROMO 4 SALE"</b> messages. Snake oil companies on <b>Google</b> who put you on <b>handmade playlists</b> with only <b>52 followers.</b>
             </p>
-            <p ref={noCapRef} className={`text-2xl md:text-3xl font-bold text-white pb-12 text-center transition-all duration-700 ${noCapInView ? 'animate-fade-in-up' : 'opacity-0 translate-y-8'}`} style={{ 
-              lineHeight: '1.6', 
-              fontSize: typeof window !== 'undefined' && window.innerWidth >= 1024 ? 'calc(1.5rem + 0.15rem + 0.15rem)' : 'calc(1.5rem + 0.15rem)'
-            }}>
+            <p ref={noCapRef} className={`text-2xl md:text-3xl lg:text-4xl font-bold text-white pb-12 text-center transition-all duration-700 ${noCapInView ? 'animate-fade-in-up' : 'opacity-0 translate-y-8'} leading-tight lg:leading-relaxed`}>
               No Cap - Finding <span className="bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] bg-clip-text text-transparent">REAL</span> Spotify Marketing is Harder Than Finding a PS5 to Buy During COVID
             </p>
-            <h2 ref={thatsWhyRef} className={`text-4xl md:text-5xl font-black pb-12 pt-2 bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] bg-clip-text text-transparent text-center transition-all duration-700 ${thatsWhyInView ? 'animate-fade-in-up' : 'opacity-0 translate-y-8'}`} style={{ lineHeight: '1.3' }}>
+            <h2 ref={thatsWhyRef} className={`text-4xl md:text-5xl lg:text-[2.55rem] font-black pb-12 pt-2 lg:pt-[2rem] bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] bg-clip-text text-transparent text-center transition-all duration-700 ${thatsWhyInView ? 'animate-fade-in-up' : 'opacity-0 translate-y-8'} leading-tight`}>
               That's Why Over 25K Creators Use…
             </h2>
             <div ref={logoRef} className={`flex justify-center items-center pb-12 pt-2 relative ${logoInView ? 'animate-bounce-in-spectacular' : 'opacity-0'}`}>
@@ -1817,83 +1759,53 @@ export default function Home() {
                 </div>
               )}
             </div>
-            <p ref={onlySpotifyRef} className={`text-2xl md:text-3xl font-bold text-white pb-12 text-center transition-all duration-700 ${onlySpotifyInView ? 'animate-fade-in-up' : 'opacity-0 translate-y-8'}`} style={{ lineHeight: '1.6' }}>
+            <p ref={onlySpotifyRef} className={`text-2xl md:text-3xl lg:text-[2.0rem] font-bold text-white pb-12 text-center transition-all duration-700 ${onlySpotifyInView ? 'animate-fade-in-up' : 'opacity-0 translate-y-8'} leading-tight lg:leading-tight`}>
               The ONLY Spotify marketing service with DIRECT access to curators of the world's BIGGEST playlists.
             </p>
-            <p ref={dontMessRef} className={`text-gray-300 pb-12 font-medium text-center transition-all duration-700 ${dontMessInView ? 'animate-fade-in-up' : 'opacity-0 translate-y-8'}`} style={{ 
-              fontSize: typeof window !== 'undefined' && window.innerWidth >= 1024 ? 'calc(1.6rem + 0.15rem)' : '1.6rem', 
-              lineHeight: '1.8' 
-            }}>
+            <p ref={dontMessRef} className={`text-lg md:text-xl lg:text-[1.75rem] text-gray-300 pb-12 lg:pb-[3.5rem] font-medium text-center transition-all duration-700 ${dontMessInView ? 'animate-fade-in-up' : 'opacity-0 translate-y-8'} leading-relaxed lg:leading-relaxed`}>
               We don't mess with <b>bots.</b> We don't own <b>sketchy playlists.</b> We don't make <b>empty promises.</b>
             </p>
-            <p ref={getMusicRef} className={`text-gray-300 pb-12 font-medium text-center transition-all duration-700 ${getMusicInView ? 'animate-fade-in-up' : 'opacity-0 translate-y-8'}`} style={{ 
-              fontSize: typeof window !== 'undefined' && window.innerWidth >= 1024 ? 'calc(1.6rem + 0.15rem)' : '1.6rem', 
-              lineHeight: '1.8' 
-            }}>
+            <p ref={getMusicRef} className={`text-lg md:text-xl lg:text-[1.75rem] text-gray-300 pb-12 lg:pb-[3.5rem] font-medium text-center transition-all duration-700 ${getMusicInView ? 'animate-fade-in-up' : 'opacity-0 translate-y-8'} leading-relaxed lg:leading-relaxed`}>
               We get your music directly in front of playlist curators who control <b><i><span className="bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] bg-clip-text text-transparent">MILLIONS</span></i></b> of real listeners.
             </p>
-            <p ref={rapCaviarRef} className={`text-2xl md:text-3xl font-bold text-white pb-12 text-center transition-all duration-700 ${rapCaviarInView ? 'animate-fade-in-up' : 'opacity-0 translate-y-8'}`} style={{ 
-              lineHeight: '1.6', 
-              fontSize: typeof window !== 'undefined' && window.innerWidth >= 1024 ? 'calc(1.5rem + 0.15rem + 0.15rem)' : 'calc(1.5rem + 0.15rem)'
-            }}>
+            <p ref={rapCaviarRef} className={`text-2xl md:text-3xl lg:text-[2.0rem] font-bold text-white pb-12 text-center transition-all duration-700 ${rapCaviarInView ? 'animate-fade-in-up' : 'opacity-0 translate-y-8'} leading-tight lg:leading-tight`}>
               RapCaviar. Today's Top Hits. Viva Latino. The playlists that actually move the needle on careers.
             </p>
-            <p ref={whileOtherRef} className={`text-gray-300 pb-12 font-medium text-center transition-all duration-700 ${whileOtherInView ? 'animate-fade-in-up' : 'opacity-0 translate-y-8'}`} style={{ 
-              fontSize: typeof window !== 'undefined' && window.innerWidth >= 1024 ? 'calc(1.6rem + 0.15rem)' : '1.6rem', 
-              lineHeight: '1.8' 
-            }}>
+            <p ref={whileOtherRef} className={`text-lg md:text-xl lg:text-[1.75rem] text-gray-300 pb-12 lg:pb-[3.5rem] font-medium text-center transition-all duration-700 ${whileOtherInView ? 'animate-fade-in-up' : 'opacity-0 translate-y-8'} leading-relaxed lg:leading-relaxed`}>
               While other companies are cold emailing <b>random</b> curators hoping for a response, we're on <b>first name basis</b> with the people who matter. We've spent <b>10 years</b> building these relationships so <b>you don't have to.</b>
             </p>
-            <h2 ref={whoIsFashoRef} className={`text-3xl md:text-4xl lg:text-5xl font-black pt-2 pb-14 bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] bg-clip-text text-transparent text-center transition-all duration-700 ${whoIsFashoInView ? 'animate-fade-in-up' : 'opacity-0 translate-y-8'}`} style={{ lineHeight: '1.3' }}>
+            <h2 ref={whoIsFashoRef} className={`text-3xl md:text-4xl lg:text-5xl font-black pt-2 pb-14 bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] bg-clip-text text-transparent text-center transition-all duration-700 ${whoIsFashoInView ? 'animate-fade-in-up' : 'opacity-0 translate-y-8'} leading-tight`}>
               Welcome to the A-Team...
             </h2>
-            <p ref={ourTeamRef} className={`text-gray-300 pb-12 font-medium text-center transition-all duration-700 ${ourTeamInView ? 'animate-fade-in-up' : 'opacity-0 translate-y-8'}`} style={{ 
-              fontSize: typeof window !== 'undefined' && window.innerWidth >= 1024 ? 'calc(1.6rem + 0.15rem)' : '1.6rem', 
-              lineHeight: '1.8' 
-            }}>
+            <p ref={ourTeamRef} className={`text-lg md:text-xl lg:text-[1.75rem] text-gray-300 pb-12 lg:pb-[3.5rem] font-medium text-center transition-all duration-700 ${ourTeamInView ? 'animate-fade-in-up' : 'opacity-0 translate-y-8'} leading-relaxed lg:leading-relaxed`}>
               Our team is stacked with former directors and executives from labels like <b>Universal, Sony, RCA, Atlantic,</b> and <b>Roc Nation.</b> The same people who built marketing campaigns for <b>Beyonce, Justin Bieber, Billie Eilish,</b> and <b>Kendrick Lamar</b> now work for <b>YOU.</b>
             </p>
-            <p ref={gotTiredRef} className={`text-gray-300 pb-6 font-medium text-center transition-all duration-700 ${gotTiredInView ? 'animate-fade-in-up' : 'opacity-0 translate-y-8'}`} style={{ 
-              fontSize: typeof window !== 'undefined' && window.innerWidth >= 1024 ? 'calc(1.6rem + 0.15rem)' : '1.6rem', 
-              lineHeight: '1.8' 
-            }}>
+            <p ref={gotTiredRef} className={`text-lg md:text-xl lg:text-[1.75rem] text-gray-300 pb-6 lg:pb-[1.5rem] font-medium text-center transition-all duration-700 ${gotTiredInView ? 'animate-fade-in-up' : 'opacity-0 translate-y-8'} leading-relaxed lg:leading-relaxed`}>
               We got tired of watching talented artists get <b>chewed up</b> and <b>spit out</b> by an industry that only cares about <b>who you know.</b> Gatekeepers controlling <b>everything.</b> Labels taking <b>80%</b> of your revenue.
             </p>
-            <p ref={gameRiggedRef} className={`text-2xl md:text-3xl font-bold text-white pt-1.5 pb-14 text-center transition-all duration-700 ${gameRiggedInView ? 'animate-fade-in-up' : 'opacity-0 translate-y-8'}`} style={{ 
-              lineHeight: '1.6', 
-              fontSize: typeof window !== 'undefined' && window.innerWidth >= 1024 ? 'calc(1.5rem + 0.40rem + 0.15rem)' : 'calc(1.5rem + 0.40rem)'
-            }}>
+            <p ref={gameRiggedRef} className={`text-2xl md:text-3xl lg:text-4xl font-bold text-white pt-1.5 lg:pt-[2rem] pb-14 text-center transition-all duration-700 ${gameRiggedInView ? 'animate-fade-in-up' : 'opacity-0 translate-y-8'} leading-tight`}>
               The game was rigged from the start.
             </p>
-            <p ref={builtFashoRef} className={`text-gray-300 pb-12 font-medium text-center transition-all duration-700 ${builtFashoInView ? 'animate-fade-in-up' : 'opacity-0 translate-y-8'}`} style={{ 
-              fontSize: typeof window !== 'undefined' && window.innerWidth >= 1024 ? 'calc(1.6rem + 0.15rem)' : '1.6rem', 
-              lineHeight: '1.8' 
-            }}>
+            <p ref={builtFashoRef} className={`text-lg md:text-xl lg:text-[1.75rem] text-gray-300 pb-12 lg:pb-[3.5rem] font-medium text-center transition-all duration-700 ${builtFashoInView ? 'animate-fade-in-up' : 'opacity-0 translate-y-8'} leading-relaxed lg:leading-relaxed`}>
               So we built <b className="bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] bg-clip-text text-transparent font-black">FASHO.co</b> to flip the script. To give independent artists <b>direct</b> access to the <b>same tools</b> and <b>connections</b> that major labels pay <b><i>millions</i></b> for.
             </p>
-            <h2 ref={resultsRef} className={`text-4xl md:text-5xl font-black pb-12 bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] bg-clip-text text-transparent text-center transition-all duration-700 ${resultsInView ? 'animate-fade-in-up' : 'opacity-0 translate-y-8'}`} style={{ lineHeight: '1.3' }}>
+            <h2 ref={resultsRef} className={`text-4xl md:text-5xl lg:text-[2.5rem] font-black pb-12 bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] bg-clip-text text-transparent text-center transition-all duration-700 ${resultsInView ? 'animate-fade-in-up' : 'opacity-0 translate-y-8'} leading-tight`}>
               The Results Speak For Themselves…
             </h2>
-            <p ref={with100Ref} className={`text-gray-300 pb-12 font-medium text-center transition-all duration-700 ${with100InView ? 'animate-fade-in-up' : 'opacity-0 translate-y-8'}`} style={{ 
-              fontSize: typeof window !== 'undefined' && window.innerWidth >= 1024 ? 'calc(1.6rem + 0.15rem)' : '1.6rem', 
-              lineHeight: '1.8' 
-            }}>
+            <p ref={with100Ref} className={`text-lg md:text-xl lg:text-[1.75rem] text-gray-300 pb-12 lg:pb-[3.5rem] font-medium text-center transition-all duration-700 ${with100InView ? 'animate-fade-in-up' : 'opacity-0 translate-y-8'} leading-relaxed lg:leading-relaxed`}>
               With a <b>100% success rate,</b> our campaigns start delivering within <b>48 hours.</b> Not weeks. Not "maybe soon"… Two days.
             </p>
-            <p ref={playlistNetworkRef} className={`text-gray-300 pb-12 font-medium text-center transition-all duration-700 ${playlistNetworkInView ? 'animate-fade-in-up' : 'opacity-0 translate-y-8'}`} style={{ 
-              fontSize: typeof window !== 'undefined' && window.innerWidth >= 1024 ? 'calc(1.6rem + 0.15rem)' : '1.6rem', 
-              lineHeight: '1.8' 
-            }}>
+            <p ref={playlistNetworkRef} className={`text-lg md:text-xl lg:text-[1.75rem] text-gray-300 pb-12 lg:pb-[3.5rem] font-medium text-center transition-all duration-700 ${playlistNetworkInView ? 'animate-fade-in-up' : 'opacity-0 translate-y-8'} leading-relaxed lg:leading-relaxed`}>
               Our playlist network drives <b>MILLIONS</b> of engaged listeners to our clients <b>every single week.</b> Real people who <b>save songs, follow artists, and actually show up to shows.</b>
             </p>
-            <p ref={isntHopeRef} className={`text-2xl md:text-3xl font-bold text-white pb-32 text-center transition-all duration-700 -mb-9 md:mb-0 ${isntHopeInView ? 'animate-fade-in-up' : 'opacity-0 translate-y-8'}`} style={{ lineHeight: '1.6' }}>
+            <p ref={isntHopeRef} className={`text-2xl md:text-3xl lg:text-[2.1rem] font-bold text-white pb-32 text-center transition-all duration-700 -mb-9 md:mb-0 ${isntHopeInView ? 'animate-fade-in-up' : 'opacity-0 translate-y-8'} leading-tight lg:leading-tight`}>
               This isn't hope. It's a guarantee. Your music, on major playlists, reaching massive audiences, starting TODAY.
             </p>
             </div>
           </div>
 
           {/* Shape Divider */}
-          <div className="relative z-10 pb-32 pb-48" style={{ height: '200px', width: '110vw', left: '-5vw', position: 'relative', transform: 'rotate(8deg)', background: 'transparent', marginTop: '-60px', marginBottom: '85px' }}>
+          <div className="relative z-10 pb-48" style={{ height: '200px', width: '110vw', left: '-5vw', position: 'relative', transform: 'rotate(8deg)', background: 'transparent', marginTop: '-60px', marginBottom: '85px' }}>
             {/* All background elements removed for full transparency */}
             
             {/* Background foundation */}
@@ -2134,7 +2046,7 @@ export default function Home() {
                     <div className="absolute inset-0 -m-8 bg-gradient-to-br from-[#59e3a5]/30 via-[#14c0ff]/40 to-[#8b5cf6]/30 rounded-full blur-3xl opacity-80 animate-pulse"></div>
                     
                     {/* Phone Frame */}
-                    <div className="w-56 h-[400px] md:w-72 md:h-[520px] bg-gradient-to-br from-gray-900 via-black to-gray-800 rounded-[3rem] p-2 shadow-2xl relative z-10 border border-gray-700/50">
+                    <div className="w-56 h-[420px] md:w-72 md:h-[540px] bg-gradient-to-br from-gray-900 via-black to-gray-800 rounded-[3rem] p-2 shadow-2xl relative z-10 border border-gray-700/50">
                       <div className="w-full h-full bg-gradient-to-br from-[#18192a] to-[#0a0a13] rounded-[2.5rem] relative overflow-hidden flex flex-col">
                         {/* Status Bar */}
                         <div className="flex justify-between items-center px-8 py-4 text-white text-sm relative">
@@ -2228,7 +2140,7 @@ export default function Home() {
                     <div className="absolute inset-0 -m-8 bg-gradient-to-br from-[#14c0ff]/30 via-[#8b5cf6]/40 to-[#59e3a5]/30 rounded-full blur-3xl opacity-80 animate-pulse"></div>
                     
                     {/* Phone Frame */}
-                    <div className="w-56 h-[400px] md:w-72 md:h-[520px] bg-gradient-to-br from-gray-900 via-black to-gray-800 rounded-[3rem] p-2 shadow-2xl relative z-10 border border-gray-700/50">
+                    <div className="w-56 h-[420px] md:w-72 md:h-[540px] bg-gradient-to-br from-gray-900 via-black to-gray-800 rounded-[3rem] p-2 shadow-2xl relative z-10 border border-gray-700/50">
                       <div className="w-full h-full bg-gradient-to-br from-[#18192a] to-[#0a0a13] rounded-[2.5rem] relative overflow-hidden flex flex-col">
                         {/* Status Bar */}
                         <div className="flex justify-between items-center px-8 py-4 text-white text-sm relative">
@@ -2341,7 +2253,7 @@ export default function Home() {
                     <div className="absolute inset-0 -m-8 bg-gradient-to-br from-[#8b5cf6]/30 via-[#59e3a5]/40 to-[#14c0ff]/30 rounded-full blur-3xl opacity-80 animate-pulse"></div>
                     
                     {/* Phone Frame */}
-                    <div className="w-56 h-[400px] md:w-72 md:h-[520px] bg-gradient-to-br from-gray-900 via-black to-gray-800 rounded-[3rem] p-2 shadow-2xl relative z-10 border border-gray-700/50">
+                    <div className="w-56 h-[420px] md:w-72 md:h-[540px] bg-gradient-to-br from-gray-900 via-black to-gray-800 rounded-[3rem] p-2 shadow-2xl relative z-10 border border-gray-700/50">
                       <div className="w-full h-full bg-gradient-to-br from-[#18192a] to-[#0a0a13] rounded-[2.5rem] relative overflow-hidden flex flex-col">
                         {/* Status Bar */}
                         <div className="flex justify-between items-center px-8 py-4 text-white text-sm relative">
@@ -2410,7 +2322,7 @@ export default function Home() {
                     <div className="absolute inset-0 -m-8 bg-gradient-to-br from-[#59e3a5]/30 via-[#8b5cf6]/40 to-[#14c0ff]/30 rounded-full blur-3xl opacity-80 animate-pulse"></div>
                     
                     {/* Phone Frame */}
-                    <div className="w-56 h-[400px] md:w-72 md:h-[520px] bg-gradient-to-br from-gray-900 via-black to-gray-800 rounded-[3rem] p-2 shadow-2xl relative z-10 border border-gray-700/50">
+                    <div className="w-56 h-[420px] md:w-72 md:h-[540px] bg-gradient-to-br from-gray-900 via-black to-gray-800 rounded-[3rem] p-2 shadow-2xl relative z-10 border border-gray-700/50">
                       <div className="w-full h-full bg-gradient-to-br from-[#18192a] to-[#0a0a13] rounded-[2.5rem] relative overflow-hidden flex flex-col">
                         {/* Status Bar */}
                         <div className="flex justify-between items-center px-8 py-4 text-white text-sm relative">
@@ -2896,7 +2808,7 @@ export default function Home() {
               <div className="text-center mb-20">
                 <h3 
                   ref={forgetTextRef}
-                  className={`text-2xl md:text-3xl lg:text-4xl font-black text-white max-w-3xl mx-auto leading-relaxed transition-all duration-700 ${forgetTextInView ? 'animate-fade-in-up' : 'opacity-0 translate-y-8'}`}
+                  className={`text-2xl md:text-3xl lg:text-4xl font-black text-white max-w-3xl mx-auto leading-relaxed lg:leading-[1.65] transition-all duration-700 ${forgetTextInView ? 'animate-fade-in-up' : 'opacity-0 translate-y-8'}`}
                 >
                   Forget everything you think you know about playlist marketing. We've made it stupid simple. You submit, we connect, you grow. That's it.
                 </h3>
@@ -2916,6 +2828,144 @@ export default function Home() {
             </div>
           </section>
 
+          {/* Shape Divider After CTA Button */}
+          <div className="relative z-10 pb-48" style={{ height: '200px', width: '110vw', left: '-5vw', position: 'relative', transform: 'rotate(8deg)', background: 'transparent', marginTop: '15px', marginBottom: '85px' }}>
+            {/* All background elements removed for full transparency */}
+            
+            {/* Background foundation */}
+            <div className="absolute inset-0 z-10" style={{ background: 'transparent' }}></div>
+            
+            {/* Base layer - darkest */}
+            <svg
+              className="absolute inset-0 w-full h-full z-10"
+              viewBox="0 0 1440 200"
+              preserveAspectRatio="none"
+              style={{ filter: 'drop-shadow(0 4px 20px rgba(20, 192, 255, 0.4))' }}
+            >
+              <defs>
+                <linearGradient id="phoneShapeGradient5" x1="0%" y1="0%" x2="100%" y2="0%">
+                  <stop offset="0%" stopColor="#59e3a5" stopOpacity="0.9" />
+                  <stop offset="50%" stopColor="#14c0ff" stopOpacity="0.95" />
+                  <stop offset="100%" stopColor="#8b5cf6" stopOpacity="0.9" />
+                </linearGradient>
+              </defs>
+              <path
+                d="M-200,30 C100,120 300,10 500,90 C700,170 900,20 1100,100 C1300,180 1500,15 1640,70 L1640,150 C1500,120 1300,160 1100,140 C900,120 700,180 500,160 C300,140 100,190 -200,170 Z"
+                fill="url(#phoneShapeGradient5)"
+              />
+            </svg>
+
+            {/* Middle layer */}
+            <svg
+              className="absolute inset-0 w-full h-full z-10"
+              viewBox="0 0 1440 200"
+              preserveAspectRatio="none"
+              style={{ filter: 'drop-shadow(0 4px 16px rgba(89, 227, 165, 0.4))' }}
+            >
+              <defs>
+                <linearGradient id="phoneShapeGradient6" x1="0%" y1="0%" x2="100%" y2="0%">
+                  <stop offset="0%" stopColor="#59e3a5" stopOpacity="0.85" />
+                  <stop offset="50%" stopColor="#14c0ff" stopOpacity="0.9" />
+                  <stop offset="100%" stopColor="#8b5cf6" stopOpacity="0.85" />
+                </linearGradient>
+              </defs>
+              <path
+                d="M-200,45 C150,140 400,15 650,110 C900,190 1150,25 1400,125 C1550,165 1640,55 1640,55 L1640,145 C1550,115 1400,185 1150,125 C900,75 650,195 400,145 C150,95 -200,195 -200,195 Z"
+                fill="url(#phoneShapeGradient6)"
+              />
+            </svg>
+
+            {/* Top layer - brightest */}
+            <svg
+              className="absolute inset-0 w-full h-full z-10"
+              viewBox="0 0 1440 200"
+              preserveAspectRatio="none"
+              style={{ filter: 'drop-shadow(0 2px 12px rgba(139, 92, 246, 0.5))' }}
+            >
+              <defs>
+                <linearGradient id="phoneShapeGradient7" x1="0%" y1="0%" x2="100%" y2="0%">
+                  <stop offset="0%" stopColor="#59e3a5" stopOpacity="0.8" />
+                  <stop offset="50%" stopColor="#14c0ff" stopOpacity="0.85" />
+                  <stop offset="100%" stopColor="#8b5cf6" stopOpacity="0.8" />
+                </linearGradient>
+              </defs>
+              <path
+                d="M-200,65 C200,155 450,20 700,120 C950,185 1200,30 1450,135 C1600,175 1640,70 1640,70 L1640,125 C1600,95 1450,180 1200,125 C950,55 700,185 450,135 C200,75 -200,75 -200,75 Z"
+                fill="url(#phoneShapeGradient7)"
+              />
+            </svg>
+
+            {/* Additional accent layer */}
+            <svg
+              className="absolute inset-0 w-full h-full z-10"
+              viewBox="0 0 1440 200"
+              preserveAspectRatio="none"
+              style={{ filter: 'drop-shadow(0 1px 8px rgba(89, 227, 165, 0.3))' }}
+            >
+              <defs>
+                <linearGradient id="phoneShapeGradient8" x1="0%" y1="0%" x2="100%" y2="0%">
+                  <stop offset="0%" stopColor="#8b5cf6" stopOpacity="0.82" />
+                  <stop offset="50%" stopColor="#59e3a5" stopOpacity="0.88" />
+                  <stop offset="100%" stopColor="#14c0ff" stopOpacity="0.82" />
+                </linearGradient>
+              </defs>
+              <path
+                d="M-200,55 C120,15 280,150 440,65 C600,20 760,165 920,75 C1080,25 1240,145 1400,85 C1520,55 1640,115 1640,115 L1640,165 C1520,135 1400,185 1240,165 C1080,135 920,195 760,175 C600,155 440,195 280,175 C120,155 -200,185 -200,185 Z"
+                fill="url(#phoneShapeGradient8)"
+              />
+            </svg>
+
+            {/* Enhanced sparkles layer - bright white/silver sparkles */}
+            <svg
+              className="absolute inset-0 w-full h-full z-10"
+              viewBox="0 0 1440 200"
+              preserveAspectRatio="none"
+            >
+              <circle cx="200" cy="50" r="1.2" fill="#f5f5f5" opacity="0.9">
+                <animate attributeName="opacity" values="0.9;0.3;0.9" dur="1.8s" repeatCount="indefinite" />
+              </circle>
+              <circle cx="450" cy="80" r="0.8" fill="#ffffff" opacity="0.7">
+                <animate attributeName="opacity" values="0.7;0.2;0.7" dur="2.1s" repeatCount="indefinite" />
+              </circle>
+              <circle cx="680" cy="35" r="1.5" fill="#f5f5f5" opacity="0.8">
+                <animate attributeName="opacity" values="0.8;0.1;0.8" dur="1.6s" repeatCount="indefinite" />
+              </circle>
+              <circle cx="920" cy="110" r="1.0" fill="#ffffff" opacity="0.6">
+                <animate attributeName="opacity" values="0.6;0.15;0.6" dur="2.5s" repeatCount="indefinite" />
+              </circle>
+              <circle cx="1150" cy="45" r="0.9" fill="#f5f5f5" opacity="0.75">
+                <animate attributeName="opacity" values="0.75;0.25;0.75" dur="1.9s" repeatCount="indefinite" />
+              </circle>
+              <circle cx="1320" cy="90" r="1.1" fill="#ffffff" opacity="0.65">
+                <animate attributeName="opacity" values="0.65;0.05;0.65" dur="2.2s" repeatCount="indefinite" />
+              </circle>
+              <circle cx="350" cy="140" r="0.7" fill="#f5f5f5" opacity="0.55">
+                <animate attributeName="opacity" values="0.55;0.1;0.55" dur="1.7s" repeatCount="indefinite" />
+              </circle>
+              <circle cx="600" cy="160" r="1.3" fill="#ffffff" opacity="0.85">
+                <animate attributeName="opacity" values="0.85;0.3;0.85" dur="2.0s" repeatCount="indefinite" />
+              </circle>
+              <circle cx="850" cy="25" r="0.6" fill="#f5f5f5" opacity="0.5">
+                <animate attributeName="opacity" values="0.5;0.08;0.5" dur="2.4s" repeatCount="indefinite" />
+              </circle>
+              <circle cx="1050" cy="170" r="1.4" fill="#ffffff" opacity="0.8">
+                <animate attributeName="opacity" values="0.8;0.2;0.8" dur="1.5s" repeatCount="indefinite" />
+              </circle>
+              <circle cx="1250" cy="155" r="0.9" fill="#f5f5f5" opacity="0.7">
+                <animate attributeName="opacity" values="0.7;0.12;0.7" dur="2.3s" repeatCount="indefinite" />
+              </circle>
+              <circle cx="750" cy="120" r="0.8" fill="#ffffff" opacity="0.6">
+                <animate attributeName="opacity" values="0.6;0.18;0.6" dur="1.8s" repeatCount="indefinite" />
+              </circle>
+              <circle cx="500" cy="185" r="1.0" fill="#f5f5f5" opacity="0.65">
+                <animate attributeName="opacity" values="0.65;0.25;0.65" dur="2.1s" repeatCount="indefinite" />
+              </circle>
+              <circle cx="1120" cy="75" r="0.8" fill="#f5f5f5" opacity="0.44">
+                <animate attributeName="opacity" values="0.44;0.13;0.44" dur="2.3s" repeatCount="indefinite" />
+              </circle>
+            </svg>
+          </div>
+
           {/* Dashboard Preview Section */}
           <section className="py-0 md:py-24 px-4 pb-0 md:pb-48 relative z-10 overflow-hidden">
             {/* Extended gradient overlay that flows into next section */}
@@ -2932,7 +2982,7 @@ export default function Home() {
                 </h2>
                 <p 
                   ref={dashboardDescRef}
-                  className={`text-xl text-gray-300 max-w-3xl mx-auto leading-relaxed transition-all duration-700 ${dashboardDescInView ? 'animate-fade-in-up' : 'opacity-0 translate-y-8'}`}
+                  className={`text-xl lg:text-[1.4rem] text-gray-300 max-w-3xl mx-auto leading-relaxed transition-all duration-700 ${dashboardDescInView ? 'animate-fade-in-up' : 'opacity-0 translate-y-8'}`}
                   style={{ 
                     hyphens: 'none', 
                     WebkitHyphens: 'none', 
@@ -2942,7 +2992,7 @@ export default function Home() {
                     overflowWrap: 'break-word' 
                   }}
                 >
-                  Everything you need in one clean dashboard. Launch campaigns, track your playlist placements, monitor your growth, and hit us up when you need anything - all from one spot.
+                  Everything you need in one clean dashboard. Launch campaigns, track your playlist placements, monitor your growth, and hit us up when you need anything. All from one elite platform.
                 </p>
               </div>
 
@@ -2953,14 +3003,14 @@ export default function Home() {
                 
                 {/* Centering container for scaled mockup */}
                 <div className="flex justify-center items-start w-full">
-                  <div 
-                    className="bg-gradient-to-br from-[#1a1a2e] to-[#16213e] rounded-t-2xl shadow-2xl transition-transform duration-700 ease-out relative z-10"
-                    style={{ 
-                      transform: getDashboardTransform(),
-                      width: '1200px',
-                      transformOrigin: 'top center'
-                    }}
-                >
+                <div 
+                  className="bg-gradient-to-br from-[#1a1a2e] to-[#16213e] rounded-t-2xl shadow-2xl transition-transform duration-700 ease-out relative z-10"
+                  style={{ 
+                    transform: getDashboardTransform(),
+                    width: '1200px',
+                    transformOrigin: 'top center'
+                  }}
+              >
                   {/* Browser Header */}
                   <div className="bg-gradient-to-r from-[#59e3a5] via-[#14c0ff] to-[#8b5cf6] rounded-t-2xl border-b border-white/10" style={{ padding: '12px 16px' }}>
                       <div className="flex items-center justify-between">
@@ -3004,7 +3054,7 @@ export default function Home() {
                           <div className="bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] text-white rounded-lg font-semibold animate-pulse" style={{ padding: '8px 16px', fontSize: '12px' }}>
                             LIVE
                           </div>
-                    </div>
+                        </div>
                   </div>
 
                       {/* Top Stats Grid - Only 3 cards now */}
@@ -3284,14 +3334,10 @@ export default function Home() {
               </div>
 
               {/* CTA Button */}
-              <div className="text-center mt-16 mb-20 md:mb-0 lg:mt-16" style={{ marginTop: '-180px', marginBottom: '180px' }}>
+              <div className="text-center mt-16 mb-20 md:mb-0 lg:mt-16" style={{ marginTop: '-180px', marginBottom: '60px' }}>
                 <button
                   onClick={scrollToTrackInput}
-                  className="px-12 py-4 bg-gradient-to-r from-[#59e3a5] via-[#14c0ff] to-[#8b5cf6] text-white font-bold rounded-2xl hover:shadow-2xl hover:shadow-[#14c0ff]/30 transition-all duration-700 transform hover:scale-105 active:scale-95 relative overflow-hidden group text-lg"
-                  style={{ 
-                    /* Add 50px top margin for screens larger than mobile */
-                    marginTop: typeof window !== 'undefined' && window.innerWidth >= 768 ? '50px' : '0px'
-                  }}
+                  className="px-12 py-4 bg-gradient-to-r from-[#59e3a5] via-[#14c0ff] to-[#8b5cf6] text-white font-bold rounded-2xl hover:shadow-2xl hover:shadow-[#14c0ff]/30 transition-all duration-700 transform hover:scale-105 active:scale-95 relative overflow-hidden group text-lg sm:mt-[50px]"
                 >
                   <span className="relative z-10">SHOW ME THE PACKAGES</span>
                   <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-700"></div>
@@ -3301,7 +3347,7 @@ export default function Home() {
           </section>
 
           {/* Curator Connect+ Section */}
-          <section className="py-24 px-4 relative z-10 overflow-hidden">
+          <section className="py-12 lg:py-16 px-4 relative z-10 overflow-hidden">
             {/* Extended gradient overlay that flows into next section */}
             <div className="absolute inset-0 bg-gradient-to-b from-[#18192a] via-[#16213e] to-[#0a0a13] -z-10"></div>
             <div className="absolute bottom-0 left-0 right-0 h-5 bg-gradient-to-b from-transparent to-[#0a0a13] -z-5"></div>
@@ -3310,7 +3356,7 @@ export default function Home() {
                 <h2 className="text-3xl md:text-4xl lg:text-5xl font-black mb-8 bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] bg-clip-text text-transparent" style={{ lineHeight: '1.3' }}>
                   650+ Indie Playlists At Your Fingertips
                 </h2>
-                <p className="text-xl text-gray-300 max-w-4xl mx-auto leading-relaxed" style={{ 
+                <p className="text-xl lg:text-[1.4rem] text-gray-300 max-w-4xl mx-auto leading-relaxed" style={{ 
                   hyphens: 'none', 
                   WebkitHyphens: 'none', 
                   MozHyphens: 'none', 
@@ -3640,12 +3686,7 @@ export default function Home() {
               <div className="text-center mt-16 mb-20 md:mb-0 lg:mt-16" style={{ marginTop: '-180px', marginBottom: '180px' }}>
                 <button
                   onClick={scrollToTrackInput}
-                  className="px-12 py-4 bg-gradient-to-r from-[#8b5cf6] via-[#59e3a5] to-[#14c0ff] text-white font-bold rounded-2xl hover:shadow-2xl hover:shadow-[#59e3a5]/30 transition-all duration-700 transform hover:scale-105 active:scale-95 relative overflow-hidden group text-lg"
-                  style={{ 
-                    /* DESKTOP ONLY: Add 80px top margin and 90px bottom margin to prevent button from being stuck under browser mockup */
-                    marginTop: typeof window !== 'undefined' && window.innerWidth >= 1024 ? '80px' : '0px',
-                    marginBottom: typeof window !== 'undefined' && window.innerWidth >= 1024 ? '90px' : '0px'
-                  }}
+                  className="px-12 py-4 bg-gradient-to-r from-[#8b5cf6] via-[#59e3a5] to-[#14c0ff] text-white font-bold rounded-2xl hover:shadow-2xl hover:shadow-[#59e3a5]/30 transition-all duration-700 transform hover:scale-105 active:scale-95 relative overflow-hidden group text-lg lg:mt-[110px] lg:mb-[130px]"
                 >
                   <span className="relative z-10">ACCESS CURATOR CONNECT+</span>
                   <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-700"></div>
@@ -3886,13 +3927,12 @@ export default function Home() {
           </div>
 
           {/* Genre Coverage Section */}
-          <section className="pt-6 pb-24 px-4 relative z-20 -mt-52 md:mt-0" style={{ 
-            background: 'transparent',
-            marginTop: typeof window !== 'undefined' && window.innerWidth >= 1024 ? '-40px' : '-208px'
+          <section className="pt-2 pb-24 px-4 relative z-20 -mt-52 md:mt-0 lg:-mt-20" style={{ 
+            background: 'transparent'
           }}>
             <div className="max-w-7xl mx-auto">
               {/* Section Header */}
-              <div className="text-center mb-8">
+              <div className="text-center mb-8 lg:mt-[15px]">
                 <h2 
                   ref={genreHeadingRef}
                   className={`text-3xl md:text-4xl lg:text-5xl font-black mb-8 bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] bg-clip-text text-transparent transition-all duration-700 ${genreHeadingInView ? 'animate-fade-in-up' : 'opacity-0 translate-y-8'}`} 
@@ -4159,7 +4199,7 @@ export default function Home() {
               <div className="text-center mb-20">
                 <h2 
                   ref={playlistsHeadingRef}
-                  className={`text-5xl md:text-6xl lg:text-7xl font-black mb-8 bg-gradient-to-r from-[#59e3a5] via-[#14c0ff] to-[#8b5cf6] bg-clip-text text-transparent drop-shadow-2xl transition-all duration-700 ${playlistsHeadingInView ? 'animate-fade-in-up' : 'opacity-0 translate-y-8'}`} 
+                  className={`text-5xl md:text-6xl lg:text-6xl font-black mb-8 bg-gradient-to-r from-[#59e3a5] via-[#14c0ff] to-[#8b5cf6] bg-clip-text text-transparent drop-shadow-2xl transition-all duration-700 ${playlistsHeadingInView ? 'animate-fade-in-up' : 'opacity-0 translate-y-8'}`} 
                   style={{ lineHeight: '1.2' }}
                 >
                   The Playlists That Actually Matter
@@ -4236,12 +4276,7 @@ export default function Home() {
                   }}></div>
                   
                   <p 
-                    className="relative md:text-4xl lg:text-5xl font-black text-white leading-relaxed" 
-                    style={{ 
-                      fontSize: typeof window !== 'undefined' && window.innerWidth >= 1024 ? '2.475rem' : '1.475rem',
-                      marginTop: typeof window !== 'undefined' && window.innerWidth >= 1024 ? '15px' : '0px',
-                      marginBottom: typeof window !== 'undefined' && window.innerWidth >= 1024 ? '15px' : '0px'
-                    }}
+                    className="relative text-[1.475rem] lg:text-[2.925rem] font-black text-white leading-relaxed lg:mt-[15px] lg:mb-[15px]"
                   >
                     + Literally{' '}
                     <span className="bg-gradient-to-r from-[#59e3a5] via-[#14c0ff] to-[#8b5cf6] bg-clip-text text-transparent drop-shadow-lg animate-pulse">
@@ -4274,7 +4309,7 @@ export default function Home() {
           </section>
 
           {/* Shape Divider - Copied from phoneShapeGradient */}
-          <div className="relative z-30 pb-32 pb-48" style={{ height: '200px', width: '110vw', left: '-5vw', position: 'relative', transform: 'rotate(8deg)', background: 'transparent', marginTop: '-60px', marginBottom: '85px' }}>
+          <div className="relative z-30 pb-48" style={{ height: '200px', width: '110vw', left: '-5vw', position: 'relative', transform: 'rotate(8deg)', background: 'transparent', marginTop: '-60px', marginBottom: '85px' }}>
             {/* All background elements removed for full transparency */}
             
             {/* Background foundation */}
@@ -4606,7 +4641,7 @@ export default function Home() {
           <section className="pt-44 pb-64 px-4 relative z-30 overflow-visible" style={{ background: 'transparent' }}>
             <div className="max-w-screen-2xl mx-auto overflow-visible">
               {/* Section Header */}
-              <div className="text-center mb-20">
+              <div className="text-center mb-12">
                 <h2 
                   ref={testimonialsHeadingRef}
                   className={`text-4xl md:text-5xl lg:text-6xl font-black mb-8 bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] bg-clip-text text-transparent transition-all duration-700 ${testimonialsHeadingInView ? 'animate-fade-in-up' : 'opacity-0 translate-y-8'}`} 
@@ -4716,7 +4751,7 @@ export default function Home() {
           </section>
 
           {/* What You Get Section */}
-          <section className="py-32 pt-48 pb-48 px-4 relative overflow-hidden -mt-24">
+          <section className="py-16 lg:py-20 pt-24 lg:pt-16 pb-48 px-4 relative overflow-hidden -mt-24">
             {/* Epic Background with Multiple Gradient Layers */}
             <div className="absolute inset-0 bg-gradient-to-br from-[#0a0a13] via-[#16213e] to-[#1a1a2e]"></div>
             <div className="absolute inset-0 bg-gradient-to-tr from-[#8b5cf6]/20 via-transparent to-[#14c0ff]/20"></div>
@@ -4783,7 +4818,7 @@ export default function Home() {
                 </div>
                 
                 {/* Right Side - Content */}
-                <div className="space-y-8 pr-2 pl-2">
+                <div className="space-y-8 pr-[4vw] sm:pr-[3vw] md:pr-[2.5vw] lg:pr-[2vw] xl:pr-8 pl-2">
                   {/* Header */}
                   <div className="space-y-6">
                     <h2 
@@ -5255,8 +5290,8 @@ export default function Home() {
 
         </div> {/* End Content Container */}
 
-        {/* Footer */}
-        <Footer />
+          {/* Footer */}
+          <Footer />
 
                 {/* Desktop Search Results Portal */}
         {isMounted && !isMobile && showSearchResults && (
@@ -5370,7 +5405,7 @@ export default function Home() {
             document.body
           )
         )}
-      </main>
+        </main>
     </>
   );
 }
