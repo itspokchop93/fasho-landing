@@ -2134,7 +2134,7 @@ export default function Home() {
                     <div className="absolute inset-0 -m-8 bg-gradient-to-br from-[#59e3a5]/30 via-[#14c0ff]/40 to-[#8b5cf6]/30 rounded-full blur-3xl opacity-80 animate-pulse"></div>
                     
                     {/* Phone Frame */}
-                    <div className="w-48 h-[360px] md:w-64 md:h-[480px] bg-gradient-to-br from-gray-900 via-black to-gray-800 rounded-[3rem] p-2 shadow-2xl relative z-10 border border-gray-700/50">
+                    <div className="w-56 h-[400px] md:w-72 md:h-[520px] bg-gradient-to-br from-gray-900 via-black to-gray-800 rounded-[3rem] p-2 shadow-2xl relative z-10 border border-gray-700/50">
                       <div className="w-full h-full bg-gradient-to-br from-[#18192a] to-[#0a0a13] rounded-[2.5rem] relative overflow-hidden flex flex-col">
                         {/* Status Bar */}
                         <div className="flex justify-between items-center px-8 py-4 text-white text-sm relative">
@@ -2228,7 +2228,7 @@ export default function Home() {
                     <div className="absolute inset-0 -m-8 bg-gradient-to-br from-[#14c0ff]/30 via-[#8b5cf6]/40 to-[#59e3a5]/30 rounded-full blur-3xl opacity-80 animate-pulse"></div>
                     
                     {/* Phone Frame */}
-                    <div className="w-48 h-[360px] md:w-64 md:h-[480px] bg-gradient-to-br from-gray-900 via-black to-gray-800 rounded-[3rem] p-2 shadow-2xl relative z-10 border border-gray-700/50">
+                    <div className="w-56 h-[400px] md:w-72 md:h-[520px] bg-gradient-to-br from-gray-900 via-black to-gray-800 rounded-[3rem] p-2 shadow-2xl relative z-10 border border-gray-700/50">
                       <div className="w-full h-full bg-gradient-to-br from-[#18192a] to-[#0a0a13] rounded-[2.5rem] relative overflow-hidden flex flex-col">
                         {/* Status Bar */}
                         <div className="flex justify-between items-center px-8 py-4 text-white text-sm relative">
@@ -2341,7 +2341,7 @@ export default function Home() {
                     <div className="absolute inset-0 -m-8 bg-gradient-to-br from-[#8b5cf6]/30 via-[#59e3a5]/40 to-[#14c0ff]/30 rounded-full blur-3xl opacity-80 animate-pulse"></div>
                     
                     {/* Phone Frame */}
-                    <div className="w-48 h-[360px] md:w-64 md:h-[480px] bg-gradient-to-br from-gray-900 via-black to-gray-800 rounded-[3rem] p-2 shadow-2xl relative z-10 border border-gray-700/50">
+                    <div className="w-56 h-[400px] md:w-72 md:h-[520px] bg-gradient-to-br from-gray-900 via-black to-gray-800 rounded-[3rem] p-2 shadow-2xl relative z-10 border border-gray-700/50">
                       <div className="w-full h-full bg-gradient-to-br from-[#18192a] to-[#0a0a13] rounded-[2.5rem] relative overflow-hidden flex flex-col">
                         {/* Status Bar */}
                         <div className="flex justify-between items-center px-8 py-4 text-white text-sm relative">
@@ -2410,7 +2410,7 @@ export default function Home() {
                     <div className="absolute inset-0 -m-8 bg-gradient-to-br from-[#59e3a5]/30 via-[#8b5cf6]/40 to-[#14c0ff]/30 rounded-full blur-3xl opacity-80 animate-pulse"></div>
                     
                     {/* Phone Frame */}
-                    <div className="w-48 h-[360px] md:w-64 md:h-[480px] bg-gradient-to-br from-gray-900 via-black to-gray-800 rounded-[3rem] p-2 shadow-2xl relative z-10 border border-gray-700/50">
+                    <div className="w-56 h-[400px] md:w-72 md:h-[520px] bg-gradient-to-br from-gray-900 via-black to-gray-800 rounded-[3rem] p-2 shadow-2xl relative z-10 border border-gray-700/50">
                       <div className="w-full h-full bg-gradient-to-br from-[#18192a] to-[#0a0a13] rounded-[2.5rem] relative overflow-hidden flex flex-col">
                         {/* Status Bar */}
                         <div className="flex justify-between items-center px-8 py-4 text-white text-sm relative">
