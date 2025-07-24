@@ -120,7 +120,7 @@ const FAQCard = ({ question, answer }: { question: string; answer: string }) => 
 };
 
 // Add at the top of the Home component:
-const PHONE_SECTION_ID = "phone-mockup-scroll-section";
+// Removed PHONE_SECTION_ID - no longer needed with static sections
 
 export default function Home() {
   const [showSuccessBanner, setShowSuccessBanner] = useState(false);
@@ -429,288 +429,7 @@ export default function Home() {
   const [testimonialsHeadingRef, testimonialsHeadingInView] = useInView({ threshold: 0.3 });
   const [testimonialsSubheadingRef, testimonialsSubheadingInView] = useInView({ threshold: 0.3 });
 
-  const phoneSectionRef = useRef<HTMLDivElement>(null);
-  const [currentStep, setCurrentStep] = useState(0); // 0=Step1, 1=Step2, 2=Step3, 3=Step4
-  const [stepProgress, setStepProgress] = useState(0); // 0-1 progress within current step
-  const [isStepSectionPinned, setIsStepSectionPinned] = useState(false);
 
-    // ScrollMagic-style Step Section Animation System - Desktop Only
-  useEffect(() => {
-    const section = phoneSectionRef.current;
-    if (!section) return;
-    
-    // Only run scroll animation on desktop (lg+) screens
-    const checkIsDesktop = () => window.innerWidth >= 1024;
-    let isDesktop = checkIsDesktop();
-    if (!isDesktop) return;
-
-    // ScrollMagic-style Scene Controller
-    class StepSceneController {
-      private section: HTMLElement;
-      private currentStep: number = 0;
-      private stepProgress: number = 0;
-      private isPinned: boolean = false;
-      private totalScrollAccumulated: number = 0;
-      private stepDuration: number = this.getMobileAdjustedStepDuration(); // Responsive scroll distance
-      private lastTouchY: number = 0;
-      
-      constructor(sectionElement: HTMLElement) {
-        this.section = sectionElement;
-        this.bindEvents();
-      }
-
-      private getMobileAdjustedStepDuration(): number {
-        // Check if device is mobile (768px and below)
-        const isMobile = window.innerWidth <= 768;
-        
-        // Desktop: 640px per step (original)
-        // Mobile: 480px per step (25% reduction: 640 * 0.75 = 480)
-        return isMobile ? 480 : 640;
-      }
-
-      private bindEvents() {
-        window.addEventListener('scroll', this.handleScroll, { passive: true });
-        window.addEventListener('wheel', this.handleWheel, { passive: false });
-        window.addEventListener('touchstart', this.handleTouchStart, { passive: false });
-        window.addEventListener('touchmove', this.handleTouchMove, { passive: false });
-        window.addEventListener('touchend', this.handleTouchEnd, { passive: false });
-      }
-
-      private handleScroll = () => {
-        this.updateSceneProgress();
-      };
-
-      private handleWheel = (e: WheelEvent) => {
-        if (this.isPinned) {
-      e.preventDefault();
-          this.processScrollDelta(e.deltaY);
-        }
-      };
-
-      private handleTouchStart = (e: TouchEvent) => {
-        if (this.isPinned) {
-          e.preventDefault();
-          this.lastTouchY = e.touches[0].clientY;
-        }
-      };
-
-      private handleTouchMove = (e: TouchEvent) => {
-        if (this.isPinned) {
-          e.preventDefault();
-          const deltaY = this.lastTouchY - e.touches[0].clientY;
-          this.lastTouchY = e.touches[0].clientY;
-          this.processScrollDelta(deltaY * 1.5); // Touch sensitivity multiplier
-        }
-      };
-
-      private handleTouchEnd = (e: TouchEvent) => {
-        if (this.isPinned) {
-          e.preventDefault();
-        }
-      };
-
-      private processScrollDelta(deltaY: number) {
-        this.totalScrollAccumulated += deltaY;
-        
-        // Calculate step and progress based on accumulated scroll
-        const totalProgress = this.totalScrollAccumulated / this.stepDuration;
-        
-        // Handle exit conditions - more precise exit logic
-        if (totalProgress <= 0) {
-          this.exitSection('up');
-          return;
-        }
-        
-        // Exit immediately when Step 4 is completed (totalProgress >= 3.8)
-        if (totalProgress >= 3.8) {
-          this.exitSection('down');
-          return;
-        }
-        
-        // Update step and progress
-        this.currentStep = Math.floor(totalProgress);
-        this.stepProgress = totalProgress - this.currentStep;
-        
-        // Clamp values - ensure we don't go beyond step 3
-        this.currentStep = Math.max(0, Math.min(3, this.currentStep));
-        this.stepProgress = Math.max(0, Math.min(1, this.stepProgress));
-        
-        // If we're at step 3 and progress is near completion, prepare for exit
-        if (this.currentStep === 3 && this.stepProgress >= 0.8) {
-          this.currentStep = 3;
-          this.stepProgress = 1;
-        }
-        
-        this.updateStepDisplay();
-      }
-
-      private updateSceneProgress() {
-        if (this.isPinned) {
-          // If already pinned, don't check for re-pinning
-          return;
-        }
-        
-        const rect = this.section.getBoundingClientRect();
-        const viewportHeight = window.innerHeight;
-        const triggerPoint = viewportHeight * 0.5; // 50% viewport height (ScrollMagic default)
-        
-        // More precise trigger detection - section center should be near trigger point
-        const sectionCenter = rect.top + (rect.height / 2);
-        const distanceFromTrigger = Math.abs(sectionCenter - triggerPoint);
-        const triggerThreshold = 50; // Reduced to 50px for more precision
-        
-        // Check if section should be pinned - more strict conditions
-        const shouldPin = distanceFromTrigger <= triggerThreshold && 
-                         rect.top <= triggerPoint + 50 && 
-                         rect.bottom >= triggerPoint - 50 &&
-                         rect.top > -rect.height * 0.3 && // Not too far up
-                         rect.bottom < viewportHeight + rect.height * 0.3; // Not too far down
-        
-        if (shouldPin && !this.isPinned) {
-          this.enterPinMode();
-        }
-      }
-
-      private enterPinMode() {
-        this.isPinned = true;
-        setIsStepSectionPinned(true);
-        document.body.style.overflow = 'hidden';
-        
-        // Store original position and styling
-        const rect = this.section.getBoundingClientRect();
-        this.originalTop = window.scrollY + rect.top;
-        this.originalPosition = this.section.style.position || 'relative';
-        this.originalTransform = this.section.style.transform || '';
-        this.originalZIndex = this.section.style.zIndex || 'auto';
-        
-        // Create a robust placeholder to maintain layout space
-        this.placeholder = document.createElement('div');
-        this.placeholder.style.height = `${this.section.offsetHeight + 150}px`; // Add extra space to prevent text from coming up during pinning
-        this.placeholder.style.width = '100%';
-        this.placeholder.style.visibility = 'hidden';
-        this.placeholder.style.pointerEvents = 'none';
-        this.placeholder.style.position = 'relative';
-        this.placeholder.style.zIndex = '1';
-        this.placeholder.style.background = 'transparent';
-        this.section.parentNode?.insertBefore(this.placeholder, this.section);
-        
-        // ScrollMagic-style pin positioning
-        this.section.style.position = 'fixed';
-        this.section.style.top = '50%';
-        this.section.style.left = '0';
-        this.section.style.right = '0';
-        this.section.style.transform = 'translateY(-50%)';
-        this.section.style.zIndex = '1000';
-        this.section.style.width = '100%';
-        
-        // Reset scroll accumulation when entering
-        this.totalScrollAccumulated = this.currentStep * this.stepDuration;
-      }
-
-      private originalTop: number = 0;
-      private originalPosition: string = '';
-      private originalTransform: string = '';
-      private originalZIndex: string = '';
-      private placeholder: HTMLElement | null = null;
-
-      private exitPinMode() {
-        if (!this.isPinned) return; // Prevent double exit
-        
-        this.isPinned = false;
-        setIsStepSectionPinned(false);
-        document.body.style.overflow = '';
-        
-        // Remove placeholder immediately
-        if (this.placeholder && this.placeholder.parentNode) {
-          this.placeholder.parentNode.removeChild(this.placeholder);
-          this.placeholder = null;
-        }
-        
-        // Restore original positioning completely
-        this.section.style.position = this.originalPosition;
-        this.section.style.top = '';
-        this.section.style.left = '';
-        this.section.style.right = '';
-        this.section.style.transform = this.originalTransform;
-        this.section.style.zIndex = this.originalZIndex;
-        this.section.style.width = '';
-        
-        // Force a layout recalculation to prevent sticky behavior
-        this.section.offsetHeight;
-      }
-
-      private exitSection(direction: 'up' | 'down') {
-        // Immediate exit to prevent sticky behavior
-        this.exitPinMode();
-        
-        // Reset step states based on direction
-        if (direction === 'up') {
-          this.currentStep = 0;
-          this.stepProgress = 0;
-          this.totalScrollAccumulated = 0;
-        } else {
-          // For down direction, complete step 4 and exit
-          this.currentStep = 3;
-          this.stepProgress = 1;
-          this.totalScrollAccumulated = 4 * this.stepDuration;
-        }
-        
-        this.updateStepDisplay();
-        
-        // Immediate momentum scroll without animation to prevent sticking
-        requestAnimationFrame(() => {
-          const scrollAmount = direction === 'up' ? -200 : 200;
-          window.scrollBy(0, scrollAmount);
-        });
-      }
-
-      private updateStepDisplay() {
-        setCurrentStep(this.currentStep);
-        setStepProgress(this.stepProgress);
-      }
-
-      public destroy() {
-        window.removeEventListener('scroll', this.handleScroll);
-        window.removeEventListener('wheel', this.handleWheel);
-        window.removeEventListener('touchstart', this.handleTouchStart);
-        window.removeEventListener('touchmove', this.handleTouchMove);
-        window.removeEventListener('touchend', this.handleTouchEnd);
-        
-        // Force exit pin mode if still pinned
-        if (this.isPinned) {
-          this.exitPinMode();
-        }
-        
-        // Complete cleanup - remove any residual styling
-        this.section.style.position = '';
-        this.section.style.top = '';
-        this.section.style.left = '';
-        this.section.style.right = '';
-        this.section.style.transform = '';
-        this.section.style.zIndex = '';
-        this.section.style.width = '';
-        
-        // Reset body overflow
-        document.body.style.overflow = '';
-        
-        // Reset states
-        this.currentStep = 0;
-        this.stepProgress = 0;
-        this.totalScrollAccumulated = 0;
-        setCurrentStep(0);
-        setStepProgress(0);
-        setIsStepSectionPinned(false);
-      }
-    }
-
-    // Initialize the controller
-    const controller = new StepSceneController(section);
-
-      // Cleanup
-    return () => {
-      controller.destroy();
-    };
-  }, []);
 
   // Check for success query parameter on component mount
   useEffect(() => {
@@ -1867,49 +1586,121 @@ export default function Home() {
           <div className="max-w-4xl mx-auto px-6 py-20 mt-0" style={{ lineHeight: '1.8', overflow: 'visible', background: 'none', marginTop: '40px', hyphens: 'none', WebkitHyphens: 'none', MozHyphens: 'none', msHyphens: 'none', wordBreak: 'normal', overflowWrap: 'normal' }}>
             {/* PAS Final Draft Section - User Provided */}
             <div className="text-center mb-20" style={{ hyphens: 'none', WebkitHyphens: 'none', MozHyphens: 'none', msHyphens: 'none', wordBreak: 'normal', overflowWrap: 'normal' }}>
-              <p ref={musicFireRef} className={`text-2xl md:text-3xl font-black text-white pb-1 text-center transition-all duration-700 ${musicFireInView ? 'animate-fade-in-up' : 'opacity-0 translate-y-8'}`} style={{ lineHeight: '1.6', fontSize: 'calc(1.5rem + 0.30rem)' }}>
+              <p ref={musicFireRef} className={`text-2xl md:text-3xl font-black text-white pb-1 text-center transition-all duration-700 ${musicFireInView ? 'animate-fade-in-up' : 'opacity-0 translate-y-8'}`} style={{ 
+                lineHeight: '1.6', 
+                fontSize: typeof window !== 'undefined' && window.innerWidth >= 1024 ? 'calc(1.5rem + 0.30rem + 0.99rem)' : 'calc(1.5rem + 0.30rem)'
+              }}>
                 <span className="block md:inline">Your Music Is Fire,</span>
               </p>
-              <p ref={nobodyHearingRef} className={`text-2xl md:text-3xl font-black text-white pb-12 text-center transition-all duration-700 ${nobodyHearingInView ? 'animate-fade-in-up' : 'opacity-0 translate-y-8'}`} style={{ lineHeight: '1.6', fontSize: 'calc(1.5rem + 0.30rem)' }}>
+              <p ref={nobodyHearingRef} className={`text-2xl md:text-3xl font-black text-white pb-12 text-center transition-all duration-700 ${nobodyHearingInView ? 'animate-fade-in-up' : 'opacity-0 translate-y-8'}`} style={{ 
+                lineHeight: '1.6', 
+                fontSize: typeof window !== 'undefined' && window.innerWidth >= 1024 ? 'calc(1.5rem + 0.30rem + 0.99rem)' : 'calc(1.5rem + 0.30rem)'
+              }}>
                 <span className="block md:inline">But <span className="bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] bg-clip-text text-transparent">Nobody's</span> Hearing It...</span>
               </p>
-              <p ref={text1Ref} className={`text-gray-300 pb-12 font-medium text-center transition-all duration-700 ${text1InView ? 'animate-fade-in-up' : 'opacity-0 translate-y-8'}`} style={{ fontSize: '1.6rem', lineHeight: '1.8', hyphens: 'none', WebkitHyphens: 'none', MozHyphens: 'none', msHyphens: 'none', wordBreak: 'keep-all', overflowWrap: 'break-word' }}>
+              <p ref={text1Ref} className={`text-gray-300 pb-12 font-medium text-center transition-all duration-700 ${text1InView ? 'animate-fade-in-up' : 'opacity-0 translate-y-8'}`} style={{ 
+                fontSize: typeof window !== 'undefined' && window.innerWidth >= 1024 ? 'calc(1.6rem + 0.15rem)' : '1.6rem', 
+                lineHeight: '1.8', 
+                hyphens: 'none', 
+                WebkitHyphens: 'none', 
+                MozHyphens: 'none', 
+                msHyphens: 'none', 
+                wordBreak: 'keep-all', 
+                overflowWrap: 'break-word' 
+              }}>
                 You spent days making the best song of your life. Created the dopest cover art for it. All your friends said it slaps harder than Will Smith at the Oscars....
               </p>
-              <p ref={text2Ref} className={`text-2xl md:text-3xl font-bold pb-12 text-center transition-all duration-700 ${text2InView ? 'animate-fade-in-up' : 'opacity-0 translate-y-8'}`} style={{ lineHeight: '1.6', fontSize: 'calc(1.5rem + 0.45rem)' }}>
+              <p ref={text2Ref} className={`text-2xl md:text-3xl font-bold pb-12 text-center transition-all duration-700 ${text2InView ? 'animate-fade-in-up' : 'opacity-0 translate-y-8'}`} style={{ 
+                lineHeight: '1.6', 
+                fontSize: typeof window !== 'undefined' && window.innerWidth >= 1024 ? 'calc(1.5rem + 0.45rem + 0.15rem)' : 'calc(1.5rem + 0.45rem)'
+              }}>
                 <span className="block md:inline">But your Spotify still</span>{' '}
                 <span className="block md:inline">says " <span className="bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] bg-clip-text text-transparent">&lt; 1,000</span> " plays</span>
               </p>
-              <p ref={text3Ref} className={`text-gray-300 pb-12 font-medium text-center transition-all duration-700 ${text3InView ? 'animate-fade-in-up' : 'opacity-0 translate-y-8'}`} style={{ fontSize: '1.6rem', lineHeight: '1.8', hyphens: 'none', WebkitHyphens: 'none', MozHyphens: 'none', msHyphens: 'none', wordBreak: 'keep-all', overflowWrap: 'break-word' }}>
+              <p ref={text3Ref} className={`text-gray-300 pb-12 font-medium text-center transition-all duration-700 ${text3InView ? 'animate-fade-in-up' : 'opacity-0 translate-y-8'}`} style={{ 
+                fontSize: typeof window !== 'undefined' && window.innerWidth >= 1024 ? 'calc(1.6rem + 0.15rem)' : '1.6rem', 
+                lineHeight: '1.8', 
+                hyphens: 'none', 
+                WebkitHyphens: 'none', 
+                MozHyphens: 'none', 
+                msHyphens: 'none', 
+                wordBreak: 'keep-all', 
+                overflowWrap: 'break-word' 
+              }}>
                 Meanwhile, some dude who recorded his whole album <b>on an iPhone</b> just hit <b>2 million</b> streams and <b>got signed.</b>
               </p>
-              <p ref={text4Ref} className={`text-4xl md:text-5xl font-black pb-5 bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] bg-clip-text text-transparent transition-all duration-700 ${text4InView ? 'animate-fade-in-up' : 'opacity-0 translate-y-8'}`} style={{ lineHeight: '1.5', fontSize: 'calc(2.25rem + 0.25rem)' }}>
+              <p ref={text4Ref} className={`text-4xl md:text-5xl font-black pb-5 bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] bg-clip-text text-transparent transition-all duration-700 ${text4InView ? 'animate-fade-in-up' : 'opacity-0 translate-y-8'}`} style={{ 
+                lineHeight: '1.5', 
+                fontSize: typeof window !== 'undefined' && window.innerWidth >= 1024 ? 'calc(2.25rem + 0.25rem + 0.15rem)' : 'calc(2.25rem + 0.25rem)'
+              }}>
                 Damn…
               </p>
-              <p ref={text5Ref} className={`text-3xl md:text-4xl font-black text-white pb-12 pt-1 transition-all duration-700 ${text5InView ? 'animate-fade-in-up' : 'opacity-0 translate-y-8'}`} style={{ lineHeight: '1.5', fontSize: 'calc(1.875rem + 0.00rem)' }}>
+              <p ref={text5Ref} className={`text-3xl md:text-4xl font-black text-white pb-12 pt-1 transition-all duration-700 ${text5InView ? 'animate-fade-in-up' : 'opacity-0 translate-y-8'}`} style={{ 
+                lineHeight: '1.5', 
+                fontSize: typeof window !== 'undefined' && window.innerWidth >= 1024 ? 'calc(1.875rem + 0.00rem + 0.15rem)' : 'calc(1.875rem + 0.00rem)'
+              }}>
                 Ready to know the truth?
               </p>
-              <p ref={text6bRef} className={`font-black text-white pb-8 text-center transition-all duration-700 ${text6bInView ? 'animate-fade-in-up' : 'opacity-0 translate-y-8'}`} style={{ fontSize: 'calc(1.874rem - 0.15rem)', lineHeight: '1.5' }}>
+              <p ref={text6bRef} className={`font-black text-white pb-8 text-center transition-all duration-700 ${text6bInView ? 'animate-fade-in-up' : 'opacity-0 translate-y-8'}`} style={{ 
+                fontSize: typeof window !== 'undefined' && window.innerWidth >= 1024 ? 'calc(1.874rem - 0.15rem + 0.15rem)' : 'calc(1.874rem - 0.15rem)', 
+                lineHeight: '1.5' 
+              }}>
                 Talent and hard work DOES NOT guarantee success on Spotify.
               </p>
-              <p ref={text6Ref} className={`text-gray-300 pb-12 font-medium text-center transition-all duration-700 ${text6InView ? 'animate-fade-in-up' : 'opacity-0 translate-y-8'}`} style={{ fontSize: '1.6rem', lineHeight: '1.8', hyphens: 'none', WebkitHyphens: 'none', MozHyphens: 'none', msHyphens: 'none', wordBreak: 'keep-all', overflowWrap: 'break-word' }}>
+              <p ref={text6Ref} className={`text-gray-300 pb-12 font-medium text-center transition-all duration-700 ${text6InView ? 'animate-fade-in-up' : 'opacity-0 translate-y-8'}`} style={{ 
+                fontSize: typeof window !== 'undefined' && window.innerWidth >= 1024 ? 'calc(1.6rem + 0.15rem)' : '1.6rem', 
+                lineHeight: '1.8', 
+                hyphens: 'none', 
+                WebkitHyphens: 'none', 
+                MozHyphens: 'none', 
+                msHyphens: 'none', 
+                wordBreak: 'keep-all', 
+                overflowWrap: 'break-word' 
+              }}>
                 The platform only pushes artists who <b><i>ALREADY</i></b> have momentum. Big streams, high engagement, and playlist placements. If you've got them, Spotify's algorithm <b>LOVES</b> you. But if you don't? <b>You're invisible.</b>
               </p>
               <div ref={text7Ref} className={`text-center pb-12 transition-all duration-700 ${text7InView ? 'animate-fade-in-up' : 'opacity-0 translate-y-8'}`}>
-                <p className="font-black text-white mb-2" style={{ fontSize: 'calc(1.5rem + 0.25rem)', lineHeight: '1.5' }}>
+                <p className="font-black text-white mb-2" style={{ 
+                  fontSize: typeof window !== 'undefined' && window.innerWidth >= 1024 ? 'calc(1.5rem + 0.25rem + 0.8rem)' : 'calc(1.5rem + 0.25rem)', 
+                  lineHeight: '1.5' 
+                }}>
                   Here's the <span className="bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] bg-clip-text text-transparent">CATCH</span> that's
                 </p>
-                <p className="font-black text-white" style={{ fontSize: 'calc(1.5rem + 0.25rem)', lineHeight: '1.5' }}>
+                <p className="font-black text-white" style={{ 
+                  fontSize: typeof window !== 'undefined' && window.innerWidth >= 1024 ? 'calc(1.5rem + 0.25rem + 0.8rem)' : 'calc(1.5rem + 0.25rem)', 
+                  lineHeight: '1.5' 
+                }}>
                   <span className="bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] bg-clip-text text-transparent">KILLING</span> independent artists…
                 </p>
               </div>
-              <p ref={text8Ref} className={`text-gray-300 pb-6 font-medium text-center transition-all duration-700 ${text8InView ? 'animate-fade-in-up' : 'opacity-0 translate-y-8'}`} style={{ fontSize: '1.6rem', lineHeight: '1.8', hyphens: 'none', WebkitHyphens: 'none', MozHyphens: 'none', msHyphens: 'none', wordBreak: 'keep-all', overflowWrap: 'break-word' }}>
+              <p ref={text8Ref} className={`text-gray-300 pb-6 font-medium text-center transition-all duration-700 ${text8InView ? 'animate-fade-in-up' : 'opacity-0 translate-y-8'}`} style={{ 
+                fontSize: typeof window !== 'undefined' && window.innerWidth >= 1024 ? 'calc(1.6rem + 0.15rem)' : '1.6rem', 
+                lineHeight: '1.8', 
+                hyphens: 'none', 
+                WebkitHyphens: 'none', 
+                MozHyphens: 'none', 
+                msHyphens: 'none', 
+                wordBreak: 'keep-all', 
+                overflowWrap: 'break-word' 
+              }}>
                 Spotify won't promote you if you <b><i><u>DON'T</u></i></b> have streams. But you can't get streams if Spotify <b><i><u>WON'T</u></i></b> promote you!
               </p>
-              <p ref={text8bRef} className={`text-gray-300 pb-12 font-medium text-center transition-all duration-700 ${text8bInView ? 'animate-fade-in-up' : 'opacity-0 translate-y-8'}`} style={{ fontSize: '1.6rem', lineHeight: '1.8', hyphens: 'none', WebkitHyphens: 'none', MozHyphens: 'none', msHyphens: 'none', wordBreak: 'keep-all', overflowWrap: 'break-word' }}>
+              <p ref={text8bRef} className={`text-gray-300 pb-12 font-medium text-center transition-all duration-700 ${text8bInView ? 'animate-fade-in-up' : 'opacity-0 translate-y-8'}`} style={{ 
+                fontSize: typeof window !== 'undefined' && window.innerWidth >= 1024 ? 'calc(1.6rem + 0.15rem)' : '1.6rem', 
+                lineHeight: '1.8', 
+                hyphens: 'none', 
+                WebkitHyphens: 'none', 
+                MozHyphens: 'none', 
+                msHyphens: 'none', 
+                wordBreak: 'keep-all', 
+                overflowWrap: 'break-word' 
+              }}>
                 You're trapped in a death loop where the only way to win is to <i><b><span className="bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] bg-clip-text text-transparent">ALREADY</span></b></i> be winning.
               </p>
-              <p ref={text9Ref} className={`text-3xl md:text-4xl font-bold text-white pb-12 transition-all duration-700 ${text9InView ? 'animate-fade-in-up' : 'opacity-0 translate-y-8'}`} style={{ lineHeight: '1.6', fontSize: 'calc(1.875rem + 0.10rem)' }}>
+              <p ref={text9Ref} className={`text-3xl md:text-4xl font-bold text-white pb-12 transition-all duration-700 ${text9InView ? 'animate-fade-in-up' : 'opacity-0 translate-y-8'}`} style={{ 
+                lineHeight: '1.6', 
+                fontSize: typeof window !== 'undefined' && window.innerWidth >= 1024 ? 'calc(1.875rem + 0.10rem + 0.15rem)' : 'calc(1.875rem + 0.10rem)'
+              }}>
                 Trust me, we know the struggle.
               </p>
               <h2 ref={heading3Ref} className={`text-4xl md:text-5xl lg:text-6xl font-black pb-1 pt-2 bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] bg-clip-text text-transparent transition-all duration-700 ${heading3InView ? 'animate-fade-in-up' : 'opacity-0 translate-y-8'}`} style={{ lineHeight: '1.3' }}>
@@ -1922,7 +1713,10 @@ export default function Home() {
                 <div className="flex-shrink-0 w-16 h-16 flex items-center justify-center mt-1">
                   <span className="bg-gradient-to-r from-red-500 via-red-400 to-red-500 bg-clip-text text-transparent font-bold text-5xl">✗</span>
                 </div>
-                <p className="text-white font-medium" style={{ fontSize: '1.6rem', lineHeight: '1.7' }}>
+                <p className="text-white font-medium" style={{ 
+                  fontSize: typeof window !== 'undefined' && window.innerWidth >= 1024 ? 'calc(1.6rem + 0.15rem)' : '1.6rem', 
+                  lineHeight: '1.7' 
+                }}>
                   <b>60,000 new songs drop on Spotify EVERY single day</b> - and you're competing against ALL of them (42 new songs were uploaded in the time it took you to read this sentence)
                 </p>
               </div>
@@ -1930,7 +1724,10 @@ export default function Home() {
                 <div className="flex-shrink-0 w-16 h-16 flex items-center justify-center mt-1">
                   <span className="bg-gradient-to-r from-red-500 via-red-400 to-red-500 bg-clip-text text-transparent font-bold text-5xl">✗</span>
                 </div>
-                <p className="text-white font-medium" style={{ fontSize: '1.6rem', lineHeight: '1.7' }}>
+                <p className="text-white font-medium" style={{ 
+                  fontSize: typeof window !== 'undefined' && window.innerWidth >= 1024 ? 'calc(1.6rem + 0.15rem)' : '1.6rem', 
+                  lineHeight: '1.7' 
+                }}>
                   Without getting placed on the <b>RIGHT</b> playlists, you're <b>INVISIBLE</b> to Spotify's algorithm (and everyone else)
                 </p>
               </div>
@@ -1938,7 +1735,10 @@ export default function Home() {
                 <div className="flex-shrink-0 w-16 h-16 flex items-center justify-center mt-1">
                   <span className="bg-gradient-to-r from-red-500 via-red-400 to-red-500 bg-clip-text text-transparent font-bold text-5xl">✗</span>
                 </div>
-                <p className="text-white font-medium" style={{ fontSize: '1.6rem', lineHeight: '1.7' }}>
+                <p className="text-white font-medium" style={{ 
+                  fontSize: typeof window !== 'undefined' && window.innerWidth >= 1024 ? 'calc(1.6rem + 0.15rem)' : '1.6rem', 
+                  lineHeight: '1.7' 
+                }}>
                   It's not 2019 anymore - posting <b>"LINK IN BIO"</b> on Instagram works just as bad as buying an Ad in the newspaper
                 </p>
               </div>
@@ -1946,7 +1746,10 @@ export default function Home() {
                 <div className="flex-shrink-0 w-16 h-16 flex items-center justify-center mt-1">
                   <span className="bg-gradient-to-r from-red-500 via-red-400 to-red-500 bg-clip-text text-transparent font-bold text-5xl">✗</span>
                 </div>
-                <p className="text-white font-medium" style={{ fontSize: '1.6rem', lineHeight: '1.7' }}>
+                <p className="text-white font-medium" style={{ 
+                  fontSize: typeof window !== 'undefined' && window.innerWidth >= 1024 ? 'calc(1.6rem + 0.15rem)' : '1.6rem', 
+                  lineHeight: '1.7' 
+                }}>
                   It takes the average artist <b>4.7 YEARS</b> of trial and error to finally break into the industry (and most quit after year 2)
                 </p>
               </div>
@@ -1954,25 +1757,46 @@ export default function Home() {
                 <div className="flex-shrink-0 w-16 h-16 flex items-center justify-center mt-1">
                   <span className="bg-gradient-to-r from-red-500 via-red-400 to-red-500 bg-clip-text text-transparent font-bold text-5xl">✗</span>
                 </div>
-                <p className="text-white font-medium" style={{ fontSize: '1.6rem', lineHeight: '1.7' }}>
+                <p className="text-white font-medium" style={{ 
+                  fontSize: typeof window !== 'undefined' && window.innerWidth >= 1024 ? 'calc(1.6rem + 0.15rem)' : '1.6rem', 
+                  lineHeight: '1.7' 
+                }}>
                   Artists with <b>HALF your talent</b> are going viral DAILY because they learned how to work <b>SMARTER</b> than you do
                 </p>
               </div>
             </div>
             <div ref={bottomSectionRef} style={{ hyphens: 'none', WebkitHyphens: 'none', MozHyphens: 'none', msHyphens: 'none', wordBreak: 'normal', overflowWrap: 'normal' }}>
-            <p className={`text-2xl md:text-3xl font-bold text-white pb-12 text-center transition-all duration-700 ${bottomSectionInView ? 'animate-fade-in-up' : 'opacity-0 translate-y-8'}`} style={{ lineHeight: '1.6', fontSize: 'calc(1.5rem + 0.10rem)', hyphens: 'none', WebkitHyphens: 'none', MozHyphens: 'none', msHyphens: 'none', wordBreak: 'keep-all', overflowWrap: 'break-word' }}>
+            <p className={`text-2xl md:text-3xl font-bold text-white pb-12 text-center transition-all duration-700 ${bottomSectionInView ? 'animate-fade-in-up' : 'opacity-0 translate-y-8'}`} style={{ 
+              lineHeight: '1.6', 
+              fontSize: typeof window !== 'undefined' && window.innerWidth >= 1024 ? 'calc(1.5rem + 0.10rem + 0.15rem)' : 'calc(1.5rem + 0.10rem)', 
+              hyphens: 'none', 
+              WebkitHyphens: 'none', 
+              MozHyphens: 'none', 
+              msHyphens: 'none', 
+              wordBreak: 'keep-all', 
+              overflowWrap: 'break-word' 
+            }}>
               And while you're still wondering if playlist placements are <i>"worth it"</i>, other artists are collecting streaming revenue and booking their first tours.
             </p>
             <h2 ref={worstPartRef} className={`text-4xl md:text-5xl lg:text-6xl font-black pb-12 pt-8 bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] bg-clip-text text-transparent text-center transition-all duration-700 ${worstPartInView ? 'animate-fade-in-up' : 'opacity-0 translate-y-8'}`} style={{ lineHeight: '1.3' }}>
               But The WORST Part Is...
             </h2>
-            <p ref={fakeAgenciesRef} className={`text-2xl md:text-3xl font-bold text-white pb-12 text-center transition-all duration-700 ${fakeAgenciesInView ? 'animate-fade-in-up' : 'opacity-0 translate-y-8'}`} style={{ lineHeight: '1.6', fontSize: 'calc(1.5rem + 0.25rem)' }}>
+            <p ref={fakeAgenciesRef} className={`text-2xl md:text-3xl font-bold text-white pb-12 text-center transition-all duration-700 ${fakeAgenciesInView ? 'animate-fade-in-up' : 'opacity-0 translate-y-8'}`} style={{ 
+              lineHeight: '1.6', 
+              fontSize: typeof window !== 'undefined' && window.innerWidth >= 1024 ? 'calc(1.5rem + 0.25rem + 0.15rem)' : 'calc(1.5rem + 0.25rem)'
+            }}>
               REAL Spotify growth is trapped behind a field of landmines.
             </p>
-            <p ref={fakeAgenciesParaRef} className={`text-gray-300 pb-12 font-medium text-center transition-all duration-700 ${fakeAgenciesParaInView ? 'animate-fade-in-up' : 'opacity-0 translate-y-8'}`} style={{ fontSize: '1.6rem', lineHeight: '1.8' }}>
+            <p ref={fakeAgenciesParaRef} className={`text-gray-300 pb-12 font-medium text-center transition-all duration-700 ${fakeAgenciesParaInView ? 'animate-fade-in-up' : 'opacity-0 translate-y-8'}`} style={{ 
+              fontSize: typeof window !== 'undefined' && window.innerWidth >= 1024 ? 'calc(1.6rem + 0.15rem)' : '1.6rem', 
+              lineHeight: '1.8' 
+            }}>
               Fake agencies charging <b>$99</b> for <b>bot plays</b> from <b>Kazakstan.</b> Scammers in your DMs with <b>"PROMO 4 SALE"</b> messages. Snake oil companies on <b>Google</b> who put you on <b>handmade playlists</b> with only <b>52 followers.</b>
             </p>
-            <p ref={noCapRef} className={`text-2xl md:text-3xl font-bold text-white pb-12 text-center transition-all duration-700 ${noCapInView ? 'animate-fade-in-up' : 'opacity-0 translate-y-8'}`} style={{ lineHeight: '1.6', fontSize: 'calc(1.5rem + 0.15rem)' }}>
+            <p ref={noCapRef} className={`text-2xl md:text-3xl font-bold text-white pb-12 text-center transition-all duration-700 ${noCapInView ? 'animate-fade-in-up' : 'opacity-0 translate-y-8'}`} style={{ 
+              lineHeight: '1.6', 
+              fontSize: typeof window !== 'undefined' && window.innerWidth >= 1024 ? 'calc(1.5rem + 0.15rem + 0.15rem)' : 'calc(1.5rem + 0.15rem)'
+            }}>
               No Cap - Finding <span className="bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] bg-clip-text text-transparent">REAL</span> Spotify Marketing is Harder Than Finding a PS5 to Buy During COVID
             </p>
             <h2 ref={thatsWhyRef} className={`text-4xl md:text-5xl font-black pb-12 pt-2 bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] bg-clip-text text-transparent text-center transition-all duration-700 ${thatsWhyInView ? 'animate-fade-in-up' : 'opacity-0 translate-y-8'}`} style={{ lineHeight: '1.3' }}>
@@ -1996,40 +1820,70 @@ export default function Home() {
             <p ref={onlySpotifyRef} className={`text-2xl md:text-3xl font-bold text-white pb-12 text-center transition-all duration-700 ${onlySpotifyInView ? 'animate-fade-in-up' : 'opacity-0 translate-y-8'}`} style={{ lineHeight: '1.6' }}>
               The ONLY Spotify marketing service with DIRECT access to curators of the world's BIGGEST playlists.
             </p>
-            <p ref={dontMessRef} className={`text-gray-300 pb-12 font-medium text-center transition-all duration-700 ${dontMessInView ? 'animate-fade-in-up' : 'opacity-0 translate-y-8'}`} style={{ fontSize: '1.6rem', lineHeight: '1.8' }}>
+            <p ref={dontMessRef} className={`text-gray-300 pb-12 font-medium text-center transition-all duration-700 ${dontMessInView ? 'animate-fade-in-up' : 'opacity-0 translate-y-8'}`} style={{ 
+              fontSize: typeof window !== 'undefined' && window.innerWidth >= 1024 ? 'calc(1.6rem + 0.15rem)' : '1.6rem', 
+              lineHeight: '1.8' 
+            }}>
               We don't mess with <b>bots.</b> We don't own <b>sketchy playlists.</b> We don't make <b>empty promises.</b>
             </p>
-            <p ref={getMusicRef} className={`text-gray-300 pb-12 font-medium text-center transition-all duration-700 ${getMusicInView ? 'animate-fade-in-up' : 'opacity-0 translate-y-8'}`} style={{ fontSize: '1.6rem', lineHeight: '1.8' }}>
+            <p ref={getMusicRef} className={`text-gray-300 pb-12 font-medium text-center transition-all duration-700 ${getMusicInView ? 'animate-fade-in-up' : 'opacity-0 translate-y-8'}`} style={{ 
+              fontSize: typeof window !== 'undefined' && window.innerWidth >= 1024 ? 'calc(1.6rem + 0.15rem)' : '1.6rem', 
+              lineHeight: '1.8' 
+            }}>
               We get your music directly in front of playlist curators who control <b><i><span className="bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] bg-clip-text text-transparent">MILLIONS</span></i></b> of real listeners.
             </p>
-            <p ref={rapCaviarRef} className={`text-2xl md:text-3xl font-bold text-white pb-12 text-center transition-all duration-700 ${rapCaviarInView ? 'animate-fade-in-up' : 'opacity-0 translate-y-8'}`} style={{ lineHeight: '1.6', fontSize: 'calc(1.5rem + 0.15rem)' }}>
+            <p ref={rapCaviarRef} className={`text-2xl md:text-3xl font-bold text-white pb-12 text-center transition-all duration-700 ${rapCaviarInView ? 'animate-fade-in-up' : 'opacity-0 translate-y-8'}`} style={{ 
+              lineHeight: '1.6', 
+              fontSize: typeof window !== 'undefined' && window.innerWidth >= 1024 ? 'calc(1.5rem + 0.15rem + 0.15rem)' : 'calc(1.5rem + 0.15rem)'
+            }}>
               RapCaviar. Today's Top Hits. Viva Latino. The playlists that actually move the needle on careers.
             </p>
-            <p ref={whileOtherRef} className={`text-gray-300 pb-12 font-medium text-center transition-all duration-700 ${whileOtherInView ? 'animate-fade-in-up' : 'opacity-0 translate-y-8'}`} style={{ fontSize: '1.6rem', lineHeight: '1.8' }}>
+            <p ref={whileOtherRef} className={`text-gray-300 pb-12 font-medium text-center transition-all duration-700 ${whileOtherInView ? 'animate-fade-in-up' : 'opacity-0 translate-y-8'}`} style={{ 
+              fontSize: typeof window !== 'undefined' && window.innerWidth >= 1024 ? 'calc(1.6rem + 0.15rem)' : '1.6rem', 
+              lineHeight: '1.8' 
+            }}>
               While other companies are cold emailing <b>random</b> curators hoping for a response, we're on <b>first name basis</b> with the people who matter. We've spent <b>10 years</b> building these relationships so <b>you don't have to.</b>
             </p>
             <h2 ref={whoIsFashoRef} className={`text-3xl md:text-4xl lg:text-5xl font-black pt-2 pb-14 bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] bg-clip-text text-transparent text-center transition-all duration-700 ${whoIsFashoInView ? 'animate-fade-in-up' : 'opacity-0 translate-y-8'}`} style={{ lineHeight: '1.3' }}>
               Welcome to the A-Team...
             </h2>
-            <p ref={ourTeamRef} className={`text-gray-300 pb-12 font-medium text-center transition-all duration-700 ${ourTeamInView ? 'animate-fade-in-up' : 'opacity-0 translate-y-8'}`} style={{ fontSize: '1.6rem', lineHeight: '1.8' }}>
+            <p ref={ourTeamRef} className={`text-gray-300 pb-12 font-medium text-center transition-all duration-700 ${ourTeamInView ? 'animate-fade-in-up' : 'opacity-0 translate-y-8'}`} style={{ 
+              fontSize: typeof window !== 'undefined' && window.innerWidth >= 1024 ? 'calc(1.6rem + 0.15rem)' : '1.6rem', 
+              lineHeight: '1.8' 
+            }}>
               Our team is stacked with former directors and executives from labels like <b>Universal, Sony, RCA, Atlantic,</b> and <b>Roc Nation.</b> The same people who built marketing campaigns for <b>Beyonce, Justin Bieber, Billie Eilish,</b> and <b>Kendrick Lamar</b> now work for <b>YOU.</b>
             </p>
-            <p ref={gotTiredRef} className={`text-gray-300 pb-6 font-medium text-center transition-all duration-700 ${gotTiredInView ? 'animate-fade-in-up' : 'opacity-0 translate-y-8'}`} style={{ fontSize: '1.6rem', lineHeight: '1.8' }}>
+            <p ref={gotTiredRef} className={`text-gray-300 pb-6 font-medium text-center transition-all duration-700 ${gotTiredInView ? 'animate-fade-in-up' : 'opacity-0 translate-y-8'}`} style={{ 
+              fontSize: typeof window !== 'undefined' && window.innerWidth >= 1024 ? 'calc(1.6rem + 0.15rem)' : '1.6rem', 
+              lineHeight: '1.8' 
+            }}>
               We got tired of watching talented artists get <b>chewed up</b> and <b>spit out</b> by an industry that only cares about <b>who you know.</b> Gatekeepers controlling <b>everything.</b> Labels taking <b>80%</b> of your revenue.
             </p>
-            <p ref={gameRiggedRef} className={`text-2xl md:text-3xl font-bold text-white pt-1.5 pb-14 text-center transition-all duration-700 ${gameRiggedInView ? 'animate-fade-in-up' : 'opacity-0 translate-y-8'}`} style={{ lineHeight: '1.6', fontSize: 'calc(1.5rem + 0.40rem)' }}>
+            <p ref={gameRiggedRef} className={`text-2xl md:text-3xl font-bold text-white pt-1.5 pb-14 text-center transition-all duration-700 ${gameRiggedInView ? 'animate-fade-in-up' : 'opacity-0 translate-y-8'}`} style={{ 
+              lineHeight: '1.6', 
+              fontSize: typeof window !== 'undefined' && window.innerWidth >= 1024 ? 'calc(1.5rem + 0.40rem + 0.15rem)' : 'calc(1.5rem + 0.40rem)'
+            }}>
               The game was rigged from the start.
             </p>
-            <p ref={builtFashoRef} className={`text-gray-300 pb-12 font-medium text-center transition-all duration-700 ${builtFashoInView ? 'animate-fade-in-up' : 'opacity-0 translate-y-8'}`} style={{ fontSize: '1.6rem', lineHeight: '1.8' }}>
+            <p ref={builtFashoRef} className={`text-gray-300 pb-12 font-medium text-center transition-all duration-700 ${builtFashoInView ? 'animate-fade-in-up' : 'opacity-0 translate-y-8'}`} style={{ 
+              fontSize: typeof window !== 'undefined' && window.innerWidth >= 1024 ? 'calc(1.6rem + 0.15rem)' : '1.6rem', 
+              lineHeight: '1.8' 
+            }}>
               So we built <b className="bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] bg-clip-text text-transparent font-black">FASHO.co</b> to flip the script. To give independent artists <b>direct</b> access to the <b>same tools</b> and <b>connections</b> that major labels pay <b><i>millions</i></b> for.
             </p>
             <h2 ref={resultsRef} className={`text-4xl md:text-5xl font-black pb-12 bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] bg-clip-text text-transparent text-center transition-all duration-700 ${resultsInView ? 'animate-fade-in-up' : 'opacity-0 translate-y-8'}`} style={{ lineHeight: '1.3' }}>
               The Results Speak For Themselves…
             </h2>
-            <p ref={with100Ref} className={`text-gray-300 pb-12 font-medium text-center transition-all duration-700 ${with100InView ? 'animate-fade-in-up' : 'opacity-0 translate-y-8'}`} style={{ fontSize: '1.6rem', lineHeight: '1.8' }}>
+            <p ref={with100Ref} className={`text-gray-300 pb-12 font-medium text-center transition-all duration-700 ${with100InView ? 'animate-fade-in-up' : 'opacity-0 translate-y-8'}`} style={{ 
+              fontSize: typeof window !== 'undefined' && window.innerWidth >= 1024 ? 'calc(1.6rem + 0.15rem)' : '1.6rem', 
+              lineHeight: '1.8' 
+            }}>
               With a <b>100% success rate,</b> our campaigns start delivering within <b>48 hours.</b> Not weeks. Not "maybe soon"… Two days.
             </p>
-            <p ref={playlistNetworkRef} className={`text-gray-300 pb-12 font-medium text-center transition-all duration-700 ${playlistNetworkInView ? 'animate-fade-in-up' : 'opacity-0 translate-y-8'}`} style={{ fontSize: '1.6rem', lineHeight: '1.8' }}>
+            <p ref={playlistNetworkRef} className={`text-gray-300 pb-12 font-medium text-center transition-all duration-700 ${playlistNetworkInView ? 'animate-fade-in-up' : 'opacity-0 translate-y-8'}`} style={{ 
+              fontSize: typeof window !== 'undefined' && window.innerWidth >= 1024 ? 'calc(1.6rem + 0.15rem)' : '1.6rem', 
+              lineHeight: '1.8' 
+            }}>
               Our playlist network drives <b>MILLIONS</b> of engaged listeners to our clients <b>every single week.</b> Real people who <b>save songs, follow artists, and actually show up to shows.</b>
             </p>
             <p ref={isntHopeRef} className={`text-2xl md:text-3xl font-bold text-white pb-32 text-center transition-all duration-700 -mb-9 md:mb-0 ${isntHopeInView ? 'animate-fade-in-up' : 'opacity-0 translate-y-8'}`} style={{ lineHeight: '1.6' }}>
@@ -2254,23 +2108,14 @@ export default function Home() {
             </svg>
           </div>
 
-          {/* Desktop How It Works Section (scroll animation) - Hidden on Mobile */}
-          <section id={PHONE_SECTION_ID} ref={phoneSectionRef} className="hidden lg:block py-20 px-4 relative z-20 -mt-24" style={{ marginTop: '50px' }}>
+          {/* Desktop How It Works Sections - 4 Separate Sections */}
+          
+          {/* Step 1 Section - Left Column */}
+          <section className="hidden lg:block py-20 px-4 relative z-20" style={{ background: 'linear-gradient(135deg, #0a0a13 0%, #18192a 50%, #16213e 100%)' }}>
             <div className="max-w-7xl mx-auto">
               <div className="grid lg:grid-cols-2 gap-12 items-center">
-                {/* Left Column - All 4 Steps, animated by scroll progress */}
-                <div className="order-2 lg:order-1 relative -mt-20 md:mt-0 md:pl-[10px]" style={{ minHeight: 220 }}>
-                  {/* Step 1 Text */}
-                  <div style={{
-                    position: 'absolute',
-                    top: -100,
-                    left: 0,
-                    right: 0,
-                    opacity: currentStep === 0 ? 1 - stepProgress : 0,
-                    transform: `translateY(${currentStep === 0 ? stepProgress * -40 : -40}px)`,
-                    pointerEvents: currentStep === 0 && stepProgress < 0.5 ? 'auto' : 'none',
-                    transition: 'opacity 0.3s, transform 0.3s',
-                  }}>
+                {/* Left Column - Step 1 Text */}
+                <div className="order-2 lg:order-1">
                   <h2 className="text-4xl md:text-5xl lg:text-6xl font-black bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] bg-clip-text text-transparent mb-1" style={{ lineHeight: '1.2' }}>
                     STEP 1
                   </h2>
@@ -2282,187 +2127,134 @@ export default function Home() {
                   </p>
                 </div>
 
-                  {/* Step 2 Text */}
-                  <div style={{
-                    position: 'absolute',
-                    top: -100,
-                    left: 0,
-                    right: 0,
-                    opacity: currentStep === 1 ? stepProgress : 0,
-                    transform: `translateY(${currentStep === 1 ? 40 - (stepProgress * 40) : 40}px)`,
-                    pointerEvents: currentStep === 1 && stepProgress < 0.5 ? 'auto' : 'none',
-                    transition: 'opacity 0.3s, transform 0.3s',
-                  }}>
-                    <h2 className="text-4xl md:text-5xl lg:text-6xl font-black bg-gradient-to-r from-[#14c0ff] to-[#8b5cf6] bg-clip-text text-transparent mb-1" style={{ lineHeight: '1.2' }}>
-                      STEP 2
-                    </h2>
-                    <h3 className="text-3xl md:text-4xl lg:text-5xl font-black text-white mb-4 md:mb-8" style={{ lineHeight: '1.2' }}>
-                      Choose Your Package
-                    </h3>
-                    <p className="text-[0.95rem] md:text-[1.4rem] text-gray-300 leading-relaxed pb-8 md:pb-12">
-                      Pick the campaign that matches where you're at in your career. Just dropped your first single? We got you. Ready to push that track to viral status? We got that too. Each package is built different - from starter campaigns that get you those first crucial playlist placements, all the way to our highest tier packages that put you in front of MILLIONS of new listeners. Add multiple tracks for 25% off each additional song. Stack your entire EP if you want. This is YOUR campaign, built YOUR way.
-                    </p>
-                  </div>
-                  
-                  {/* Step 3 Text */}
-                  <div style={{
-                    position: 'absolute',
-                    top: -100,
-                    left: 0,
-                    right: 0,
-                    opacity: currentStep === 2 ? stepProgress : 0,
-                    transform: `translateY(${currentStep === 2 ? 40 - (stepProgress * 40) : 40}px)`,
-                    pointerEvents: currentStep === 2 && stepProgress < 0.5 ? 'auto' : 'none',
-                    transition: 'opacity 0.3s, transform 0.3s',
-                  }}>
-                    <h2 className="text-4xl md:text-5xl lg:text-6xl font-black bg-gradient-to-r from-[#8b5cf6] to-[#59e3a5] bg-clip-text text-transparent mb-1" style={{ lineHeight: '1.2' }}>
-                      STEP 3
-                    </h2>
-                    <h3 className="text-3xl md:text-4xl lg:text-5xl font-black text-white mb-4 md:mb-8" style={{ lineHeight: '1.2' }}>
-                      We Go To Work For You
-                    </h3>
-                    <p className="text-[0.95rem] md:text-[1.4rem] text-gray-300 leading-relaxed pb-8 md:pb-12">
-                      This is where the magic happens. Our team gets on the phone and in the emails with playlist curators who TRUST us. We're not sending mass emails into the void - we're having real conversations with real people who control the biggest playlists on Spotify. "Hey Marcus, remember that R&B track that killed it last month? We got another one." That's how we move. Personal relationships, direct communication, and a track record that makes curators actually excited to hear what we're bringing them.
-                    </p>
-                  </div>
-                  
-                  {/* Step 4 Text */}
-                  <div style={{
-                    position: 'absolute',
-                    top: -100,
-                    left: 0,
-                    right: 0,
-                                    opacity: currentStep === 3 ? stepProgress : 0,
-                transform: `translateY(${currentStep === 3 ? 40 - (stepProgress * 40) : 40}px)`,
-                pointerEvents: currentStep === 3 && stepProgress < 0.5 ? 'auto' : 'none',
-                    transition: 'opacity 0.3s, transform 0.3s',
-                  }}>
-                    <h2 className="text-4xl md:text-5xl lg:text-6xl font-black bg-gradient-to-r from-[#59e3a5] to-[#8b5cf6] bg-clip-text text-transparent mb-1" style={{ lineHeight: '1.2' }}>
-                      STEP 4
-                    </h2>
-                    <h3 className="text-2xl md:text-3xl lg:text-4xl font-black text-white mb-4 md:mb-8" style={{ lineHeight: '1.2' }}>
-                      Watch Your Career Transform
-                    </h3>
-                    <p className="text-[0.95rem] md:text-[1.4rem] text-gray-300 leading-relaxed pb-8 md:pb-12">
-                      Within 48 hours, your campaign goes live and everything shifts. Major playlists start adding your track. Thousands of new listeners discovering your music every day. The same Spotify for Artists app that used to depress you? Now it's showing numbers you screenshot and send to your group chat. No more watching everyone else win while you wonder what you're doing wrong. You're IN the game now - getting the plays, building the fanbase, and finally seeing your music reach the audience it was meant for. This is what momentum feels like.
-                    </p>
-                  </div>
-                </div>
-
-                {/* Right Column - Phone Mockup, Step 1 and Step 2 animated by scroll progress */}
-                <div className="order-1 lg:order-2 flex justify-center relative -mt-6 md:mt-0" style={{ minHeight: 600 }}>
-                  {/* Background Glow Effect - Static */}
-                  <div className="absolute inset-0 flex items-center justify-center">
-                    <div className="w-[500px] h-[500px] bg-gradient-to-br from-[#59e3a5]/40 via-[#14c0ff]/50 via-[#8b5cf6]/45 to-[#59e3a5]/35 rounded-full blur-3xl opacity-80 animate-pulse" style={{ animationDuration: '4s' }}></div>
-                  </div>
-                  <div className="absolute inset-0 flex items-center justify-center">
-                    <div className="w-96 h-96 bg-gradient-to-tl from-[#14c0ff]/35 via-[#8b5cf6]/40 to-[#59e3a5]/30 rounded-full blur-2xl opacity-70"></div>
-                  </div>
-                  <div className="absolute inset-0 flex items-center justify-center">
-                    <div className="w-80 h-80 bg-gradient-to-tr from-[#8b5cf6]/45 via-[#14c0ff]/50 to-[#59e3a5]/40 rounded-full blur-xl opacity-60"></div>
-                  </div>
-                  {/* Phone Frame (static) */}
+                {/* Right Column - Step 1 Phone Mockup */}
+                <div className="order-1 lg:order-2 flex justify-center">
+                  {/* Background Glow Effect */}
+                  <div className="relative">
+                    <div className="absolute inset-0 -m-8 bg-gradient-to-br from-[#59e3a5]/30 via-[#14c0ff]/40 to-[#8b5cf6]/30 rounded-full blur-3xl opacity-80 animate-pulse"></div>
+                    
+                    {/* Phone Frame */}
                     <div className="w-48 h-[360px] md:w-64 md:h-[480px] bg-gradient-to-br from-gray-900 via-black to-gray-800 rounded-[3rem] p-2 shadow-2xl relative z-10 border border-gray-700/50">
-                    <div className="w-full h-full bg-gradient-to-br from-[#18192a] to-[#0a0a13] rounded-[2.5rem] relative overflow-hidden flex flex-col">
-                      {/* Status Bar (static) */}
-                      <div className="flex justify-between items-center px-8 py-4 text-white text-sm relative">
+                      <div className="w-full h-full bg-gradient-to-br from-[#18192a] to-[#0a0a13] rounded-[2.5rem] relative overflow-hidden flex flex-col">
+                        {/* Status Bar */}
+                        <div className="flex justify-between items-center px-8 py-4 text-white text-sm relative">
                           <span>9:41</span>
-                        <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 flex flex-col items-center">
-                          <div className="w-12 h-2 bg-white rounded-full opacity-80" style={{marginBottom: '2px'}}></div>
-                        </div>
+                          <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 flex flex-col items-center">
+                            <div className="w-12 h-2 bg-white rounded-full opacity-80" style={{marginBottom: '2px'}}></div>
+                          </div>
                           <div className="flex items-center space-x-1">
                             <div className="w-6 h-3 border border-white rounded-sm">
                               <div className="w-4 h-1 bg-white rounded-sm m-0.5"></div>
                             </div>
                           </div>
                         </div>
-                      {/* App Header (static) */}
+                        
+                        {/* App Header */}
                         <div className="px-4 md:px-8 py-4 border-b border-white/10">
                           <div className="flex items-center space-x-2 md:space-x-3">
                             <img src="/fasho-logo-wide.png" alt="Fasho" className="w-8 md:w-10 h-auto" />
-                          <h3 className="text-white font-bold whitespace-nowrap text-xs md:text-lg">
-                            {currentStep === 0 ? 'Find Your Song' : 
-                             currentStep === 1 ? 'Build Your Package' :
-                             currentStep === 2 ? 'Let\'s Get You Placed' :
-'Watch Your Success'}
-                          </h3>
+                            <h3 className="text-white font-bold whitespace-nowrap text-xs md:text-lg" style={{
+                              fontSize: typeof window !== 'undefined' && window.innerWidth >= 1024 ? '0.75rem' : '1.125rem'
+                            }}>Find Your Song</h3>
                           </div>
                         </div>
-                      {/* Animated Screen Contents */}
-                      <div className="flex-1 relative">
+                        
                         {/* Step 1 Screen Content */}
-                        <div style={{
-                          position: 'absolute',
-                          top: 0,
-                          left: 0,
-                          right: 0,
-                          bottom: 0,
-                          opacity: currentStep === 0 ? 1 - stepProgress : 0,
-                          pointerEvents: currentStep === 0 && stepProgress < 0.5 ? 'auto' : 'none',
-                          transform: `translateY(${currentStep === 0 ? stepProgress * -40 : -40}px)`,
-                          transition: 'opacity 0.3s, transform 0.3s',
-                        }}>
-                        {/* Search Input Mockup */}
-                        <div style={{ padding: '20px 16px', overflow: 'visible' }}>
-                          <div className="relative" style={{ overflow: 'visible' }}>
-                            {/* Search Input Field */}
-                            <div className="w-full bg-white/10 backdrop-blur-xl border border-white/20 rounded-xl text-white placeholder-gray-400 transition-all duration-300" style={{ padding: '12px', fontSize: '13px' }}>
-                              {/* Animated typing effect */}
-                              <div className="flex items-center">
-                                <span className="text-white typing-animation" style={{minWidth: 0, fontSize: '13px'}}>The Weeknd</span>
-                                <div style={{ marginLeft: '3px', width: '1.5px', height: '16px', backgroundColor: '#14c0ff' }} className="cursor-blink"></div>
-                              </div>
-                            </div>
-                            {/* Animated search results - Only show AFTER typing completes */}
-                            <div className="search-results" style={{ marginTop: '12px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                              <div className="bg-white/5 rounded-lg border border-white/5 result-item result-card-clickable" style={{ padding: '12px' }}>
-                                <div className="flex items-center" style={{ gap: '10px' }}>
-                                  <img src="/weekend1.jpg" alt="Starboy" className="rounded-md object-cover" style={{ width: '40px', height: '40px' }} />
-                                  <div className="flex-1">
-                                    <div className="text-white font-medium" style={{ fontSize: '14px' }}>Starboy</div>
-                                    <div className="text-gray-400" style={{ fontSize: '12px' }}>The Weeknd ft. Daft Punk</div>
-                                  </div>
-                                  {/* Green checkmark in corner */}
-                                  <div className="bg-[#59e3a5] rounded-full flex items-center justify-center result-checkmark" style={{ width: '16px', height: '16px' }}>
-                                    <svg className="text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" style={{ width: '10px', height: '10px' }}>
-                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
-                                    </svg>
+                        <div className="flex-1 relative">
+                          {/* Search Input Mockup */}
+                          <div style={{ padding: '20px 16px', overflow: 'visible' }}>
+                            <div className="relative" style={{ overflow: 'visible' }}>
+                              {/* Search Input Field */}
+                              <div className="w-full bg-white/10 backdrop-blur-xl border border-white/20 rounded-xl text-white placeholder-gray-400 transition-all duration-300" style={{ padding: '12px', fontSize: '13px' }}>
+                                {/* Animated typing effect */}
+                                <div className="flex items-center">
+                                  <span className="text-white typing-animation" style={{minWidth: 0, fontSize: '13px'}}>The Weeknd</span>
+                                  <div style={{ marginLeft: '3px', width: '1.5px', height: '16px', backgroundColor: '#14c0ff' }} className="cursor-blink"></div>
                                 </div>
                               </div>
-                              </div>
-                              <div className="bg-white/5 rounded-lg border border-white/5 result-item" style={{ padding: '12px' }}>
-                                <div className="flex items-center" style={{ gap: '10px' }}>
-                                  <img src="/weekend2.jpg" alt="Can't Feel My Face" className="rounded-md object-cover" style={{ width: '40px', height: '40px' }} />
-                                  <div className="flex-1">
-                                    <div className="text-white font-medium" style={{ fontSize: '14px' }}>Can't Feel My Face</div>
-                                    <div className="text-gray-400" style={{ fontSize: '12px' }}>The Weeknd</div>
+                              {/* Animated search results - Only show AFTER typing completes */}
+                              <div className="search-results" style={{ marginTop: '12px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                                <div className="bg-white/5 rounded-lg border border-white/5 result-item result-card-clickable" style={{ padding: '12px' }}>
+                                  <div className="flex items-center" style={{ gap: '10px' }}>
+                                    <img src="/weekend1.jpg" alt="Starboy" className="rounded-md object-cover" style={{ width: '40px', height: '40px' }} />
+                                    <div className="flex-1">
+                                      <div className="text-white font-medium" style={{ fontSize: '14px' }}>Starboy</div>
+                                      <div className="text-gray-400" style={{ fontSize: '12px' }}>The Weeknd ft. Daft Punk</div>
+                                    </div>
+                                    {/* Green checkmark in corner */}
+                                    <div className="bg-[#59e3a5] rounded-full flex items-center justify-center result-checkmark" style={{ width: '16px', height: '16px' }}>
+                                      <svg className="text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" style={{ width: '10px', height: '10px' }}>
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                                      </svg>
+                                    </div>
+                                  </div>
+                                </div>
+                                <div className="bg-white/5 rounded-lg border border-white/5 result-item" style={{ padding: '12px' }}>
+                                  <div className="flex items-center" style={{ gap: '10px' }}>
+                                    <img src="/weekend2.jpg" alt="Can't Feel My Face" className="rounded-md object-cover" style={{ width: '40px', height: '40px' }} />
+                                    <div className="flex-1">
+                                      <div className="text-white font-medium" style={{ fontSize: '14px' }}>Can't Feel My Face</div>
+                                      <div className="text-gray-400" style={{ fontSize: '12px' }}>The Weeknd</div>
+                                    </div>
                                   </div>
                                 </div>
                               </div>
-                            </div>
-                            {/* Static Magnifying Glass Icon - Always visible, not animated */}
-                            <div className="flex justify-center" style={{ marginTop: '20px' }}>
-                              <div className="bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] rounded-full flex items-center justify-center shadow-lg" style={{ width: '40px', height: '40px' }}>
-                                <svg className="text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" style={{ width: '20px', height: '20px' }}>
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                                </svg>
+                              {/* Static Magnifying Glass Icon - Always visible, not animated */}
+                              <div className="flex justify-center" style={{ marginTop: '20px' }}>
+                                <div className="bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] rounded-full flex items-center justify-center shadow-lg" style={{ width: '40px', height: '40px' }}>
+                                  <svg className="text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" style={{ width: '20px', height: '20px' }}>
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                                  </svg>
+                                </div>
                               </div>
                             </div>
                           </div>
                         </div>
                       </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </section>
+          {/* Step 2 Section - Right Column */}
+          <section className="hidden lg:block py-20 px-4 relative z-20" style={{ background: 'linear-gradient(135deg, #16213e 0%, #0a0a13 50%, #18192a 100%)' }}>
+            <div className="max-w-7xl mx-auto">
+              <div className="grid lg:grid-cols-2 gap-12 items-center">
+                {/* Left Column - Step 2 Phone Mockup */}
+                <div className="order-2 lg:order-1 flex justify-center">
+                  {/* Background Glow Effect */}
+                  <div className="relative">
+                    <div className="absolute inset-0 -m-8 bg-gradient-to-br from-[#14c0ff]/30 via-[#8b5cf6]/40 to-[#59e3a5]/30 rounded-full blur-3xl opacity-80 animate-pulse"></div>
+                    
+                    {/* Phone Frame */}
+                    <div className="w-48 h-[360px] md:w-64 md:h-[480px] bg-gradient-to-br from-gray-900 via-black to-gray-800 rounded-[3rem] p-2 shadow-2xl relative z-10 border border-gray-700/50">
+                      <div className="w-full h-full bg-gradient-to-br from-[#18192a] to-[#0a0a13] rounded-[2.5rem] relative overflow-hidden flex flex-col">
+                        {/* Status Bar */}
+                        <div className="flex justify-between items-center px-8 py-4 text-white text-sm relative">
+                          <span>9:41</span>
+                          <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 flex flex-col items-center">
+                            <div className="w-12 h-2 bg-white rounded-full opacity-80" style={{marginBottom: '2px'}}></div>
+                          </div>
+                          <div className="flex items-center space-x-1">
+                            <div className="w-6 h-3 border border-white rounded-sm">
+                              <div className="w-4 h-1 bg-white rounded-sm m-0.5"></div>
+                            </div>
+                          </div>
+                        </div>
+                        
+                        {/* App Header */}
+                        <div className="px-4 md:px-8 py-4 border-b border-white/10">
+                          <div className="flex items-center space-x-2 md:space-x-3">
+                            <img src="/fasho-logo-wide.png" alt="Fasho" className="w-8 md:w-10 h-auto" />
+                            <h3 className="text-white font-bold whitespace-nowrap text-xs md:text-lg" style={{
+                              fontSize: typeof window !== 'undefined' && window.innerWidth >= 1024 ? '0.75rem' : '1.125rem'
+                            }}>Build Your Package</h3>
+                          </div>
+                        </div>
+                        
                         {/* Step 2 Screen Content */}
-                        <div style={{
-                          position: 'absolute',
-                          top: 0,
-                          left: 0,
-                          right: 0,
-                          bottom: 0,
-                          opacity: currentStep === 1 ? stepProgress : 0,
-                          pointerEvents: currentStep === 1 && stepProgress < 0.5 ? 'auto' : 'none',
-                          transform: `translateY(${currentStep === 1 ? 40 - (stepProgress * 40) : 40}px)`,
-                          transition: 'opacity 0.3s, transform 0.3s',
-                        }}>
+                        <div className="flex-1 relative">
                           {/* Step 2 Mockup Content */}
                           <div className="flex flex-col h-full" style={{ padding: '20px' }}>
                             {/* Song Info Card */}
@@ -2470,15 +2262,15 @@ export default function Home() {
                               {/* 25% OFF Badge */}
                               <div className="absolute bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] text-black font-semibold rounded-md z-10" style={{ top: '-8px', right: '-8px', fontSize: '10px', padding: '3px 6px' }}>
                                 25% OFF
-                    </div>
+                              </div>
                               <div className="flex items-center w-full bg-gradient-to-r from-[#23272f] to-[#1a1a2e] rounded-xl" style={{ padding: '12px', gap: '12px' }}>
                                 <img src="/weekend1.jpg" alt="Starboy" className="rounded-lg object-cover shadow-md border border-white/10 flex-shrink-0" style={{ width: '48px', height: '48px' }} />
                                 <div className="flex-1 min-w-0">
                                   <div className="font-bold text-white truncate text-left" style={{ fontSize: '14px' }}>Starboy</div>
                                   <div className="text-gray-300 truncate text-left" style={{ fontSize: '12px' }}>The Weeknd ft. Daft Punk</div>
-                  </div>
-                </div>
-              </div>
+                                </div>
+                              </div>
+                            </div>
                             {/* Package Selection Mockup */}
                             <div className="flex flex-col" style={{ gap: '12px' }}>
                               <div className="bg-white/5 rounded-lg border border-white/10 flex flex-col items-center relative package-card-clickable" style={{ padding: '12px' }}>
@@ -2490,7 +2282,7 @@ export default function Home() {
                                   <svg className="text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" style={{ width: '8px', height: '8px' }}>
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
                                   </svg>
-            </div>
+                                </div>
                               </div>
                               <div className="bg-white/5 rounded-lg border border-white/10 flex flex-col items-center" style={{ padding: '12px' }}>
                                 <div className="text-white font-bold" style={{ fontSize: '14px', marginBottom: '3px' }}>DOMINATE</div>
@@ -2502,22 +2294,80 @@ export default function Home() {
                                 Next Step
                               </button>
                             </div>
-                            {/* Removed old Next Step Button */}
                           </div>
                         </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
 
+                {/* Right Column - Step 2 Text */}
+                <div className="order-1 lg:order-2">
+                  <h2 className="text-4xl md:text-5xl lg:text-6xl font-black bg-gradient-to-r from-[#14c0ff] to-[#8b5cf6] bg-clip-text text-transparent mb-1" style={{ lineHeight: '1.2' }}>
+                    STEP 2
+                  </h2>
+                  <h3 className="text-3xl md:text-4xl lg:text-5xl font-black text-white mb-4 md:mb-8" style={{ lineHeight: '1.2' }}>
+                    Choose Your Package
+                  </h3>
+                  <p className="text-[0.95rem] md:text-[1.4rem] text-gray-300 leading-relaxed pb-8 md:pb-12">
+                    Pick the campaign that matches where you're at in your career. Just dropped your first single? We got you. Ready to push that track to viral status? We got that too. Each package is built different - from starter campaigns that get you those first crucial playlist placements, all the way to our highest tier packages that put you in front of MILLIONS of new listeners. Add multiple tracks for 25% off each additional song. Stack your entire EP if you want. This is YOUR campaign, built YOUR way.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          {/* Step 3 Section - Left Column */}
+          <section className="hidden lg:block py-20 px-4 relative z-20" style={{ background: 'linear-gradient(135deg, #18192a 0%, #16213e 50%, #0a0a13 100%)' }}>
+            <div className="max-w-7xl mx-auto">
+              <div className="grid lg:grid-cols-2 gap-12 items-center">
+                {/* Left Column - Step 3 Text */}
+                <div className="order-2 lg:order-1">
+                  <h2 className="text-4xl md:text-5xl lg:text-6xl font-black bg-gradient-to-r from-[#8b5cf6] to-[#59e3a5] bg-clip-text text-transparent mb-1" style={{ lineHeight: '1.2' }}>
+                    STEP 3
+                  </h2>
+                  <h3 className="text-3xl md:text-4xl lg:text-5xl font-black text-white mb-4 md:mb-8" style={{ lineHeight: '1.2' }}>
+                    We Go To Work For You
+                  </h3>
+                  <p className="text-[0.95rem] md:text-[1.4rem] text-gray-300 leading-relaxed pb-8 md:pb-12">
+                    This is where the magic happens. Our team gets on the phone and in the emails with playlist curators who TRUST us. We're not sending mass emails into the void - we're having real conversations with real people who control the biggest playlists on Spotify. "Hey Marcus, remember that R&B track that killed it last month? We got another one." That's how we move. Personal relationships, direct communication, and a track record that makes curators actually excited to hear what we're bringing them.
+                  </p>
+                </div>
+
+                {/* Right Column - Step 3 Phone Mockup */}
+                <div className="order-1 lg:order-2 flex justify-center">
+                  {/* Background Glow Effect */}
+                  <div className="relative">
+                    <div className="absolute inset-0 -m-8 bg-gradient-to-br from-[#8b5cf6]/30 via-[#59e3a5]/40 to-[#14c0ff]/30 rounded-full blur-3xl opacity-80 animate-pulse"></div>
+                    
+                    {/* Phone Frame */}
+                    <div className="w-48 h-[360px] md:w-64 md:h-[480px] bg-gradient-to-br from-gray-900 via-black to-gray-800 rounded-[3rem] p-2 shadow-2xl relative z-10 border border-gray-700/50">
+                      <div className="w-full h-full bg-gradient-to-br from-[#18192a] to-[#0a0a13] rounded-[2.5rem] relative overflow-hidden flex flex-col">
+                        {/* Status Bar */}
+                        <div className="flex justify-between items-center px-8 py-4 text-white text-sm relative">
+                          <span>9:41</span>
+                          <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 flex flex-col items-center">
+                            <div className="w-12 h-2 bg-white rounded-full opacity-80" style={{marginBottom: '2px'}}></div>
+                          </div>
+                          <div className="flex items-center space-x-1">
+                            <div className="w-6 h-3 border border-white rounded-sm">
+                              <div className="w-4 h-1 bg-white rounded-sm m-0.5"></div>
+                            </div>
+                          </div>
+                        </div>
+                        
+                        {/* App Header */}
+                        <div className="px-4 md:px-8 py-4 border-b border-white/10">
+                          <div className="flex items-center space-x-2 md:space-x-3">
+                            <img src="/fasho-logo-wide.png" alt="Fasho" className="w-8 md:w-10 h-auto" />
+                            <h3 className="text-white font-bold whitespace-nowrap text-xs md:text-lg" style={{
+                              fontSize: typeof window !== 'undefined' && window.innerWidth >= 1024 ? '0.75rem' : '1.125rem'
+                            }}>Let's Get You Placed</h3>
+                          </div>
+                        </div>
+                        
                         {/* Step 3 Screen Content */}
-                        <div style={{
-                          position: 'absolute',
-                          top: 0,
-                          left: 0,
-                          right: 0,
-                          bottom: 0,
-                          opacity: currentStep === 2 ? stepProgress : 0,
-                          pointerEvents: currentStep === 2 && stepProgress < 0.5 ? 'auto' : 'none',
-                          transform: `translateY(${currentStep === 2 ? 40 - (stepProgress * 40) : 40}px)`,
-                          transition: 'opacity 0.3s, transform 0.3s',
-                        }}>
+                        <div className="flex-1 relative">
                           {/* Step 3 Mockup Content - Lottie Animation */}
                           <div className="flex flex-col h-full" style={{ padding: '4px', paddingBottom: '6px' }}>
                             {/* Lottie Animation - Large size positioned at very top */}
@@ -2541,19 +2391,52 @@ export default function Home() {
                             </div>
                           </div>
                         </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          {/* Step 4 Section - Right Column */}
+          <section className="hidden lg:block py-20 px-4 relative z-20" style={{ background: 'linear-gradient(135deg, #0a0a13 0%, #18192a 50%, #16213e 100%)' }}>
+            <div className="max-w-7xl mx-auto">
+              <div className="grid lg:grid-cols-2 gap-12 items-center">
+                {/* Left Column - Step 4 Phone Mockup */}
+                <div className="order-2 lg:order-1 flex justify-center">
+                  {/* Background Glow Effect */}
+                  <div className="relative">
+                    <div className="absolute inset-0 -m-8 bg-gradient-to-br from-[#59e3a5]/30 via-[#8b5cf6]/40 to-[#14c0ff]/30 rounded-full blur-3xl opacity-80 animate-pulse"></div>
+                    
+                    {/* Phone Frame */}
+                    <div className="w-48 h-[360px] md:w-64 md:h-[480px] bg-gradient-to-br from-gray-900 via-black to-gray-800 rounded-[3rem] p-2 shadow-2xl relative z-10 border border-gray-700/50">
+                      <div className="w-full h-full bg-gradient-to-br from-[#18192a] to-[#0a0a13] rounded-[2.5rem] relative overflow-hidden flex flex-col">
+                        {/* Status Bar */}
+                        <div className="flex justify-between items-center px-8 py-4 text-white text-sm relative">
+                          <span>9:41</span>
+                          <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 flex flex-col items-center">
+                            <div className="w-12 h-2 bg-white rounded-full opacity-80" style={{marginBottom: '2px'}}></div>
+                          </div>
+                          <div className="flex items-center space-x-1">
+                            <div className="w-6 h-3 border border-white rounded-sm">
+                              <div className="w-4 h-1 bg-white rounded-sm m-0.5"></div>
+                            </div>
+                          </div>
+                        </div>
+                        
+                        {/* App Header */}
+                        <div className="px-4 md:px-8 py-4 border-b border-white/10">
+                          <div className="flex items-center space-x-2 md:space-x-3">
+                            <img src="/fasho-logo-wide.png" alt="Fasho" className="w-8 md:w-10 h-auto" />
+                            <h3 className="text-white font-bold whitespace-nowrap text-xs md:text-lg" style={{
+                              fontSize: typeof window !== 'undefined' && window.innerWidth >= 1024 ? '0.75rem' : '1.125rem'
+                            }}>Watch Your Success</h3>
+                          </div>
+                        </div>
                         
                         {/* Step 4 Screen Content */}
-                        <div style={{
-                          position: 'absolute',
-                          top: 0,
-                          left: 0,
-                          right: 0,
-                          bottom: 0,
-                                          opacity: currentStep === 3 ? stepProgress : 0,
-                pointerEvents: currentStep === 3 && stepProgress < 0.5 ? 'auto' : 'none',
-                transform: `translateY(${currentStep === 3 ? 40 - (stepProgress * 40) : 40}px)`,
-                          transition: 'opacity 0.3s, transform 0.3s',
-                        }}>
+                        <div className="flex-1 relative">
                           {/* Step 4 Mockup Content - Lottie Animation and Chat Message */}
                           <div className="flex flex-col h-full" style={{ padding: '12px', paddingBottom: '6px' }}>
                             {/* Lottie Animation - Large size positioned at very top */}
@@ -2582,9 +2465,9 @@ export default function Home() {
                                     <span className="text-white font-bold" style={{ fontSize: '11px' }}>J</span>
                                   </div>
                                   {/* Message Text */}
-                                  <div className="flex-1 text-center">
-                                    <p className="text-white font-medium whitespace-nowrap" style={{ fontSize: '12px' }}>
-                                      Dude you're going viral! 🔥
+                                  <div className="flex-1 text-left">
+                                    <p className="text-white font-medium" style={{ fontSize: '12px', lineHeight: '1.3' }}>
+                                      Dude you're going<br />viral! 🔥
                                     </p>
                                   </div>
                                 </div>
@@ -2597,12 +2480,25 @@ export default function Home() {
                             </div>
                           </div>
                         </div>
-                      </div> {/* End Animated Screen Contents */}
-                    </div> {/* End Phone Inner */}
-                  </div> {/* End Phone Frame */}
-                </div> {/* End Right Column */}
-              </div> {/* End grid */}
-            </div> {/* End max-w-7xl */}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Right Column - Step 4 Text */}
+                <div className="order-1 lg:order-2">
+                  <h2 className="text-4xl md:text-5xl lg:text-6xl font-black bg-gradient-to-r from-[#59e3a5] to-[#8b5cf6] bg-clip-text text-transparent mb-1" style={{ lineHeight: '1.2' }}>
+                    STEP 4
+                  </h2>
+                  <h3 className="text-2xl md:text-3xl lg:text-4xl font-black text-white mb-4 md:mb-8" style={{ lineHeight: '1.2' }}>
+                    Watch Your Career Transform
+                  </h3>
+                  <p className="text-[0.95rem] md:text-[1.4rem] text-gray-300 leading-relaxed pb-8 md:pb-12">
+                    Within 48 hours, your campaign goes live and everything shifts. Major playlists start adding your track. Thousands of new listeners discovering your music every day. The same Spotify for Artists app that used to depress you? Now it's showing numbers you screenshot and send to your group chat. No more watching everyone else win while you wonder what you're doing wrong. You're IN the game now - getting the plays, building the fanbase, and finally seeing your music reach the audience it was meant for. This is what momentum feels like.
+                  </p>
+                </div>
+              </div>
+            </div>
           </section>
 
           {/* Mobile How It Works Sections (individual static sections) - Only visible on Mobile */}
@@ -2648,7 +2544,9 @@ export default function Home() {
                       <div className="px-4 md:px-8 py-4 border-b border-white/10">
                         <div className="flex items-center space-x-2 md:space-x-3">
                           <img src="/fasho-logo-wide.png" alt="Fasho" className="w-8 md:w-10 h-auto" />
-                          <h3 className="text-white font-bold whitespace-nowrap text-xs md:text-lg">Find Your Song</h3>
+                          <h3 className="text-white font-bold whitespace-nowrap text-xs md:text-lg" style={{ 
+                            fontSize: typeof window !== 'undefined' && window.innerWidth >= 1024 ? '0.75rem' : '1.125rem'
+                          }}>Find Your Song</h3>
                         </div>
                       </div>
                       
@@ -2748,7 +2646,9 @@ export default function Home() {
                       <div className="px-4 md:px-8 py-4 border-b border-white/10">
                         <div className="flex items-center space-x-2 md:space-x-3">
                           <img src="/fasho-logo-wide.png" alt="Fasho" className="w-8 md:w-10 h-auto" />
-                          <h3 className="text-white font-bold whitespace-nowrap text-xs md:text-lg">Build Your Package</h3>
+                          <h3 className="text-white font-bold whitespace-nowrap text-xs md:text-lg" style={{ 
+                            fontSize: typeof window !== 'undefined' && window.innerWidth >= 1024 ? '0.75rem' : '1.125rem'
+                          }}>Build Your Package</h3>
                         </div>
                       </div>
                       
@@ -2840,7 +2740,9 @@ export default function Home() {
                       <div className="px-4 md:px-8 py-4 border-b border-white/10">
                         <div className="flex items-center space-x-2 md:space-x-3">
                           <img src="/fasho-logo-wide.png" alt="Fasho" className="w-8 md:w-10 h-auto" />
-                          <h3 className="text-white font-bold whitespace-nowrap text-xs md:text-lg">Let's Get You Placed</h3>
+                          <h3 className="text-white font-bold whitespace-nowrap text-xs md:text-lg" style={{ 
+                            fontSize: typeof window !== 'undefined' && window.innerWidth >= 1024 ? '0.75rem' : '1.125rem'
+                          }}>Let's Get You Placed</h3>
                         </div>
                       </div>
                       
@@ -2914,7 +2816,9 @@ export default function Home() {
                       <div className="px-4 md:px-8 py-4 border-b border-white/10">
                         <div className="flex items-center space-x-2 md:space-x-3">
                           <img src="/fasho-logo-wide.png" alt="Fasho" className="w-8 md:w-10 h-auto" />
-                          <h3 className="text-white font-bold whitespace-nowrap text-xs md:text-lg">Watch Your Success</h3>
+                          <h3 className="text-white font-bold whitespace-nowrap text-xs md:text-lg" style={{ 
+                            fontSize: typeof window !== 'undefined' && window.innerWidth >= 1024 ? '0.75rem' : '1.125rem'
+                          }}>Watch Your Success</h3>
                         </div>
                       </div>
                       
@@ -2987,7 +2891,7 @@ export default function Home() {
           </section>
 
           {/* Track Your Success Section - Desktop Only */}
-          <section className={`hidden lg:block pb-24 px-4 relative z-10 transition-all duration-500 ${isStepSectionPinned ? 'pt-32 mt-16' : 'pt-20 -mt-16'}`}>
+          <section className="hidden lg:block pb-24 px-4 relative z-10 pt-20">
             <div className="max-w-7xl mx-auto">
               <div className="text-center mb-20">
                 <h3 
@@ -3982,7 +3886,10 @@ export default function Home() {
           </div>
 
           {/* Genre Coverage Section */}
-          <section className="pt-6 pb-24 px-4 relative z-20 -mt-52 md:mt-0" style={{ background: 'transparent' }}>
+          <section className="pt-6 pb-24 px-4 relative z-20 -mt-52 md:mt-0" style={{ 
+            background: 'transparent',
+            marginTop: typeof window !== 'undefined' && window.innerWidth >= 1024 ? '-40px' : '-208px'
+          }}>
             <div className="max-w-7xl mx-auto">
               {/* Section Header */}
               <div className="text-center mb-8">
@@ -4324,14 +4231,20 @@ export default function Home() {
               >
                 <div className="relative inline-block">
                   {/* Glow Effect Behind Text - Hidden on mobile */}
-                  <div className="hidden md:block absolute inset-0 bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] blur-2xl opacity-30 animate-pulse"></div>
+                  <div className="hidden md:block absolute inset-0 bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] blur-2xl animate-pulse" style={{ 
+                    opacity: typeof window !== 'undefined' && window.innerWidth >= 1024 ? '0.06' : '0.3'
+                  }}></div>
                   
                   <p 
                     className="relative md:text-4xl lg:text-5xl font-black text-white leading-relaxed" 
-                    style={{ fontSize: '1.475rem' }}
+                    style={{ 
+                      fontSize: typeof window !== 'undefined' && window.innerWidth >= 1024 ? '2.475rem' : '1.475rem',
+                      marginTop: typeof window !== 'undefined' && window.innerWidth >= 1024 ? '15px' : '0px',
+                      marginBottom: typeof window !== 'undefined' && window.innerWidth >= 1024 ? '15px' : '0px'
+                    }}
                   >
                     + Literally{' '}
-                    <span className="bg-gradient-to-r from-[#59e3a5] via-[#14c0ff] to-[#8b5cf6] bg-clip-text text-transparent drop-shadow-2xl animate-pulse">
+                    <span className="bg-gradient-to-r from-[#59e3a5] via-[#14c0ff] to-[#8b5cf6] bg-clip-text text-transparent drop-shadow-lg animate-pulse">
                       THOUSANDS
                     </span>
                     {' '}more!
