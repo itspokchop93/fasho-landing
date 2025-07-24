@@ -400,6 +400,7 @@ export default function Home() {
   
   // Dashboard mockup scroll animation
   const [dashboardRef, dashboardInView] = useInView({ threshold: 0.3 });
+  const [curatorRef, curatorInView] = useInView({ threshold: 0.3 });
   const [scrollY, setScrollY] = useState(0);
   
   // New animation hooks for slide-up animations with 600ms delay
@@ -1060,7 +1061,7 @@ export default function Home() {
     };
   }, []);
 
-  // Calculate responsive scale and scroll transform
+  // Calculate responsive scale and scroll transform for Command Center
   const getDashboardTransform = () => {
     // Calculate responsive scale factor
     const getScaleFactor = () => {
@@ -1091,6 +1092,64 @@ export default function Home() {
     let scrollTransform = 'translateY(0px)';
     if (dashboardRef.current) {
     const element = dashboardRef.current;
+    const rect = element.getBoundingClientRect();
+    const elementTop = window.scrollY + rect.top;
+    const elementHeight = rect.height;
+    const windowHeight = window.innerHeight;
+    
+    // Start animation when element is 95% into view (maximum early trigger)
+    const startPoint = elementTop - windowHeight * 0.95;
+    // End animation much higher - when element is just past center view
+    const endPoint = elementTop + elementHeight * 0.3;
+    
+    const scrollProgress = (scrollY - startPoint) / (endPoint - startPoint);
+    const clampedProgress = Math.max(0, Math.min(1, scrollProgress));
+    
+    // Eased progress using cubic-bezier for smooth transition
+    const easedProgress = clampedProgress * clampedProgress * (3 - 2 * clampedProgress);
+    
+      // Maximum transform distance (reduced for less sensitivity)
+      const maxTransform = 180;
+    const transformY = easedProgress * maxTransform;
+    
+      scrollTransform = `translateY(-${transformY}px)`;
+    }
+    
+    const scaleFactor = getScaleFactor();
+    return `${scrollTransform} scale(${scaleFactor})`;
+  };
+
+  // Calculate responsive scale and scroll transform for Curator Connect
+  const getCuratorTransform = () => {
+    // Calculate responsive scale factor
+    const getScaleFactor = () => {
+      if (typeof window === 'undefined') return 1;
+      
+      const viewportWidth = window.innerWidth;
+      const baseWidth = 1200; // Our fixed browser mockup width (wider for realistic proportions)
+      const maxScale = 1; // Maximum scale on desktop
+      const minScale = 0.12; // Much smaller minimum scale for mobile screens
+      
+      // Calculate scale based on viewport width with better mobile handling
+      let scale;
+      if (viewportWidth >= 1400) {
+        scale = maxScale; // Full size on extra large screens
+      } else if (viewportWidth >= 1024) {
+        scale = Math.max(0.6, (viewportWidth - 50) / baseWidth); // Less aggressive scaling on tablets
+      } else if (viewportWidth >= 768) {
+        scale = Math.max(0.45, (viewportWidth - 30) / baseWidth); // Better tablet scaling
+              } else {
+          // Mobile: much more aggressive scaling for better fit
+          scale = Math.max(minScale, (viewportWidth - 60) / baseWidth);
+        }
+      
+      return Math.min(maxScale, scale);
+    };
+    
+    // Calculate scroll animation transform
+    let scrollTransform = 'translateY(0px)';
+    if (curatorRef.current) {
+    const element = curatorRef.current;
     const rect = element.getBoundingClientRect();
     const elementTop = window.scrollY + rect.top;
     const elementHeight = rect.height;
@@ -3321,12 +3380,370 @@ export default function Home() {
               </div>
 
               {/* CTA Button */}
-              <div className="text-center mt-16 mb-20 md:mb-0" style={{ marginTop: '-180px', marginBottom: '180px' }}>
+              <div className="text-center mt-16 mb-20 md:mb-0 lg:mt-16" style={{ marginTop: '-180px', marginBottom: '180px' }}>
                 <button
                   onClick={scrollToTrackInput}
                   className="px-12 py-4 bg-gradient-to-r from-[#59e3a5] via-[#14c0ff] to-[#8b5cf6] text-white font-bold rounded-2xl hover:shadow-2xl hover:shadow-[#14c0ff]/30 transition-all duration-700 transform hover:scale-105 active:scale-95 relative overflow-hidden group text-lg"
+                  style={{ 
+                    /* DESKTOP ONLY: Add 80px top margin to prevent button from being stuck under browser mockup */
+                    marginTop: typeof window !== 'undefined' && window.innerWidth >= 1024 ? '80px' : '0px'
+                  }}
                 >
                   <span className="relative z-10">SHOW ME THE PACKAGES</span>
+                  <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-700"></div>
+                </button>
+              </div>
+            </div>
+          </section>
+
+          {/* Curator Connect+ Section */}
+          <section className="py-24 px-4 relative z-10 overflow-hidden">
+            {/* Extended gradient overlay that flows into next section */}
+            <div className="absolute inset-0 bg-gradient-to-b from-[#18192a] via-[#16213e] to-[#0a0a13] -z-10"></div>
+            <div className="absolute bottom-0 left-0 right-0 h-5 bg-gradient-to-b from-transparent to-[#18192a] -z-5"></div>
+            <div className="max-w-7xl mx-auto">
+              <div className="text-center mb-16">
+                <h2 className="text-3xl md:text-4xl lg:text-5xl font-black mb-8 bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] bg-clip-text text-transparent" style={{ lineHeight: '1.3' }}>
+                  650+ Indie Playlists At Your Fingertips
+                </h2>
+                <p className="text-xl text-gray-300 max-w-4xl mx-auto leading-relaxed" style={{ 
+                  hyphens: 'none', 
+                  WebkitHyphens: 'none', 
+                  MozHyphens: 'none', 
+                  msHyphens: 'none', 
+                  wordBreak: 'keep-all', 
+                  overflowWrap: 'break-word' 
+                }}>
+                  Our campaigns are already designed to make you famous without you lifting a finger. But if you're feeling ambitious and want to COMPOUND your results, dive into our handpicked database of 650+ curator contacts. A tool worth millions, 100% FREE for all members.
+                </p>
+              </div>
+
+              {/* Browser Window Mockup - Curator Connect+ */}
+              <div ref={curatorRef} className="relative flex justify-center -mb-[600px] md:mb-0">
+                {/* Background Glow Effect */}
+                <div className="absolute inset-0 -m-16 rounded-3xl opacity-50 blur-3xl bg-gradient-to-r from-[#8b5cf6]/30 via-[#59e3a5]/40 to-[#14c0ff]/30 animate-pulse"></div>
+                
+                {/* Centering container for scaled mockup */}
+                <div className="flex justify-center items-start w-full">
+                  <div 
+                    className="bg-gradient-to-br from-[#1a1a2e] to-[#16213e] rounded-t-2xl shadow-2xl transition-transform duration-700 ease-out relative z-10"
+                    style={{ 
+                      transform: getCuratorTransform(),
+                      width: '1200px',
+                      transformOrigin: 'top center'
+                    }}
+                  >
+                    {/* Browser Header */}
+                    <div className="bg-gradient-to-r from-[#8b5cf6] via-[#59e3a5] to-[#14c0ff] rounded-t-2xl border-b border-white/10" style={{ padding: '12px 16px' }}>
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center" style={{ gap: '8px' }}>
+                          <div className="flex" style={{ gap: '6px' }}>
+                            <div style={{ width: '12px', height: '12px', backgroundColor: '#ef4444', borderRadius: '50%' }}></div>
+                            <div style={{ width: '12px', height: '12px', backgroundColor: '#eab308', borderRadius: '50%' }}></div>
+                            <div style={{ width: '12px', height: '12px', backgroundColor: '#22c55e', borderRadius: '50%' }}></div>
+                          </div>
+                        </div>
+                        <div className="flex-1" style={{ margin: '0 24px' }}>
+                          <div className="bg-black/30 backdrop-blur-sm rounded-lg border border-white/20" style={{ padding: '6px 12px', textAlign: 'center' }}>
+                            <span className="text-white font-mono" style={{ fontSize: '14px' }}>fasho.co/dashboard</span>
+                          </div>
+                        </div>
+                        <div style={{ width: '80px' }}></div>
+                      </div>
+                    </div>
+
+                    {/* Dashboard Content */}
+                    <div className="bg-gradient-to-r from-[#8b5cf6] via-[#59e3a5] to-[#14c0ff] rounded-b-2xl relative" style={{ padding: '1px' }}>
+                      <div className="bg-gradient-to-br from-[#1a1a2e] to-[#16213e] rounded-b-2xl relative" style={{ padding: '24px' }}>
+                        
+                        {/* Fade to transparent overlay for bottom 10% */}
+                        <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-[#16213e] via-[#16213e]/90 to-transparent rounded-b-2xl pointer-events-none z-10" style={{ height: '10%' }}></div>
+                        
+                        {/* Curator Connect+ Header */}
+                        <div className="flex items-center justify-between" style={{ marginBottom: '32px' }}>
+                          <div className="flex items-center" style={{ gap: '16px' }}>
+                            <div className="bg-gradient-to-r from-[#8b5cf6] to-[#59e3a5] rounded-xl flex items-center justify-center" style={{ width: '56px', height: '56px' }}>
+                              <svg className="text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" style={{ width: '24px', height: '24px' }}>
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                              </svg>
+                            </div>
+                            <div>
+                              <h3 className="font-bold text-white" style={{ fontSize: '18px' }}>Curator Connect+</h3>
+                              <p className="text-gray-400" style={{ fontSize: '12px' }}>650+ indie playlist curators</p>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Filters Section */}
+                        <div className="bg-gradient-to-br from-white/10 to-white/5 rounded-xl border border-white/10 backdrop-blur-sm" style={{ padding: '20px', marginBottom: '24px' }}>
+                          <div className="grid grid-cols-4 gap-4">
+                            {/* Search */}
+                            <div>
+                              <label className="block text-sm font-medium text-gray-300 mb-2">Search Playlists</label>
+                              <input
+                                type="text"
+                                placeholder="Search by name..."
+                                className="w-full px-3 py-2 bg-gray-800/50 border border-gray-700 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#59e3a5] text-sm"
+                                style={{ fontSize: '12px' }}
+                              />
+                            </div>
+
+                            {/* Genre Filter */}
+                            <div>
+                              <label className="block text-sm font-medium text-gray-300 mb-2">Genre</label>
+                              <button className="w-full px-3 py-2 bg-gray-800/50 border border-gray-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-[#59e3a5] flex items-center justify-between text-sm">
+                                <span className="text-gray-400">All Genres</span>
+                                <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                                </svg>
+                              </button>
+                            </div>
+
+                            {/* Min Followers */}
+                            <div>
+                              <label className="block text-sm font-medium text-gray-300 mb-2">Min Followers</label>
+                              <input
+                                type="number"
+                                placeholder="Minimum"
+                                className="w-full px-3 py-2 bg-gray-800/50 border border-gray-700 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#59e3a5] text-sm"
+                                style={{ fontSize: '12px' }}
+                              />
+                            </div>
+
+                            {/* Status Filter */}
+                            <div>
+                              <label className="block text-sm font-medium text-gray-300 mb-2">Status</label>
+                              <button className="w-full px-3 py-2 bg-gray-800/50 border border-gray-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-[#59e3a5] flex items-center justify-between text-sm">
+                                <span className="text-gray-400">All</span>
+                                <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                                </svg>
+                              </button>
+                            </div>
+                          </div>
+
+                          {/* Sort Controls */}
+                          <div className="mt-4 flex gap-4 items-center">
+                            <span className="text-sm font-medium text-gray-300">Sort by:</span>
+                            <button className="px-3 py-1 rounded-lg text-sm font-medium bg-[#59e3a5] text-white">
+                              Followers ↓
+                            </button>
+                            <button className="px-3 py-1 rounded-lg text-sm font-medium bg-gray-700 text-gray-300 hover:bg-gray-600">
+                              Name
+                            </button>
+                          </div>
+                        </div>
+
+                        {/* Results Count */}
+                        <div className="flex justify-between items-center mb-4">
+                          <div className="text-sm text-gray-400">
+                            Showing 12 of 650 curators
+                          </div>
+                        </div>
+
+                        {/* Curators Table */}
+                        <div className="bg-gradient-to-br from-white/10 to-white/5 rounded-xl border border-white/10 backdrop-blur-sm overflow-hidden">
+                          <div className="overflow-x-auto">
+                            <table className="w-full">
+                              <thead className="bg-gray-800/50">
+                                <tr>
+                                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Playlist</th>
+                                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Genre</th>
+                                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Followers</th>
+                                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Status</th>
+                                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Action</th>
+                                </tr>
+                              </thead>
+                              <tbody className="divide-y divide-gray-800/30">
+                                {/* Curator Row 1 */}
+                                <tr className="hover:bg-gray-800/20 transition-colors">
+                                  <td className="px-4 py-3">
+                                    <div className="flex items-center space-x-3">
+                                      <div className="w-10 h-10 bg-gradient-to-br from-[#59e3a5] to-[#14c0ff] rounded-lg flex items-center justify-center">
+                                        <span className="text-white font-bold text-xs">🎵</span>
+                                      </div>
+                                      <div className="flex-1">
+                                        <div className="text-white font-medium text-sm">Indie Vibes Only</div>
+                                        <div className="mt-1">
+                                          <span className="inline-flex items-center px-1.5 py-0.5 text-xs font-medium border border-gray-600 text-gray-300 rounded">
+                                            View Playlist
+                                          </span>
+                                        </div>
+                                      </div>
+                                    </div>
+                                  </td>
+                                  <td className="px-4 py-3">
+                                    <div className="flex flex-wrap gap-1">
+                                      <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-[#59e3a5]/20 text-[#59e3a5]">
+                                        Indie
+                                      </span>
+                                      <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-[#14c0ff]/20 text-[#14c0ff]">
+                                        Alternative
+                                      </span>
+                                    </div>
+                                  </td>
+                                  <td className="px-4 py-3">
+                                    <div className="text-white font-medium text-sm">127.4K</div>
+                                  </td>
+                                  <td className="px-4 py-3">
+                                    <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-400/20 text-green-400">
+                                      Available
+                                    </span>
+                                  </td>
+                                  <td className="px-4 py-3">
+                                    <button className="bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] text-white px-3 py-1 rounded-lg text-xs font-medium hover:shadow-lg transition-all duration-200">
+                                      Contact
+                                    </button>
+                                  </td>
+                                </tr>
+
+                                {/* Curator Row 2 */}
+                                <tr className="hover:bg-gray-800/20 transition-colors">
+                                  <td className="px-4 py-3">
+                                    <div className="flex items-center space-x-3">
+                                      <div className="w-10 h-10 bg-gradient-to-br from-[#8b5cf6] to-[#59e3a5] rounded-lg flex items-center justify-center">
+                                        <span className="text-white font-bold text-xs">🔥</span>
+                                      </div>
+                                      <div className="flex-1">
+                                        <div className="text-white font-medium text-sm">Hip-Hop Heat</div>
+                                        <div className="mt-1">
+                                          <span className="inline-flex items-center px-1.5 py-0.5 text-xs font-medium border border-gray-600 text-gray-300 rounded">
+                                            View Playlist
+                                          </span>
+                                        </div>
+                                      </div>
+                                    </div>
+                                  </td>
+                                  <td className="px-4 py-3">
+                                    <div className="flex flex-wrap gap-1">
+                                      <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-[#8b5cf6]/20 text-[#8b5cf6]">
+                                        Hip-Hop
+                                      </span>
+                                      <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-[#ec4899]/20 text-[#ec4899]">
+                                        Rap
+                                      </span>
+                                    </div>
+                                  </td>
+                                  <td className="px-4 py-3">
+                                    <div className="text-white font-medium text-sm">89.2K</div>
+                                  </td>
+                                  <td className="px-4 py-3">
+                                    <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-400/20 text-green-400">
+                                      Available
+                                    </span>
+                                  </td>
+                                  <td className="px-4 py-3">
+                                    <button className="bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] text-white px-3 py-1 rounded-lg text-xs font-medium hover:shadow-lg transition-all duration-200">
+                                      Contact
+                                    </button>
+                                  </td>
+                                </tr>
+
+                                {/* Curator Row 3 */}
+                                <tr className="hover:bg-gray-800/20 transition-colors">
+                                  <td className="px-4 py-3">
+                                    <div className="flex items-center space-x-3">
+                                      <div className="w-10 h-10 bg-gradient-to-br from-[#14c0ff] to-[#8b5cf6] rounded-lg flex items-center justify-center">
+                                        <span className="text-white font-bold text-xs">💎</span>
+                                      </div>
+                                      <div className="flex-1">
+                                        <div className="text-white font-medium text-sm">Electronic Dreams</div>
+                                        <div className="mt-1">
+                                          <span className="inline-flex items-center px-1.5 py-0.5 text-xs font-medium border border-gray-600 text-gray-300 rounded">
+                                            View Playlist
+                                          </span>
+                                        </div>
+                                      </div>
+                                    </div>
+                                  </td>
+                                  <td className="px-4 py-3">
+                                    <div className="flex flex-wrap gap-1">
+                                      <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-[#14c0ff]/20 text-[#14c0ff]">
+                                        Electronic
+                                      </span>
+                                      <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-[#8b5cf6]/20 text-[#8b5cf6]">
+                                        EDM
+                                      </span>
+                                    </div>
+                                  </td>
+                                  <td className="px-4 py-3">
+                                    <div className="text-white font-medium text-sm">203.7K</div>
+                                  </td>
+                                  <td className="px-4 py-3">
+                                    <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-400/20 text-green-400">
+                                      Available
+                                    </span>
+                                  </td>
+                                  <td className="px-4 py-3">
+                                    <button className="bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] text-white px-3 py-1 rounded-lg text-xs font-medium hover:shadow-lg transition-all duration-200">
+                                      Contact
+                                    </button>
+                                  </td>
+                                </tr>
+
+                                {/* Curator Row 4 */}
+                                <tr className="hover:bg-gray-800/20 transition-colors">
+                                  <td className="px-4 py-3">
+                                    <div className="flex items-center space-x-3">
+                                      <div className="w-10 h-10 bg-gradient-to-br from-[#ec4899] to-[#59e3a5] rounded-lg flex items-center justify-center">
+                                        <span className="text-white font-bold text-xs">🌙</span>
+                                      </div>
+                                      <div className="flex-1">
+                                        <div className="text-white font-medium text-sm">R&B Nights</div>
+                                        <div className="mt-1">
+                                          <span className="inline-flex items-center px-1.5 py-0.5 text-xs font-medium border border-gray-600 text-gray-300 rounded">
+                                            View Playlist
+                                          </span>
+                                        </div>
+                                      </div>
+                                    </div>
+                                  </td>
+                                  <td className="px-4 py-3">
+                                    <div className="flex flex-wrap gap-1">
+                                      <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-[#ec4899]/20 text-[#ec4899]">
+                                        R&B
+                                      </span>
+                                      <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-[#59e3a5]/20 text-[#59e3a5]">
+                                        Soul
+                                      </span>
+                                    </div>
+                                  </td>
+                                  <td className="px-4 py-3">
+                                    <div className="text-white font-medium text-sm">156.8K</div>
+                                  </td>
+                                  <td className="px-4 py-3">
+                                    <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-400/20 text-green-400">
+                                      Available
+                                    </span>
+                                  </td>
+                                  <td className="px-4 py-3">
+                                    <button className="bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] text-white px-3 py-1 rounded-lg text-xs font-medium hover:shadow-lg transition-all duration-200">
+                                      Contact
+                                    </button>
+                                  </td>
+                                </tr>
+                              </tbody>
+                            </table>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* CTA Button */}
+              <div className="text-center mt-16 mb-20 md:mb-0 lg:mt-16" style={{ marginTop: '-180px', marginBottom: '180px' }}>
+                <button
+                  onClick={scrollToTrackInput}
+                  className="px-12 py-4 bg-gradient-to-r from-[#8b5cf6] via-[#59e3a5] to-[#14c0ff] text-white font-bold rounded-2xl hover:shadow-2xl hover:shadow-[#59e3a5]/30 transition-all duration-700 transform hover:scale-105 active:scale-95 relative overflow-hidden group text-lg"
+                  style={{ 
+                    /* DESKTOP ONLY: Add 80px top margin and 90px bottom margin to prevent button from being stuck under browser mockup */
+                    marginTop: typeof window !== 'undefined' && window.innerWidth >= 1024 ? '80px' : '0px',
+                    marginBottom: typeof window !== 'undefined' && window.innerWidth >= 1024 ? '90px' : '0px'
+                  }}
+                >
+                  <span className="relative z-10">ACCESS CURATOR CONNECT+</span>
                   <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-700"></div>
                 </button>
               </div>
