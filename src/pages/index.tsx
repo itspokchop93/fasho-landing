@@ -28,6 +28,127 @@ const responsiveFontStyles = `
   }
   }
   
+  /* CTA Button spacing - MOBILE ONLY */
+  .cta-button-spacing {
+    margin-bottom: 5px;
+    padding-bottom: 5px;
+  }
+  @media (min-width: 640px) {
+    .cta-button-spacing {
+      margin-bottom: 0px;
+      padding-bottom: 0px;
+    }
+  }
+  @media (min-width: 768px) {
+    .cta-button-spacing {
+      margin-bottom: 0px;
+      padding-bottom: 0px;
+    }
+  }
+  @media (min-width: 1024px) {
+    .cta-button-spacing {
+      margin-bottom: 0px;
+      padding-bottom: 0px;
+    }
+  }
+  
+  /* Access Curator Connect Button spacing - MOBILE ONLY */
+  .curator-connect-button-spacing {
+    margin-top: 200px;
+  }
+  @media (min-width: 640px) {
+    .curator-connect-button-spacing {
+      margin-top: 0px;
+    }
+  }
+  
+  /* Authenticity Section Mobile Styles */
+  .auth-header-container {
+    margin-bottom: 16px;
+  }
+  @media (max-width: 639px) {
+    .auth-header-container {
+      margin-bottom: -20px !important;
+    }
+  }
+  
+  .auth-skeptical-text {
+    margin-bottom: -40px !important;
+  }
+  @media (min-width: 640px) {
+    .auth-skeptical-text {
+      margin-bottom: 0px !important;
+    }
+  }
+  
+  .auth-content-container {
+    margin-top: -120px !important;
+  }
+  @media (min-width: 640px) {
+    .auth-content-container {
+      margin-top: 0px !important;
+    }
+  }
+  
+  .auth-heading-gap {
+    gap: 0.5rem;
+  }
+  @media (min-width: 640px) {
+    .auth-heading-gap {
+      gap: 2.5rem;
+    }
+  }
+  
+  .auth-checkmark-desktop {
+    display: none !important;
+  }
+  @media (min-width: 640px) {
+    .auth-checkmark-desktop {
+      display: flex !important;
+      margin-left: 35px;
+    }
+    .auth-checkmark-mobile-only {
+      display: none !important;
+    }
+  }
+  
+  .auth-checkmark-mobile-only {
+    position: absolute;
+    right: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    display: flex;
+  }
+  
+  .auth-operates-text {
+    margin-bottom: -25px;
+  }
+  @media (min-width: 640px) {
+    .auth-operates-text {
+      margin-bottom: 0px;
+    }
+  }
+  
+  .auth-checkmark-mobile {
+    width: 48px !important;
+    height: 48px !important;
+    display: flex !important;
+  }
+  .auth-checkmark-mobile svg {
+    width: 30px !important;
+    height: 30px !important;
+  }
+  @media (min-width: 640px) {
+    .auth-checkmark-mobile {
+      width: 64px !important;
+      height: 64px !important;
+    }
+    .auth-checkmark-mobile svg {
+      width: 40px !important;
+      height: 40px !important;
+    }
+  }
+  
   .text-heading-mobile-lg-desktop {
     font-size: 1.5rem;
   }
@@ -430,6 +551,7 @@ export default function Home() {
   const [whileOtherRef, whileOtherInView] = useInView();
   const [whoIsFashoRef, whoIsFashoInView] = useInView();
   const [ourTeamRef, ourTeamInView] = useInView();
+  const [teamCampaignsRef, teamCampaignsInView] = useInView();
   const [gotTiredRef, gotTiredInView] = useInView();
   const [gameRiggedRef, gameRiggedInView] = useInView();
   const [builtFashoRef, builtFashoInView] = useInView();
@@ -874,8 +996,8 @@ export default function Home() {
     // Eased progress using cubic-bezier for smooth transition
     const easedProgress = clampedProgress * clampedProgress * (3 - 2 * clampedProgress);
     
-      // Maximum transform distance (reduced for less sensitivity)
-      const maxTransform = 180;
+      // Maximum transform distance (reduced for mobile devices)
+      const maxTransform = typeof window !== 'undefined' && window.innerWidth < 768 ? 70 : 180;
     const transformY = easedProgress * maxTransform;
     
       scrollTransform = `translateY(-${transformY}px)`;
@@ -1029,7 +1151,7 @@ export default function Home() {
               <div className="text-center mb-20 max-w-5xl mx-auto">
                 {/* Main Heading with SplitText Animation */}
                 <h1 className="text-4xl xs:text-5xl sm:text-6xl md:text-7xl lg:text-8xl font-black mb-8 leading-none" style={{ whiteSpace: 'normal' }}>
-                  <div className="whitespace-nowrap mb-1 md:mb-0" style={{ fontSize: '1.2em' }}>
+                  <div className="whitespace-nowrap mb-1 md:mb-0 text-[calc(1.2em+0.85rem)] md:text-[1.2em]">
                   <SplitText
                     text="#1 Spotify"
                     className="block drop-shadow-[0_8px_16px_rgba(0,0,0,0.6)]"
@@ -1049,8 +1171,7 @@ export default function Home() {
                   />
                   </div>
                   <div 
-                    className="whitespace-nowrap" 
-                    style={{ fontSize: isMobile ? 'calc(1em + 0.15rem)' : 'inherit' }}
+                    className="whitespace-nowrap text-[calc(1em+0.65rem)] md:text-[1em]"
                   >
                   <SplitText
                     text="Music Promotion"
@@ -1149,10 +1270,10 @@ export default function Home() {
                     <div className="relative z-10 w-full max-w-full mx-auto">
                       {/* Campaign Start Text - Reduced by 10px and added gradient text with reduced shadow */}
                       <div className="text-center mb-8">
-                        <h2 className="text-2xl md:text-4xl font-black bg-gradient-to-b from-white to-gray-400 bg-clip-text text-transparent drop-shadow-[0_8px_16px_rgba(0,0,0,0.6)] mb-4 pt-2.5 md:pt-0 whitespace-nowrap">
+                        <h2 className="text-[1.9rem] md:text-4xl font-black bg-gradient-to-b from-white to-gray-400 bg-clip-text text-transparent drop-shadow-[0_8px_16px_rgba(0,0,0,0.6)] mb-4 pt-2.5 md:pt-0 whitespace-nowrap">
                           🚀 Start Your Campaign
                         </h2>
-                        <p className="text-sm md:text-lg text-gray-300 mb-8 -mb-2.5">
+                        <p className="text-sm md:text-lg text-gray-300 mb-6 md:mb-8 -mb-2.5">
                           Search For Your Spotify Song or Enter Your Track Link
                         </p>
                       </div>
@@ -1212,7 +1333,7 @@ export default function Home() {
                                             alt={track.title}
                                             className="w-12 h-12 rounded-lg object-cover shadow-md border border-white/10 group-hover:scale-105 transition-transform duration-200"
                                           />
-                                          <div className="flex-1 min-w-0">
+                                          <div className="flex-1 min-w-0 text-left">
                                             <div className="font-semibold text-white truncate group-hover:text-[#14c0ff] transition-colors duration-200">
                                               {track.title}
                                             </div>
@@ -1341,7 +1462,7 @@ export default function Home() {
                   <div className="w-full" style={{ background: 'transparent' }}>
                     {/* Section Header */}
                     <div className="text-center mb-12" style={{ background: 'transparent' }}>
-                      <h2 className="text-2xl md:text-3xl font-black text-white mb-4" style={{ background: 'transparent' }}>
+                      <h2 className="text-[calc(1.5rem-0.2rem)] sm:text-2xl md:text-3xl font-black text-white mb-4" style={{ background: 'transparent' }}>
                         Trusted By Major Clients
                       </h2>
                     </div>
@@ -1630,52 +1751,52 @@ export default function Home() {
           </div>
 
           {/* PAS Framework Section */}
-          <div className="max-w-4xl mx-auto px-6 py-20 mt-10">
+          <div className="max-w-4xl mx-auto px-6 py-20 mt-5 md:mt-10">
             {/* PAS Final Draft Section - User Provided */}
             <div className="text-center mb-20">
-              <p ref={musicFireRef} className={`text-2xl md:text-3xl lg:text-[2.9rem] font-black text-white pb-1 lg:pb-3 text-center transition-all duration-700 ${musicFireInView ? 'animate-fade-in-up' : 'opacity-0 translate-y-8'} leading-tight lg:leading-tight`}>
+              <p ref={musicFireRef} className={`text-[calc(1.5rem+0.4rem)] md:text-3xl lg:text-[2.9rem] font-black text-white pb-1 lg:pb-3 text-center transition-all duration-700 ${musicFireInView ? 'animate-fade-in-up' : 'opacity-0 translate-y-8'} leading-tight lg:leading-tight`}>
                 <span className="block md:inline">Your Music Is Fire,</span>
               </p>
-              <p ref={nobodyHearingRef} className={`text-2xl md:text-3xl lg:text-[2.9rem] font-black text-white pb-12 lg:pb-[3.5rem] text-center transition-all duration-700 ${nobodyHearingInView ? 'animate-fade-in-up' : 'opacity-0 translate-y-8'} leading-tight lg:leading-tight`}>
+              <p ref={nobodyHearingRef} className={`text-[calc(1.5rem+0.4rem)] md:text-3xl lg:text-[2.9rem] font-black text-white pb-12 lg:pb-[3.5rem] text-center transition-all duration-700 ${nobodyHearingInView ? 'animate-fade-in-up' : 'opacity-0 translate-y-8'} leading-tight lg:leading-tight`}>
                 <span className="block md:inline">But <span className="bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] bg-clip-text text-transparent">Nobody's</span> Hearing It...</span>
               </p>
-              <p ref={text1Ref} className={`text-lg md:text-xl lg:text-[1.75rem] text-gray-300 pb-12 lg:pb-[3.5rem] font-medium text-center transition-all duration-700 ${text1InView ? 'animate-fade-in-up' : 'opacity-0 translate-y-8'} leading-relaxed lg:leading-relaxed`}>
+              <p ref={text1Ref} className={`text-[calc(1.125rem+0.25rem)] sm:text-lg md:text-xl lg:text-[1.75rem] text-gray-300 pb-12 lg:pb-[3.5rem] font-medium text-center transition-all duration-700 ${text1InView ? 'animate-fade-in-up' : 'opacity-0 translate-y-8'} leading-relaxed lg:leading-relaxed`}>
                 You spent days making the best song of your life. Created the dopest cover art for it. All your friends said it slaps harder than Will Smith at the Oscars....
               </p>
-              <p ref={text2Ref} className={`text-2xl md:text-3xl lg:text-4xl font-bold pb-12 text-center transition-all duration-700 ${text2InView ? 'animate-fade-in-up' : 'opacity-0 translate-y-8'} leading-tight`}>
+              <p ref={text2Ref} className={`text-[calc(1.5rem+0.4rem)] md:text-3xl lg:text-4xl font-bold pb-12 text-center transition-all duration-700 ${text2InView ? 'animate-fade-in-up' : 'opacity-0 translate-y-8'} leading-tight`}>
                 <span className="block md:inline">But your Spotify still</span>{' '}
                 <span className="block md:inline">says " <span className="bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] bg-clip-text text-transparent">&lt; 1,000</span> " plays</span>
               </p>
-              <p ref={text3Ref} className={`text-lg md:text-xl lg:text-[1.75rem] text-gray-300 pb-12 lg:pb-[3.5rem] font-medium text-center transition-all duration-700 ${text3InView ? 'animate-fade-in-up' : 'opacity-0 translate-y-8'} leading-relaxed lg:leading-relaxed`}>
+              <p ref={text3Ref} className={`text-[calc(1.125rem+0.25rem)] sm:text-lg md:text-xl lg:text-[1.75rem] text-gray-300 pb-12 lg:pb-[3.5rem] font-medium text-center transition-all duration-700 ${text3InView ? 'animate-fade-in-up' : 'opacity-0 translate-y-8'} leading-relaxed lg:leading-relaxed`}>
                 Meanwhile, some dude who recorded his whole album <b>on an iPhone</b> just hit <b>2 million</b> streams and <b>got signed.</b>
               </p>
-              <p ref={text4Ref} className={`text-4xl md:text-5xl lg:text-[3.5rem] font-black pb-5 lg:pb-[2rem] bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] bg-clip-text text-transparent transition-all duration-700 ${text4InView ? 'animate-fade-in-up' : 'opacity-0 translate-y-8'} leading-tight`}>
+              <p ref={text4Ref} className={`text-[calc(2.25rem+0.20rem)] sm:text-4xl md:text-5xl lg:text-[3.5rem] font-black pb-5 lg:pb-[2rem] bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] bg-clip-text text-transparent transition-all duration-700 ${text4InView ? 'animate-fade-in-up' : 'opacity-0 translate-y-8'} leading-tight mb-[5px] sm:mb-0`}>
                 Damn…
               </p>
               <p ref={text5Ref} className={`text-3xl md:text-4xl lg:text-[2.15rem] font-black text-white pb-12 lg:pb-[3.5rem] pt-1 lg:pt-[2rem] transition-all duration-700 ${text5InView ? 'animate-fade-in-up' : 'opacity-0 translate-y-8'} leading-tight lg:leading-tight`}>
                 Ready to know the truth?
               </p>
-              <p ref={text6bRef} className={`text-xl md:text-2xl lg:text-[2.0rem] font-black text-white pb-8 lg:pb-[2rem] text-center transition-all duration-700 ${text6bInView ? 'animate-fade-in-up' : 'opacity-0 translate-y-8'} leading-tight lg:leading-tight`}>
+              <p ref={text6bRef} className={`text-[calc(1.25rem+0.25rem)] sm:text-xl md:text-2xl lg:text-[2.0rem] font-black text-white pb-8 lg:pb-[2rem] text-center transition-all duration-700 ${text6bInView ? 'animate-fade-in-up' : 'opacity-0 translate-y-8'} leading-tight lg:leading-tight`}>
                 Talent and hard work DOES NOT guarantee<br className="hidden lg:block" /> success on Spotify.
               </p>
-              <p ref={text6Ref} className={`text-lg md:text-xl lg:text-[1.75rem] text-gray-300 pb-12 lg:pb-[3.5rem] font-medium text-center transition-all duration-700 ${text6InView ? 'animate-fade-in-up' : 'opacity-0 translate-y-8'} leading-relaxed lg:leading-relaxed`}>
+              <p ref={text6Ref} className={`text-[calc(1.125rem+0.25rem)] sm:text-lg md:text-xl lg:text-[1.75rem] text-gray-300 pb-12 lg:pb-[3.5rem] font-medium text-center transition-all duration-700 ${text6InView ? 'animate-fade-in-up' : 'opacity-0 translate-y-8'} leading-relaxed lg:leading-relaxed pt-[9px] sm:pt-0 mb-[5px] sm:mb-0`}>
                 The platform only pushes artists who <b><i>ALREADY</i></b> have momentum. Big streams, high engagement, and playlist placements. If you've got them, Spotify's algorithm <b>LOVES</b> you. But if you don't? <b>You're invisible.</b>
               </p>
               <div ref={text7Ref} className={`text-center pb-12 transition-all duration-700 ${text7InView ? 'animate-fade-in-up' : 'opacity-0 translate-y-8'}`}>
-                <p className="text-2xl md:text-3xl lg:text-[2.4rem] font-black text-white mb-2 lg:mt-3 leading-tight lg:leading-normal">
+                <p className="text-[calc(1.5rem+0.3rem)] sm:text-2xl md:text-3xl lg:text-[2.4rem] font-black text-white mb-2 lg:mt-3 leading-tight lg:leading-normal">
                   Here's the <span className="bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] bg-clip-text text-transparent">CATCH</span> that's
                 </p>
-                <p className="text-2xl md:text-3xl lg:text-[2.4rem] font-black text-white lg:mb-3 leading-tight lg:leading-normal">
+                <p className="text-[calc(1.5rem+0.3rem)] sm:text-2xl md:text-3xl lg:text-[2.4rem] font-black text-white lg:mb-3 leading-tight lg:leading-normal">
                   <span className="bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] bg-clip-text text-transparent">KILLING</span> independent artists…
                 </p>
               </div>
-              <p ref={text8Ref} className={`text-lg md:text-xl lg:text-[1.75rem] text-gray-300 pb-6 lg:pb-[1.75rem] font-medium text-center transition-all duration-700 ${text8InView ? 'animate-fade-in-up' : 'opacity-0 translate-y-8'} leading-relaxed lg:leading-relaxed`}>
+              <p ref={text8Ref} className={`text-[calc(1.125rem+0.25rem)] sm:text-lg md:text-xl lg:text-[1.75rem] text-gray-300 pb-6 lg:pb-[1.75rem] font-medium text-center transition-all duration-700 ${text8InView ? 'animate-fade-in-up' : 'opacity-0 translate-y-8'} leading-relaxed lg:leading-relaxed`}>
                 Spotify won't promote you if you <b><i><u>DON'T</u></i></b> have streams. But you can't get streams if Spotify <b><i><u>WON'T</u></i></b> promote you!
               </p>
-              <p ref={text8bRef} className={`text-lg md:text-xl lg:text-[1.75rem] text-gray-300 pb-12 lg:pb-[3.5rem] font-medium text-center transition-all duration-700 ${text8bInView ? 'animate-fade-in-up' : 'opacity-0 translate-y-8'} leading-relaxed lg:leading-relaxed`}>
+              <p ref={text8bRef} className={`text-[calc(1.125rem+0.25rem)] sm:text-lg md:text-xl lg:text-[1.75rem] text-gray-300 pb-12 lg:pb-[3.5rem] font-medium text-center transition-all duration-700 ${text8bInView ? 'animate-fade-in-up' : 'opacity-0 translate-y-8'} leading-relaxed lg:leading-relaxed`}>
                 You're trapped in a death loop where the only way to win is to <i><b><span className="bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] bg-clip-text text-transparent">ALREADY</span></b></i> be winning.
               </p>
-              <p ref={text9Ref} className={`text-2xl md:text-3xl lg:text-4xl font-bold text-white pb-12 transition-all duration-700 ${text9InView ? 'animate-fade-in-up' : 'opacity-0 translate-y-8'} leading-tight`}>
+              <p ref={text9Ref} className={`text-[calc(1.5rem+0.2rem)] sm:text-2xl md:text-3xl lg:text-4xl font-bold text-white pb-12 transition-all duration-700 ${text9InView ? 'animate-fade-in-up' : 'opacity-0 translate-y-8'} leading-tight`}>
                 Trust me, we know the struggle.
               </p>
               <h2 ref={heading3Ref} className={`text-4xl md:text-5xl lg:text-[3.65rem] font-black pb-1 lg:pb-[1.25rem] pt-2 bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] bg-clip-text text-transparent transition-all duration-700 ${heading3InView ? 'animate-fade-in-up' : 'opacity-0 translate-y-8'} leading-tight`}>
@@ -1688,7 +1809,7 @@ export default function Home() {
                 <div className="flex-shrink-0 w-16 h-16 flex items-center justify-center mt-1">
                   <span className="bg-gradient-to-r from-red-500 via-red-400 to-red-500 bg-clip-text text-transparent font-bold text-5xl">✗</span>
                 </div>
-                <p className="text-white font-medium text-lg md:text-xl lg:text-[1.65rem] leading-relaxed lg:leading-relaxed">
+                <p className="text-white font-medium text-[calc(1.125rem+0.20rem)] sm:text-lg md:text-xl lg:text-[1.65rem] leading-relaxed lg:leading-relaxed">
                   <b>60,000 new songs drop on Spotify EVERY single day</b> - and you're competing against ALL of them (42 new songs were uploaded in the time it took you to read this sentence)
                 </p>
               </div>
@@ -1696,7 +1817,7 @@ export default function Home() {
                 <div className="flex-shrink-0 w-16 h-16 flex items-center justify-center mt-1">
                   <span className="bg-gradient-to-r from-red-500 via-red-400 to-red-500 bg-clip-text text-transparent font-bold text-5xl">✗</span>
                 </div>
-                <p className="text-white font-medium text-lg md:text-xl lg:text-[1.65rem] leading-relaxed lg:leading-relaxed">
+                <p className="text-white font-medium text-[calc(1.125rem+0.20rem)] sm:text-lg md:text-xl lg:text-[1.65rem] leading-relaxed lg:leading-relaxed">
                   Without getting placed on the <b>RIGHT</b> playlists, you're <b>INVISIBLE</b> to Spotify's algorithm (and everyone else)
                 </p>
               </div>
@@ -1704,7 +1825,7 @@ export default function Home() {
                 <div className="flex-shrink-0 w-16 h-16 flex items-center justify-center mt-1">
                   <span className="bg-gradient-to-r from-red-500 via-red-400 to-red-500 bg-clip-text text-transparent font-bold text-5xl">✗</span>
                 </div>
-                <p className="text-white font-medium text-lg md:text-xl lg:text-[1.65rem] leading-relaxed lg:leading-relaxed">
+                <p className="text-white font-medium text-[calc(1.125rem+0.20rem)] sm:text-lg md:text-xl lg:text-[1.65rem] leading-relaxed lg:leading-relaxed">
                   It's not 2019 anymore - posting <b>"LINK IN BIO"</b> on Instagram works just as bad as buying an Ad in the newspaper
                 </p>
               </div>
@@ -1712,7 +1833,7 @@ export default function Home() {
                 <div className="flex-shrink-0 w-16 h-16 flex items-center justify-center mt-1">
                   <span className="bg-gradient-to-r from-red-500 via-red-400 to-red-500 bg-clip-text text-transparent font-bold text-5xl">✗</span>
                 </div>
-                <p className="text-white font-medium text-lg md:text-xl lg:text-[1.65rem] leading-relaxed lg:leading-relaxed">
+                <p className="text-white font-medium text-[calc(1.125rem+0.20rem)] sm:text-lg md:text-xl lg:text-[1.65rem] leading-relaxed lg:leading-relaxed">
                   It takes the average artist <b>4.7 YEARS</b> of trial and error to finally break into the industry (and most quit after year 2)
                 </p>
               </div>
@@ -1720,7 +1841,7 @@ export default function Home() {
                 <div className="flex-shrink-0 w-16 h-16 flex items-center justify-center mt-1">
                   <span className="bg-gradient-to-r from-red-500 via-red-400 to-red-500 bg-clip-text text-transparent font-bold text-5xl">✗</span>
                 </div>
-                <p className="text-white font-medium text-lg md:text-xl lg:text-[1.65rem] leading-relaxed lg:leading-relaxed">
+                <p className="text-white font-medium text-[calc(1.125rem+0.20rem)] sm:text-lg md:text-xl lg:text-[1.65rem] leading-relaxed lg:leading-relaxed">
                   Artists with <b>HALF your talent</b> are going viral DAILY because they learned how to work <b>SMARTER</b> than you do
                 </p>
               </div>
@@ -1732,20 +1853,20 @@ export default function Home() {
             <h2 ref={worstPartRef} className={`text-4xl md:text-5xl lg:text-[3.35rem] font-black pb-12 pt-8 bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] bg-clip-text text-transparent text-center transition-all duration-700 ${worstPartInView ? 'animate-fade-in-up' : 'opacity-0 translate-y-8'} leading-tight`}>
               But The WORST Part Is...
             </h2>
-            <p ref={fakeAgenciesRef} className={`text-2xl md:text-3xl lg:text-[2.05rem] font-bold text-white pb-12 text-center transition-all duration-700 ${fakeAgenciesInView ? 'animate-fade-in-up' : 'opacity-0 translate-y-8'} leading-tight lg:leading-relaxed`}>
+            <p ref={fakeAgenciesRef} className={`text-[calc(1.5rem+0.20rem)] sm:text-2xl md:text-3xl lg:text-[2.05rem] font-bold text-white pb-12 text-center transition-all duration-700 ${fakeAgenciesInView ? 'animate-fade-in-up' : 'opacity-0 translate-y-8'} leading-tight lg:leading-relaxed`}>
               REAL Spotify growth is trapped behind a field of landmines.
             </p>
-            <p ref={fakeAgenciesParaRef} className={`text-lg md:text-xl lg:text-[1.75rem] text-gray-300 pb-12 lg:pb-[3.5rem] font-medium text-center transition-all duration-700 ${fakeAgenciesParaInView ? 'animate-fade-in-up' : 'opacity-0 translate-y-8'} leading-relaxed lg:leading-relaxed`}>
+            <p ref={fakeAgenciesParaRef} className={`text-[calc(1.125rem+0.25rem)] sm:text-lg md:text-xl lg:text-[1.75rem] text-gray-300 pb-12 lg:pb-[3.5rem] font-medium text-center transition-all duration-700 ${fakeAgenciesParaInView ? 'animate-fade-in-up' : 'opacity-0 translate-y-8'} leading-relaxed lg:leading-relaxed`}>
               Fake agencies charging <b>$99</b> for <b>bot plays</b> from <b>Kazakstan.</b> Scammers in your DMs with <b>"PROMO 4 SALE"</b> messages. Snake oil companies on <b>Google</b> who put you on <b>handmade playlists</b> with only <b>52 followers.</b>
             </p>
-            <p ref={noCapRef} className={`text-2xl md:text-3xl lg:text-4xl font-bold text-white pb-12 text-center transition-all duration-700 ${noCapInView ? 'animate-fade-in-up' : 'opacity-0 translate-y-8'} leading-tight lg:leading-relaxed`}>
+            <p ref={noCapRef} className={`text-[calc(1.5rem+0.20rem)] sm:text-2xl md:text-3xl lg:text-4xl font-bold text-white pb-12 text-center transition-all duration-700 ${noCapInView ? 'animate-fade-in-up' : 'opacity-0 translate-y-8'} leading-tight lg:leading-relaxed`}>
               No Cap - Finding <span className="bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] bg-clip-text text-transparent">REAL</span> Spotify Marketing is Harder Than Finding a PS5 to Buy During COVID
             </p>
             <h2 ref={thatsWhyRef} className={`text-4xl md:text-5xl lg:text-[2.55rem] font-black pb-12 pt-2 lg:pt-[2rem] bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] bg-clip-text text-transparent text-center transition-all duration-700 ${thatsWhyInView ? 'animate-fade-in-up' : 'opacity-0 translate-y-8'} leading-tight`}>
               That's Why Over 25K Creators Use…
             </h2>
             <div ref={logoRef} className={`flex justify-center items-center pb-12 pt-2 relative ${logoInView ? 'animate-bounce-in-spectacular' : 'opacity-0'}`}>
-              <img src="/fasho-logo-wide.png" alt="Fasho Logo" className="w-[480px] max-w-full h-auto relative z-10" />
+              <img src="/fasho-logo-wide.png" alt="Fasho Logo" className="w-[384px] sm:w-[480px] max-w-full h-auto relative z-10" />
               {/* Confetti Animation - Positioned relative to logo */}
               {confettiLottie && showConfetti && (
                 <div className="absolute inset-0 pointer-events-none z-50 flex justify-center items-center" style={{ width: '800px', height: '600px', left: '50%', top: '50%', transform: 'translate(-50%, -50%)' }}>
@@ -1762,40 +1883,43 @@ export default function Home() {
             <p ref={onlySpotifyRef} className={`text-2xl md:text-3xl lg:text-[2.0rem] font-bold text-white pb-12 text-center transition-all duration-700 ${onlySpotifyInView ? 'animate-fade-in-up' : 'opacity-0 translate-y-8'} leading-tight lg:leading-tight`}>
               The ONLY Spotify marketing service with DIRECT access to curators of the world's BIGGEST playlists.
             </p>
-            <p ref={dontMessRef} className={`text-lg md:text-xl lg:text-[1.75rem] text-gray-300 pb-12 lg:pb-[3.5rem] font-medium text-center transition-all duration-700 ${dontMessInView ? 'animate-fade-in-up' : 'opacity-0 translate-y-8'} leading-relaxed lg:leading-relaxed`}>
+            <p ref={dontMessRef} className={`text-[calc(1.125rem+0.25rem)] sm:text-lg md:text-xl lg:text-[1.75rem] text-gray-300 pb-12 lg:pb-[3.5rem] font-medium text-center transition-all duration-700 ${dontMessInView ? 'animate-fade-in-up' : 'opacity-0 translate-y-8'} leading-relaxed lg:leading-relaxed`}>
               We don't mess with <b>bots.</b> We don't own <b>sketchy playlists.</b> We don't make <b>empty promises.</b>
             </p>
-            <p ref={getMusicRef} className={`text-lg md:text-xl lg:text-[1.75rem] text-gray-300 pb-12 lg:pb-[3.5rem] font-medium text-center transition-all duration-700 ${getMusicInView ? 'animate-fade-in-up' : 'opacity-0 translate-y-8'} leading-relaxed lg:leading-relaxed`}>
+            <p ref={getMusicRef} className={`text-[calc(1.125rem+0.25rem)] sm:text-lg md:text-xl lg:text-[1.75rem] text-gray-300 pb-12 lg:pb-[3.5rem] font-medium text-center transition-all duration-700 ${getMusicInView ? 'animate-fade-in-up' : 'opacity-0 translate-y-8'} leading-relaxed lg:leading-relaxed`}>
               We get your music directly in front of playlist curators who control <b><i><span className="bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] bg-clip-text text-transparent">MILLIONS</span></i></b> of real listeners.
             </p>
             <p ref={rapCaviarRef} className={`text-2xl md:text-3xl lg:text-[2.0rem] font-bold text-white pb-12 text-center transition-all duration-700 ${rapCaviarInView ? 'animate-fade-in-up' : 'opacity-0 translate-y-8'} leading-tight lg:leading-tight`}>
               RapCaviar. Today's Top Hits. Viva Latino. The playlists that actually move the needle on careers.
             </p>
-            <p ref={whileOtherRef} className={`text-lg md:text-xl lg:text-[1.75rem] text-gray-300 pb-12 lg:pb-[3.5rem] font-medium text-center transition-all duration-700 ${whileOtherInView ? 'animate-fade-in-up' : 'opacity-0 translate-y-8'} leading-relaxed lg:leading-relaxed`}>
+            <p ref={whileOtherRef} className={`text-[calc(1.125rem+0.25rem)] sm:text-lg md:text-xl lg:text-[1.75rem] text-gray-300 pb-12 lg:pb-[3.5rem] font-medium text-center transition-all duration-700 ${whileOtherInView ? 'animate-fade-in-up' : 'opacity-0 translate-y-8'} leading-relaxed lg:leading-relaxed`}>
               While other companies are cold emailing <b>random</b> curators hoping for a response, we're on <b>first name basis</b> with the people who matter. We've spent <b>10 years</b> building these relationships so <b>you don't have to.</b>
             </p>
             <h2 ref={whoIsFashoRef} className={`text-3xl md:text-4xl lg:text-5xl font-black pt-2 pb-14 bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] bg-clip-text text-transparent text-center transition-all duration-700 ${whoIsFashoInView ? 'animate-fade-in-up' : 'opacity-0 translate-y-8'} leading-tight`}>
               Welcome to the A-Team...
             </h2>
-            <p ref={ourTeamRef} className={`text-lg md:text-xl lg:text-[1.75rem] text-gray-300 pb-12 lg:pb-[3.5rem] font-medium text-center transition-all duration-700 ${ourTeamInView ? 'animate-fade-in-up' : 'opacity-0 translate-y-8'} leading-relaxed lg:leading-relaxed`}>
-              Our team is stacked with former directors and executives from labels like <b>Universal, Sony, RCA, Atlantic,</b> and <b>Roc Nation.</b> The same people who built marketing campaigns for <b>Beyonce, Justin Bieber, Billie Eilish,</b> and <b>Kendrick Lamar</b> now work for <b>YOU.</b>
+                        <p ref={ourTeamRef} className={`text-[calc(1.125rem+0.25rem)] sm:text-lg md:text-xl lg:text-[1.75rem] text-gray-300 pb-6 lg:pb-[1.75rem] font-medium text-center transition-all duration-700 ${ourTeamInView ? 'animate-fade-in-up' : 'opacity-0 translate-y-8'} leading-relaxed lg:leading-relaxed`}>
+              Our team is stacked with former directors and executives from labels like <b>Universal, Sony, RCA, Atlantic,</b> and <b>Roc Nation.</b>
             </p>
-            <p ref={gotTiredRef} className={`text-lg md:text-xl lg:text-[1.75rem] text-gray-300 pb-6 lg:pb-[1.5rem] font-medium text-center transition-all duration-700 ${gotTiredInView ? 'animate-fade-in-up' : 'opacity-0 translate-y-8'} leading-relaxed lg:leading-relaxed`}>
+            <p ref={teamCampaignsRef} className={`text-[calc(1.125rem+0.25rem)] sm:text-lg md:text-xl lg:text-[1.75rem] text-gray-300 pb-12 lg:pb-[3.5rem] font-medium text-center transition-all duration-700 ${teamCampaignsInView ? 'animate-fade-in-up' : 'opacity-0 translate-y-8'} leading-relaxed lg:leading-relaxed mt-[15px]`}>
+              The same people who built marketing campaigns for <b>Beyonce, Justin Bieber, Billie Eilish,</b> and <b>Kendrick Lamar</b> now work for <b>YOU.</b>
+            </p>
+            <p ref={gotTiredRef} className={`text-[calc(1.125rem+0.25rem)] sm:text-lg md:text-xl lg:text-[1.75rem] text-gray-300 pb-6 lg:pb-[1.5rem] font-medium text-center transition-all duration-700 ${gotTiredInView ? 'animate-fade-in-up' : 'opacity-0 translate-y-8'} leading-relaxed lg:leading-relaxed`}>
               We got tired of watching talented artists get <b>chewed up</b> and <b>spit out</b> by an industry that only cares about <b>who you know.</b> Gatekeepers controlling <b>everything.</b> Labels taking <b>80%</b> of your revenue.
             </p>
-            <p ref={gameRiggedRef} className={`text-2xl md:text-3xl lg:text-4xl font-bold text-white pt-1.5 lg:pt-[2rem] pb-14 text-center transition-all duration-700 ${gameRiggedInView ? 'animate-fade-in-up' : 'opacity-0 translate-y-8'} leading-tight`}>
+            <p ref={gameRiggedRef} className={`text-2xl md:text-3xl lg:text-4xl font-bold text-white pt-1.5 lg:pt-[2rem] pb-14 text-center transition-all duration-700 ${gameRiggedInView ? 'animate-fade-in-up' : 'opacity-0 translate-y-8'} leading-tight pt-[calc(6px+5px)] sm:pt-1.5 lg:pt-[2rem]`}>
               The game was rigged from the start.
             </p>
-            <p ref={builtFashoRef} className={`text-lg md:text-xl lg:text-[1.75rem] text-gray-300 pb-12 lg:pb-[3.5rem] font-medium text-center transition-all duration-700 ${builtFashoInView ? 'animate-fade-in-up' : 'opacity-0 translate-y-8'} leading-relaxed lg:leading-relaxed`}>
+            <p ref={builtFashoRef} className={`text-[calc(1.125rem+0.25rem)] sm:text-lg md:text-xl lg:text-[1.75rem] text-gray-300 pb-12 lg:pb-[3.5rem] font-medium text-center transition-all duration-700 ${builtFashoInView ? 'animate-fade-in-up' : 'opacity-0 translate-y-8'} leading-relaxed lg:leading-relaxed`}>
               So we built <b className="bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] bg-clip-text text-transparent font-black">FASHO.co</b> to flip the script. To give independent artists <b>direct</b> access to the <b>same tools</b> and <b>connections</b> that major labels pay <b><i>millions</i></b> for.
             </p>
             <h2 ref={resultsRef} className={`text-4xl md:text-5xl lg:text-[2.5rem] font-black pb-12 bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] bg-clip-text text-transparent text-center transition-all duration-700 ${resultsInView ? 'animate-fade-in-up' : 'opacity-0 translate-y-8'} leading-tight`}>
               The Results Speak For Themselves…
             </h2>
-            <p ref={with100Ref} className={`text-lg md:text-xl lg:text-[1.75rem] text-gray-300 pb-12 lg:pb-[3.5rem] font-medium text-center transition-all duration-700 ${with100InView ? 'animate-fade-in-up' : 'opacity-0 translate-y-8'} leading-relaxed lg:leading-relaxed`}>
+            <p ref={with100Ref} className={`text-[calc(1.125rem+0.25rem)] sm:text-lg md:text-xl lg:text-[1.75rem] text-gray-300 pb-12 lg:pb-[3.5rem] font-medium text-center transition-all duration-700 ${with100InView ? 'animate-fade-in-up' : 'opacity-0 translate-y-8'} leading-relaxed lg:leading-relaxed`}>
               With a <b>100% success rate,</b> our campaigns start delivering within <b>48 hours.</b> Not weeks. Not "maybe soon"… Two days.
             </p>
-            <p ref={playlistNetworkRef} className={`text-lg md:text-xl lg:text-[1.75rem] text-gray-300 pb-12 lg:pb-[3.5rem] font-medium text-center transition-all duration-700 ${playlistNetworkInView ? 'animate-fade-in-up' : 'opacity-0 translate-y-8'} leading-relaxed lg:leading-relaxed`}>
+            <p ref={playlistNetworkRef} className={`text-[calc(1.125rem+0.25rem)] sm:text-lg md:text-xl lg:text-[1.75rem] text-gray-300 pb-12 lg:pb-[3.5rem] font-medium text-center transition-all duration-700 ${playlistNetworkInView ? 'animate-fade-in-up' : 'opacity-0 translate-y-8'} leading-relaxed lg:leading-relaxed`}>
               Our playlist network drives <b>MILLIONS</b> of engaged listeners to our clients <b>every single week.</b> Real people who <b>save songs, follow artists, and actually show up to shows.</b>
             </p>
             <p ref={isntHopeRef} className={`text-2xl md:text-3xl lg:text-[2.1rem] font-bold text-white pb-32 text-center transition-all duration-700 -mb-9 md:mb-0 ${isntHopeInView ? 'animate-fade-in-up' : 'opacity-0 translate-y-8'} leading-tight lg:leading-tight`}>
@@ -2031,10 +2155,10 @@ export default function Home() {
                   <h2 className="text-4xl md:text-5xl lg:text-6xl font-black bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] bg-clip-text text-transparent mb-1" style={{ lineHeight: '1.2' }}>
                     STEP 1
                   </h2>
-                  <h3 className="text-3xl md:text-4xl lg:text-5xl font-black text-white mb-4 md:mb-8" style={{ lineHeight: '1.2' }}>
+                  <h3 className="text-[calc(1.875rem+0.4rem)] sm:text-3xl md:text-4xl lg:text-5xl font-black text-white mb-4 md:mb-8" style={{ lineHeight: '1.2' }}>
                     Find Your Song
                   </h3>
-                  <p className="text-[0.95rem] md:text-[1.4rem] text-gray-300 leading-relaxed pb-8 md:pb-12">
+                  <p className="text-[calc(0.95rem+0.2rem)] sm:text-[0.95rem] md:text-[1.4rem] text-gray-300 leading-relaxed pb-8 md:pb-12">
                     Search your song or drop a direct link to your track and we'll analyze everything - your genre, style, energy, mood, and vibe. Our team scans through thousands of trending playlists in our exclusive network to find the EXACT ones where your music fits perfectly. We match you with curators who are actively looking for YOUR sound. Takes 30 seconds to submit, and our team immediately starts identifying opportunities that other services would never find.
                   </p>
                 </div>
@@ -2218,10 +2342,10 @@ export default function Home() {
                   <h2 className="text-4xl md:text-5xl lg:text-6xl font-black bg-gradient-to-r from-[#14c0ff] to-[#8b5cf6] bg-clip-text text-transparent mb-1" style={{ lineHeight: '1.2' }}>
                     STEP 2
                   </h2>
-                  <h3 className="text-3xl md:text-4xl lg:text-5xl font-black text-white mb-4 md:mb-8" style={{ lineHeight: '1.2' }}>
+                  <h3 className="text-[calc(1.875rem+0.4rem)] sm:text-3xl md:text-4xl lg:text-5xl font-black text-white mb-4 md:mb-8" style={{ lineHeight: '1.2' }}>
                     Choose Your Package
                   </h3>
-                  <p className="text-[0.95rem] md:text-[1.4rem] text-gray-300 leading-relaxed pb-8 md:pb-12">
+                  <p className="text-[calc(0.95rem+0.2rem)] sm:text-[0.95rem] md:text-[1.4rem] text-gray-300 leading-relaxed pb-8 md:pb-12">
                     Pick the campaign that matches where you're at in your career. Just dropped your first single? We got you. Ready to push that track to viral status? We got that too. Each package is built different - from starter campaigns that get you those first crucial playlist placements, all the way to our highest tier packages that put you in front of MILLIONS of new listeners. Add multiple tracks for 25% off each additional song. Stack your entire EP if you want. This is YOUR campaign, built YOUR way.
                   </p>
                 </div>
@@ -2238,10 +2362,10 @@ export default function Home() {
                   <h2 className="text-4xl md:text-5xl lg:text-6xl font-black bg-gradient-to-r from-[#8b5cf6] to-[#59e3a5] bg-clip-text text-transparent mb-1" style={{ lineHeight: '1.2' }}>
                     STEP 3
                   </h2>
-                  <h3 className="text-3xl md:text-4xl lg:text-5xl font-black text-white mb-4 md:mb-8" style={{ lineHeight: '1.2' }}>
+                  <h3 className="text-[calc(1.875rem+0.4rem)] sm:text-3xl md:text-4xl lg:text-5xl font-black text-white mb-4 md:mb-8" style={{ lineHeight: '1.2' }}>
                     We Go To Work For You
                   </h3>
-                  <p className="text-[0.95rem] md:text-[1.4rem] text-gray-300 leading-relaxed pb-8 md:pb-12">
+                  <p className="text-[calc(0.95rem+0.2rem)] sm:text-[0.95rem] md:text-[1.4rem] text-gray-300 leading-relaxed pb-8 md:pb-12">
                     This is where the magic happens. Our team gets on the phone and in the emails with playlist curators who TRUST us. We're not sending mass emails into the void - we're having real conversations with real people who control the biggest playlists on Spotify. "Hey Marcus, remember that R&B track that killed it last month? We got another one." That's how we move. Personal relationships, direct communication, and a track record that makes curators actually excited to hear what we're bringing them.
                   </p>
                 </div>
@@ -2402,10 +2526,10 @@ export default function Home() {
                   <h2 className="text-4xl md:text-5xl lg:text-6xl font-black bg-gradient-to-r from-[#59e3a5] to-[#8b5cf6] bg-clip-text text-transparent mb-1" style={{ lineHeight: '1.2' }}>
                     STEP 4
                   </h2>
-                  <h3 className="text-2xl md:text-3xl lg:text-4xl font-black text-white mb-4 md:mb-8" style={{ lineHeight: '1.2' }}>
+                  <h3 className="text-[calc(1.5rem+0.3rem)] sm:text-2xl md:text-3xl lg:text-4xl font-black text-white mb-4 md:mb-8" style={{ lineHeight: '1.2' }}>
                     Watch Your Career Transform
                   </h3>
-                  <p className="text-[0.95rem] md:text-[1.4rem] text-gray-300 leading-relaxed pb-8 md:pb-12">
+                  <p className="text-[calc(0.95rem+0.2rem)] sm:text-[0.95rem] md:text-[1.4rem] text-gray-300 leading-relaxed pb-8 md:pb-12">
                     Within 48 hours, your campaign goes live and everything shifts. Major playlists start adding your track. Thousands of new listeners discovering your music every day. The same Spotify for Artists app that used to depress you? Now it's showing numbers you screenshot and send to your group chat. No more watching everyone else win while you wonder what you're doing wrong. You're IN the game now - getting the plays, building the fanbase, and finally seeing your music reach the audience it was meant for. This is what momentum feels like.
                   </p>
                 </div>
@@ -2422,10 +2546,10 @@ export default function Home() {
                     <h2 className="font-black bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] bg-clip-text text-transparent mb-4" style={{ fontSize: '3rem', lineHeight: '1.2' }}>
                       STEP 1
                     </h2>
-                <h3 className="text-2xl md:text-3xl font-black text-white mb-6" style={{ lineHeight: '1.2' }}>
+                <h3 className="text-[calc(1.5rem+0.4rem)] sm:text-2xl md:text-3xl font-black text-white mb-6" style={{ lineHeight: '1.2' }}>
                   Find Your Song
                 </h3>
-                <p className="text-base md:text-lg text-gray-300 leading-relaxed max-w-2xl mx-auto">
+                <p className="text-[calc(1rem+0.2rem)] sm:text-base md:text-lg text-gray-300 leading-relaxed max-w-2xl mx-auto">
                   Search your song or drop a direct link to your track and we'll analyze everything - your genre, style, energy, mood, and vibe. Our team scans through thousands of trending playlists in our exclusive network to find the EXACT ones where your music fits perfectly.
                 </p>
               </div>
@@ -2526,10 +2650,10 @@ export default function Home() {
                     <h2 className="font-black bg-gradient-to-r from-[#14c0ff] to-[#8b5cf6] bg-clip-text text-transparent mb-4" style={{ fontSize: '3rem', lineHeight: '1.2' }}>
                       STEP 2
                     </h2>
-                <h3 className="text-2xl md:text-3xl font-black text-white mb-6" style={{ lineHeight: '1.2' }}>
+                <h3 className="text-[calc(1.5rem+0.4rem)] sm:text-2xl md:text-3xl font-black text-white mb-6" style={{ lineHeight: '1.2' }}>
                   Choose Your Package
                 </h3>
-                <p className="text-base md:text-lg text-gray-300 leading-relaxed max-w-2xl mx-auto">
+                <p className="text-[calc(1rem+0.2rem)] sm:text-base md:text-lg text-gray-300 leading-relaxed max-w-2xl mx-auto">
                   Pick the campaign that matches where you're at in your career. Each package is built different - from starter campaigns to our highest tier packages that put you in front of MILLIONS of new listeners.
                 </p>
               </div>
@@ -2620,10 +2744,10 @@ export default function Home() {
                     <h2 className="font-black bg-gradient-to-r from-[#8b5cf6] to-[#59e3a5] bg-clip-text text-transparent mb-4" style={{ fontSize: '3rem', lineHeight: '1.2' }}>
                       STEP 3
                     </h2>
-                <h3 className="text-2xl md:text-3xl font-black text-white mb-6" style={{ lineHeight: '1.2' }}>
+                <h3 className="text-[calc(1.5rem+0.4rem)] sm:text-2xl md:text-3xl font-black text-white mb-6" style={{ lineHeight: '1.2' }}>
                   We Go To Work For You
                 </h3>
-                <p className="text-base md:text-lg text-gray-300 leading-relaxed max-w-2xl mx-auto">
+                <p className="text-[calc(1rem+0.2rem)] sm:text-base md:text-lg text-gray-300 leading-relaxed max-w-2xl mx-auto">
                   This is where the magic happens. Our team gets on the phone with playlist curators who TRUST us. We're having real conversations with real people who control the biggest playlists on Spotify.
                 </p>
               </div>
@@ -2696,10 +2820,10 @@ export default function Home() {
                                  <h2 className="font-black bg-gradient-to-r from-[#59e3a5] to-[#8b5cf6] bg-clip-text text-transparent mb-4" style={{ fontSize: '3rem', lineHeight: '1.2' }}>
                     STEP 4
                   </h2>
-                <h3 className="text-2xl md:text-3xl font-black text-white mb-6" style={{ lineHeight: '1.2' }}>
+                <h3 className="text-[calc(1.5rem+0.3rem)] sm:text-2xl md:text-3xl font-black text-white mb-6" style={{ lineHeight: '1.2' }}>
                   Watch Your Career Transform
                 </h3>
-                <p className="text-base md:text-lg text-gray-300 leading-relaxed max-w-2xl mx-auto">
+                <p className="text-[calc(1rem+0.2rem)] sm:text-base md:text-lg text-gray-300 leading-relaxed max-w-2xl mx-auto">
                   Within 48 hours, your campaign goes live and everything shifts. Major playlists start adding your track. Thousands of new listeners discovering your music every day.
                 </p>
               </div>
@@ -2788,7 +2912,7 @@ export default function Home() {
           {/* Mobile CTA Section */}
           <section className="block lg:hidden py-16 px-4 relative z-20">
             <div className="max-w-4xl mx-auto text-center">
-              <h3 className="text-xl md:text-2xl font-black text-white max-w-3xl mx-auto leading-relaxed mb-8 -mt-5">
+              <h3 className="text-[calc(1.25rem+0.25rem)] sm:text-xl md:text-2xl font-black text-white max-w-3xl mx-auto leading-relaxed mb-[calc(2rem+5px)] sm:mb-8 -mt-[15px] sm:-mt-5">
                 Forget everything you think you know about playlist marketing. We've made it stupid simple. You submit, we connect, you grow. That's it.
               </h3>
               
@@ -2808,7 +2932,7 @@ export default function Home() {
               <div className="text-center mb-20">
                 <h3 
                   ref={forgetTextRef}
-                  className={`text-2xl md:text-3xl lg:text-4xl font-black text-white max-w-3xl mx-auto leading-relaxed lg:leading-[1.65] transition-all duration-700 ${forgetTextInView ? 'animate-fade-in-up' : 'opacity-0 translate-y-8'}`}
+                  className={`text-[calc(1.5rem+0.25rem)] sm:text-2xl md:text-3xl lg:text-4xl font-black text-white max-w-3xl mx-auto leading-relaxed lg:leading-[1.5] transition-all duration-700 ${forgetTextInView ? 'animate-fade-in-up' : 'opacity-0 translate-y-8'} -mt-[10px] sm:mt-0 mb-[5px] sm:mb-0`}
                 >
                   Forget everything you think you know about playlist marketing. We've made it stupid simple. You submit, we connect, you grow. That's it.
                 </h3>
@@ -2967,22 +3091,26 @@ export default function Home() {
           </div>
 
           {/* Dashboard Preview Section */}
-          <section className="py-0 md:py-24 px-4 pb-0 md:pb-48 relative z-10 overflow-hidden">
+          <section className="py-0 md:py-24 px-4 pb-48 md:pb-48 relative z-15 overflow-hidden">
             {/* Extended gradient overlay that flows into next section */}
             <div className="absolute inset-0 bg-gradient-to-b from-[#18192a] via-[#16213e] to-[#0a0a13] -z-10"></div>
             <div className="absolute bottom-0 left-0 right-0 h-64 bg-gradient-to-b from-transparent to-[#18192a] -z-5"></div>
+            
+            {/* Mobile-only smooth gradient transition overlay */}
+            <div className="sm:hidden absolute bottom-0 left-0 right-0 h-48 bg-gradient-to-b from-transparent via-[#16213e]/30 via-[#16213e]/50 via-[#0a0a13]/70 via-[#0a0a13]/85 to-[#0a0a13] z-20"></div>
             <div className="max-w-7xl mx-auto">
               <div className="text-center mb-4 md:mb-16">
                 <h2 
                   ref={commandCenterRef}
-                  className={`text-4xl md:text-5xl lg:text-6xl font-black mb-4 md:mb-8 bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] bg-clip-text text-transparent transition-all duration-700 mt-[15px] md:mt-0 ${commandCenterInView ? 'animate-fade-in-up' : 'opacity-0 translate-y-8'}`} 
+                  className={`text-4xl md:text-5xl lg:text-6xl font-black mb-4 md:mb-8 bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] bg-clip-text text-transparent transition-all duration-700 mt-[25px] md:mt-0 pt-[10px] sm:pt-0 ${commandCenterInView ? 'animate-fade-in-up' : 'opacity-0 translate-y-8'}`} 
                   style={{ lineHeight: '1.3' }}
                 >
-                  Your Personal Command Center
+                  <span className="block sm:inline">Your Personal</span>
+                  <span className="block sm:inline sm:ml-2">Command Center</span>
                 </h2>
                 <p 
                   ref={dashboardDescRef}
-                  className={`text-xl lg:text-[1.4rem] text-gray-300 max-w-3xl mx-auto leading-relaxed transition-all duration-700 ${dashboardDescInView ? 'animate-fade-in-up' : 'opacity-0 translate-y-8'}`}
+                  className={`text-xl lg:text-[1.4rem] text-gray-300 max-w-3xl mx-auto leading-relaxed transition-all duration-700 ${dashboardDescInView ? 'animate-fade-in-up' : 'opacity-0 translate-y-8'} mb-[25px] sm:mb-[10px]`}
                   style={{ 
                     hyphens: 'none', 
                     WebkitHyphens: 'none', 
@@ -3334,7 +3462,7 @@ export default function Home() {
               </div>
 
               {/* CTA Button */}
-              <div className="text-center mt-16 mb-20 md:mb-0 lg:mt-16" style={{ marginTop: '-180px', marginBottom: '60px' }}>
+              <div className="text-center mt-16 lg:mt-16 cta-button-spacing" style={{ marginTop: '-180px' }}>
                 <button
                   onClick={scrollToTrackInput}
                   className="px-12 py-4 bg-gradient-to-r from-[#59e3a5] via-[#14c0ff] to-[#8b5cf6] text-white font-bold rounded-2xl hover:shadow-2xl hover:shadow-[#14c0ff]/30 transition-all duration-700 transform hover:scale-105 active:scale-95 relative overflow-hidden group text-lg sm:mt-[50px]"
@@ -3347,14 +3475,15 @@ export default function Home() {
           </section>
 
           {/* Curator Connect+ Section */}
-          <section className="py-12 lg:py-16 px-4 relative z-10 overflow-hidden">
+          <section className="py-0 md:py-24 px-4 pb-0 md:pb-48 relative z-5 overflow-hidden" style={{ background: 'transparent' }}>
             {/* Extended gradient overlay that flows into next section */}
-            <div className="absolute inset-0 bg-gradient-to-b from-[#18192a] via-[#16213e] to-[#0a0a13] -z-10"></div>
-            <div className="absolute bottom-0 left-0 right-0 h-5 bg-gradient-to-b from-transparent to-[#0a0a13] -z-5"></div>
+            <div className="absolute inset-0 bg-transparent -z-10"></div>
+            <div className="absolute bottom-0 left-0 right-0 h-64 bg-gradient-to-b from-transparent to-[#0a0a13] -z-5"></div>
             <div className="max-w-7xl mx-auto">
               <div className="text-center mb-16">
-                <h2 className="text-3xl md:text-4xl lg:text-5xl font-black mb-8 bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] bg-clip-text text-transparent" style={{ lineHeight: '1.3' }}>
-                  650+ Indie Playlists At Your Fingertips
+                <h2 className="text-[calc(1.875rem+0.15rem)] sm:text-3xl md:text-4xl lg:text-5xl font-black mb-8 bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] bg-clip-text text-transparent pt-[85px] sm:pt-0" style={{ lineHeight: '1.3' }}>
+                  <span className="block sm:inline">650+ Indie Playlists</span>
+                  <span className="block sm:inline sm:ml-2">At Your Fingertips</span>
                 </h2>
                 <p className="text-xl lg:text-[1.4rem] text-gray-300 max-w-4xl mx-auto leading-relaxed" style={{ 
                   hyphens: 'none', 
@@ -3374,13 +3503,14 @@ export default function Home() {
                 <div className="absolute inset-0 -m-16 rounded-3xl opacity-50 blur-3xl bg-gradient-to-r from-[#8b5cf6]/30 via-[#59e3a5]/40 to-[#14c0ff]/30 animate-pulse"></div>
                 
                 {/* Centering container for scaled mockup */}
-                <div className="flex justify-center items-start w-full">
+                <div className="flex justify-center items-start w-full overflow-visible">
                   <div 
                     className="bg-gradient-to-br from-[#1a1a2e] to-[#16213e] rounded-t-2xl shadow-2xl transition-transform duration-700 ease-out relative z-10"
                     style={{ 
                       transform: getCuratorTransform(),
                       width: '1200px',
-                      transformOrigin: 'top center'
+                      transformOrigin: 'top center',
+                      minWidth: '1200px'
                     }}
                   >
                     {/* Browser Header */}
@@ -3683,10 +3813,10 @@ export default function Home() {
               </div>
 
               {/* CTA Button */}
-              <div className="text-center mt-16 mb-20 md:mb-0 lg:mt-16" style={{ marginTop: '-180px', marginBottom: '180px' }}>
+              <div className="text-center mb-20 md:mb-0 lg:mt-16 curator-connect-button-spacing" style={{ marginBottom: '180px' }}>
                 <button
                   onClick={scrollToTrackInput}
-                  className="px-12 py-4 bg-gradient-to-r from-[#8b5cf6] via-[#59e3a5] to-[#14c0ff] text-white font-bold rounded-2xl hover:shadow-2xl hover:shadow-[#59e3a5]/30 transition-all duration-700 transform hover:scale-105 active:scale-95 relative overflow-hidden group text-lg lg:mt-[110px] lg:mb-[130px]"
+                  className="px-12 py-4 bg-gradient-to-r from-[#8b5cf6] via-[#59e3a5] to-[#14c0ff] text-white font-bold rounded-2xl hover:shadow-2xl hover:shadow-[#59e3a5]/30 transition-all duration-700 transform hover:scale-105 active:scale-95 relative overflow-hidden group text-lg lg:mt-[110px] lg:mb-[130px] mt-[125px] sm:mt-0"
                 >
                   <span className="relative z-10">ACCESS CURATOR CONNECT+</span>
                   <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-700"></div>
@@ -4053,10 +4183,10 @@ export default function Home() {
                   </div>
 
                     {/* Mobile 2-column layout */}
-                    <div className="md:hidden w-full max-w-lg mx-auto px-2 relative">
+                    <div className="md:hidden w-full max-w-lg mx-auto pr-2 pl-[30px] relative">
                       <div className="grid grid-cols-2 gap-5 items-start">
                         {/* First Column - Mobile */}
-                        <div className="space-y-3 w-full">
+                        <div className="space-y-4 w-full">
                           {[
                             'Hip-Hop & Rap',
                             'Pop', 
@@ -4071,8 +4201,7 @@ export default function Home() {
                             'Reggaeton',
                             'K-Pop',
                             'Afrobeats',
-                            'House',
-                            'Techno'
+                            'House'
                           ].map((genre, index) => (
                             <div key={index} className="flex items-center space-x-2 w-full">
                               {/* Green Gradient Checkmark - Smaller */}
@@ -4084,14 +4213,14 @@ export default function Home() {
                               <span 
                                 className="text-white font-medium drop-shadow-[0_2px_4px_rgba(0,0,0,0.6)] flex-1 min-w-0"
                                 style={{ 
-                                  fontSize: '0.985rem',
+                                  fontSize: '1.235rem',
                                   hyphens: 'none', 
                                   WebkitHyphens: 'none', 
                                   MozHyphens: 'none', 
                                   msHyphens: 'none', 
                                   wordBreak: 'keep-all', 
                                   overflowWrap: 'break-word',
-                                  lineHeight: '1.2'
+                                  lineHeight: '1.4'
                                 }}
                               >
                                 {genre}
@@ -4101,7 +4230,7 @@ export default function Home() {
                         </div>
 
                         {/* Second Column - Mobile */}
-                        <div className="space-y-3 w-full">
+                        <div className="space-y-4 w-full pl-[15px]">
                           {[
                             'Trap',
                             'Lo-fi',
@@ -4113,14 +4242,14 @@ export default function Home() {
                             'Reggae',
                             'Gospel',
                             'Blues',
-                            'Podcast/Spoken Word',
+                            'Podcasts',
                             'Meditation',
                             'Workout',
                             'Study Music'
                           ].map((genre, index) => (
                             <div key={index} className="flex items-center space-x-2 w-full">
                               {/* Green Gradient Checkmark - Smaller */}
-                              <div className="w-4 h-4 bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] rounded-full flex items-center justify-center flex-shrink-0 drop-shadow-[0_4px_8px_rgba(0,0,0,0.4)]">
+                              <div className="w-4 h-4 bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] rounded-full flex items-center justify-center flex-shrink-0 drop-shadow-[0_4px_8px_rgba(0,0,0,0.6)]">
                                 <svg className="w-2.5 h-2.5 text-white drop-shadow-[0_2px_4px_rgba(0,0,0,0.6)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
                                 </svg>
@@ -4128,14 +4257,14 @@ export default function Home() {
                               <span 
                                 className="text-white font-medium drop-shadow-[0_2px_4px_rgba(0,0,0,0.6)] flex-1 min-w-0"
                                 style={{ 
-                                  fontSize: '0.985rem',
+                                  fontSize: '1.235rem',
                                   hyphens: 'none', 
                                   WebkitHyphens: 'none', 
                                   MozHyphens: 'none', 
                                   msHyphens: 'none', 
                                   wordBreak: 'keep-all', 
                                   overflowWrap: 'break-word',
-                                  lineHeight: '1.2'
+                                  lineHeight: '1.4'
                                 }}
                               >
                                 {genre}
@@ -4271,12 +4400,12 @@ export default function Home() {
               >
                 <div className="relative inline-block">
                   {/* Glow Effect Behind Text - Hidden on mobile */}
-                  <div className="hidden md:block absolute inset-0 bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] blur-2xl animate-pulse" style={{ 
-                    opacity: typeof window !== 'undefined' && window.innerWidth >= 1024 ? '0.06' : '0.3'
+                  <div className="hidden md:block absolute inset-0 bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] blur-xl" style={{ 
+                    opacity: typeof window !== 'undefined' && window.innerWidth >= 1024 ? '0.04' : '0.2'
                   }}></div>
                   
                   <p 
-                    className="relative text-[1.475rem] lg:text-[2.925rem] font-black text-white leading-relaxed lg:mt-[15px] lg:mb-[15px]"
+                    className="relative text-[1.725rem] lg:text-[2.925rem] font-black text-white leading-relaxed lg:mt-[15px] lg:mb-[15px]"
                   >
                     + Literally{' '}
                     <span className="bg-gradient-to-r from-[#59e3a5] via-[#14c0ff] to-[#8b5cf6] bg-clip-text text-transparent drop-shadow-lg animate-pulse">
@@ -4528,30 +4657,59 @@ export default function Home() {
           <section className="py-24 px-4 relative z-20 -mt-24" style={{ background: 'transparent' }}>
             <div className="max-w-7xl mx-auto">
               {/* Section Header */}
-              <div className="text-center mb-16">
+              <div className="text-center mb-16 auth-header-container relative">
                 <h2 
                   ref={authenticityHeadingRef}
-                  className={`text-4xl md:text-5xl lg:text-6xl font-black mb-8 bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] bg-clip-text text-transparent flex items-center justify-center gap-4 transition-all duration-700 ${authenticityHeadingInView ? 'animate-fade-in-up' : 'opacity-0 translate-y-8'}`} 
-                  style={{ lineHeight: '1.3' }}
+                  className={`text-[2.9rem] md:text-5xl lg:text-6xl font-black mb-8 bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] bg-clip-text text-transparent flex items-center justify-center transition-all duration-700 ${authenticityHeadingInView ? 'animate-fade-in-up' : 'opacity-0 translate-y-8'}`} 
+                  style={{ 
+                    lineHeight: '1.3', 
+                    gap: typeof window !== 'undefined' && window.innerWidth < 640 ? '0px' : '20px',
+                    marginRight: typeof window !== 'undefined' && window.innerWidth < 640 ? '-50px' : '0px',
+                    paddingRight: typeof window !== 'undefined' && window.innerWidth < 640 ? '40px' : '0px'
+                  }}
                 >
                   Authenticity Guaranteed
-                  {/* Green Check Mark Icon */}
-                  <div className="w-16 h-16 bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] rounded-full flex items-center justify-center flex-shrink-0 drop-shadow-[0_4px_12px_rgba(89,227,165,0.4)]">
-                    <svg className="w-10 h-10 text-white drop-shadow-[0_2px_4px_rgba(0,0,0,0.6)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  {/* Desktop Checkmark - Hidden on Mobile, Shows on Desktop with 15px left margin */}
+                  <div 
+                    className="auth-checkmark-desktop bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] rounded-full flex items-center justify-center flex-shrink-0 drop-shadow-[0_4px_12px_rgba(89,227,165,0.4)]"
+                    style={{ 
+                      width: typeof window !== 'undefined' && window.innerWidth < 640 ? '56px' : '48px', 
+                      height: typeof window !== 'undefined' && window.innerWidth < 640 ? '56px' : '48px', 
+                      minWidth: typeof window !== 'undefined' && window.innerWidth < 640 ? '56px' : '48px', 
+                      minHeight: typeof window !== 'undefined' && window.innerWidth < 640 ? '56px' : '48px',
+                      marginLeft: typeof window !== 'undefined' && window.innerWidth < 640 ? '-20px' : '0px',
+                      marginRight: typeof window !== 'undefined' && window.innerWidth < 640 ? '50px' : '0px'
+                    }}
+                  >
+                    <svg 
+                      className="text-white drop-shadow-[0_2px_4px_rgba(0,0,0,0.6)]" 
+                      fill="none" 
+                      stroke="currentColor" 
+                      viewBox="0 0 24 24"
+                      style={{ 
+                        width: typeof window !== 'undefined' && window.innerWidth < 640 ? '36px' : '30px', 
+                        height: typeof window !== 'undefined' && window.innerWidth < 640 ? '36px' : '30px' 
+                      }}
+                    >
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
                     </svg>
                   </div>
                 </h2>
+                
                 <h3 
                   ref={authenticitySubheadingRef}
-                  className={`text-2xl md:text-3xl lg:text-4xl font-black text-white max-w-4xl mx-auto leading-relaxed mb-12 transition-all duration-700 ${authenticitySubheadingInView ? 'animate-fade-in-up' : 'opacity-0 translate-y-8'}`}
+                  className={`text-[1.8rem] md:text-3xl lg:text-4xl font-black text-white max-w-4xl mx-auto leading-relaxed mb-0 md:mb-12 auth-skeptical-text transition-all duration-700 ${authenticitySubheadingInView ? 'animate-fade-in-up' : 'opacity-0 translate-y-8'}`}
+                  style={{
+                    marginBottom: typeof window !== 'undefined' && window.innerWidth < 640 ? '-25px' : undefined
+                  }}
                 >
-                  We know you're skeptical. You should be.
+                  <span className="block sm:inline">We know you're skeptical.</span>
+                  <span className="block sm:inline"> You should be.</span>
                 </h3>
               </div>
 
               {/* Main Content Container with Unique Design */}
-              <div className="relative max-w-6xl mx-auto">
+              <div className="relative max-w-6xl mx-auto auth-content-container">
                 {/* Background Design Elements */}
                 <div className="absolute inset-0 -m-8 rounded-3xl opacity-30 blur-2xl bg-gradient-to-br from-[#59e3a5]/20 via-[#14c0ff]/30 to-[#8b5cf6]/20 animate-pulse"></div>
                 <div className="absolute inset-0 bg-gradient-to-br from-[#1a1a2e]/95 via-[#16213e]/90 to-[#0a0a13]/95 rounded-2xl backdrop-blur-sm border-2 border-white/10 shadow-2xl"></div>
@@ -4562,15 +4720,19 @@ export default function Home() {
                   <div className="text-center mb-12">
                     <p 
                       ref={authenticityIntroRef}
-                      className={`text-xl md:text-2xl text-gray-300 leading-relaxed mb-8 font-bold transition-all duration-700 ${authenticityIntroInView ? 'animate-fade-in-up' : 'opacity-0 translate-y-8'}`}
+                      className={`text-[1.4rem] md:text-2xl text-gray-300 leading-relaxed mb-8 font-bold transition-all duration-700 ${authenticityIntroInView ? 'animate-fade-in-up' : 'opacity-0 translate-y-8'}`}
                     >
                       The Spotify marketing world is full of companies running bot farms from their mom's basement. They promise millions, deliver garbage, and disappear with your money.
                     </p>
                     <p 
                       ref={authenticityOperatesRef}
-                      className={`text-3xl md:text-4xl font-black text-white leading-relaxed transition-all duration-700 ${authenticityOperatesInView ? 'animate-fade-in-up' : 'opacity-0 translate-y-8'}`}
+                      className={`text-[1.8rem] md:text-4xl font-black text-white leading-relaxed auth-operates-text transition-all duration-700 ${authenticityOperatesInView ? 'animate-fade-in-up' : 'opacity-0 translate-y-8'}`}
+                      style={{
+                        fontSize: typeof window !== 'undefined' && window.innerWidth < 640 ? 'calc(1.8rem - 0.25rem)' : undefined,
+                        marginBottom: typeof window !== 'undefined' && window.innerWidth < 640 ? '-20px' : undefined
+                      }}
                     >
-                      FASHO.co operates differently:
+                      FASHO Operates Differently:
                     </p>
                   </div>
 
@@ -4604,6 +4766,9 @@ export default function Home() {
                     <p 
                       ref={authenticityClosingRef}
                       className={`text-xl md:text-2xl text-gray-300 leading-relaxed font-bold transition-all duration-700 ${authenticityClosingInView ? 'animate-fade-in-up' : 'opacity-0 translate-y-8'}`}
+                      style={{
+                        fontSize: typeof window !== 'undefined' && window.innerWidth < 640 ? 'calc(1.25rem + 0.20rem)' : undefined
+                      }}
                     >
                       NO bots. NO fake streams. NO sketchy tactics that risk your account.
                     </p>
@@ -4611,8 +4776,11 @@ export default function Home() {
                     <p 
                       ref={authenticityHighlightRef}
                       className={`text-xl md:text-2xl text-gray-300 leading-relaxed font-bold transition-all duration-700 ${authenticityHighlightInView ? 'animate-fade-in-up' : 'opacity-0 translate-y-8'}`}
+                      style={{
+                        fontSize: typeof window !== 'undefined' && window.innerWidth < 640 ? 'calc(1.25rem + 0.20rem)' : undefined
+                      }}
                     >
-                      Just legitimate playlist placements that put your music in front of people who actually want to hear it. Your account stays safe. Your growth stays permanent. Your music reaches real fans.
+                      Just legitimate playlist placements that put your music in front of people who actually want to hear it.
                         </p>
 
                     <p 
@@ -4645,13 +4813,20 @@ export default function Home() {
                 <h2 
                   ref={testimonialsHeadingRef}
                   className={`text-4xl md:text-5xl lg:text-6xl font-black mb-8 bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] bg-clip-text text-transparent transition-all duration-700 ${testimonialsHeadingInView ? 'animate-fade-in-up' : 'opacity-0 translate-y-8'}`} 
-                  style={{ lineHeight: '1.3', marginTop: '-50px' }}
+                  style={{ 
+                    lineHeight: '1.3', 
+                    marginTop: '-50px',
+                    fontSize: typeof window !== 'undefined' && window.innerWidth < 640 ? 'calc(2.25rem + 0.25rem)' : undefined
+                  }}
                 >
                   Real Artists. Real Results. Real Talk.
                 </h2>
                 <p 
                   ref={testimonialsSubheadingRef}
                   className={`text-[1.275rem] md:text-[1.4rem] text-gray-300 max-w-4xl mx-auto leading-relaxed font-bold transition-all duration-700 ${testimonialsSubheadingInView ? 'animate-fade-in-up' : 'opacity-0 translate-y-8'}`}
+                  style={{
+                    fontSize: typeof window !== 'undefined' && window.innerWidth < 640 ? 'calc(1.275rem - 0.15rem)' : undefined
+                  }}
                 >
                   Don't just take our word for it. Here's what creators who actually use FASHO.co have to say about their experience.
                 </p>
