@@ -976,9 +976,9 @@ export default function Home() {
       return Math.min(maxScale, scale);
     };
     
-    // Calculate scroll animation transform
+    // Calculate scroll animation transform (disabled on mobile)
     let scrollTransform = 'translateY(0px)';
-    if (dashboardRef.current) {
+    if (dashboardRef.current && typeof window !== 'undefined' && window.innerWidth >= 768) {
     const element = dashboardRef.current;
     const rect = element.getBoundingClientRect();
     const elementTop = window.scrollY + rect.top;
@@ -996,8 +996,8 @@ export default function Home() {
     // Eased progress using cubic-bezier for smooth transition
     const easedProgress = clampedProgress * clampedProgress * (3 - 2 * clampedProgress);
     
-      // Maximum transform distance (reduced for mobile devices)
-      const maxTransform = typeof window !== 'undefined' && window.innerWidth < 768 ? 70 : 180;
+      // Maximum transform distance
+      const maxTransform = 180;
     const transformY = easedProgress * maxTransform;
     
       scrollTransform = `translateY(-${transformY}px)`;
@@ -1034,9 +1034,9 @@ export default function Home() {
       return Math.min(maxScale, scale);
     };
     
-    // Calculate scroll animation transform
+    // Calculate scroll animation transform (disabled on mobile)
     let scrollTransform = 'translateY(0px)';
-    if (curatorRef.current) {
+    if (curatorRef.current && typeof window !== 'undefined' && window.innerWidth >= 768) {
     const element = curatorRef.current;
     const rect = element.getBoundingClientRect();
     const elementTop = window.scrollY + rect.top;
@@ -1171,7 +1171,7 @@ export default function Home() {
                   />
                   </div>
                   <div 
-                    className="whitespace-nowrap text-[calc(1em+0.65rem)] md:text-[1em]"
+                    className="whitespace-nowrap text-[calc(1em+0.45rem)] md:text-[1em]"
                   >
                   <SplitText
                     text="Music Promotion"
@@ -1270,7 +1270,7 @@ export default function Home() {
                     <div className="relative z-10 w-full max-w-full mx-auto">
                       {/* Campaign Start Text - Reduced by 10px and added gradient text with reduced shadow */}
                       <div className="text-center mb-8">
-                        <h2 className="text-[1.9rem] md:text-4xl font-black bg-gradient-to-b from-white to-gray-400 bg-clip-text text-transparent drop-shadow-[0_8px_16px_rgba(0,0,0,0.6)] mb-4 pt-2.5 md:pt-0 whitespace-nowrap">
+                        <h2 className="text-[1.6rem] md:text-4xl font-black bg-gradient-to-b from-white to-gray-400 bg-clip-text text-transparent drop-shadow-[0_8px_16px_rgba(0,0,0,0.6)] mb-4 pt-2.5 md:pt-0 break-words">
                           🚀 Start Your Campaign
                         </h2>
                         <p className="text-sm md:text-lg text-gray-300 mb-6 md:mb-8 -mb-2.5">
@@ -1757,7 +1757,7 @@ export default function Home() {
               <p ref={musicFireRef} className={`text-[calc(1.5rem+0.4rem)] md:text-3xl lg:text-[2.9rem] font-black text-white pb-1 lg:pb-3 text-center transition-all duration-700 ${musicFireInView ? 'animate-fade-in-up' : 'opacity-0 translate-y-8'} leading-tight lg:leading-tight`}>
                 <span className="block md:inline">Your Music Is Fire,</span>
               </p>
-              <p ref={nobodyHearingRef} className={`text-[calc(1.5rem+0.4rem)] md:text-3xl lg:text-[2.9rem] font-black text-white pb-12 lg:pb-[3.5rem] text-center transition-all duration-700 ${nobodyHearingInView ? 'animate-fade-in-up' : 'opacity-0 translate-y-8'} leading-tight lg:leading-tight`}>
+              <p ref={nobodyHearingRef} className={`text-[calc(1.5rem+0.25rem)] md:text-3xl lg:text-[2.9rem] font-black text-white pb-12 lg:pb-[3.5rem] text-center transition-all duration-700 ${nobodyHearingInView ? 'animate-fade-in-up' : 'opacity-0 translate-y-8'} leading-tight lg:leading-tight`}>
                 <span className="block md:inline">But <span className="bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] bg-clip-text text-transparent">Nobody's</span> Hearing It...</span>
               </p>
               <p ref={text1Ref} className={`text-[calc(1.125rem+0.25rem)] sm:text-lg md:text-xl lg:text-[1.75rem] text-gray-300 pb-12 lg:pb-[3.5rem] font-medium text-center transition-all duration-700 ${text1InView ? 'animate-fade-in-up' : 'opacity-0 translate-y-8'} leading-relaxed lg:leading-relaxed`}>
@@ -1797,7 +1797,7 @@ export default function Home() {
                 You're trapped in a death loop where the only way to win is to <i><b><span className="bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] bg-clip-text text-transparent">ALREADY</span></b></i> be winning.
               </p>
               <p ref={text9Ref} className={`text-[calc(1.5rem+0.2rem)] sm:text-2xl md:text-3xl lg:text-4xl font-bold text-white pb-12 transition-all duration-700 ${text9InView ? 'animate-fade-in-up' : 'opacity-0 translate-y-8'} leading-tight`}>
-                Trust me, we know the struggle.
+                Trust us, we know the struggle.
               </p>
               <h2 ref={heading3Ref} className={`text-4xl md:text-5xl lg:text-[3.65rem] font-black pb-1 lg:pb-[1.25rem] pt-2 bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] bg-clip-text text-transparent transition-all duration-700 ${heading3InView ? 'animate-fade-in-up' : 'opacity-0 translate-y-8'} leading-tight`}>
                 But it gets worse….
@@ -1848,9 +1848,9 @@ export default function Home() {
             </div>
             <div ref={bottomSectionRef}>
             <p className={`text-2xl md:text-3xl lg:text-[1.9rem] font-bold text-white pb-12 text-center transition-all duration-700 ${bottomSectionInView ? 'animate-fade-in-up' : 'opacity-0 translate-y-8'} leading-tight lg:leading-relaxed`}>
-              And while you're still wondering if playlist placements are <i>"worth it"</i>, other artists are collecting streaming revenue and booking their first tours.
+              And while you're still wondering if playlist placements are <i>"worth it"</i>, other artists are busy booking their first tours.
             </p>
-            <h2 ref={worstPartRef} className={`text-4xl md:text-5xl lg:text-[3.35rem] font-black pb-12 pt-8 bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] bg-clip-text text-transparent text-center transition-all duration-700 ${worstPartInView ? 'animate-fade-in-up' : 'opacity-0 translate-y-8'} leading-tight`}>
+            <h2 ref={worstPartRef} className={`text-[calc(2.25rem-0.30rem)] md:text-5xl lg:text-[3.35rem] font-black pb-12 pt-8 bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] bg-clip-text text-transparent text-center transition-all duration-700 ${worstPartInView ? 'animate-fade-in-up' : 'opacity-0 translate-y-8'} leading-tight`}>
               But The WORST Part Is...
             </h2>
             <p ref={fakeAgenciesRef} className={`text-[calc(1.5rem+0.20rem)] sm:text-2xl md:text-3xl lg:text-[2.05rem] font-bold text-white pb-12 text-center transition-all duration-700 ${fakeAgenciesInView ? 'animate-fade-in-up' : 'opacity-0 translate-y-8'} leading-tight lg:leading-relaxed`}>
@@ -1907,7 +1907,7 @@ export default function Home() {
             <p ref={gotTiredRef} className={`text-[calc(1.125rem+0.25rem)] sm:text-lg md:text-xl lg:text-[1.75rem] text-gray-300 pb-6 lg:pb-[1.5rem] font-medium text-center transition-all duration-700 ${gotTiredInView ? 'animate-fade-in-up' : 'opacity-0 translate-y-8'} leading-relaxed lg:leading-relaxed`}>
               We got tired of watching talented artists get <b>chewed up</b> and <b>spit out</b> by an industry that only cares about <b>who you know.</b> Gatekeepers controlling <b>everything.</b> Labels taking <b>80%</b> of your revenue.
             </p>
-            <p ref={gameRiggedRef} className={`text-2xl md:text-3xl lg:text-4xl font-bold text-white pt-1.5 lg:pt-[2rem] pb-14 text-center transition-all duration-700 ${gameRiggedInView ? 'animate-fade-in-up' : 'opacity-0 translate-y-8'} leading-tight pt-[calc(6px+5px)] sm:pt-1.5 lg:pt-[2rem]`}>
+            <p ref={gameRiggedRef} className={`text-[calc(1.5rem+0.25rem)] md:text-3xl lg:text-4xl font-bold text-white pt-1.5 lg:pt-[2rem] pb-14 text-center transition-all duration-700 ${gameRiggedInView ? 'animate-fade-in-up' : 'opacity-0 translate-y-8'} leading-tight pt-[calc(6px+5px)] sm:pt-1.5 lg:pt-[2rem]`}>
               The game was rigged from the start.
             </p>
             <p ref={builtFashoRef} className={`text-[calc(1.125rem+0.25rem)] sm:text-lg md:text-xl lg:text-[1.75rem] text-gray-300 pb-12 lg:pb-[3.5rem] font-medium text-center transition-all duration-700 ${builtFashoInView ? 'animate-fade-in-up' : 'opacity-0 translate-y-8'} leading-relaxed lg:leading-relaxed`}>
@@ -1922,7 +1922,7 @@ export default function Home() {
             <p ref={playlistNetworkRef} className={`text-[calc(1.125rem+0.25rem)] sm:text-lg md:text-xl lg:text-[1.75rem] text-gray-300 pb-12 lg:pb-[3.5rem] font-medium text-center transition-all duration-700 ${playlistNetworkInView ? 'animate-fade-in-up' : 'opacity-0 translate-y-8'} leading-relaxed lg:leading-relaxed`}>
               Our playlist network drives <b>MILLIONS</b> of engaged listeners to our clients <b>every single week.</b> Real people who <b>save songs, follow artists, and actually show up to shows.</b>
             </p>
-            <p ref={isntHopeRef} className={`text-2xl md:text-3xl lg:text-[2.1rem] font-bold text-white pb-32 text-center transition-all duration-700 -mb-9 md:mb-0 ${isntHopeInView ? 'animate-fade-in-up' : 'opacity-0 translate-y-8'} leading-tight lg:leading-tight`}>
+            <p ref={isntHopeRef} className={`text-2xl md:text-3xl lg:text-[2.1rem] font-bold text-white pb-16 text-center transition-all duration-700 -mb-9 md:mb-0 ${isntHopeInView ? 'animate-fade-in-up' : 'opacity-0 translate-y-8'} leading-tight lg:leading-tight`}>
               This isn't hope. It's a guarantee. Your music, on major playlists, reaching massive audiences, starting TODAY.
             </p>
             </div>
@@ -2147,7 +2147,7 @@ export default function Home() {
           {/* Desktop How It Works Sections - 4 Separate Sections */}
           
           {/* Step 1 Section - Left Column */}
-          <section className="hidden lg:block py-20 px-4 relative z-20" style={{ background: 'transparent' }}>
+          <section className="hidden lg:block py-8 px-4 relative z-20" style={{ background: 'transparent' }}>
             <div className="max-w-7xl mx-auto">
               <div className="grid lg:grid-cols-2 gap-12 items-center">
                 {/* Left Column - Step 1 Text */}
@@ -2190,7 +2190,7 @@ export default function Home() {
                           <div className="flex items-center space-x-2 md:space-x-3">
                             <img src="/fasho-logo-wide.png" alt="Fasho" className="w-8 md:w-10 h-auto" />
                             <h3 className="text-white font-bold whitespace-nowrap text-xs md:text-lg" style={{
-                              fontSize: typeof window !== 'undefined' && window.innerWidth >= 1024 ? '0.75rem' : '1.125rem'
+                              fontSize: typeof window !== 'undefined' && window.innerWidth >= 1024 ? '0.75rem' : '0.925rem'
                             }}>Find Your Song</h3>
                           </div>
                         </div>
@@ -2284,7 +2284,7 @@ export default function Home() {
                           <div className="flex items-center space-x-2 md:space-x-3">
                             <img src="/fasho-logo-wide.png" alt="Fasho" className="w-8 md:w-10 h-auto" />
                             <h3 className="text-white font-bold whitespace-nowrap text-xs md:text-lg" style={{
-                              fontSize: typeof window !== 'undefined' && window.innerWidth >= 1024 ? '0.75rem' : '1.125rem'
+                              fontSize: typeof window !== 'undefined' && window.innerWidth >= 1024 ? '0.75rem' : '0.925rem'
                             }}>Build Your Package</h3>
                           </div>
                         </div>
@@ -2310,9 +2310,9 @@ export default function Home() {
                             {/* Package Selection Mockup */}
                             <div className="flex flex-col" style={{ gap: '12px' }}>
                               <div className="bg-white/5 rounded-lg border border-white/10 flex flex-col items-center relative package-card-clickable" style={{ padding: '12px' }}>
-                                <div className="text-white font-bold" style={{ fontSize: '14px', marginBottom: '3px' }}>UNSTOPPABLE</div>
-                                <div className="text-white font-black" style={{ fontSize: '18px', marginBottom: '3px' }}>$259</div>
-                                <div className="text-white/80" style={{ fontSize: '11px' }}>45k - 50k Streams</div>
+                                <div className="text-white font-bold" style={{ fontSize: '14px', marginBottom: '3px' }}>MOMENTUM</div>
+                                <div className="text-white font-black" style={{ fontSize: '18px', marginBottom: '3px' }}>$79</div>
+                                <div className="text-white/80" style={{ fontSize: '11px' }}>7,500 - 8,500 Streams</div>
                                 {/* Green checkmark in corner */}
                                 <div className="absolute bg-[#59e3a5] rounded-full flex items-center justify-center package-checkmark" style={{ top: '8px', right: '8px', width: '14px', height: '14px' }}>
                                   <svg className="text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" style={{ width: '8px', height: '8px' }}>
@@ -2321,9 +2321,9 @@ export default function Home() {
                                 </div>
                               </div>
                               <div className="bg-white/5 rounded-lg border border-white/10 flex flex-col items-center" style={{ padding: '12px' }}>
-                                <div className="text-white font-bold" style={{ fontSize: '14px', marginBottom: '3px' }}>DOMINATE</div>
-                                <div className="text-white font-black" style={{ fontSize: '18px', marginBottom: '3px' }}>$149</div>
-                                <div className="text-white/80" style={{ fontSize: '11px' }}>18k - 20k Streams</div>
+                                <div className="text-white font-bold" style={{ fontSize: '14px', marginBottom: '3px' }}>BREAKTHROUGH</div>
+                                <div className="text-white font-black" style={{ fontSize: '18px', marginBottom: '3px' }}>$39</div>
+                                <div className="text-white/80" style={{ fontSize: '11px' }}>3,000 - 3,500 Streams</div>
                               </div>
                               {/* Next Step Button */}
                               <button className="w-full bg-gradient-to-r from-[#59e3a5] via-[#14c0ff] to-[#8b5cf6] text-white font-bold rounded-xl shadow-lg hover:scale-105 active:scale-95 transition-transform duration-200" style={{ padding: '12px', fontSize: '14px' }}>
@@ -2397,8 +2397,8 @@ export default function Home() {
                           <div className="flex items-center space-x-2 md:space-x-3">
                             <img src="/fasho-logo-wide.png" alt="Fasho" className="w-8 md:w-10 h-auto" />
                             <h3 className="text-white font-bold whitespace-nowrap text-xs md:text-lg" style={{
-                              fontSize: typeof window !== 'undefined' && window.innerWidth >= 1024 ? '0.75rem' : '1.125rem'
-                            }}>Let's Get You Placed</h3>
+                              fontSize: typeof window !== 'undefined' && window.innerWidth >= 1024 ? '0.75rem' : '0.925rem'
+                            }}>We Get You Placed</h3>
                           </div>
                         </div>
                         
@@ -2466,7 +2466,7 @@ export default function Home() {
                           <div className="flex items-center space-x-2 md:space-x-3">
                             <img src="/fasho-logo-wide.png" alt="Fasho" className="w-8 md:w-10 h-auto" />
                             <h3 className="text-white font-bold whitespace-nowrap text-xs md:text-lg" style={{
-                              fontSize: typeof window !== 'undefined' && window.innerWidth >= 1024 ? '0.75rem' : '1.125rem'
+                              fontSize: typeof window !== 'undefined' && window.innerWidth >= 1024 ? '0.75rem' : '0.925rem'
                             }}>Watch Your Success</h3>
                           </div>
                         </div>
@@ -2540,7 +2540,7 @@ export default function Home() {
           {/* Mobile How It Works Sections (individual static sections) - Only visible on Mobile */}
           
                         {/* Mobile Step 1 Section */}
-              <section className="block lg:hidden py-16 px-4 relative z-20">
+              <section className="block lg:hidden py-4 px-4 relative z-20">
                 <div className="max-w-4xl mx-auto">
                   <div className="text-center mb-12">
                     <h2 className="font-black bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] bg-clip-text text-transparent mb-4" style={{ fontSize: '3rem', lineHeight: '1.2' }}>
@@ -2581,7 +2581,7 @@ export default function Home() {
                         <div className="flex items-center space-x-2 md:space-x-3">
                           <img src="/fasho-logo-wide.png" alt="Fasho" className="w-8 md:w-10 h-auto" />
                           <h3 className="text-white font-bold whitespace-nowrap text-xs md:text-lg" style={{ 
-                            fontSize: typeof window !== 'undefined' && window.innerWidth >= 1024 ? '0.75rem' : '1.125rem'
+                            fontSize: typeof window !== 'undefined' && window.innerWidth >= 1024 ? '0.75rem' : '0.925rem'
                           }}>Find Your Song</h3>
                         </div>
                       </div>
@@ -2683,7 +2683,7 @@ export default function Home() {
                         <div className="flex items-center space-x-2 md:space-x-3">
                           <img src="/fasho-logo-wide.png" alt="Fasho" className="w-8 md:w-10 h-auto" />
                           <h3 className="text-white font-bold whitespace-nowrap text-xs md:text-lg" style={{ 
-                            fontSize: typeof window !== 'undefined' && window.innerWidth >= 1024 ? '0.75rem' : '1.125rem'
+                            fontSize: typeof window !== 'undefined' && window.innerWidth >= 1024 ? '0.75rem' : '0.925rem'
                           }}>Build Your Package</h3>
                         </div>
                       </div>
@@ -2708,9 +2708,9 @@ export default function Home() {
                           {/* Package Selection Mockup */}
                                                      <div className="flex flex-col" style={{ gap: '12px' }}>
                              <div className="bg-white/5 rounded-lg border border-white/10 flex flex-col items-center relative package-card-clickable" style={{ padding: '12px' }}>
-                               <div className="text-white font-bold" style={{ fontSize: '14px', marginBottom: '3px' }}>UNSTOPPABLE</div>
-                               <div className="text-white font-black" style={{ fontSize: '18px', marginBottom: '3px' }}>$259</div>
-                               <div className="text-white/80" style={{ fontSize: '11px' }}>45k - 50k Streams</div>
+                               <div className="text-white font-bold" style={{ fontSize: '14px', marginBottom: '3px' }}>MOMENTUM</div>
+                               <div className="text-white font-black" style={{ fontSize: '18px', marginBottom: '3px' }}>$79</div>
+                               <div className="text-white/80" style={{ fontSize: '11px' }}>7,500 - 8,500 Streams</div>
                                {/* Green checkmark in corner */}
                                <div className="absolute bg-[#59e3a5] rounded-full flex items-center justify-center package-checkmark" style={{ top: '8px', right: '8px', width: '14px', height: '14px' }}>
                                  <svg className="text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" style={{ width: '8px', height: '8px' }}>
@@ -2719,9 +2719,9 @@ export default function Home() {
                                </div>
                              </div>
                              <div className="bg-white/5 rounded-lg border border-white/10 flex flex-col items-center" style={{ padding: '12px' }}>
-                               <div className="text-white font-bold" style={{ fontSize: '14px', marginBottom: '3px' }}>DOMINATE</div>
-                               <div className="text-white font-black" style={{ fontSize: '18px', marginBottom: '3px' }}>$149</div>
-                               <div className="text-white/80" style={{ fontSize: '11px' }}>18k - 20k Streams</div>
+                               <div className="text-white font-bold" style={{ fontSize: '14px', marginBottom: '3px' }}>BREAKTHROUGH</div>
+                               <div className="text-white font-black" style={{ fontSize: '18px', marginBottom: '3px' }}>$39</div>
+                               <div className="text-white/80" style={{ fontSize: '11px' }}>3,000 - 3,500 Streams</div>
                              </div>
                             {/* Next Step Button */}
                             <button className="w-full bg-gradient-to-r from-[#59e3a5] via-[#14c0ff] to-[#8b5cf6] text-white font-bold rounded-xl shadow-lg hover:scale-105 active:scale-95 transition-transform duration-200" style={{ padding: '12px', fontSize: '14px' }}>
@@ -2777,8 +2777,8 @@ export default function Home() {
                         <div className="flex items-center space-x-2 md:space-x-3">
                           <img src="/fasho-logo-wide.png" alt="Fasho" className="w-8 md:w-10 h-auto" />
                           <h3 className="text-white font-bold whitespace-nowrap text-xs md:text-lg" style={{ 
-                            fontSize: typeof window !== 'undefined' && window.innerWidth >= 1024 ? '0.75rem' : '1.125rem'
-                          }}>Let's Get You Placed</h3>
+                            fontSize: typeof window !== 'undefined' && window.innerWidth >= 1024 ? '0.75rem' : '0.925rem'
+                          }}>We Get You Placed</h3>
                         </div>
                       </div>
                       
@@ -2853,7 +2853,7 @@ export default function Home() {
                         <div className="flex items-center space-x-2 md:space-x-3">
                           <img src="/fasho-logo-wide.png" alt="Fasho" className="w-8 md:w-10 h-auto" />
                           <h3 className="text-white font-bold whitespace-nowrap text-xs md:text-lg" style={{ 
-                            fontSize: typeof window !== 'undefined' && window.innerWidth >= 1024 ? '0.75rem' : '1.125rem'
+                            fontSize: typeof window !== 'undefined' && window.innerWidth >= 1024 ? '0.75rem' : '0.925rem'
                           }}>Watch Your Success</h3>
                         </div>
                       </div>
@@ -3091,7 +3091,7 @@ export default function Home() {
           </div>
 
           {/* Dashboard Preview Section */}
-          <section className="py-0 md:py-24 px-4 pb-48 md:pb-48 relative z-15 overflow-hidden">
+          <section className="py-0 md:py-24 px-4 pb-24 md:pb-48 relative z-15 overflow-hidden">
             {/* Extended gradient overlay that flows into next section */}
             <div className="absolute inset-0 bg-gradient-to-b from-[#18192a] via-[#16213e] to-[#0a0a13] -z-10"></div>
             <div className="absolute bottom-0 left-0 right-0 h-64 bg-gradient-to-b from-transparent to-[#18192a] -z-5"></div>
@@ -3462,7 +3462,7 @@ export default function Home() {
               </div>
 
               {/* CTA Button */}
-              <div className="text-center mt-16 lg:mt-16 cta-button-spacing" style={{ marginTop: '-180px' }}>
+              <div className="text-center mt-8 lg:mt-16 cta-button-spacing" style={{ marginTop: '-180px' }}>
                 <button
                   onClick={scrollToTrackInput}
                   className="px-12 py-4 bg-gradient-to-r from-[#59e3a5] via-[#14c0ff] to-[#8b5cf6] text-white font-bold rounded-2xl hover:shadow-2xl hover:shadow-[#14c0ff]/30 transition-all duration-700 transform hover:scale-105 active:scale-95 relative overflow-hidden group text-lg sm:mt-[50px]"
@@ -3480,7 +3480,7 @@ export default function Home() {
             <div className="absolute inset-0 bg-transparent -z-10"></div>
             <div className="absolute bottom-0 left-0 right-0 h-64 bg-gradient-to-b from-transparent to-[#0a0a13] -z-5"></div>
             <div className="max-w-7xl mx-auto">
-              <div className="text-center mb-16">
+              <div className="text-center mb-12 md:mb-16">
                 <h2 className="text-[calc(1.875rem+0.15rem)] sm:text-3xl md:text-4xl lg:text-5xl font-black mb-8 bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] bg-clip-text text-transparent pt-[85px] sm:pt-0" style={{ lineHeight: '1.3' }}>
                   <span className="block sm:inline">650+ Indie Playlists</span>
                   <span className="block sm:inline sm:ml-2">At Your Fingertips</span>
@@ -4951,7 +4951,7 @@ export default function Home() {
             <div className="absolute top-1/2 right-1/4 text-lg text-[#59e3a5] opacity-40 animate-bounce" style={{ animationDelay: '5s' }}>💫</div>
             
             <div className="relative z-10 max-w-7xl mx-auto">
-              <div className="flex flex-col-reverse lg:grid lg:grid-cols-[45%_55%] gap-12 items-center">
+              <div className="flex flex-col lg:grid lg:grid-cols-[45%_55%] gap-12 items-center">
                 
                 {/* Left Side - Kendrick Image */}
                 <div className="relative group">
@@ -4998,7 +4998,7 @@ export default function Home() {
                   <div className="space-y-6">
                     <h2 
                       className="font-black leading-tight text-center -mt-[95px] md:mt-0" 
-                      style={{ fontSize: isMobile ? '2.3rem' : 'calc(1.25rem + 1.4rem)' }}
+                      style={{ fontSize: isMobile ? '2.0rem' : 'calc(1.25rem + 1.4rem)' }}
                     >
                       <span className="bg-gradient-to-r from-[#8b5cf6] via-[#14c0ff] to-[#59e3a5] bg-clip-text text-transparent drop-shadow-2xl">
                         What Do You Actually Get?
