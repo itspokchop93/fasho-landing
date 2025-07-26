@@ -96,43 +96,121 @@ export default function SignUpPage() {
     return () => clearInterval(interval);
   }, [images.length]);
 
-  // Check if user is already logged in
+  // Check if user is already logged in - IMMEDIATE CHECK
   useEffect(() => {
     const checkUser = async () => {
       try {
-        console.log('🔐 SIGNUP: Checking if user is logged in...');
+        console.log('🔐 SIGNUP: 🚀 IMMEDIATE AUTH CHECK - Checking if user is logged in...');
         
-        // Simple session check - this is more reliable
-        const { data: { session }, error: sessionError } = await supabase.auth.getSession();
-        console.log('🔐 SIGNUP: Session check:', { session: session?.user?.email || 'No session', error: sessionError });
+        // Multiple auth checks for maximum reliability
+        let isAuthenticated = false;
+        let userEmail = '';
+        let authMethod = 'none';
         
-        if (session?.user && !sessionError) {
-          console.log('🔐 SIGNUP: Valid session found, redirecting to dashboard...');
-          router.push('/dashboard');
+        // Method 1: getUser (most reliable for current auth state)
+        try {
+          const { data: { user }, error: userError } = await supabase.auth.getUser();
+          console.log('🔐 SIGNUP: getUser() check:', { 
+            hasUser: !!user, 
+            email: user?.email || 'No user', 
+            error: userError?.message || 'No error' 
+          });
+          
+          if (user && !userError) {
+            isAuthenticated = true;
+            userEmail = user.email || '';
+            authMethod = 'getUser';
+          }
+        } catch (err) {
+          console.log('🔐 SIGNUP: getUser() failed:', err);
+        }
+        
+        // Method 2: getSession (fallback)
+        if (!isAuthenticated) {
+          try {
+            const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+            console.log('🔐 SIGNUP: getSession() check:', { 
+              hasSession: !!session?.user, 
+              email: session?.user?.email || 'No session', 
+              error: sessionError?.message || 'No error' 
+            });
+            
+            if (session?.user && !sessionError) {
+              isAuthenticated = true;
+              userEmail = session.user.email || '';
+              authMethod = 'getSession';
+            }
+          } catch (err) {
+            console.log('🔐 SIGNUP: getSession() failed:', err);
+          }
+        }
+        
+        // Method 3: Server-side check (final fallback)
+        if (!isAuthenticated) {
+          try {
+            console.log('🔐 SIGNUP: Trying server-side auth check...');
+            const response = await fetch('/api/get-user-first-name');
+            if (response.ok) {
+              const data = await response.json();
+              if (data.user?.email) {
+                isAuthenticated = true;
+                userEmail = data.user.email;
+                authMethod = 'serverCheck';
+                console.log('🔐 SIGNUP: Server auth check found user:', userEmail);
+              }
+            }
+          } catch (err) {
+            console.log('🔐 SIGNUP: Server auth check failed:', err);
+          }
+        }
+        
+        console.log('🔐 SIGNUP: 📊 Final auth result:', {
+          isAuthenticated,
+          userEmail,
+          authMethod
+        });
+        
+        if (isAuthenticated) {
+          console.log('🔐 SIGNUP: ✅ USER IS AUTHENTICATED via', authMethod, '- REDIRECTING TO DASHBOARD NOW!');
+          // Use replace instead of push to prevent back button issues
+          await router.replace('/dashboard');
           return;
         }
         
-        console.log('🔐 SIGNUP: No valid session, staying on signup page');
+        console.log('🔐 SIGNUP: ❌ No authenticated user found, staying on signup page');
       } catch (err) {
-        console.error('🔐 SIGNUP: Error checking user:', err);
+        console.error('🔐 SIGNUP: ❌ Critical error in auth check:', err);
       }
     };
     
+    // Run immediately - don't wait for router.isReady
     checkUser();
 
     // Listen for auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      console.log('🔐 SIGNUP: Auth state changed:', event, session?.user?.email || 'No user');
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      console.log('🔐 SIGNUP: 🔄 Auth state changed:', event, session?.user?.email || 'No user');
       if (event === 'SIGNED_IN' && session?.user) {
-        console.log('🔐 SIGNUP: User signed in, redirecting to dashboard...');
-        router.push('/dashboard');
+        console.log('🔐 SIGNUP: ✅ User signed in via auth change, redirecting to dashboard...');
+        await router.replace('/dashboard');
       }
     });
 
     return () => subscription.unsubscribe();
   }, [router, supabase.auth]);
 
+  // Debounced email validation effect
+  useEffect(() => {
+    if (!formData.email || isLogin) {
+      setEmailStatus(null);
+      return;
+    }
 
+    const timeoutId = setTimeout(() => {
+      checkEmailExists(formData.email);
+    }, 500); // 500ms debounce
+
+    return () => clearTimeout(timeoutId);
+  }, [formData.email, isLogin]);
 
   // Password validation function
   const validatePassword = (password: string) => {
@@ -245,15 +323,7 @@ export default function SignUpPage() {
   const handleFieldBlur = (field: string, value: string) => {
     let error = '';
     
-    if (field === 'email' && !isLogin) {
-      if (!value || value.trim() === '') {
-        // Clear email status when field is empty
-        setEmailStatus(null);
-      } else {
-        // Check email exists only if it's not empty
-        checkEmailExists(value);
-      }
-    }
+    // Email validation is now handled by debounced useEffect, so we don't need to check here anymore
     
     if (field === 'password' && value && !isLogin) {
       if (value.length < 8) {
@@ -404,6 +474,36 @@ export default function SignUpPage() {
 
               console.log('🎯 GOOGLE ADS: User signup tracked');
               
+              // Sync user data to user_profiles table
+              try {
+                console.log('🔄 SIGNUP: Syncing user data to user_profiles table...');
+                
+                const { formatCustomerName } = await import('../utils/zapier/webhookService');
+                const { first_name, last_name } = formatCustomerName(formData.fullName);
+                
+                const syncResponse = await fetch('/api/sync-user-profile', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({
+                    user_id: confirmResult.data.user?.id,
+                    email: formData.email,
+                    first_name,
+                    last_name,
+                    full_name: formData.fullName,
+                    source: 'signup'
+                  })
+                });
+
+                if (syncResponse.ok) {
+                  console.log('🔄 SIGNUP: ✅ User profile synced successfully');
+                } else {
+                  console.log('🔄 SIGNUP: ❌ User profile sync failed');
+                }
+              } catch (syncError) {
+                console.error('🔄 SIGNUP: ❌ Error syncing user profile:', syncError);
+                // Don't affect the signup flow if sync fails
+              }
+
               // Send Zapier webhook for user signup
               try {
                 console.log('🔗 SIGNUP: Sending Zapier webhook for user signup...');
@@ -689,7 +789,6 @@ export default function SignUpPage() {
                       placeholder="email"
                       value={formData.email}
                       onChange={handleInputChange}
-                      onBlur={(e) => !isLogin && handleFieldBlur('email', e.target.value)}
                       autoComplete="email"
                       className={`w-full bg-transparent border-b-2 pb-3 text-white placeholder-white/60 focus:outline-none transition-colors text-lg autofill-override ${
                         emailStatus === 'available' ? 'border-green-500' :
@@ -1187,7 +1286,6 @@ export default function SignUpPage() {
                       placeholder="email"
                       value={formData.email}
                       onChange={handleInputChange}
-                      onBlur={(e) => !isLogin && handleFieldBlur('email', e.target.value)}
                       className={`w-full bg-transparent border-b-2 pb-3 text-white placeholder-white/60 focus:outline-none transition-colors autofill-override ${
                         emailStatus === 'available' ? 'border-green-500' :
                         emailStatus === 'exists' || emailStatus === 'invalid' ? 'border-red-500' :

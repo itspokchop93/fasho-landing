@@ -18,25 +18,31 @@ export default function Header({ transparent = false, hideSignUp = false }: Head
   const [userFirstName, setUserFirstName] = useState<string>('User');
   const dropdownRef = useRef<HTMLDivElement>(null);
   const supabase = createClient();
+  
+  // Use the auth context instead of managing our own state
   const { user: currentUser, loading: authLoading } = useAuth();
   
   console.log('🔐 HEADER: Component rendered with props:', { transparent, hideSignUp });
-  console.log('🔐 HEADER: Current user state:', currentUser?.email || 'null');
-  
-  // Debug: Log Supabase client creation
-  console.log('🔐 HEADER: Supabase client created, URL:', process.env.NEXT_PUBLIC_SUPABASE_URL?.substring(0, 20) + '...');
+  console.log('🔐 HEADER: Current user from context:', currentUser?.email || 'null');
+  console.log('🔐 HEADER: Auth loading:', authLoading);
 
   // Debug: Log when userFirstName changes
   useEffect(() => {
     console.log('🔐 HEADER: userFirstName state changed to:', userFirstName);
   }, [userFirstName]);
 
-  // Debug: Log when currentUser changes
+  // Listen for profile updates to refresh the name
   useEffect(() => {
-    console.log('🔐 HEADER: currentUser state changed to:', currentUser?.email || 'null');
+    const handleProfileUpdate = () => {
+      console.log('🔐 HEADER: Profile update event received, refreshing name...');
+      if (currentUser) {
+        fetchUserFirstName(currentUser);
+      }
+    };
+
+    window.addEventListener('userProfileUpdated', handleProfileUpdate);
+    return () => window.removeEventListener('userProfileUpdated', handleProfileUpdate);
   }, [currentUser]);
-
-
 
   // Helper functions for profile display
   const getUserInitials = (user: any) => {
@@ -53,21 +59,29 @@ export default function Header({ transparent = false, hideSignUp = false }: Head
       return;
     }
 
-    // Check if user is authenticated by getting current session
-    const { data: { session }, error: sessionError } = await supabase.auth.getSession();
-    if (sessionError || !session) {
-      console.log('🔐 HEADER: No valid session, falling back to email extraction');
-      const emailPart = user.email.split('@')[0];
-      const cleanName = emailPart.replace(/[0-9]/g, '').replace(/[._]/g, '');
-      setUserFirstName(cleanName.charAt(0).toUpperCase() + cleanName.slice(1));
-      return;
+    // FIRST PRIORITY: Always try to get first name from API (user_profiles table)
+    try {
+      console.log('🔐 HEADER: Fetching user first name from API (user_profiles)...');
+      const response = await fetch('/api/get-user-first-name');
+      console.log('🔐 HEADER: API response status:', response.status);
+      
+      if (response.ok) {
+        const data = await response.json();
+        console.log('🔐 HEADER: API response data:', data);
+        setUserFirstName(data.firstName);
+        console.log('🔐 HEADER: ✅ Using name from API:', data.firstName);
+        return; // Exit early if API call succeeds
+      } else {
+        console.log('🔐 HEADER: ❌ API failed, trying fallback methods...');
+      }
+    } catch (error) {
+      console.error('🔐 HEADER: ❌ Error fetching user first name from API:', error);
     }
 
-    // Debug: Log user metadata
+    // FALLBACK 1: Try to get first name from user metadata (signup)
     console.log('🔐 HEADER: User metadata:', user.user_metadata);
     console.log('🔐 HEADER: User full_name from metadata:', user.user_metadata?.full_name);
 
-    // First, try to get first name from user metadata (signup)
     if (user.user_metadata?.full_name) {
       const fullName = user.user_metadata.full_name;
       console.log('🔐 HEADER: Found full_name in metadata:', fullName);
@@ -81,29 +95,11 @@ export default function Header({ transparent = false, hideSignUp = false }: Head
       }
     }
 
-    try {
-      console.log('🔐 HEADER: Fetching user first name from API...');
-      const response = await fetch('/api/get-user-first-name');
-      console.log('🔐 HEADER: API response status:', response.status);
-      
-      if (response.ok) {
-        const data = await response.json();
-        console.log('🔐 HEADER: API response data:', data);
-        setUserFirstName(data.firstName);
-      } else {
-        console.log('🔐 HEADER: API failed, falling back to email extraction');
-        // Fallback to email-based extraction
-        const emailPart = user.email.split('@')[0];
-        const cleanName = emailPart.replace(/[0-9]/g, '').replace(/[._]/g, '');
-        setUserFirstName(cleanName.charAt(0).toUpperCase() + cleanName.slice(1));
-      }
-    } catch (error) {
-      console.error('🔐 HEADER: Error fetching user first name:', error);
-      // Fallback to email-based extraction
-      const emailPart = user.email.split('@')[0];
-      const cleanName = emailPart.replace(/[0-9]/g, '').replace(/[._]/g, '');
-      setUserFirstName(cleanName.charAt(0).toUpperCase() + cleanName.slice(1));
-    }
+    // FALLBACK 2: Email-based extraction
+    console.log('🔐 HEADER: No metadata found, falling back to email extraction');
+    const emailPart = user.email.split('@')[0];
+    const cleanName = emailPart.replace(/[0-9]/g, '').replace(/[._]/g, '');
+    setUserFirstName(cleanName.charAt(0).toUpperCase() + cleanName.slice(1));
   };
 
   const getUserProfileImage = () => {
@@ -204,20 +200,20 @@ export default function Header({ transparent = false, hideSignUp = false }: Head
     }
   };
 
-  // Respond to authentication changes from global context
+  // Respond to authentication changes from auth context
   useEffect(() => {
-    console.log('🔐 HEADER: Auth context changed - user:', currentUser?.email || 'null');
+    console.log('🔐 HEADER: Auth context changed - user:', currentUser?.email || 'null', 'loading:', authLoading);
     
-    if (currentUser) {
+    if (currentUser && !authLoading) {
       console.log('🔐 HEADER: User authenticated, fetching profile data...');
       fetchArtistProfile(currentUser);
       fetchUserFirstName(currentUser);
-    } else {
+    } else if (!currentUser && !authLoading) {
       console.log('🔐 HEADER: No user, clearing profile data...');
       setArtistProfile(null);
       setUserFirstName('User');
     }
-  }, [currentUser]);
+  }, [currentUser, authLoading]);
 
   // Handle scroll effect
   useEffect(() => {
@@ -378,7 +374,7 @@ export default function Header({ transparent = false, hideSignUp = false }: Head
             {/* Sign Up Button or User Profile */}
             {!hideSignUp && (
               <div className="animate-fade-in-up" style={{ animationDelay: '0.6s' }}>
-                {currentUser ? (
+                {currentUser && !authLoading ? (
                   <div className="relative" ref={dropdownRef}>
                     <div className="flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-white/5 transition-all duration-300 border border-transparent hover:border-white/10 backdrop-blur-sm">
                       <button
@@ -396,10 +392,14 @@ export default function Header({ transparent = false, hideSignUp = false }: Head
                     </div>
                     {showProfileDropdown && renderProfileDropdown()}
                   </div>
-                ) : (
+                ) : !authLoading ? (
                   <Link href="/signup" className="bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] text-black font-semibold px-6 py-3 rounded-xl hover:opacity-90 hover:scale-105 transition-all duration-300 shadow-lg backdrop-blur-sm border border-white/20">
                     Login
                   </Link>
+                ) : (
+                  <div className="bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] text-black font-semibold px-6 py-3 rounded-xl opacity-50">
+                    Loading...
+                  </div>
                 )}
               </div>
             )}
@@ -484,7 +484,7 @@ export default function Header({ transparent = false, hideSignUp = false }: Head
               <div className="flex items-center justify-center px-4 py-3 animate-fade-in-up" style={{ animationDelay: '0.5s' }}>
                 {/* Sign Up Button or User Profile */}
                 {!hideSignUp && (
-                  currentUser ? (
+                  currentUser && !authLoading ? (
                     <div className="relative w-full">
                       <div className="flex flex-col items-center gap-3 px-4 py-4 mx-2 bg-white/5 backdrop-blur-sm rounded-xl border border-white/10">
                         <button
@@ -579,10 +579,14 @@ export default function Header({ transparent = false, hideSignUp = false }: Head
                         </div>
                       )}
                     </div>
-                  ) : (
+                  ) : !authLoading ? (
                     <Link href="/signup" className="w-full mx-2 bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] text-black font-semibold px-6 py-4 rounded-xl hover:opacity-90 hover:scale-[1.02] transition-all duration-300 text-center shadow-lg">
                       Login
                     </Link>
+                  ) : (
+                    <div className="w-full mx-2 bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] text-black font-semibold px-6 py-4 rounded-xl opacity-50 text-center">
+                      Loading...
+                    </div>
                   )
                 )}
               </div>

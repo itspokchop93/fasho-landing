@@ -1,7 +1,7 @@
 import { GetServerSideProps } from 'next'
 import Head from 'next/head'
 import { createClientSSR } from '../utils/supabase/server'
-import { useState, useEffect, useRef } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import { createClient } from '../utils/supabase/client'
 import { useRouter } from 'next/router'
 import Lottie from 'lottie-react'
@@ -46,7 +46,7 @@ export default function Dashboard({ user }: DashboardProps) {
 
   // Contact form state
   const [contactForm, setContactForm] = useState({
-    name: user.user_metadata?.full_name || '',
+    name: '',
     email: user.email || '',
     subject: 'General Inquiry',
     message: ''
@@ -57,6 +57,27 @@ export default function Dashboard({ user }: DashboardProps) {
   // Intake form state
   const [showIntakeForm, setShowIntakeForm] = useState(false)
   const [checkingIntakeStatus, setCheckingIntakeStatus] = useState(true)
+
+  // Settings state
+  const [userProfile, setUserProfile] = useState<any>(null)
+  const [profileLoading, setProfileLoading] = useState(false)
+  const [profileUpdateLoading, setProfileUpdateLoading] = useState(false)
+  const [profileUpdateMessage, setProfileUpdateMessage] = useState<{type: 'success' | 'error', text: string} | null>(null)
+  const [showEmailChangeModal, setShowEmailChangeModal] = useState(false)
+  const [emailChangeLoading, setEmailChangeLoading] = useState(false)
+  const [newEmail, setNewEmail] = useState('')
+  const [newEmailStatus, setNewEmailStatus] = useState<'checking' | 'available' | 'exists' | 'invalid' | 'same' | null>(null)
+  const [isCheckingNewEmail, setIsCheckingNewEmail] = useState(false)
+  
+  // User name state
+  const [userDisplayName, setUserDisplayName] = useState<string>('User')
+  
+  // Mobile settings dropdown state
+  const [showMobileSettingsDropdown, setShowMobileSettingsDropdown] = useState(false)
+  
+  // Form state for unsaved changes
+  const [formData, setFormData] = useState<any>({})
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false)
 
   // Curator Connect+ state
   const [curatorData, setCuratorData] = useState<any[]>([])
@@ -85,6 +106,59 @@ export default function Dashboard({ user }: DashboardProps) {
 
   // Track when component is mounted for portal
   useEffect(() => { setIsMounted(true); }, [])
+
+  // Fetch user's display name from API
+  const fetchUserDisplayName = async () => {
+    try {
+      console.log('🔐 DASHBOARD: Fetching user display name...');
+      
+      // First, try to get the full profile data (first and last name)
+      const profileResponse = await fetch('/api/user-profile');
+      if (profileResponse.ok) {
+        const profileData = await profileResponse.json();
+        console.log('🔐 DASHBOARD: Profile API response:', profileData);
+        
+        if (profileData.profile) {
+          const { first_name, last_name } = profileData.profile;
+          if (first_name && last_name) {
+            setUserDisplayName(`${first_name} ${last_name}`);
+            console.log('🔐 DASHBOARD: ✅ Using full name from user_profiles:', `${first_name} ${last_name}`);
+            return;
+          } else if (first_name) {
+            setUserDisplayName(first_name);
+            console.log('🔐 DASHBOARD: ✅ Using first name from user_profiles:', first_name);
+            return;
+          }
+        }
+      }
+      
+      // Fallback: Try the get-user-first-name API
+      const response = await fetch('/api/get-user-first-name');
+      if (response.ok) {
+        const data = await response.json();
+        console.log('🔐 DASHBOARD: get-user-first-name API response:', data);
+        
+        if (data.firstName) {
+          setUserDisplayName(data.firstName);
+          console.log('🔐 DASHBOARD: ✅ Using name from get-user-first-name API:', data.firstName);
+          return;
+        }
+      }
+      
+      // Final fallback: Extract from email
+      console.log('🔐 DASHBOARD: Using email fallback for user name');
+      const emailPart = user.email.split('@')[0];
+      const cleanName = emailPart.replace(/[0-9]/g, '').replace(/[._]/g, '');
+      setUserDisplayName(cleanName.charAt(0).toUpperCase() + cleanName.slice(1));
+      
+    } catch (error) {
+      console.error('🔐 DASHBOARD: ❌ Error fetching user display name:', error);
+      // Final fallback: Extract from email
+      const emailPart = user.email.split('@')[0];
+      const cleanName = emailPart.replace(/[0-9]/g, '').replace(/[._]/g, '');
+      setUserDisplayName(cleanName.charAt(0).toUpperCase() + cleanName.slice(1));
+    }
+  }
 
   // Handle click outside to close dropdowns - temporarily disabled to test dropdown functionality
   // useEffect(() => {
@@ -115,6 +189,102 @@ export default function Dashboard({ user }: DashboardProps) {
   //     }
   //   }
   // }, [showGenreDropdown, showStatusDropdown])
+
+  // Fetch user display name on component mount
+  useEffect(() => {
+    fetchUserDisplayName();
+  }, [])
+
+  // Listen for profile updates to refresh the name
+  useEffect(() => {
+    const handleProfileUpdate = () => {
+      console.log('🔐 DASHBOARD: Profile update event received, refreshing name...');
+      fetchUserDisplayName();
+    };
+
+    window.addEventListener('userProfileUpdated', handleProfileUpdate);
+    return () => window.removeEventListener('userProfileUpdated', handleProfileUpdate);
+  }, [])
+
+  // Close mobile settings dropdown on tab change
+  useEffect(() => {
+    setShowMobileSettingsDropdown(false);
+  }, [activeTab])
+
+  // Update contact form name when userDisplayName is fetched
+  useEffect(() => {
+    if (userDisplayName && userDisplayName !== 'User') {
+      setContactForm(prev => ({
+        ...prev,
+        name: userDisplayName
+      }))
+    }
+  }, [userDisplayName])
+
+  // Email validation function for email change
+  const checkNewEmailExists = async (email: string) => {
+    // Reset status first
+    setNewEmailStatus(null);
+    
+    // Check if it's the same as current email
+    if (email === user?.email) {
+      setNewEmailStatus('same');
+      return;
+    }
+    
+    // Basic email validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!email || email.trim() === '') {
+      return; // Don't show status for empty email
+    }
+    
+    if (!emailRegex.test(email)) {
+      setNewEmailStatus('invalid');
+      return;
+    }
+    
+    setIsCheckingNewEmail(true);
+    
+    try {
+      const response = await fetch('/api/check-user-exists', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email }),
+      });
+      
+      const data = await response.json();
+      
+      if (response.ok) {
+        if (data.exists) {
+          setNewEmailStatus('exists');
+        } else {
+          setNewEmailStatus('available');
+        }
+      } else {
+        setNewEmailStatus('invalid');
+      }
+    } catch (error) {
+      setNewEmailStatus('invalid');
+    } finally {
+      setIsCheckingNewEmail(false);
+    }
+  };
+
+  // Debounced email validation effect
+  useEffect(() => {
+    if (!newEmail) {
+      setNewEmailStatus(null);
+      return;
+    }
+
+    const timeoutId = setTimeout(() => {
+      checkNewEmailExists(newEmail);
+    }, 500); // 500ms debounce
+
+    return () => clearTimeout(timeoutId);
+  }, [newEmail, user?.email]);
 
   // Check intake form status on component mount
   useEffect(() => {
@@ -322,6 +492,8 @@ export default function Dashboard({ user }: DashboardProps) {
         setActiveTab('contact')
       } else if (hash === 'faq') {
         setActiveTab('faq')
+      } else if (hash === 'settings') {
+        setActiveTab('settings')
       } else if (hash === 'help') {
         setActiveTab('contact') // 'help' maps to 'contact' tab
       } else if (hash === '' || hash === 'dashboard') {
@@ -807,6 +979,25 @@ export default function Dashboard({ user }: DashboardProps) {
     { id: 'packages', label: 'Packages', icon: 'M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4' },
     { id: 'faq', label: 'FAQ', icon: 'M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z' },
     { id: 'contact', label: 'Contact Us', icon: 'M3 8l7.89 4.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z' },
+    { id: 'settings', label: 'Settings', icon: 'M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z M15 12a3 3 0 11-6 0 3 3 0 016 0z' },
+    { id: 'signout', label: 'Sign Out', icon: 'M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1' },
+  ]
+
+  // Mobile-only navigation items (excludes FAQ, Contact, Sign Out - they go in settings dropdown)
+  const mobileNavItems = [
+    { id: 'dashboard', label: 'Dashboard', icon: 'M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2H5a2 2 0 00-2-2z' },
+    { id: 'campaigns', label: 'Campaigns', icon: 'M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z' },
+    { id: 'curator-connect', label: 'Curator Connect+', icon: 'M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z' },
+    { id: 'packages', label: 'Packages', icon: 'M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4' },
+    { id: 'settings', label: 'Settings', icon: 'M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z M15 12a3 3 0 11-6 0 3 3 0 016 0z' },
+  ]
+
+  // Settings dropdown menu items
+  const settingsDropdownItems = [
+    { id: 'settings', label: 'Settings', icon: 'M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z M15 12a3 3 0 11-6 0 3 3 0 016 0z' },
+    { id: 'faq', label: 'FAQ', icon: 'M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z' },
+    { id: 'contact', label: 'Contact', icon: 'M3 8l7.89 4.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z' },
+    { id: 'signout', label: 'Logout', icon: 'M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1' },
   ]
 
   const renderDashboardContent = () => (
@@ -2026,7 +2217,7 @@ export default function Dashboard({ user }: DashboardProps) {
       
       <div className="grid md:grid-cols-2 gap-8">
         <div className="bg-gradient-to-br from-gray-950/90 to-gray-900/90 backdrop-blur-sm rounded-2xl p-6 border border-gray-800/30">
-          <h3 className="text-xl font-semibold text-white mb-6">Speak To Our Team ✉️</h3>
+          <h3 className="hidden md:block text-xl font-semibold text-white mb-6">Speak To Our Team ✉️</h3>
           
           {/* Success/Error Message */}
           {contactFormMessage && (
@@ -2150,7 +2341,7 @@ export default function Dashboard({ user }: DashboardProps) {
         {renderProfileAvatar('medium')}
         <div className="text-right">
           <p className="text-white font-medium text-sm truncate">
-            {user.user_metadata?.full_name || 'User'}
+            {userDisplayName}
           </p>
           {artistProfile && (
             <p className="text-green-400 text-xs truncate">
@@ -2168,7 +2359,7 @@ export default function Dashboard({ user }: DashboardProps) {
               {renderProfileAvatar('medium')}
               <div className="flex-1 min-w-0">
                 <p className="text-white font-medium text-sm truncate">
-                  {user.user_metadata?.full_name || 'User'}
+                  {userDisplayName}
                 </p>
                 <p className="text-gray-400 text-xs truncate">{user.email}</p>
                 {artistProfile && (
@@ -2197,6 +2388,102 @@ export default function Dashboard({ user }: DashboardProps) {
           </div>
         </div>
       )}
+    </div>
+  )
+
+  const renderMobileSettingsDropup = () => (
+    <div className="fixed inset-0 z-[9999] lg:hidden">
+      {/* Backdrop with fade in */}
+      <div 
+        className="absolute inset-0 bg-black/40 backdrop-blur-sm transition-opacity duration-300 ease-out"
+        onClick={() => setShowMobileSettingsDropdown(false)}
+        style={{ animation: 'fadeIn 0.3s ease-out' }}
+      />
+      
+      {/* Dropup Menu with slide up animation */}
+      <div 
+        className="absolute bottom-20 left-4 right-4 bg-gray-900/95 backdrop-blur-xl rounded-2xl border border-gray-700/50 shadow-2xl transform transition-all duration-300 ease-out"
+        style={{ 
+          animation: 'slideUpIn 0.3s cubic-bezier(0.34, 1.56, 0.64, 1)',
+          transformOrigin: 'bottom center'
+        }}
+      >
+        <div className="p-6">
+          <div className="flex items-center justify-between mb-6">
+            <h3 className="text-lg font-semibold text-white">Settings</h3>
+            <button
+              onClick={() => setShowMobileSettingsDropdown(false)}
+              className="w-8 h-8 rounded-full bg-gray-800/50 flex items-center justify-center text-gray-400 hover:text-white hover:bg-gray-700/50 transition-all duration-200 active:scale-90"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
+          
+          <div className="space-y-3">
+            {settingsDropdownItems.map((item, index) => (
+              <button
+                key={item.id}
+                onClick={() => {
+                  setShowMobileSettingsDropdown(false);
+                  if (item.id === 'signout') {
+                    setShowSignOutModal(true);
+                  } else {
+                    setActiveTab(item.id);
+                  }
+                }}
+                className="w-full flex items-center space-x-4 px-4 py-4 rounded-xl text-left text-gray-300 hover:text-white hover:bg-gray-800/50 transition-all duration-200 active:scale-[0.97] transform"
+                style={{ 
+                  animation: `slideInItem 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) ${0.1 + index * 0.05}s both`
+                }}
+              >
+                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-gray-800 to-gray-700 flex items-center justify-center shadow-lg">
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={item.icon} />
+                  </svg>
+                </div>
+                <span className="font-medium text-base flex-1">{item.label}</span>
+                <div className="text-gray-500">
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                  </svg>
+                </div>
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
+      
+      {/* CSS animations */}
+      <style jsx>{`
+        @keyframes fadeIn {
+          from { opacity: 0; }
+          to { opacity: 1; }
+        }
+        
+        @keyframes slideUpIn {
+          from { 
+            transform: translateY(100%) scale(0.95);
+            opacity: 0;
+          }
+          to { 
+            transform: translateY(0) scale(1);
+            opacity: 1;
+          }
+        }
+        
+        @keyframes slideInItem {
+          from { 
+            transform: translateX(-20px);
+            opacity: 0;
+          }
+          to { 
+            transform: translateX(0);
+            opacity: 1;
+          }
+        }
+      `}</style>
     </div>
   )
 
@@ -2251,6 +2538,456 @@ export default function Dashboard({ user }: DashboardProps) {
       </div>
     </div>
   )
+
+  // Function to fetch user profile
+  const fetchUserProfile = async () => {
+    setProfileLoading(true)
+    try {
+      const response = await fetch('/api/user-profile')
+      const data = await response.json()
+      
+      if (data.success) {
+        setUserProfile(data.profile)
+        // Initialize form data with current profile values
+        setFormData({
+          first_name: data.profile?.first_name || '',
+          last_name: data.profile?.last_name || '',
+          billing_address_line1: data.profile?.billing_address_line1 || '',
+          billing_address_line2: data.profile?.billing_address_line2 || '',
+          billing_city: data.profile?.billing_city || '',
+          billing_state: data.profile?.billing_state || '',
+          billing_zip: data.profile?.billing_zip || '',
+          billing_country: data.profile?.billing_country || '',
+          billing_phone: data.profile?.billing_phone || '',
+          email_notifications: data.profile?.email_notifications ?? true,
+          marketing_emails: data.profile?.marketing_emails ?? true
+        })
+        setHasUnsavedChanges(false)
+      } else {
+        setProfileUpdateMessage({ type: 'error', text: 'Failed to load profile data' })
+      }
+    } catch (error) {
+      console.error('Error fetching profile:', error)
+      setProfileUpdateMessage({ type: 'error', text: 'Failed to load profile data' })
+    } finally {
+      setProfileLoading(false)
+    }
+  }
+
+  // Fetch user profile when settings tab is active
+  React.useEffect(() => {
+    if (activeTab === 'settings' && !userProfile) {
+      fetchUserProfile()
+    }
+  }, [activeTab, userProfile])
+
+  // Function to handle form field changes
+  const handleFieldChange = (field: string, value: string | boolean) => {
+    setFormData((prev: any) => ({
+      ...prev,
+      [field]: value
+    }))
+    setHasUnsavedChanges(true)
+    // Clear any existing messages when user starts typing
+    setProfileUpdateMessage(null)
+  }
+
+  // Function to save all profile changes
+  const handleSaveProfile = async () => {
+    setProfileUpdateLoading(true)
+    setProfileUpdateMessage(null)
+    
+    try {
+      console.log('Saving profile data:', formData)
+      
+      const response = await fetch('/api/user-profile', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(formData)
+      })
+      
+      const data = await response.json()
+      console.log('Profile save response:', data)
+      
+      if (data.success) {
+        setUserProfile(data.profile)
+        setHasUnsavedChanges(false)
+        setProfileUpdateMessage({ type: 'success', text: 'Profile updated successfully!' })
+        
+        // Update form data with the returned profile to ensure consistency
+        setFormData({
+          first_name: data.profile?.first_name || '',
+          last_name: data.profile?.last_name || '',
+          billing_address_line1: data.profile?.billing_address_line1 || '',
+          billing_address_line2: data.profile?.billing_address_line2 || '',
+          billing_city: data.profile?.billing_city || '',
+          billing_state: data.profile?.billing_state || '',
+          billing_zip: data.profile?.billing_zip || '',
+          billing_country: data.profile?.billing_country || '',
+          billing_phone: data.profile?.billing_phone || '',
+          email_notifications: data.profile?.email_notifications ?? true,
+          marketing_emails: data.profile?.marketing_emails ?? true
+        })
+        
+        // Force a refresh of the header by triggering a custom event
+        window.dispatchEvent(new CustomEvent('userProfileUpdated'));
+        
+        // Clear success message after 5 seconds
+        setTimeout(() => {
+          setProfileUpdateMessage({ 
+            type: 'success', 
+            text: 'Profile updated successfully!' 
+          })
+        }, 2000)
+      } else {
+        setProfileUpdateMessage({ type: 'error', text: data.error || 'Failed to update profile' })
+      }
+    } catch (error) {
+      console.error('Error updating profile:', error)
+      setProfileUpdateMessage({ type: 'error', text: 'Failed to update profile' })
+    } finally {
+      setProfileUpdateLoading(false)
+    }
+  }
+
+  // Function to handle email changes
+  const handleEmailChange = async () => {
+    if (!newEmail.trim() || !newEmail.includes('@')) {
+      setProfileUpdateMessage({ type: 'error', text: 'Please enter a valid email address' })
+      return
+    }
+
+    setEmailChangeLoading(true)
+    setProfileUpdateMessage(null)
+    
+    try {
+      const response = await fetch('/api/user-profile', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'change_email', new_email: newEmail })
+      })
+      
+      const data = await response.json()
+      
+      if (data.success) {
+        setShowEmailChangeModal(false)
+        setNewEmail('')
+        setProfileUpdateMessage({ 
+          type: 'success', 
+          text: 'Email change confirmation sent!' 
+        })
+      } else {
+        setProfileUpdateMessage({ type: 'error', text: data.error || 'Failed to initiate email change' })
+      }
+    } catch (error) {
+      console.error('Error changing email:', error)
+      setProfileUpdateMessage({ type: 'error', text: 'Failed to initiate email change' })
+    } finally {
+      setEmailChangeLoading(false)
+    }
+  }
+
+  const renderSettingsContent = () => {
+
+    return (
+      <div className="max-w-4xl mx-auto space-y-6 pb-[50px]">
+        {/* Mobile-only Settings Heading */}
+        <div className="lg:hidden mb-8">
+          <h1 className="text-3xl font-bold text-white text-center">Settings</h1>
+        </div>
+        
+        {/* Loading State */}
+        {profileLoading && (
+          <div className="flex justify-center items-center h-64">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-400"></div>
+          </div>
+        )}
+
+        {/* Profile Form */}
+        {!profileLoading && userProfile && (
+          <>
+            {/* Success/Error Messages */}
+            {profileUpdateMessage && (
+              <div className={`p-4 rounded-xl border ${
+                profileUpdateMessage.type === 'success' 
+                  ? 'bg-green-500/10 border-green-500/30 text-green-400'
+                  : 'bg-red-500/10 border-red-500/30 text-red-400'
+              }`}>
+                {profileUpdateMessage.text}
+              </div>
+            )}
+
+            {/* Personal Information */}
+            <div className="bg-gray-900/50 backdrop-blur-sm rounded-2xl border border-gray-700/50 p-6">
+              <h3 className="text-xl font-bold text-white mb-6 flex items-center">
+                <svg className="w-6 h-6 mr-3 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                </svg>
+                Personal Information
+              </h3>
+              
+                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                 <div>
+                   <label className="block text-sm font-medium text-gray-300 mb-2">First Name</label>
+                   <input
+                     type="text"
+                     value={formData.first_name || ''}
+                     onChange={(e) => handleFieldChange('first_name', e.target.value)}
+                     className="w-full bg-gray-800 border border-gray-600 rounded-lg px-4 py-3 text-white placeholder-gray-400 focus:border-green-500 focus:outline-none"
+                     placeholder="Enter first name"
+                   />
+                 </div>
+                 <div>
+                   <label className="block text-sm font-medium text-gray-300 mb-2">Last Name</label>
+                   <input
+                     type="text"
+                     value={formData.last_name || ''}
+                     onChange={(e) => handleFieldChange('last_name', e.target.value)}
+                     className="w-full bg-gray-800 border border-gray-600 rounded-lg px-4 py-3 text-white placeholder-gray-400 focus:border-green-500 focus:outline-none"
+                     placeholder="Enter last name"
+                   />
+                 </div>
+               </div>
+               
+               {/* Save Button for Personal Information */}
+               <div className="flex justify-end mt-4">
+                 <button
+                   onClick={handleSaveProfile}
+                   disabled={profileUpdateLoading || !hasUnsavedChanges}
+                   className={`px-6 py-2 rounded-lg font-medium transition-colors ${
+                     profileUpdateLoading || !hasUnsavedChanges
+                       ? 'bg-gray-600 text-gray-400 cursor-not-allowed'
+                       : 'bg-green-600 hover:bg-green-700 text-white'
+                   }`}
+                 >
+                   {profileUpdateLoading ? 'Saving...' : 'Save Changes'}
+                 </button>
+               </div>
+            </div>
+
+            {/* Email Settings */}
+            <div className="bg-gray-900/50 backdrop-blur-sm rounded-2xl border border-gray-700/50 p-6">
+              <h3 className="text-xl font-bold text-white mb-6 flex items-center">
+                <svg className="w-6 h-6 mr-3 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 4.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                </svg>
+                Email Settings
+              </h3>
+              
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-2">Current Email</label>
+                  <p className="text-white bg-gray-800/50 p-3 rounded-lg">{user.email}</p>
+                </div>
+                
+                <button
+                  onClick={() => setShowEmailChangeModal(true)}
+                  className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-xl font-semibold transition-colors"
+                >
+                  Change Email Address
+                </button>
+              </div>
+            </div>
+
+            {/* Billing Address */}
+            <div className="bg-gray-900/50 backdrop-blur-sm rounded-2xl border border-gray-700/50 p-6">
+              <h3 className="text-xl font-bold text-white mb-6 flex items-center">
+                <svg className="w-6 h-6 mr-3 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                </svg>
+                Billing Address
+              </h3>
+              
+                             <div className="space-y-4">
+                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                   <div className="md:col-span-2">
+                     <label className="block text-sm font-medium text-gray-300 mb-2">Address Line 1</label>
+                     <input
+                       type="text"
+                       value={formData.billing_address_line1 || ''}
+                       onChange={(e) => handleFieldChange('billing_address_line1', e.target.value)}
+                       className="w-full bg-gray-800 border border-gray-600 rounded-lg px-4 py-3 text-white placeholder-gray-400 focus:border-purple-500 focus:outline-none"
+                       placeholder="Enter street address"
+                     />
+                   </div>
+                   <div className="md:col-span-2">
+                     <label className="block text-sm font-medium text-gray-300 mb-2">Address Line 2 (Optional)</label>
+                     <input
+                       type="text"
+                       value={formData.billing_address_line2 || ''}
+                       onChange={(e) => handleFieldChange('billing_address_line2', e.target.value)}
+                       className="w-full bg-gray-800 border border-gray-600 rounded-lg px-4 py-3 text-white placeholder-gray-400 focus:border-purple-500 focus:outline-none"
+                       placeholder="Apartment, suite, etc."
+                     />
+                   </div>
+                   <div>
+                     <label className="block text-sm font-medium text-gray-300 mb-2">City</label>
+                     <input
+                       type="text"
+                       value={formData.billing_city || ''}
+                       onChange={(e) => handleFieldChange('billing_city', e.target.value)}
+                       className="w-full bg-gray-800 border border-gray-600 rounded-lg px-4 py-3 text-white placeholder-gray-400 focus:border-purple-500 focus:outline-none"
+                       placeholder="Enter city"
+                     />
+                   </div>
+                   <div>
+                     <label className="block text-sm font-medium text-gray-300 mb-2">State/Province</label>
+                     <input
+                       type="text"
+                       value={formData.billing_state || ''}
+                       onChange={(e) => handleFieldChange('billing_state', e.target.value)}
+                       className="w-full bg-gray-800 border border-gray-600 rounded-lg px-4 py-3 text-white placeholder-gray-400 focus:border-purple-500 focus:outline-none"
+                       placeholder="Enter state or province"
+                     />
+                   </div>
+                   <div>
+                     <label className="block text-sm font-medium text-gray-300 mb-2">ZIP/Postal Code</label>
+                     <input
+                       type="text"
+                       value={formData.billing_zip || ''}
+                       onChange={(e) => handleFieldChange('billing_zip', e.target.value)}
+                       className="w-full bg-gray-800 border border-gray-600 rounded-lg px-4 py-3 text-white placeholder-gray-400 focus:border-purple-500 focus:outline-none"
+                       placeholder="Enter ZIP or postal code"
+                     />
+                   </div>
+                   <div>
+                     <label className="block text-sm font-medium text-gray-300 mb-2">Country</label>
+                     <input
+                       type="text"
+                       value={formData.billing_country || ''}
+                       onChange={(e) => handleFieldChange('billing_country', e.target.value)}
+                       className="w-full bg-gray-800 border border-gray-600 rounded-lg px-4 py-3 text-white placeholder-gray-400 focus:border-purple-500 focus:outline-none"
+                       placeholder="Enter country"
+                     />
+                   </div>
+                 </div>
+                 
+                 {/* Save Button for Billing Address */}
+                 <div className="flex justify-end mt-4">
+                   <button
+                     onClick={handleSaveProfile}
+                     disabled={profileUpdateLoading || !hasUnsavedChanges}
+                     className={`px-6 py-2 rounded-lg font-medium transition-colors ${
+                       profileUpdateLoading || !hasUnsavedChanges
+                         ? 'bg-gray-600 text-gray-400 cursor-not-allowed'
+                         : 'bg-purple-600 hover:bg-purple-700 text-white'
+                     }`}
+                   >
+                     {profileUpdateLoading ? 'Saving...' : 'Save Changes'}
+                   </button>
+                 </div>
+               </div>
+            </div>
+          </>
+        )}
+
+        {/* Email Change Modal */}
+        {showEmailChangeModal && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-gray-900 rounded-2xl p-8 border border-gray-700 max-w-md w-full mx-4">
+              <h3 className="text-xl font-semibold text-white mb-4">Change Email Address</h3>
+              <p className="text-gray-300 mb-6">
+                Enter your new email address. You'll receive a confirmation at your new email address with a link to click!
+              </p>
+              
+              <div className="relative mb-2">
+              <input
+                type="email"
+                value={newEmail}
+                onChange={(e) => setNewEmail(e.target.value)}
+                placeholder="Enter new email address"
+                  className={`w-full bg-gray-800 border rounded-lg px-4 py-3 text-white placeholder-gray-400 focus:outline-none transition-colors ${
+                    newEmailStatus === 'available' ? 'border-green-500 focus:border-green-500' :
+                    newEmailStatus === 'exists' || newEmailStatus === 'invalid' || newEmailStatus === 'same' ? 'border-red-500 focus:border-red-500' :
+                    'border-gray-600 focus:border-blue-500'
+                  }`}
+                />
+              </div>
+              
+              {/* Email Status Messages */}
+              <div className="mb-6 min-h-[20px]">
+                {isCheckingNewEmail && (
+                  <div className="flex items-center text-blue-400 text-sm">
+                    <div className="animate-spin rounded-full h-3 w-3 border border-blue-400 border-t-transparent mr-2"></div>
+                    Checking email...
+                  </div>
+                )}
+                
+                {newEmailStatus === 'available' && (
+                  <div className="flex items-center text-green-400 text-sm">
+                    <svg className="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                    </svg>
+                    Email is available
+                  </div>
+                )}
+                
+                {newEmailStatus === 'exists' && (
+                  <div className="flex items-center text-red-400 text-sm">
+                    <svg className="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                    </svg>
+                    Email already exists
+                  </div>
+                )}
+                
+                {newEmailStatus === 'same' && (
+                  <div className="flex items-center text-red-400 text-sm">
+                    <svg className="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                    </svg>
+                    This is the email you already have on your account
+                  </div>
+                )}
+                
+                {newEmailStatus === 'invalid' && (
+                  <div className="flex items-center text-red-400 text-sm">
+                    <svg className="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                    </svg>
+                    Please enter a valid email address
+                  </div>
+                )}
+              </div>
+              
+              <div className="flex space-x-4">
+                <button
+                  onClick={() => {
+                    setShowEmailChangeModal(false)
+                    setNewEmail('')
+                    setNewEmailStatus(null)
+                    setIsCheckingNewEmail(false)
+                  }}
+                  className="flex-1 bg-gray-600 hover:bg-gray-500 text-white py-3 rounded-xl font-semibold transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleEmailChange}
+                  disabled={emailChangeLoading || newEmailStatus !== 'available'}
+                  className={`flex-1 py-3 rounded-xl font-semibold transition-all duration-300 transform ${
+                    newEmailStatus === 'available' && !emailChangeLoading
+                      ? 'bg-gradient-to-r from-green-500 to-blue-600 hover:from-green-600 hover:to-blue-700 text-white shadow-lg hover:shadow-xl hover:scale-[1.02] active:scale-[0.98]'
+                      : 'bg-gray-600 text-gray-400 cursor-not-allowed opacity-50'
+                  }`}
+                >
+                  {emailChangeLoading ? (
+                    <div className="flex items-center justify-center">
+                      <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent mr-2"></div>
+                      Sending...
+                    </div>
+                  ) : (
+                    'Send Confirmation'
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+    )
+  }
 
   const renderPackagesContent = () => {
     // Package data from pricing page
@@ -2635,6 +3372,8 @@ export default function Dashboard({ user }: DashboardProps) {
         return renderFAQContent()
       case 'contact':
         return renderContactContent()
+      case 'settings':
+        return renderSettingsContent()
       default:
         return renderDashboardContent()
     }
@@ -3465,6 +4204,7 @@ Thank you,
                     {activeTab === 'packages' && 'Packages'}
                     {activeTab === 'faq' && 'Frequently Asked Questions'}
                     {activeTab === 'contact' && 'Contact'}
+                    {activeTab === 'settings' && 'Settings'}
                   </h2>
                   <p className="text-sm lg:text-base text-gray-400">
                     {activeTab === 'dashboard' && 'Welcome back! Here\'s your campaign overview.'}
@@ -3473,6 +4213,7 @@ Thank you,
                     {activeTab === 'packages' && 'Choose the perfect plan to launch your music career.'}
                     {activeTab === 'faq' && 'Get the answers that you need, when you need them.'}
                     {activeTab === 'contact' && 'Get in touch with our support team.'}
+                    {activeTab === 'settings' && 'Manage your profile, billing address, and account preferences.'}
                   </p>
                 </div>
               </div>
@@ -3492,7 +4233,7 @@ Thank you,
         {/* Mobile Bottom Navigation */}
         <div className="lg:hidden fixed bottom-0 left-0 right-0 bg-gray-950/95 backdrop-blur-sm border-t border-gray-800/30 px-2 py-1 z-30 safe-area-inset-bottom">
           <div className="flex items-center max-w-full">
-            {sidebarItems.map((item) => {
+            {mobileNavItems.map((item) => {
               // Get mobile-specific label
               const getMobileLabel = (itemId: string, originalLabel: string) => {
                 if (itemId === 'curator-connect') return 'Curators'
@@ -3503,38 +4244,46 @@ Thank you,
               const getFlexBasis = (itemId: string) => {
                 if (itemId === 'dashboard' || itemId === 'campaigns' || itemId === 'curator-connect') {
                   return 'flex-[1.15]' // Slightly less space for longer labels
-                } else if (itemId === 'faq') {
-                  return 'flex-[0.7]' // A bit more space for FAQ
                 } else {
                   return 'flex-1' // Normal space for others
                 }
               }
               
+              const isSettingsActive = item.id === 'settings' && (activeTab === 'settings' || activeTab === 'faq' || activeTab === 'contact')
+              
               return (
                 <button
                   key={item.id}
                   onClick={() => {
-                    if (item.id === 'signout') {
-                      setShowSignOutModal(true)
+                    if (item.id === 'settings') {
+                      setShowMobileSettingsDropdown(true)
                     } else {
                       setActiveTab(item.id)
                     }
                   }}
                   className={`flex flex-col items-center space-y-1 px-1 py-2 rounded-lg transition-all duration-300 min-w-0 ${getFlexBasis(item.id)} ${
-                    activeTab === item.id 
+                    (activeTab === item.id || isSettingsActive)
                       ? 'text-green-400' 
                       : 'text-gray-400 hover:text-white'
-                  }`}
+                  } ${item.id === 'settings' ? 'active:scale-95' : ''}`}
                 >
+                  <div className={`relative ${item.id === 'settings' ? 'transition-transform duration-200' : ''}`}>
                   <svg className="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={item.icon} />
                   </svg>
+                    {item.id === 'settings' && (
+                      <div className="absolute -top-1 -right-1 w-2 h-2 bg-gradient-to-r from-green-400 to-blue-400 rounded-full opacity-75"></div>
+                    )}
+                  </div>
                   <span className="text-xs font-medium truncate w-full text-center leading-tight">{getMobileLabel(item.id, item.label)}</span>
                 </button>
               )
             })}
           </div>
         </div>
+        
+        {/* Mobile Settings Dropup */}
+        {showMobileSettingsDropdown && renderMobileSettingsDropup()}
         
         {/* Sign Out Modal */}
         {showSignOutModal && renderSignOutModal()}

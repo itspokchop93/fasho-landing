@@ -345,6 +345,40 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       // Don't fail the entire order creation if email fails
     }
 
+    // Sync billing information to user_profiles table
+    if (userId) {
+      try {
+        console.log('🔄 CREATE-ORDER: Syncing billing information to user_profiles...');
+        
+        const syncResponse = await fetch(`${process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'}/api/sync-user-profile`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            user_id: userId,
+            first_name: billingInfo.firstName,
+            last_name: billingInfo.lastName,
+            full_name: `${billingInfo.firstName} ${billingInfo.lastName}`,
+            billing_address_line1: billingInfo.address,
+            billing_city: billingInfo.city,
+            billing_state: billingInfo.state,
+            billing_zip: billingInfo.zip,
+            billing_country: billingInfo.country,
+                         billing_phone: billingInfo.phoneNumber,
+            source: 'checkout'
+          })
+        });
+
+        if (syncResponse.ok) {
+          console.log('🔄 CREATE-ORDER: ✅ User profile synced successfully');
+        } else {
+          console.log('🔄 CREATE-ORDER: ❌ User profile sync failed');
+        }
+      } catch (syncError) {
+        console.error('🔄 CREATE-ORDER: ❌ Error syncing user profile:', syncError);
+        // Don't fail the order creation if profile sync fails
+      }
+    }
+
     // Send Zapier webhook for successful checkout
     try {
       console.log('🔗 CREATE-ORDER: Sending Zapier webhook for checkout success...');

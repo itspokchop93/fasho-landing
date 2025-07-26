@@ -676,6 +676,20 @@ export default function CheckoutPage() {
     updateTotals();
   }, [orderItems, addOnOrderItems]);
 
+  // Debounced email validation effect
+  useEffect(() => {
+    if (!formData.email || isLoginMode) {
+      setEmailStatus(null);
+      return;
+    }
+
+    const timeoutId = setTimeout(() => {
+      checkEmailExists(formData.email);
+    }, 500); // 500ms debounce
+
+    return () => clearTimeout(timeoutId);
+  }, [formData.email, isLoginMode]);
+
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData(prev => ({
       ...prev,
@@ -949,6 +963,45 @@ export default function CheckoutPage() {
     console.log('🚀 CHECKOUT: handlePaymentSubmit completed');
   };
 
+  // Function to fetch user profile and autofill billing data
+  const autofillUserProfile = async (userId: string) => {
+    try {
+      console.log('🔐 CHECKOUT: Fetching user profile for autofill...');
+      const response = await fetch('/api/user-profile');
+      
+      if (response.ok) {
+        const data = await response.json();
+        console.log('🔐 CHECKOUT: User profile data received:', data);
+        
+        if (data.profile) {
+          const profile = data.profile;
+          
+          // Autofill billing data from user profile
+          setBillingData(prev => ({
+            ...prev,
+            firstName: profile.first_name || prev.firstName,
+            lastName: profile.last_name || prev.lastName,
+            address: profile.billing_address_line1 || prev.address,
+            address2: profile.billing_address_line2 || prev.address2,
+            city: profile.billing_city || prev.city,
+            state: profile.billing_state || prev.state,
+            zip: profile.billing_zip || prev.zip,
+            country: profile.billing_country || prev.country,
+            phoneNumber: profile.billing_phone || prev.phoneNumber
+          }));
+          
+          console.log('🔐 CHECKOUT: ✅ Billing data autofilled from user profile');
+        } else {
+          console.log('🔐 CHECKOUT: No profile data found');
+        }
+      } else {
+        console.log('🔐 CHECKOUT: Failed to fetch user profile:', response.status);
+      }
+    } catch (error) {
+      console.error('🔐 CHECKOUT: Error fetching user profile:', error);
+    }
+  };
+
   // Check if user is already logged in
   useEffect(() => {
     console.log('🔐 CHECKOUT: Starting authentication check...');
@@ -1015,6 +1068,11 @@ export default function CheckoutPage() {
         });
         
         setCurrentUser(user);
+        
+        // Autofill billing data if user is authenticated
+        if (user?.id) {
+          await autofillUserProfile(user.id);
+        }
         
         // Fetch artist profile if user is authenticated
         if (user?.id) {
@@ -1411,6 +1469,40 @@ export default function CheckoutPage() {
             },
           },
         });
+
+        // Sync user data to user_profiles table after account creation
+        if (authData.user && !authError) {
+          try {
+            console.log('🔄 CHECKOUT: Syncing new user data to user_profiles...');
+            
+            const syncResponse = await fetch('/api/sync-user-profile', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                user_id: authData.user.id,
+                email: formData.email,
+                first_name: billingData.firstName,
+                last_name: billingData.lastName,
+                full_name: `${billingData.firstName} ${billingData.lastName}`,
+                billing_address_line1: billingData.address,
+                billing_city: billingData.city,
+                billing_state: billingData.state,
+                billing_zip: billingData.zip,
+                billing_country: billingData.country,
+                                 billing_phone: billingData.phoneNumber,
+                source: 'checkout'
+              })
+            });
+
+            if (syncResponse.ok) {
+              console.log('🔄 CHECKOUT: ✅ New user profile synced successfully');
+            } else {
+              console.log('🔄 CHECKOUT: ❌ New user profile sync failed');
+            }
+          } catch (syncError) {
+            console.error('🔄 CHECKOUT: ❌ Error syncing new user profile:', syncError);
+          }
+        }
         
         if (authError) {
           console.error('🚨 CHECKOUT: Error creating account after payment:', authError);
@@ -1760,6 +1852,40 @@ export default function CheckoutPage() {
             },
           });
 
+          // Sync user data to user_profiles table after account creation
+          if (authData.user && !authError) {
+            try {
+              console.log('🔄 CHECKOUT: Syncing new account data to user_profiles...');
+              
+              const syncResponse = await fetch('/api/sync-user-profile', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  user_id: authData.user.id,
+                  email: formData.email,
+                  first_name: billingData.firstName,
+                  last_name: billingData.lastName,
+                  full_name: `${billingData.firstName} ${billingData.lastName}`,
+                  billing_address_line1: billingData.address,
+                  billing_city: billingData.city,
+                  billing_state: billingData.state,
+                  billing_zip: billingData.zip,
+                  billing_country: billingData.country,
+                  billing_phone: billingData.phoneNumber,
+                  source: 'checkout'
+                })
+              });
+
+              if (syncResponse.ok) {
+                console.log('🔄 CHECKOUT: ✅ New account profile synced successfully');
+              } else {
+                console.log('🔄 CHECKOUT: ❌ New account profile sync failed');
+              }
+            } catch (syncError) {
+              console.error('🔄 CHECKOUT: ❌ Error syncing new account profile:', syncError);
+            }
+          }
+
           if (authError) {
             console.error('🚨 CHECKOUT: Error creating account during checkout:', authError);
             console.error('🚨 CHECKOUT: Auth error details:', JSON.stringify(authError, null, 2));
@@ -2045,7 +2171,6 @@ export default function CheckoutPage() {
                           name="email"
                           value={formData.email}
                           onChange={handleInputChange}
-                          onBlur={(e) => !isLoginMode && checkEmailExists(e.target.value)}
                           required
                           className="w-full bg-white/10 border border-white/20 rounded-lg py-3 px-4 text-white placeholder-white/50 focus:outline-none focus:border-[#59e3a5] transition-colors autofill-override"
                           placeholder="your@email.com"

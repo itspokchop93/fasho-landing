@@ -39,11 +39,12 @@ h1, h2, h3, h4, h5, h6, p, div {
   word-break: keep-all;
 }
 
-/* Autofill styling override - preserves dropdown functionality */
+/* Enhanced Autofill styling override - preserves all styling */
 input:-webkit-autofill,
 input:-webkit-autofill:hover,
 input:-webkit-autofill:focus,
-input:-webkit-autofill:active {
+input:-webkit-autofill:active,
+input:-webkit-autofill:valid {
   -webkit-box-shadow: 0 0 0 1000px transparent inset !important;
   -webkit-text-fill-color: white !important;
   background-color: transparent !important;
@@ -53,17 +54,51 @@ input:-webkit-autofill:active {
   caret-color: white !important;
   color: white !important;
   border-color: inherit !important;
+  font-family: inherit !important;
+  font-size: inherit !important;
+  font-weight: inherit !important;
+  line-height: inherit !important;
+}
+
+/* Force styling on page load for pre-filled fields */
+input[type="email"],
+input[type="password"],
+input[type="text"] {
+  color: white !important;
+  background-color: transparent !important;
+  background-image: none !important;
+}
+
+/* Aggressive autofill override for immediate page load */
+@-webkit-keyframes autofill {
+  0%,100% {
+    color: white !important;
+    background: transparent !important;
+  }
+}
+
+input:-webkit-autofill {
+  -webkit-animation-delay: 1s;
+  -webkit-animation-name: autofill;
+  -webkit-animation-fill-mode: both;
 }
 
 input[type="email"]:-webkit-autofill,
 input[type="password"]:-webkit-autofill,
-input[type="text"]:-webkit-autofill {
+input[type="text"]:-webkit-autofill,
+input[type="email"]:-webkit-autofill:valid,
+input[type="password"]:-webkit-autofill:valid,
+input[type="text"]:-webkit-autofill:valid {
   -webkit-box-shadow: 0 0 0 30px transparent inset !important;
   -webkit-text-fill-color: white !important;
   background-color: transparent !important;
   background-image: none !important;
   transition: background-color 5000s ease-in-out 0s !important;
   caret-color: white !important;
+  font-family: inherit !important;
+  font-size: inherit !important;
+  font-weight: inherit !important;
+  line-height: inherit !important;
 }
 
 /* Firefox autofill override */
@@ -73,19 +108,49 @@ input:-moz-autofill:focus {
   background-color: transparent !important;
   background-image: none !important;
   color: white !important;
+  font-family: inherit !important;
+  font-size: inherit !important;
+  font-weight: inherit !important;
+  line-height: inherit !important;
 }
 
-/* Autofill class for manual application */
+/* Enhanced Autofill class for manual application */
 .autofill-override:-webkit-autofill,
 .autofill-override:-webkit-autofill:hover,
 .autofill-override:-webkit-autofill:focus,
-.autofill-override:-webkit-autofill:active {
+.autofill-override:-webkit-autofill:active,
+.autofill-override:-webkit-autofill:valid {
   -webkit-box-shadow: 0 0 0 30px transparent inset !important;
   -webkit-text-fill-color: white !important;
   background-color: transparent !important;
   background-image: none !important;
   transition: background-color 5000s ease-in-out 0s !important;
   caret-color: white !important;
+  font-family: inherit !important;
+  font-size: inherit !important;
+  font-weight: inherit !important;
+  line-height: inherit !important;
+  border-color: inherit !important;
+}
+
+/* Additional override for pre-filled fields on page load */
+.autofill-override {
+  color: white !important;
+  background-color: transparent !important;
+  background-image: none !important;
+}
+
+.autofill-override:-moz-autofill,
+.autofill-override:-moz-autofill:hover,
+.autofill-override:-moz-autofill:focus {
+  background-color: transparent !important;
+  background-image: none !important;
+  color: white !important;
+  font-family: inherit !important;
+  font-size: inherit !important;
+  font-weight: inherit !important;
+  line-height: inherit !important;
+  border-color: inherit !important;
 }
 
 @keyframes spin-slow {
