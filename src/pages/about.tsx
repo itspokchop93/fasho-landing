@@ -18,7 +18,7 @@ export default function About() {
         
         <Header transparent={true} />
         
-        <main className="pt-16 relative z-10">
+        <main className="pt-16 relative z-10" style={{ paddingTop: 'calc(4rem + 50px)' }}>
           {/* Hero Section */}
           <section className="py-1 px-4">
             <div className="max-w-4xl mx-auto text-center">

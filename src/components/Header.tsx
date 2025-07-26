@@ -344,32 +344,32 @@ export default function Header({ transparent = false, hideSignUp = false }: Head
   );
 
   return (
-    <header className={getHeaderClasses()}>
+    <header className={`${getHeaderClasses()} animate-slide-down`} suppressHydrationWarning={true}>
       <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between h-16">
+        <div className="flex items-center justify-between h-16 animate-fade-in-up" style={{ animationDelay: '0.2s' }}>
           {/* Logo */}
-          <div className="flex-shrink-0">
-            <Link href="/">
+          <div className="flex-shrink-0 animate-fade-in-up" style={{ animationDelay: '0.1s' }}>
+            <Link href="/" className="block transition-transform duration-300 ease-in-out hover:scale-105">
               <img 
                 src="/fasho-logo-wide.png" 
                 alt="FASHO" 
-                className="h-7 w-auto"
+                className="h-7 w-auto filter brightness-110 hover:brightness-125 transition-all duration-300"
               />
             </Link>
           </div>
 
           {/* Desktop Navigation */}
-          <nav className={`hidden md:flex items-center space-x-8 ${hideSignUp ? 'pr-16' : ''}`}>
-            <Link href="/pricing" className="text-white hover:text-[#59e3a5] transition-colors font-medium">
+          <nav className={`hidden md:flex items-center space-x-2 ${hideSignUp ? 'pr-16' : ''} animate-fade-in-up`} style={{ animationDelay: '0.4s' }}>
+            <Link href="/pricing" className="text-white hover:text-[#59e3a5] transition-all duration-300 ease-in-out font-medium px-4 py-2 rounded-lg hover:bg-white/5 hover:scale-105 transform backdrop-blur-sm border border-transparent hover:border-white/10">
               Pricing
             </Link>
-            <Link href="/#faq" className="text-white hover:text-[#59e3a5] transition-colors font-medium">
+            <Link href="/#faq" className="text-white hover:text-[#59e3a5] transition-all duration-300 ease-in-out font-medium px-4 py-2 rounded-lg hover:bg-white/5 hover:scale-105 transform backdrop-blur-sm border border-transparent hover:border-white/10">
               FAQ
             </Link>
-            <Link href="/about" className="text-white hover:text-[#59e3a5] transition-colors font-medium">
+            <Link href="/about" className="text-white hover:text-[#59e3a5] transition-all duration-300 ease-in-out font-medium px-4 py-2 rounded-lg hover:bg-white/5 hover:scale-105 transform backdrop-blur-sm border border-transparent hover:border-white/10">
               About
             </Link>
-            <Link href="/contact" className="text-white hover:text-[#59e3a5] transition-colors font-medium">
+            <Link href="/contact" className="text-white hover:text-[#59e3a5] transition-all duration-300 ease-in-out font-medium px-4 py-2 rounded-lg hover:bg-white/5 hover:scale-105 transform backdrop-blur-sm border border-transparent hover:border-white/10">
               Contact
             </Link>
             
@@ -377,29 +377,31 @@ export default function Header({ transparent = false, hideSignUp = false }: Head
             
             {/* Sign Up Button or User Profile */}
             {!hideSignUp && (
-              currentUser ? (
-                <div className="relative" ref={dropdownRef}>
-                  <div className="flex items-center gap-3">
-                    <button
-                      onClick={() => setShowProfileDropdown(!showProfileDropdown)}
-                      className="text-white font-medium hover:text-[#59e3a5] transition-colors cursor-pointer"
-                    >
-                      Hey, {userFirstName}!
-                    </button>
-                    <button
-                      onClick={() => setShowProfileDropdown(!showProfileDropdown)}
-                      className="w-10 h-10 bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] rounded-full flex items-center justify-center hover:opacity-90 transition-opacity"
-                    >
-                      {renderProfileAvatar()}
-                    </button>
+              <div className="animate-fade-in-up" style={{ animationDelay: '0.6s' }}>
+                {currentUser ? (
+                  <div className="relative" ref={dropdownRef}>
+                    <div className="flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-white/5 transition-all duration-300 border border-transparent hover:border-white/10 backdrop-blur-sm">
+                      <button
+                        onClick={() => setShowProfileDropdown(!showProfileDropdown)}
+                        className="text-white font-medium hover:text-[#59e3a5] transition-all duration-300 cursor-pointer"
+                      >
+                        Hey, {userFirstName}!
+                      </button>
+                      <button
+                        onClick={() => setShowProfileDropdown(!showProfileDropdown)}
+                        className="w-10 h-10 bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] rounded-full flex items-center justify-center hover:opacity-90 hover:scale-105 transition-all duration-300 shadow-lg"
+                      >
+                        {renderProfileAvatar()}
+                      </button>
+                    </div>
+                    {showProfileDropdown && renderProfileDropdown()}
                   </div>
-                  {showProfileDropdown && renderProfileDropdown()}
-                </div>
-              ) : (
-                <Link href="/signup" className="bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] text-black font-semibold px-6 py-2 rounded-md hover:opacity-90 transition-opacity">
-                  Login
-                </Link>
-              )
+                ) : (
+                  <Link href="/signup" className="bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] text-black font-semibold px-6 py-3 rounded-xl hover:opacity-90 hover:scale-105 transition-all duration-300 shadow-lg backdrop-blur-sm border border-white/20">
+                    Login
+                  </Link>
+                )}
+              </div>
             )}
           </nav>
 
@@ -422,9 +424,13 @@ export default function Header({ transparent = false, hideSignUp = false }: Head
 
         {/* Mobile Navigation */}
         {isMobileMenuOpen && (
-          <div className="md:hidden absolute top-full left-0 w-full bg-gradient-to-b from-[#18192a]/90 via-[#16213e]/90 to-[#0a0a13]/90 backdrop-blur-md shadow-2xl border-t border-white/10" style={{ zIndex: 9999 }}>
-            <div className="px-2 pt-4 pb-4 space-y-3 text-center">
-              <Link href="/pricing" className="flex items-center justify-center gap-3 px-3 py-3 text-white hover:text-[#59e3a5] transition-colors font-medium">
+          <div 
+            className="md:hidden absolute top-full left-0 w-full bg-gradient-to-b from-[#18192a]/70 via-[#16213e]/80 to-[#0a0a13]/85 backdrop-blur-xl shadow-2xl border-t border-white/20 animate-fade-in-down" 
+            style={{ zIndex: 9999 }}
+            suppressHydrationWarning={true}
+          >
+            <div className="px-4 pt-6 pb-6 space-y-1 text-center">
+              <Link href="/pricing" className="flex items-center justify-center gap-3 px-4 py-4 mx-2 text-white hover:text-[#59e3a5] hover:bg-white/5 transition-all duration-300 ease-in-out font-medium rounded-xl backdrop-blur-sm border border-transparent hover:border-white/10 transform hover:scale-[1.02] animate-fade-in-up" style={{ animationDelay: '0.1s' }}>
                 <svg className="w-5 h-5" fill="none" stroke="url(#gradient1)" viewBox="0 0 24 24">
                   <defs>
                     <linearGradient id="gradient1" x1="0%" y1="0%" x2="100%" y2="0%">
@@ -436,7 +442,7 @@ export default function Header({ transparent = false, hideSignUp = false }: Head
                 </svg>
                 Pricing
               </Link>
-              <Link href="/#faq" className="flex items-center justify-center gap-3 px-3 py-3 text-white hover:text-[#59e3a5] transition-colors font-medium">
+              <Link href="/#faq" className="flex items-center justify-center gap-3 px-4 py-4 mx-2 text-white hover:text-[#59e3a5] hover:bg-white/5 transition-all duration-300 ease-in-out font-medium rounded-xl backdrop-blur-sm border border-transparent hover:border-white/10 transform hover:scale-[1.02] animate-fade-in-up" style={{ animationDelay: '0.2s' }}>
                 <svg className="w-5 h-5" fill="none" stroke="url(#gradient2)" viewBox="0 0 24 24">
                   <defs>
                     <linearGradient id="gradient2" x1="0%" y1="0%" x2="100%" y2="0%">
@@ -448,7 +454,7 @@ export default function Header({ transparent = false, hideSignUp = false }: Head
                 </svg>
                 FAQ
               </Link>
-              <Link href="/about" className="flex items-center justify-center gap-3 px-3 py-3 text-white hover:text-[#59e3a5] transition-colors font-medium">
+              <Link href="/about" className="flex items-center justify-center gap-3 px-4 py-4 mx-2 text-white hover:text-[#59e3a5] hover:bg-white/5 transition-all duration-300 ease-in-out font-medium rounded-xl backdrop-blur-sm border border-transparent hover:border-white/10 transform hover:scale-[1.02] animate-fade-in-up" style={{ animationDelay: '0.3s' }}>
                 <svg className="w-5 h-5" fill="none" stroke="url(#gradient3)" viewBox="0 0 24 24">
                   <defs>
                     <linearGradient id="gradient3" x1="0%" y1="0%" x2="100%" y2="0%">
@@ -460,7 +466,7 @@ export default function Header({ transparent = false, hideSignUp = false }: Head
                 </svg>
                 About
               </Link>
-              <Link href="/contact" className="flex items-center justify-center gap-3 px-3 py-3 text-white hover:text-[#59e3a5] transition-colors font-medium">
+              <Link href="/contact" className="flex items-center justify-center gap-3 px-4 py-4 mx-2 text-white hover:text-[#59e3a5] hover:bg-white/5 transition-all duration-300 ease-in-out font-medium rounded-xl backdrop-blur-sm border border-transparent hover:border-white/10 transform hover:scale-[1.02] animate-fade-in-up" style={{ animationDelay: '0.4s' }}>
                 <svg className="w-5 h-5" fill="none" stroke="url(#gradient4)" viewBox="0 0 24 24">
                   <defs>
                     <linearGradient id="gradient4" x1="0%" y1="0%" x2="100%" y2="0%">
@@ -475,12 +481,12 @@ export default function Header({ transparent = false, hideSignUp = false }: Head
               
 
               
-              <div className="flex items-center justify-center px-3 py-2">
+              <div className="flex items-center justify-center px-4 py-3 animate-fade-in-up" style={{ animationDelay: '0.5s' }}>
                 {/* Sign Up Button or User Profile */}
                 {!hideSignUp && (
                   currentUser ? (
-                    <div className="relative">
-                      <div className="flex flex-col items-center gap-2">
+                    <div className="relative w-full">
+                      <div className="flex flex-col items-center gap-3 px-4 py-4 mx-2 bg-white/5 backdrop-blur-sm rounded-xl border border-white/10">
                         <button
                           onClick={() => setShowProfileDropdown(!showProfileDropdown)}
                           className="text-white font-medium text-sm hover:text-[#59e3a5] transition-colors cursor-pointer"
@@ -489,7 +495,7 @@ export default function Header({ transparent = false, hideSignUp = false }: Head
                         </button>
                         <button
                           onClick={() => setShowProfileDropdown(!showProfileDropdown)}
-                          className="w-10 h-10 bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] rounded-full flex items-center justify-center hover:opacity-90 transition-opacity"
+                          className="w-12 h-12 bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] rounded-full flex items-center justify-center hover:opacity-90 hover:scale-105 transition-all duration-300 shadow-lg"
                         >
                           {renderProfileAvatar()}
                         </button>
@@ -574,7 +580,7 @@ export default function Header({ transparent = false, hideSignUp = false }: Head
                       )}
                     </div>
                   ) : (
-                    <Link href="/signup" className="bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] text-black font-semibold px-6 py-2 rounded-md hover:opacity-90 transition-opacity">
+                    <Link href="/signup" className="w-full mx-2 bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] text-black font-semibold px-6 py-4 rounded-xl hover:opacity-90 hover:scale-[1.02] transition-all duration-300 text-center shadow-lg">
                       Login
                     </Link>
                   )

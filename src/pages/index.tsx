@@ -287,8 +287,41 @@ const FAQCard = ({ question, answer }: { question: string; answer: string }) => 
   );
 };
 
-// Add at the top of the Home component:
-// Removed PHONE_SECTION_ID - no longer needed with static sections
+// Hydration-safe scaling hook for browser mockups
+const useClientScale = (baseWidth = 1200, minScale = 0.12, maxScale = 1) => {
+  const isSSR = typeof window === 'undefined';
+  let initialScale = 1;
+  if (isSSR && typeof navigator !== 'undefined' && navigator.userAgent) {
+    if (/Mobi|Android/i.test(navigator.userAgent)) {
+      initialScale = 0.25;
+    }
+  }
+  const [scale, setScale] = useState<number>(isSSR ? initialScale : 1);
+  useEffect(() => {
+    const calcScale = () => {
+      if (typeof window === 'undefined') return;
+      const viewportWidth = window.innerWidth;
+      let scaleVal;
+      if (viewportWidth >= 1400) {
+        scaleVal = maxScale;
+      } else if (viewportWidth >= 1024) {
+        scaleVal = Math.max(0.6, (viewportWidth - 50) / baseWidth);
+      } else if (viewportWidth >= 768) {
+        scaleVal = Math.max(0.45, (viewportWidth - 30) / baseWidth);
+      } else {
+        if (viewportWidth <= 320) scaleVal = 0.22;
+        else if (viewportWidth <= 375) scaleVal = 0.26;
+        else if (viewportWidth <= 414) scaleVal = 0.28;
+        else scaleVal = Math.max(minScale, (viewportWidth * 0.8) / baseWidth);
+      }
+      setScale(Math.min(maxScale, scaleVal));
+    };
+    calcScale();
+    window.addEventListener('resize', calcScale, { passive: true });
+    return () => window.removeEventListener('resize', calcScale);
+  }, [baseWidth, minScale, maxScale]);
+  return scale;
+};
 
 export default function Home() {
   const [showSuccessBanner, setShowSuccessBanner] = useState(false);
@@ -580,6 +613,23 @@ export default function Home() {
   const [genreHeadingRef, genreHeadingInView] = useInView({ threshold: 0.3 });
   const [genreSubheadingRef, genreSubheadingInView] = useInView({ threshold: 0.3 });
   const [genreListContainerRef, genreListContainerInView] = useInView({ threshold: 0.3 });
+  
+  // Mobile genre list animation hooks - one for each row
+  const [genreRow1Ref, genreRow1InView] = useInView({ threshold: 0.3 });
+  const [genreRow2Ref, genreRow2InView] = useInView({ threshold: 0.3 });
+  const [genreRow3Ref, genreRow3InView] = useInView({ threshold: 0.3 });
+  const [genreRow4Ref, genreRow4InView] = useInView({ threshold: 0.3 });
+  const [genreRow5Ref, genreRow5InView] = useInView({ threshold: 0.3 });
+  const [genreRow6Ref, genreRow6InView] = useInView({ threshold: 0.3 });
+  const [genreRow7Ref, genreRow7InView] = useInView({ threshold: 0.3 });
+  const [genreRow8Ref, genreRow8InView] = useInView({ threshold: 0.3 });
+  const [genreRow9Ref, genreRow9InView] = useInView({ threshold: 0.3 });
+  const [genreRow10Ref, genreRow10InView] = useInView({ threshold: 0.3 });
+  const [genreRow11Ref, genreRow11InView] = useInView({ threshold: 0.3 });
+  const [genreRow12Ref, genreRow12InView] = useInView({ threshold: 0.3 });
+  const [genreRow13Ref, genreRow13InView] = useInView({ threshold: 0.3 });
+  const [genreRow14Ref, genreRow14InView] = useInView({ threshold: 0.3 });
+  const [genreRow15Ref, genreRow15InView] = useInView({ threshold: 0.3 });
   const [experimentalTextRef, experimentalTextInView] = useInView({ threshold: 0.3 });
   const [campaignButtonRef, campaignButtonInView] = useInView({ threshold: 0.3 });
   const [authenticityHeadingRef, authenticityHeadingInView] = useInView({ threshold: 0.3 });
@@ -598,7 +648,9 @@ export default function Home() {
   const [testimonialsHeadingRef, testimonialsHeadingInView] = useInView({ threshold: 0.3 });
   const [testimonialsSubheadingRef, testimonialsSubheadingInView] = useInView({ threshold: 0.3 });
 
-
+  // Hydration-safe scale for browser mockups
+  const dashboardScale = useClientScale(1200);
+  const curatorScale = useClientScale(1200);
 
   // Check for success query parameter on component mount
   useEffect(() => {
@@ -1273,8 +1325,8 @@ export default function Home() {
                         <h2 className="text-[1.6rem] md:text-4xl font-black bg-gradient-to-b from-white to-gray-400 bg-clip-text text-transparent drop-shadow-[0_8px_16px_rgba(0,0,0,0.6)] mb-4 pt-2.5 md:pt-0 break-words">
                           🚀 Start Your Campaign
                         </h2>
-                        <p className="text-sm md:text-lg text-gray-300 mb-6 md:mb-8 -mb-2.5">
-                          Search For Your Spotify Song or Enter Your Track Link
+                        <p className="md:text-lg text-gray-300 mb-6 md:mb-8 -mb-2.5" style={{ fontSize: '0.725rem' }}>
+                          <span className="md:text-lg md:text-[1.125rem]">Search For Your Spotify Song or Enter Your Track Link</span>
                         </p>
                       </div>
 
@@ -1770,7 +1822,7 @@ export default function Home() {
               <p ref={text3Ref} className={`text-[calc(1.125rem+0.25rem)] sm:text-lg md:text-xl lg:text-[1.75rem] text-gray-300 pb-12 lg:pb-[3.5rem] font-medium text-center transition-all duration-700 ${text3InView ? 'animate-fade-in-up' : 'opacity-0 translate-y-8'} leading-relaxed lg:leading-relaxed`}>
                 Meanwhile, some dude who recorded his whole album <b>on an iPhone</b> just hit <b>2 million</b> streams and <b>got signed.</b>
               </p>
-              <p ref={text4Ref} className={`text-[calc(2.25rem+0.20rem)] sm:text-4xl md:text-5xl lg:text-[3.5rem] font-black pb-5 lg:pb-[2rem] bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] bg-clip-text text-transparent transition-all duration-700 ${text4InView ? 'animate-fade-in-up' : 'opacity-0 translate-y-8'} leading-tight mb-[5px] sm:mb-0`}>
+              <p ref={text4Ref} className={`text-[calc(2.25rem+0.20rem)] sm:text-4xl md:text-5xl lg:text-[3.5rem] font-black pb-5 lg:pb-[2rem] bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] bg-clip-text text-transparent transition-all duration-700 ${text4InView ? 'animate-fade-in-up' : 'opacity-0 translate-y-8'} leading-tight mb-[11px] sm:mb-0`}>
                 Damn…
               </p>
               <p ref={text5Ref} className={`text-3xl md:text-4xl lg:text-[2.15rem] font-black text-white pb-12 lg:pb-[3.5rem] pt-1 lg:pt-[2rem] transition-all duration-700 ${text5InView ? 'animate-fade-in-up' : 'opacity-0 translate-y-8'} leading-tight lg:leading-tight`}>
@@ -1881,7 +1933,7 @@ export default function Home() {
               )}
             </div>
             <p ref={onlySpotifyRef} className={`text-2xl md:text-3xl lg:text-[2.0rem] font-bold text-white pb-12 text-center transition-all duration-700 ${onlySpotifyInView ? 'animate-fade-in-up' : 'opacity-0 translate-y-8'} leading-tight lg:leading-tight`}>
-              The ONLY Spotify marketing service with DIRECT access to curators of the world's BIGGEST playlists.
+              The ONLY Spotify marketing service with DIRECT access to the world's BIGGEST playlists.
             </p>
             <p ref={dontMessRef} className={`text-[calc(1.125rem+0.25rem)] sm:text-lg md:text-xl lg:text-[1.75rem] text-gray-300 pb-12 lg:pb-[3.5rem] font-medium text-center transition-all duration-700 ${dontMessInView ? 'animate-fade-in-up' : 'opacity-0 translate-y-8'} leading-relaxed lg:leading-relaxed`}>
               We don't mess with <b>bots.</b> We don't own <b>sketchy playlists.</b> We don't make <b>empty promises.</b>
@@ -1913,15 +1965,7 @@ export default function Home() {
             <p ref={builtFashoRef} className={`text-[calc(1.125rem+0.25rem)] sm:text-lg md:text-xl lg:text-[1.75rem] text-gray-300 pb-12 lg:pb-[3.5rem] font-medium text-center transition-all duration-700 ${builtFashoInView ? 'animate-fade-in-up' : 'opacity-0 translate-y-8'} leading-relaxed lg:leading-relaxed`}>
               So we built <b className="bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] bg-clip-text text-transparent font-black">FASHO.co</b> to flip the script. To give independent artists <b>direct</b> access to the <b>same tools</b> and <b>connections</b> that major labels pay <b><i>millions</i></b> for.
             </p>
-            <h2 ref={resultsRef} className={`text-4xl md:text-5xl lg:text-[2.5rem] font-black pb-12 bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] bg-clip-text text-transparent text-center transition-all duration-700 ${resultsInView ? 'animate-fade-in-up' : 'opacity-0 translate-y-8'} leading-tight`}>
-              The Results Speak For Themselves…
-            </h2>
-            <p ref={with100Ref} className={`text-[calc(1.125rem+0.25rem)] sm:text-lg md:text-xl lg:text-[1.75rem] text-gray-300 pb-12 lg:pb-[3.5rem] font-medium text-center transition-all duration-700 ${with100InView ? 'animate-fade-in-up' : 'opacity-0 translate-y-8'} leading-relaxed lg:leading-relaxed`}>
-              With a <b>100% success rate,</b> our campaigns start delivering within <b>48 hours.</b> Not weeks. Not "maybe soon"… Two days.
-            </p>
-            <p ref={playlistNetworkRef} className={`text-[calc(1.125rem+0.25rem)] sm:text-lg md:text-xl lg:text-[1.75rem] text-gray-300 pb-12 lg:pb-[3.5rem] font-medium text-center transition-all duration-700 ${playlistNetworkInView ? 'animate-fade-in-up' : 'opacity-0 translate-y-8'} leading-relaxed lg:leading-relaxed`}>
-              Our playlist network drives <b>MILLIONS</b> of engaged listeners to our clients <b>every single week.</b> Real people who <b>save songs, follow artists, and actually show up to shows.</b>
-            </p>
+
             <p ref={isntHopeRef} className={`text-2xl md:text-3xl lg:text-[2.1rem] font-bold text-white pb-16 text-center transition-all duration-700 -mb-9 md:mb-0 ${isntHopeInView ? 'animate-fade-in-up' : 'opacity-0 translate-y-8'} leading-tight lg:leading-tight`}>
               This isn't hope. It's a guarantee. Your music, on major playlists, reaching massive audiences, starting TODAY.
             </p>
@@ -2839,7 +2883,7 @@ export default function Home() {
                       <div className="flex justify-between items-center px-8 py-4 text-white text-sm relative">
                         <span>9:41</span>
                         <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 flex flex-col items-center">
-                          <div className="w-12 h-2 bg-white rounded-full opacity-80" style={{marginBottom: '2px'}}></div>
+                          <div className="w-12 h-2 bg-white rounded-full" style={{marginBottom: '2px'}}></div>
                         </div>
                         <div className="flex items-center space-x-1">
                           <div className="w-6 h-3 border border-white rounded-sm">
@@ -2887,7 +2931,7 @@ export default function Home() {
                                   <span className="text-white font-bold" style={{ fontSize: '11px' }}>J</span>
                                 </div>
                                 {/* Message Text */}
-                                <div className="flex-1 text-center">
+                                <div className="flex-1 text-left">
                                   <p className="text-white font-medium" style={{ fontSize: '12px', lineHeight: '1.3' }}>
                                     Dude you're going<br />viral! 🔥
                                   </p>
@@ -3091,13 +3135,13 @@ export default function Home() {
           </div>
 
           {/* Dashboard Preview Section */}
-          <section className="py-0 md:py-24 px-4 pb-24 md:pb-48 relative z-15 overflow-hidden">
+          <section className="py-0 md:py-24 px-4 md:px-12 lg:px-20 pb-24 md:pb-48 relative z-15 overflow-hidden">
             {/* Extended gradient overlay that flows into next section */}
             <div className="absolute inset-0 bg-gradient-to-b from-[#18192a] via-[#16213e] to-[#0a0a13] -z-10"></div>
             <div className="absolute bottom-0 left-0 right-0 h-64 bg-gradient-to-b from-transparent to-[#18192a] -z-5"></div>
             
             {/* Mobile-only smooth gradient transition overlay */}
-            <div className="sm:hidden absolute bottom-0 left-0 right-0 h-48 bg-gradient-to-b from-transparent via-[#16213e]/30 via-[#16213e]/50 via-[#0a0a13]/70 via-[#0a0a13]/85 to-[#0a0a13] z-20"></div>
+            <div className="sm:hidden absolute bottom-0 left-0 right-0 h-48 bg-gradient-to-b from-transparent to-[#0a0a13] z-20"></div>
             <div className="max-w-7xl mx-auto">
               <div className="text-center mb-4 md:mb-16">
                 <h2 
@@ -3120,115 +3164,117 @@ export default function Home() {
                     overflowWrap: 'break-word' 
                   }}
                 >
-                  Everything you need in one clean dashboard. Launch campaigns, track your playlist placements, monitor your growth, and hit us up when you need anything. All from one elite platform.
+                  Everything you need in one clean dashboard. Launch campaigns, track your growth, and hit us up when you need anything. All from one elite platform.
                 </p>
               </div>
 
               {/* Browser Window Mockup */}
-              <div ref={dashboardRef} className="relative flex justify-center -mb-[600px] md:mb-0">
+              <div ref={dashboardRef} className="relative flex justify-center -mb-[700px] md:-mb-[25px]">
                 {/* Background Glow Effect */}
                 <div className="absolute inset-0 -m-16 rounded-3xl opacity-50 blur-3xl bg-gradient-to-r from-[#59e3a5]/30 via-[#14c0ff]/40 to-[#8b5cf6]/30 animate-pulse"></div>
                 
                 {/* Centering container for scaled mockup */}
-                <div className="flex justify-center items-start w-full">
-                <div 
-                  className="bg-gradient-to-br from-[#1a1a2e] to-[#16213e] rounded-t-2xl shadow-2xl transition-transform duration-700 ease-out relative z-10"
-                  style={{ 
-                    transform: getDashboardTransform(),
-                    width: '1200px',
-                    transformOrigin: 'top center'
-                  }}
-              >
-                  {/* Browser Header */}
-                  <div className="bg-gradient-to-r from-[#59e3a5] via-[#14c0ff] to-[#8b5cf6] rounded-t-2xl border-b border-white/10" style={{ padding: '12px 16px' }}>
+                <div className="flex justify-center items-start w-full overflow-visible">
+                  <div
+                    suppressHydrationWarning={true}
+                    className="bg-gradient-to-br from-[#1a1a2e] to-[#16213e] rounded-t-2xl shadow-2xl transition-transform duration-700 ease-out relative z-10"
+                    style={{
+                      transform: `scale(${dashboardScale})`,
+                      width: '1200px',
+                      minWidth: '1200px',
+                      transformOrigin: 'top center',
+                    }}
+                  >
+                    {/* Browser Header */}
+                    <div className="bg-gradient-to-r from-[#59e3a5] via-[#14c0ff] to-[#8b5cf6] rounded-t-2xl border-b border-white/10" style={{ padding: '12px 16px' }}>
                       <div className="flex items-center justify-between">
                         <div className="flex items-center" style={{ gap: '8px' }}>
-                        <div className="flex" style={{ gap: '6px' }}>
-                          <div style={{ width: '12px', height: '12px', backgroundColor: '#ef4444', borderRadius: '50%' }}></div>
-                          <div style={{ width: '12px', height: '12px', backgroundColor: '#eab308', borderRadius: '50%' }}></div>
-                          <div style={{ width: '12px', height: '12px', backgroundColor: '#22c55e', borderRadius: '50%' }}></div>
-                        </div>
+                          <div className="flex" style={{ gap: '6px' }}>
+                            <div style={{ width: '12px', height: '12px', backgroundColor: '#ef4444', borderRadius: '50%' }}></div>
+                            <div style={{ width: '12px', height: '12px', backgroundColor: '#eab308', borderRadius: '50%' }}></div>
+                            <div style={{ width: '12px', height: '12px', backgroundColor: '#22c55e', borderRadius: '50%' }}></div>
                           </div>
-                      <div className="flex-1" style={{ margin: '0 24px' }}>
-                        <div className="bg-black/30 backdrop-blur-sm rounded-lg border border-white/20" style={{ padding: '6px 12px', textAlign: 'center' }}>
-                          <span className="text-white font-mono" style={{ fontSize: '14px' }}>fasho.co/dashboard</span>
                         </div>
+                        <div className="flex-1" style={{ margin: '0 24px' }}>
+                          <div className="bg-black/30 backdrop-blur-sm rounded-lg border border-white/20" style={{ padding: '6px 12px', textAlign: 'center' }}>
+                            <span className="text-white font-mono" style={{ fontSize: '14px' }}>fasho.co/dashboard</span>
                           </div>
-                      <div style={{ width: '80px' }}></div>
+                        </div>
+                        <div style={{ width: '80px' }}></div>
+                      </div>
                     </div>
-                  </div>
 
-                {/* Dashboard Content */}
-                  <div className="bg-gradient-to-r from-[#59e3a5] via-[#14c0ff] to-[#8b5cf6] rounded-b-2xl relative" style={{ padding: '1px' }}>
-                    <div className="bg-gradient-to-br from-[#1a1a2e] to-[#16213e] rounded-b-2xl relative" style={{ padding: '24px' }}>
+                    {/* Dashboard Content */}
+                    <div className="bg-gradient-to-r from-[#59e3a5] via-[#14c0ff] to-[#8b5cf6] rounded-b-2xl relative" style={{ padding: '1px' }}>
+                      <div className="bg-gradient-to-br from-[#1a1a2e] to-[#16213e] rounded-b-2xl relative" style={{ padding: '24px' }}>
                       
-                      {/* Fade to transparent overlay for bottom 10% */}
-                      <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-[#16213e] via-[#16213e]/90 to-transparent rounded-b-2xl pointer-events-none z-10" style={{ height: '10%' }}></div>
-                      
-                  {/* Dashboard Header */}
-                      <div className="flex items-center justify-between" style={{ marginBottom: '32px' }}>
-                        <div className="flex items-center" style={{ gap: '16px' }}>
-                          <div className="bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] rounded-xl flex items-center justify-center" style={{ width: '56px', height: '56px' }}>
-                            <svg className="text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" style={{ width: '24px', height: '24px' }}>
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-                            </svg>
+                        {/* Fade to transparent overlay for bottom 10% */}
+                        <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-[#16213e] via-[#16213e]/90 to-transparent rounded-b-2xl pointer-events-none z-10" style={{ height: '10%' }}></div>
+                        
+                        {/* Dashboard Header */}
+                        <div className="flex items-center justify-between" style={{ marginBottom: '32px' }}>
+                          <div className="flex items-center" style={{ gap: '16px' }}>
+                            <div className="bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] rounded-xl flex items-center justify-center" style={{ width: '56px', height: '56px' }}>
+                              <svg className="text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" style={{ width: '24px', height: '24px' }}>
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                              </svg>
+                            </div>
+                            <div>
+                              <h3 className="font-bold text-white" style={{ fontSize: '18px' }}>Campaign Dashboard</h3>
+                              <p className="text-gray-400" style={{ fontSize: '12px' }}>Real-time performance metrics</p>
+                            </div>
                           </div>
-                    <div>
-                            <h3 className="font-bold text-white" style={{ fontSize: '18px' }}>Campaign Dashboard</h3>
-                            <p className="text-gray-400" style={{ fontSize: '12px' }}>Real-time performance metrics</p>
-                    </div>
-                        </div>
-                        <div className="flex items-center" style={{ gap: '12px' }}>
-                          <div className="bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] text-white rounded-lg font-semibold animate-pulse" style={{ padding: '8px 16px', fontSize: '12px' }}>
-                            LIVE
+                          <div className="flex items-center" style={{ gap: '12px' }}>
+                            <div className="bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] text-white rounded-lg font-semibold animate-pulse" style={{ padding: '8px 16px', fontSize: '12px' }}>
+                              LIVE
+                            </div>
                           </div>
                         </div>
-                  </div>
 
-                      {/* Top Stats Grid - Only 3 cards now */}
-                      <div className="flex" style={{ gap: '16px', marginBottom: '32px' }}>
-                        <div className="bg-gradient-to-br from-white/10 to-white/5 rounded-xl border border-white/10 backdrop-blur-sm" style={{ padding: '16px', width: '360px' }}>
-                          <div className="flex items-center justify-between" style={{ marginBottom: '8px' }}>
-                            <div className="text-gray-400 font-medium" style={{ fontSize: '12px' }}>Estimated Streams</div>
-                            <div className="bg-green-400 rounded-full animate-pulse" style={{ width: '8px', height: '8px' }}></div>
-                      </div>
-                          <div className="font-bold text-white" style={{ fontSize: '18px', marginBottom: '2px' }}>247,382</div>
-                          <div className="flex items-center text-green-400" style={{ fontSize: '10px' }}>
-                            <svg fill="currentColor" viewBox="0 0 20 20" style={{ width: '12px', height: '12px', marginRight: '4px' }}>
-                              <path fillRule="evenodd" d="M5.293 9.707a1 1 0 010-1.414l4-4a1 1 0 011.414 0l4 4a1 1 0 01-1.414 1.414L11 7.414V15a1 1 0 11-2 0V7.414L6.707 9.707a1 1 0 01-1.414 0z" clipRule="evenodd" />
-                            </svg>
-                            +23% this week
-                    </div>
-                      </div>
-                        
-                        <div className="bg-gradient-to-br from-white/10 to-white/5 rounded-xl border border-white/10 backdrop-blur-sm" style={{ padding: '16px', width: '360px' }}>
-                          <div className="flex items-center justify-between" style={{ marginBottom: '8px' }}>
-                            <div className="text-gray-400 font-medium" style={{ fontSize: '12px' }}>Playlist Adds</div>
-                            <div className="bg-blue-400 rounded-full animate-pulse" style={{ width: '8px', height: '8px' }}></div>
-                    </div>
-                          <div className="font-bold text-white" style={{ fontSize: '18px', marginBottom: '2px' }}>47</div>
-                          <div className="flex items-center text-blue-400" style={{ fontSize: '10px' }}>
-                            <svg fill="currentColor" viewBox="0 0 20 20" style={{ width: '12px', height: '12px', marginRight: '4px' }}>
-                              <path fillRule="evenodd" d="M5.293 9.707a1 1 0 010-1.414l4-4a1 1 0 011.414 0l4 4a1 1 0 01-1.414 1.414L11 7.414V15a1 1 0 11-2 0V7.414L6.707 9.707a1 1 0 01-1.414 0z" clipRule="evenodd" />
-                            </svg>
-                            +12 new placements
-                      </div>
+                        {/* Top Stats Grid - Only 3 cards now */}
+                        <div className="flex" style={{ gap: '16px', marginBottom: '32px' }}>
+                          <div className="bg-gradient-to-br from-white/10 to-white/5 rounded-xl border border-white/10 backdrop-blur-sm" style={{ padding: '16px', width: '360px' }}>
+                            <div className="flex items-center justify-between" style={{ marginBottom: '8px' }}>
+                              <div className="text-gray-400 font-medium" style={{ fontSize: '12px' }}>Estimated Streams</div>
+                              <div className="bg-green-400 rounded-full animate-pulse" style={{ width: '8px', height: '8px' }}></div>
+                            </div>
+                            <div className="font-bold text-white" style={{ fontSize: '18px', marginBottom: '2px' }}>247,382</div>
+                            <div className="flex items-center text-green-400" style={{ fontSize: '10px' }}>
+                              <svg fill="currentColor" viewBox="0 0 20 20" style={{ width: '12px', height: '12px', marginRight: '4px' }}>
+                                <path fillRule="evenodd" d="M5.293 9.707a1 1 0 010-1.414l4-4a1 1 0 011.414 0l4 4a1 1 0 01-1.414 1.414L11 7.414V15a1 1 0 11-2 0V7.414L6.707 9.707a1 1 0 01-1.414 0z" clipRule="evenodd" />
+                              </svg>
+                              +23% this week
+                            </div>
+                          </div>
+                          
+                          <div className="bg-gradient-to-br from-white/10 to-white/5 rounded-xl border border-white/10 backdrop-blur-sm" style={{ padding: '16px', width: '360px' }}>
+                            <div className="flex items-center justify-between" style={{ marginBottom: '8px' }}>
+                              <div className="text-gray-400 font-medium" style={{ fontSize: '12px' }}>Playlist Adds</div>
+                              <div className="bg-blue-400 rounded-full animate-pulse" style={{ width: '8px', height: '8px' }}></div>
+                            </div>
+                            <div className="font-bold text-white" style={{ fontSize: '18px', marginBottom: '2px' }}>47</div>
+                            <div className="flex items-center text-blue-400" style={{ fontSize: '10px' }}>
+                              <svg fill="currentColor" viewBox="0 0 20 20" style={{ width: '12px', height: '12px', marginRight: '4px' }}>
+                                <path fillRule="evenodd" d="M5.293 9.707a1 1 0 010-1.414l4-4a1 1 0 011.414 0l4 4a1 1 0 01-1.414 1.414L11 7.414V15a1 1 0 11-2 0V7.414L6.707 9.707a1 1 0 01-1.414 0z" clipRule="evenodd" />
+                              </svg>
+                              +12 new placements
+                            </div>
+                          </div>
+                          
+                          <div className="bg-gradient-to-br from-white/10 to-white/5 rounded-xl border border-white/10 backdrop-blur-sm" style={{ padding: '16px', width: '360px' }}>
+                            <div className="flex items-center justify-between" style={{ marginBottom: '8px' }}>
+                              <div className="text-gray-400 font-medium" style={{ fontSize: '12px' }}>Active Campaigns</div>
+                              <div className="bg-purple-400 rounded-full animate-pulse" style={{ width: '8px', height: '8px' }}></div>
+                            </div>
+                            <div className="font-bold text-white" style={{ fontSize: '18px', marginBottom: '2px' }}>3</div>
+                            <div className="flex items-center text-purple-400" style={{ fontSize: '10px' }}>
+                              <svg fill="currentColor" viewBox="0 0 20 20" style={{ width: '12px', height: '12px', marginRight: '4px' }}>
+                                <path fillRule="evenodd" d="M5.293 9.707a1 1 0 010-1.414l4-4a1 1 0 011.414 0l4 4a1 1 0 01-1.414 1.414L11 7.414V15a1 1 0 11-2 0V7.414L6.707 9.707a1 1 0 01-1.414 0z" clipRule="evenodd" />
+                              </svg>
+                              2 launching soon
+                            </div>
+                          </div>
                         </div>
-                        
-                        <div className="bg-gradient-to-br from-white/10 to-white/5 rounded-xl border border-white/10 backdrop-blur-sm" style={{ padding: '16px', width: '360px' }}>
-                          <div className="flex items-center justify-between" style={{ marginBottom: '8px' }}>
-                            <div className="text-gray-400 font-medium" style={{ fontSize: '12px' }}>Active Campaigns</div>
-                            <div className="bg-purple-400 rounded-full animate-pulse" style={{ width: '8px', height: '8px' }}></div>
-                          </div>
-                          <div className="font-bold text-white" style={{ fontSize: '18px', marginBottom: '2px' }}>3</div>
-                          <div className="flex items-center text-purple-400" style={{ fontSize: '10px' }}>
-                            <svg fill="currentColor" viewBox="0 0 20 20" style={{ width: '12px', height: '12px', marginRight: '4px' }}>
-                              <path fillRule="evenodd" d="M5.293 9.707a1 1 0 010-1.414l4-4a1 1 0 011.414 0l4 4a1 1 0 01-1.414 1.414L11 7.414V15a1 1 0 11-2 0V7.414L6.707 9.707a1 1 0 01-1.414 0z" clipRule="evenodd" />
-                            </svg>
-                            2 launching soon
-                          </div>
-                    </div>
-                  </div>
 
                       {/* Chart and Artist Profile Section */}
                       <div className="flex" style={{ gap: '24px', marginBottom: '24px' }}>
@@ -3240,13 +3286,13 @@ export default function Home() {
                               <div className="flex items-center text-gray-400" style={{ gap: '8px', fontSize: '11px' }}>
                                 <div className="bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] rounded-full" style={{ width: '12px', height: '12px' }}></div>
                                 <span>Streams</span>
-                        </div>
+                      </div>
                               <div className="flex items-center text-gray-400" style={{ gap: '8px', fontSize: '11px' }}>
                                 <div className="bg-gradient-to-r from-[#8b5cf6] to-[#ec4899] rounded-full" style={{ width: '12px', height: '12px' }}></div>
                                 <span>Saves</span>
-                      </div>
-                            </div>
-                          </div>
+                    </div>
+                  </div>
+                </div>
                           
                           {/* Animated Line Chart with Bouncing Data Points */}
                           <div className="relative bg-gradient-to-r from-[#59e3a5]/10 to-[#14c0ff]/10 rounded-lg overflow-hidden" style={{ height: '160px', padding: '16px' }}>
@@ -3462,7 +3508,7 @@ export default function Home() {
               </div>
 
               {/* CTA Button */}
-              <div className="text-center mt-8 lg:mt-16 cta-button-spacing" style={{ marginTop: '-180px' }}>
+              <div className="relative z-50 text-center mt-4 lg:mt-16 cta-button-spacing show-packages-btn-z">
                 <button
                   onClick={scrollToTrackInput}
                   className="px-12 py-4 bg-gradient-to-r from-[#59e3a5] via-[#14c0ff] to-[#8b5cf6] text-white font-bold rounded-2xl hover:shadow-2xl hover:shadow-[#14c0ff]/30 transition-all duration-700 transform hover:scale-105 active:scale-95 relative overflow-hidden group text-lg sm:mt-[50px]"
@@ -3475,7 +3521,7 @@ export default function Home() {
           </section>
 
           {/* Curator Connect+ Section */}
-          <section className="py-0 md:py-24 px-4 pb-0 md:pb-48 relative z-5 overflow-hidden" style={{ background: 'transparent' }}>
+          <section className="py-0 md:py-24 px-4 md:px-12 lg:px-20 pb-0 md:pb-48 relative z-5 overflow-hidden" style={{ background: 'transparent' }}>
             {/* Extended gradient overlay that flows into next section */}
             <div className="absolute inset-0 bg-transparent -z-10"></div>
             <div className="absolute bottom-0 left-0 right-0 h-64 bg-gradient-to-b from-transparent to-[#0a0a13] -z-5"></div>
@@ -3486,31 +3532,32 @@ export default function Home() {
                   <span className="block sm:inline sm:ml-2">At Your Fingertips</span>
                 </h2>
                 <p className="text-xl lg:text-[1.4rem] text-gray-300 max-w-4xl mx-auto leading-relaxed" style={{ 
-                  hyphens: 'none', 
-                  WebkitHyphens: 'none', 
-                  MozHyphens: 'none', 
-                  msHyphens: 'none', 
-                  wordBreak: 'keep-all', 
-                  overflowWrap: 'break-word' 
+                    hyphens: 'none', 
+                    WebkitHyphens: 'none', 
+                    MozHyphens: 'none', 
+                    msHyphens: 'none', 
+                    wordBreak: 'keep-all', 
+                    overflowWrap: 'break-word' 
                 }}>
-                  Our campaigns are already designed to make you famous without you lifting a finger. But if you're feeling ambitious and want to COMPOUND your results, dive into our handpicked database of 650+ curator contacts. A tool worth millions, 100% FREE for all members.
+                  Our campaigns are already designed to make you famous without you lifting a finger. But if you're ambitious and want to COMPOUND your results, <span className="bg-gradient-to-r from-[#8b5cf6] via-[#59e3a5] to-[#14c0ff] bg-clip-text text-transparent font-bold">Curator Connect+</span> gives you access to our handpicked database of 650+ curator contacts. A tool worth millions, 100% FREE for all members.
                 </p>
               </div>
 
               {/* Browser Window Mockup - Curator Connect+ */}
-              <div ref={curatorRef} className="relative flex justify-center -mb-[600px] md:mb-0">
+              <div ref={curatorRef} className="relative flex justify-center -mb-[690px] md:-mb-[50px]">
                 {/* Background Glow Effect */}
                 <div className="absolute inset-0 -m-16 rounded-3xl opacity-50 blur-3xl bg-gradient-to-r from-[#8b5cf6]/30 via-[#59e3a5]/40 to-[#14c0ff]/30 animate-pulse"></div>
                 
                 {/* Centering container for scaled mockup */}
                 <div className="flex justify-center items-start w-full overflow-visible">
-                  <div 
-                    className="bg-gradient-to-br from-[#1a1a2e] to-[#16213e] rounded-t-2xl shadow-2xl transition-transform duration-700 ease-out relative z-10"
-                    style={{ 
-                      transform: getCuratorTransform(),
+                  <div
+                    suppressHydrationWarning={true}
+                    className="bg-gradient-to-br from-[#1a1a2e] to-[#16213e] rounded-t-2xl shadow-2xl transition-transform duration-700 ease-out relative z-10 curator-mockup-mobile-height"
+                    style={{
+                      transform: `scale(${curatorScale})`,
                       width: '1200px',
+                      minWidth: '1200px',
                       transformOrigin: 'top center',
-                      minWidth: '1200px'
                     }}
                   >
                     {/* Browser Header */}
@@ -3534,7 +3581,7 @@ export default function Home() {
 
                     {/* Dashboard Content */}
                     <div className="bg-gradient-to-r from-[#8b5cf6] via-[#59e3a5] to-[#14c0ff] rounded-b-2xl relative" style={{ padding: '1px' }}>
-                      <div className="bg-gradient-to-br from-[#1a1a2e] to-[#16213e] rounded-b-2xl relative" style={{ padding: '24px' }}>
+                      <div className="bg-gradient-to-br from-[#1a1a2e] to-[#16213e] rounded-b-2xl relative curator-mockup-content-mobile-minh" style={{ padding: '24px' }}>
                         
                         {/* Fade to transparent overlay for bottom 10% */}
                         <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-[#16213e] via-[#16213e]/90 to-transparent rounded-b-2xl pointer-events-none z-10" style={{ height: '10%' }}></div>
@@ -3548,52 +3595,51 @@ export default function Home() {
                               </svg>
                             </div>
                             <div>
-                              <h3 className="font-bold text-white" style={{ fontSize: '18px' }}>Curator Connect+</h3>
-                              <p className="text-gray-400" style={{ fontSize: '12px' }}>650+ indie playlist curators</p>
+                              <h3 className="font-bold text-white" style={{ fontSize: '28px' }}>Curator Connect+</h3>
                             </div>
                           </div>
-                        </div>
+                            </div>
 
                         {/* Filters Section */}
                         <div className="bg-gradient-to-br from-white/10 to-white/5 rounded-xl border border-white/10 backdrop-blur-sm" style={{ padding: '20px', marginBottom: '24px' }}>
                           <div className="grid grid-cols-4 gap-4">
                             {/* Search */}
                             <div>
-                              <label className="block text-sm font-medium text-gray-300 mb-2">Search Playlists</label>
+                              <label className="block text-base font-medium text-gray-300 mb-2">Search Playlists</label>
                               <input
                                 type="text"
                                 placeholder="Search by name..."
                                 className="w-full px-3 py-2 bg-gray-800/50 border border-gray-700 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#59e3a5] text-sm"
-                                style={{ fontSize: '12px' }}
+                                style={{ fontSize: '14px' }}
                               />
-                            </div>
+                          </div>
 
                             {/* Genre Filter */}
                             <div>
-                              <label className="block text-sm font-medium text-gray-300 mb-2">Genre</label>
-                              <button className="w-full px-3 py-2 bg-gray-800/50 border border-gray-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-[#59e3a5] flex items-center justify-between text-sm">
+                              <label className="block text-base font-medium text-gray-300 mb-2">Genre</label>
+                              <button className="w-full px-3 py-2 bg-gray-800/50 border border-gray-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-[#59e3a5] flex items-center justify-between text-base">
                                 <span className="text-gray-400">All Genres</span>
                                 <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                                 </svg>
                               </button>
-                            </div>
+                        </div>
 
                             {/* Min Followers */}
                             <div>
-                              <label className="block text-sm font-medium text-gray-300 mb-2">Min Followers</label>
+                              <label className="block text-base font-medium text-gray-300 mb-2">Min Followers</label>
                               <input
                                 type="number"
                                 placeholder="Minimum"
                                 className="w-full px-3 py-2 bg-gray-800/50 border border-gray-700 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#59e3a5] text-sm"
-                                style={{ fontSize: '12px' }}
+                                style={{ fontSize: '14px' }}
                               />
                             </div>
 
                             {/* Status Filter */}
                             <div>
-                              <label className="block text-sm font-medium text-gray-300 mb-2">Status</label>
-                              <button className="w-full px-3 py-2 bg-gray-800/50 border border-gray-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-[#59e3a5] flex items-center justify-between text-sm">
+                              <label className="block text-base font-medium text-gray-300 mb-2">Status</label>
+                              <button className="w-full px-3 py-2 bg-gray-800/50 border border-gray-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-[#59e3a5] flex items-center justify-between text-base">
                                 <span className="text-gray-400">All</span>
                                 <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
@@ -3601,37 +3647,37 @@ export default function Home() {
                               </button>
                             </div>
                           </div>
-
+                          
                           {/* Sort Controls */}
                           <div className="mt-4 flex gap-4 items-center">
-                            <span className="text-sm font-medium text-gray-300">Sort by:</span>
-                            <button className="px-3 py-1 rounded-lg text-sm font-medium bg-[#59e3a5] text-white">
+                            <span className="text-base font-medium text-gray-300">Sort by:</span>
+                            <button className="px-3 py-1 rounded-lg text-base font-medium bg-[#59e3a5] text-white">
                               Followers ↓
                             </button>
-                            <button className="px-3 py-1 rounded-lg text-sm font-medium bg-gray-700 text-gray-300 hover:bg-gray-600">
+                            <button className="px-3 py-1 rounded-lg text-base font-medium bg-gray-700 text-gray-300 hover:bg-gray-600">
                               Name
                             </button>
-                          </div>
+                            </div>
                         </div>
 
                         {/* Results Count */}
                         <div className="flex justify-between items-center mb-4">
-                          <div className="text-sm text-gray-400">
-                            Showing 12 of 650 curators
+                          <div className="text-base text-gray-400">
+                            Showing 15 of 650 curators
+                            </div>
                           </div>
-                        </div>
-
+                          
                         {/* Curators Table */}
                         <div className="bg-gradient-to-br from-white/10 to-white/5 rounded-xl border border-white/10 backdrop-blur-sm overflow-hidden">
                           <div className="overflow-x-auto">
                             <table className="w-full">
                               <thead className="bg-gray-800/50">
                                 <tr>
-                                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Playlist</th>
-                                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Genre</th>
-                                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Followers</th>
-                                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Status</th>
-                                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Action</th>
+                                  <th className="px-4 py-3 text-left text-sm font-medium text-gray-300 uppercase tracking-wider">Playlist</th>
+                                  <th className="px-4 py-3 text-left text-sm font-medium text-gray-300 uppercase tracking-wider">Genre</th>
+                                  <th className="px-4 py-3 text-left text-sm font-medium text-gray-300 uppercase tracking-wider">Followers</th>
+                                  <th className="px-4 py-3 text-left text-sm font-medium text-gray-300 uppercase tracking-wider">Status</th>
+                                  <th className="px-4 py-3 text-left text-sm font-medium text-gray-300 uppercase tracking-wider">Action</th>
                                 </tr>
                               </thead>
                               <tbody className="divide-y divide-gray-800/30">
@@ -3641,37 +3687,37 @@ export default function Home() {
                                     <div className="flex items-center space-x-3">
                                       <div className="w-10 h-10 bg-gradient-to-br from-[#59e3a5] to-[#14c0ff] rounded-lg flex items-center justify-center">
                                         <span className="text-white font-bold text-xs">🎵</span>
-                                      </div>
+                            </div>
                                       <div className="flex-1">
-                                        <div className="text-white font-medium text-sm">Indie Vibes Only</div>
+                                        <div className="text-white font-medium text-base">Morning Coffee Vibes ☕</div>
                                         <div className="mt-1">
-                                          <span className="inline-flex items-center px-1.5 py-0.5 text-xs font-medium border border-gray-600 text-gray-300 rounded">
+                                          <span className="inline-flex items-center px-1.5 py-0.5 text-sm font-medium border border-gray-600 text-gray-300 rounded">
                                             View Playlist
                                           </span>
-                                        </div>
-                                      </div>
-                                    </div>
+                            </div>
+                          </div>
+                        </div>
                                   </td>
                                   <td className="px-4 py-3">
                                     <div className="flex flex-wrap gap-1">
-                                      <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-[#59e3a5]/20 text-[#59e3a5]">
-                                        Indie
+                                      <span className="inline-flex items-center px-2 py-1 rounded-full text-sm font-medium bg-[#59e3a5]/20 text-[#59e3a5]">
+                                        Chill
                                       </span>
-                                      <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-[#14c0ff]/20 text-[#14c0ff]">
-                                        Alternative
+                                      <span className="inline-flex items-center px-2 py-1 rounded-full text-sm font-medium bg-[#14c0ff]/20 text-[#14c0ff]">
+                                        Acoustic
                                       </span>
-                                    </div>
+                      </div>
                                   </td>
                                   <td className="px-4 py-3">
-                                    <div className="text-white font-medium text-sm">127.4K</div>
+                                    <div className="text-white font-medium text-base">127.4K</div>
                                   </td>
                                   <td className="px-4 py-3">
-                                    <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-400/20 text-green-400">
+                                    <span className="inline-flex items-center px-2 py-1 rounded-full text-sm font-medium bg-green-400/20 text-green-400">
                                       Available
                                     </span>
                                   </td>
                                   <td className="px-4 py-3">
-                                    <button className="bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] text-white px-3 py-1 rounded-lg text-xs font-medium hover:shadow-lg transition-all duration-200">
+                                    <button className="bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] text-white px-3 py-1 rounded-lg text-sm font-medium hover:shadow-lg transition-all duration-200">
                                       Contact
                                     </button>
                                   </td>
@@ -3683,29 +3729,29 @@ export default function Home() {
                                     <div className="flex items-center space-x-3">
                                       <div className="w-10 h-10 bg-gradient-to-br from-[#8b5cf6] to-[#59e3a5] rounded-lg flex items-center justify-center">
                                         <span className="text-white font-bold text-xs">🔥</span>
-                                      </div>
+                    </div>
                                       <div className="flex-1">
-                                        <div className="text-white font-medium text-sm">Hip-Hop Heat</div>
+                                        <div className="text-white font-medium text-base">Late Night Drive 🌙</div>
                                         <div className="mt-1">
-                                          <span className="inline-flex items-center px-1.5 py-0.5 text-xs font-medium border border-gray-600 text-gray-300 rounded">
+                                          <span className="inline-flex items-center px-1.5 py-0.5 text-sm font-medium border border-gray-600 text-gray-300 rounded">
                                             View Playlist
                                           </span>
-                                        </div>
-                                      </div>
+                  </div>
+                </div>
                                     </div>
                                   </td>
                                   <td className="px-4 py-3">
                                     <div className="flex flex-wrap gap-1">
-                                      <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-[#8b5cf6]/20 text-[#8b5cf6]">
-                                        Hip-Hop
+                                      <span className="inline-flex items-center px-2 py-1 rounded-full text-sm font-medium bg-[#8b5cf6]/20 text-[#8b5cf6]">
+                                        R&B
                                       </span>
-                                      <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-[#ec4899]/20 text-[#ec4899]">
-                                        Rap
+                                      <span className="inline-flex items-center px-2 py-1 rounded-full text-sm font-medium bg-[#ec4899]/20 text-[#ec4899]">
+                                        Chill
                                       </span>
                                     </div>
                                   </td>
                                   <td className="px-4 py-3">
-                                    <div className="text-white font-medium text-sm">89.2K</div>
+                                    <div className="text-white font-medium text-base">89.2K</div>
                                   </td>
                                   <td className="px-4 py-3">
                                     <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-400/20 text-green-400">
@@ -3727,9 +3773,9 @@ export default function Home() {
                                         <span className="text-white font-bold text-xs">💎</span>
                                       </div>
                                       <div className="flex-1">
-                                        <div className="text-white font-medium text-sm">Electronic Dreams</div>
+                                        <div className="text-white font-medium text-base">Beach Party Bangers 🏖️</div>
                                         <div className="mt-1">
-                                          <span className="inline-flex items-center px-1.5 py-0.5 text-xs font-medium border border-gray-600 text-gray-300 rounded">
+                                          <span className="inline-flex items-center px-1.5 py-0.5 text-sm font-medium border border-gray-600 text-gray-300 rounded">
                                             View Playlist
                                           </span>
                                         </div>
@@ -3738,24 +3784,24 @@ export default function Home() {
                                   </td>
                                   <td className="px-4 py-3">
                                     <div className="flex flex-wrap gap-1">
-                                      <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-[#14c0ff]/20 text-[#14c0ff]">
+                                      <span className="inline-flex items-center px-2 py-1 rounded-full text-sm font-medium bg-[#14c0ff]/20 text-[#14c0ff]">
                                         Electronic
                                       </span>
-                                      <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-[#8b5cf6]/20 text-[#8b5cf6]">
-                                        EDM
+                                      <span className="inline-flex items-center px-2 py-1 rounded-full text-sm font-medium bg-[#8b5cf6]/20 text-[#8b5cf6]">
+                                        Party
                                       </span>
                                     </div>
                                   </td>
                                   <td className="px-4 py-3">
-                                    <div className="text-white font-medium text-sm">203.7K</div>
+                                    <div className="text-white font-medium text-base">203.7K</div>
                                   </td>
                                   <td className="px-4 py-3">
-                                    <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-400/20 text-green-400">
+                                    <span className="inline-flex items-center px-2 py-1 rounded-full text-sm font-medium bg-green-400/20 text-green-400">
                                       Available
                                     </span>
                                   </td>
                                   <td className="px-4 py-3">
-                                    <button className="bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] text-white px-3 py-1 rounded-lg text-xs font-medium hover:shadow-lg transition-all duration-200">
+                                    <button className="bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] text-white px-3 py-1 rounded-lg text-sm font-medium hover:shadow-lg transition-all duration-200">
                                       Contact
                                     </button>
                                   </td>
@@ -3769,9 +3815,9 @@ export default function Home() {
                                         <span className="text-white font-bold text-xs">🌙</span>
                                       </div>
                                       <div className="flex-1">
-                                        <div className="text-white font-medium text-sm">R&B Nights</div>
+                                        <div className="text-white font-medium text-base">Smooth R&B Sessions</div>
                                         <div className="mt-1">
-                                          <span className="inline-flex items-center px-1.5 py-0.5 text-xs font-medium border border-gray-600 text-gray-300 rounded">
+                                          <span className="inline-flex items-center px-1.5 py-0.5 text-sm font-medium border border-gray-600 text-gray-300 rounded">
                                             View Playlist
                                           </span>
                                         </div>
@@ -3780,24 +3826,150 @@ export default function Home() {
                                   </td>
                                   <td className="px-4 py-3">
                                     <div className="flex flex-wrap gap-1">
-                                      <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-[#ec4899]/20 text-[#ec4899]">
+                                      <span className="inline-flex items-center px-2 py-1 rounded-full text-sm font-medium bg-[#ec4899]/20 text-[#ec4899]">
                                         R&B
                                       </span>
-                                      <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-[#59e3a5]/20 text-[#59e3a5]">
+                                      <span className="inline-flex items-center px-2 py-1 rounded-full text-sm font-medium bg-[#59e3a5]/20 text-[#59e3a5]">
                                         Soul
                                       </span>
                                     </div>
                                   </td>
                                   <td className="px-4 py-3">
-                                    <div className="text-white font-medium text-sm">156.8K</div>
+                                    <div className="text-white font-medium text-base">156.8K</div>
                                   </td>
                                   <td className="px-4 py-3">
-                                    <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-400/20 text-green-400">
+                                    <span className="inline-flex items-center px-2 py-1 rounded-full text-sm font-medium bg-green-400/20 text-green-400">
                                       Available
                                     </span>
                                   </td>
                                   <td className="px-4 py-3">
-                                    <button className="bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] text-white px-3 py-1 rounded-lg text-xs font-medium hover:shadow-lg transition-all duration-200">
+                                    <button className="bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] text-white px-3 py-1 rounded-lg text-sm font-medium hover:shadow-lg transition-all duration-200">
+                                      Contact
+                                    </button>
+                                  </td>
+                                </tr>
+
+                                {/* Curator Row 5 */}
+                                <tr className="hover:bg-gray-800/20 transition-colors">
+                                  <td className="px-4 py-3">
+                                    <div className="flex items-center space-x-3">
+                                      <div className="w-10 h-10 bg-gradient-to-br from-[#f59e0b] to-[#ec4899] rounded-lg flex items-center justify-center">
+                                        <span className="text-white font-bold text-xs">🎸</span>
+                                      </div>
+                                      <div className="flex-1">
+                                        <div className="text-white font-medium text-base">Workout Motivation 💪</div>
+                                        <div className="mt-1">
+                                          <span className="inline-flex items-center px-1.5 py-0.5 text-sm font-medium border border-gray-600 text-gray-300 rounded">
+                                            View Playlist
+                                          </span>
+                                        </div>
+                                      </div>
+                                    </div>
+                                  </td>
+                                  <td className="px-4 py-3">
+                                    <div className="flex flex-wrap gap-1">
+                                      <span className="inline-flex items-center px-2 py-1 rounded-full text-sm font-medium bg-[#f59e0b]/20 text-[#f59e0b]">
+                                        Pop
+                                      </span>
+                                      <span className="inline-flex items-center px-2 py-1 rounded-full text-sm font-medium bg-[#ec4899]/20 text-[#ec4899]">
+                                        Workout
+                                      </span>
+                                    </div>
+                                  </td>
+                                  <td className="px-4 py-3">
+                                    <div className="text-white font-medium text-base">94.3K</div>
+                                  </td>
+                                  <td className="px-4 py-3">
+                                    <span className="inline-flex items-center px-2 py-1 rounded-full text-sm font-medium bg-green-400/20 text-green-400">
+                                      Available
+                                    </span>
+                                  </td>
+                                  <td className="px-4 py-3">
+                                    <button className="bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] text-white px-3 py-1 rounded-lg text-sm font-medium hover:shadow-lg transition-all duration-200">
+                                      Contact
+                                    </button>
+                                  </td>
+                                </tr>
+
+                                {/* Curator Row 6 */}
+                                <tr className="hover:bg-gray-800/20 transition-colors">
+                                  <td className="px-4 py-3">
+                                    <div className="flex items-center space-x-3">
+                                      <div className="w-10 h-10 bg-gradient-to-br from-[#10b981] to-[#14c0ff] rounded-lg flex items-center justify-center">
+                                        <span className="text-white font-bold text-xs">🌊</span>
+                                      </div>
+                                      <div className="flex-1">
+                                        <div className="text-white font-medium text-base">Study Lounge ✨</div>
+                                        <div className="mt-1">
+                                          <span className="inline-flex items-center px-1.5 py-0.5 text-sm font-medium border border-gray-600 text-gray-300 rounded">
+                                            View Playlist
+                                          </span>
+                                        </div>
+                                      </div>
+                                    </div>
+                                  </td>
+                                  <td className="px-4 py-3">
+                                    <div className="flex flex-wrap gap-1">
+                                      <span className="inline-flex items-center px-2 py-1 rounded-full text-sm font-medium bg-[#10b981]/20 text-[#10b981]">
+                                        Lo-Fi
+                                      </span>
+                                      <span className="inline-flex items-center px-2 py-1 rounded-full text-sm font-medium bg-[#14c0ff]/20 text-[#14c0ff]">
+                                        Study
+                                      </span>
+                                    </div>
+                                  </td>
+                                  <td className="px-4 py-3">
+                                    <div className="text-white font-medium text-base">178.2K</div>
+                                  </td>
+                                  <td className="px-4 py-3">
+                                    <span className="inline-flex items-center px-2 py-1 rounded-full text-sm font-medium bg-green-400/20 text-green-400">
+                                      Available
+                                    </span>
+                                  </td>
+                                  <td className="px-4 py-3">
+                                    <button className="bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] text-white px-3 py-1 rounded-lg text-sm font-medium hover:shadow-lg transition-all duration-200">
+                                      Contact
+                                    </button>
+                                  </td>
+                                </tr>
+
+                                {/* Curator Row 7 */}
+                                <tr className="hover:bg-gray-800/20 transition-colors">
+                                  <td className="px-4 py-3">
+                                    <div className="flex items-center space-x-3">
+                                      <div className="w-10 h-10 bg-gradient-to-br from-[#ef4444] to-[#f59e0b] rounded-lg flex items-center justify-center">
+                                        <span className="text-white font-bold text-xs">🔊</span>
+                                      </div>
+                                      <div className="flex-1">
+                                        <div className="text-white font-medium text-base">TikTok Viral Hits 🔥</div>
+                                        <div className="mt-1">
+                                          <span className="inline-flex items-center px-1.5 py-0.5 text-sm font-medium border border-gray-600 text-gray-300 rounded">
+                                            View Playlist
+                                          </span>
+                                        </div>
+                                      </div>
+                                    </div>
+                                  </td>
+                                  <td className="px-4 py-3">
+                                    <div className="flex flex-wrap gap-1">
+                                      <span className="inline-flex items-center px-2 py-1 rounded-full text-sm font-medium bg-[#ef4444]/20 text-[#ef4444]">
+                                        Pop
+                                      </span>
+                                      <span className="inline-flex items-center px-2 py-1 rounded-full text-sm font-medium bg-[#f59e0b]/20 text-[#f59e0b]">
+                                        Viral
+                                      </span>
+                                    </div>
+                                  </td>
+                                  <td className="px-4 py-3">
+                                    <div className="text-white font-medium text-base">312.5K</div>
+                                  </td>
+                                  <td className="px-4 py-3">
+                                    <span className="inline-flex items-center px-2 py-1 rounded-full text-sm font-medium bg-green-400/20 text-green-400">
+                                      Available
+                                    </span>
+                                  </td>
+                                  <td className="px-4 py-3">
+                                    <button className="bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] text-white px-3 py-1 rounded-lg text-sm font-medium hover:shadow-lg transition-all duration-200">
                                       Contact
                                     </button>
                                   </td>
@@ -3806,6 +3978,9 @@ export default function Home() {
                             </table>
                           </div>
                         </div>
+                        
+                        {/* Small spacer to make mockup look more like a proper browser window */}
+                        <div className="w-full" style={{height: '4px'}}></div>
                       </div>
                     </div>
                   </div>
@@ -3816,7 +3991,7 @@ export default function Home() {
               <div className="text-center mb-20 md:mb-0 lg:mt-16 curator-connect-button-spacing" style={{ marginBottom: '180px' }}>
                 <button
                   onClick={scrollToTrackInput}
-                  className="px-12 py-4 bg-gradient-to-r from-[#8b5cf6] via-[#59e3a5] to-[#14c0ff] text-white font-bold rounded-2xl hover:shadow-2xl hover:shadow-[#59e3a5]/30 transition-all duration-700 transform hover:scale-105 active:scale-95 relative overflow-hidden group text-lg lg:mt-[110px] lg:mb-[130px] mt-[125px] sm:mt-0"
+                  className="px-12 py-4 bg-gradient-to-r from-[#8b5cf6] via-[#59e3a5] to-[#14c0ff] text-white font-bold rounded-2xl hover:shadow-2xl hover:shadow-[#59e3a5]/30 transition-all duration-700 transform hover:scale-105 active:scale-95 relative overflow-hidden group text-lg lg:mt-[110px] lg:mb-[130px] mt-0 sm:mt-0"
                 >
                   <span className="relative z-10">ACCESS CURATOR CONNECT+</span>
                   <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-700"></div>
@@ -4099,7 +4274,7 @@ export default function Home() {
                     glareSize={200}
                     transitionDuration={1000}
                     playOnce={true}
-                    className="border-2 backdrop-blur-sm shadow-2xl shadow-black/20 p-6 md:p-12"
+                    className={`border-2 backdrop-blur-sm shadow-2xl shadow-black/20 p-6 md:p-12 transition-all duration-700 ${genreListContainerInView ? 'animate-grow-in' : 'opacity-0'}`}
                   >
                     {/* Desktop 3-column layout */}
                     <div className="hidden md:grid grid-cols-3 gap-12 justify-items-center relative ">
@@ -4123,11 +4298,11 @@ export default function Home() {
                         <svg className="w-4 h-4 text-white drop-shadow-[0_2px_4px_rgba(0,0,0,0.6)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
                         </svg>
-                      </div>
+                          </div>
                       <span className="text-white text-2xl font-medium drop-shadow-[0_2px_4px_rgba(0,0,0,0.6)]">{genre}</span>
-                    </div>
+                        </div>
                   ))}
-                </div>
+                          </div>
 
                 {/* Second Column */}
                 <div className="space-y-6">
@@ -4149,11 +4324,11 @@ export default function Home() {
                         <svg className="w-4 h-4 text-white drop-shadow-[0_2px_4px_rgba(0,0,0,0.6)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
                         </svg>
-                      </div>
+                        </div>
                       <span className="text-white text-2xl font-medium drop-shadow-[0_2px_4px_rgba(0,0,0,0.6)]">{genre}</span>
-                    </div>
+                      </div>
                   ))}
-                </div>
+                    </div>
 
                 {/* Third Column */}
                 <div className="space-y-6">
@@ -4174,21 +4349,21 @@ export default function Home() {
                       <div className="w-7 h-7 bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] rounded-full flex items-center justify-center flex-shrink-0 drop-shadow-[0_4px_8px_rgba(0,0,0,0.4)]">
                         <svg className="w-4 h-4 text-white drop-shadow-[0_2px_4px_rgba(0,0,0,0.6)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
-                        </svg>
-                      </div>
+                              </svg>
+                            </div>
                       <span className="text-white text-2xl font-medium drop-shadow-[0_2px_4px_rgba(0,0,0,0.6)]">{genre}</span>
-                    </div>
+                            </div>
                   ))}
-                </div>
-                  </div>
+                          </div>
+                            </div>
 
                     {/* Mobile 2-column layout */}
-                    <div className="md:hidden w-full max-w-lg mx-auto pr-2 pl-[30px] relative">
+                    <div className="md:hidden w-full max-w-lg mx-auto pr-2 pl-[15px] relative">
                       <div className="grid grid-cols-2 gap-5 items-start">
                         {/* First Column - Mobile */}
-                        <div className="space-y-4 w-full">
+                        <div ref={genreRow1Ref} className="space-y-4 w-full">
                           {[
-                            'Hip-Hop & Rap',
+                            'Hip-Hop',
                             'Pop', 
                             'R&B',
                             'EDM',
@@ -4203,13 +4378,13 @@ export default function Home() {
                             'Afrobeats',
                             'House'
                           ].map((genre, index) => (
-                            <div key={index} className="flex items-center space-x-2 w-full">
+                            <div key={index} className={`flex items-center space-x-2 w-full transition-all duration-700 ${genreRow1InView ? `animate-slide-left animation-delay-${index * 25}` : 'opacity-0'}`}>
                               {/* Green Gradient Checkmark - Smaller */}
                               <div className="w-4 h-4 bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] rounded-full flex items-center justify-center flex-shrink-0 drop-shadow-[0_4px_8px_rgba(0,0,0,0.4)]">
                                 <svg className="w-2.5 h-2.5 text-white drop-shadow-[0_2px_4px_rgba(0,0,0,0.6)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
                                 </svg>
-                              </div>
+                          </div>
                               <span 
                                 className="text-white font-medium drop-shadow-[0_2px_4px_rgba(0,0,0,0.6)] flex-1 min-w-0"
                                 style={{ 
@@ -4230,7 +4405,7 @@ export default function Home() {
                         </div>
 
                         {/* Second Column - Mobile */}
-                        <div className="space-y-4 w-full pl-[15px]">
+                        <div ref={genreRow2Ref} className="space-y-4 w-full pl-[15px]">
                           {[
                             'Trap',
                             'Lo-fi',
@@ -4247,12 +4422,12 @@ export default function Home() {
                             'Workout',
                             'Study Music'
                           ].map((genre, index) => (
-                            <div key={index} className="flex items-center space-x-2 w-full">
+                            <div key={index} className={`flex items-center space-x-2 w-full transition-all duration-700 ${genreRow2InView ? `animate-slide-right animation-delay-${index * 25}` : 'opacity-0'}`}>
                               {/* Green Gradient Checkmark - Smaller */}
                               <div className="w-4 h-4 bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] rounded-full flex items-center justify-center flex-shrink-0 drop-shadow-[0_4px_8px_rgba(0,0,0,0.6)]">
                                 <svg className="w-2.5 h-2.5 text-white drop-shadow-[0_2px_4px_rgba(0,0,0,0.6)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
-                                </svg>
+                              </svg>
                               </div>
                               <span 
                                 className="text-white font-medium drop-shadow-[0_2px_4px_rgba(0,0,0,0.6)] flex-1 min-w-0"
@@ -4275,9 +4450,9 @@ export default function Home() {
                 </div>
                   </div>
                 </GlareHover>
-                </div>
-              </div>
-
+                            </div>
+                          </div>
+                          
               {/* Bottom Subheading */}
               <div className="text-center mb-12">
                 <h3 
@@ -4286,7 +4461,7 @@ export default function Home() {
                 >
                   Do you make experimental ambient-folk-trap-piano-blitz? Yup, we got playlists for that too.
                 </h3>
-              </div>
+                            </div>
 
               {/* CTA Button */}
               <div className="text-center">
@@ -4298,8 +4473,8 @@ export default function Home() {
                   <span className="relative z-10">LET'S START MY CAMPAIGN</span>
                   <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-700"></div>
                 </button>
-              </div>
-            </div>
+                            </div>
+                          </div>
           </section>
 
           {/* What Playlists We Have Section */}
@@ -4328,8 +4503,8 @@ export default function Home() {
               <div className="text-center mb-20">
                 <h2 
                   ref={playlistsHeadingRef}
-                  className={`text-5xl md:text-6xl lg:text-6xl font-black mb-8 bg-gradient-to-r from-[#59e3a5] via-[#14c0ff] to-[#8b5cf6] bg-clip-text text-transparent drop-shadow-2xl transition-all duration-700 ${playlistsHeadingInView ? 'animate-fade-in-up' : 'opacity-0 translate-y-8'}`} 
-                  style={{ lineHeight: '1.2' }}
+                  className={`md:text-6xl lg:text-6xl font-black mb-8 bg-gradient-to-r from-[#59e3a5] via-[#14c0ff] to-[#8b5cf6] bg-clip-text text-transparent drop-shadow-2xl transition-all duration-700 ${playlistsHeadingInView ? 'animate-fade-in-up' : 'opacity-0 translate-y-8'}`}
+                  style={{ lineHeight: '1.2', fontSize: 'clamp(2.6rem, 8vw, 4rem)' }}
                 >
                   The Playlists That Actually Matter
                 </h2>
@@ -4339,7 +4514,7 @@ export default function Home() {
                 >
                   We have direct relationships with curators who control the world's biggest playlists.
                 </p>
-              </div>
+                            </div>
 
               {/* Playlist Grid with Creative Layout */}
               <div 
@@ -4387,11 +4562,11 @@ export default function Home() {
                       {/* Animated Pulse Dot */}
                       <div className="flex justify-center mt-4">
                         <div className={`w-3 h-3 bg-gradient-to-r ${playlist.gradient} rounded-full animate-pulse`}></div>
-                      </div>
-                    </div>
-                  </div>
+                            </div>
+                          </div>
+                        </div>
                 ))}
-              </div>
+                      </div>
 
               {/* "Thousands More" Statement */}
               <div 
@@ -4405,7 +4580,7 @@ export default function Home() {
                   }}></div>
                   
                   <p 
-                    className="relative text-[1.725rem] lg:text-[2.925rem] font-black text-white leading-relaxed lg:mt-[15px] lg:mb-[15px]"
+                    className="relative text-[1.575rem] lg:text-[2.925rem] font-black text-white leading-relaxed lg:mt-[15px] lg:mb-[15px]"
                   >
                     + Literally{' '}
                     <span className="bg-gradient-to-r from-[#59e3a5] via-[#14c0ff] to-[#8b5cf6] bg-clip-text text-transparent drop-shadow-lg animate-pulse">
@@ -4413,8 +4588,8 @@ export default function Home() {
                     </span>
                     {' '}more!
                   </p>
-                </div>
-              </div>
+                    </div>
+                  </div>
 
               {/* CTA Button */}
               <div 
@@ -4428,8 +4603,8 @@ export default function Home() {
                   <span className="relative z-10">PUT ME ON PLAYLISTS</span>
                   <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-700"></div>
                 </button>
+                </div>
               </div>
-            </div>
             
             {/* Additional Floating Elements */}
             <div className="absolute top-1/2 left-5 w-4 h-4 bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] rounded-full opacity-40 animate-ping"></div>
@@ -4767,8 +4942,9 @@ export default function Home() {
                       ref={authenticityClosingRef}
                       className={`text-xl md:text-2xl text-gray-300 leading-relaxed font-bold transition-all duration-700 ${authenticityClosingInView ? 'animate-fade-in-up' : 'opacity-0 translate-y-8'}`}
                       style={{
-                        fontSize: typeof window !== 'undefined' && window.innerWidth < 640 ? 'calc(1.25rem + 0.20rem)' : undefined
+                        fontSize: isMobile ? 'calc(1.25rem + 0.20rem + 0.10rem - 0.04rem)' : undefined
                       }}
+                      suppressHydrationWarning={true}
                     >
                       NO bots. NO fake streams. NO sketchy tactics that risk your account.
                     </p>
@@ -4777,8 +4953,9 @@ export default function Home() {
                       ref={authenticityHighlightRef}
                       className={`text-xl md:text-2xl text-gray-300 leading-relaxed font-bold transition-all duration-700 ${authenticityHighlightInView ? 'animate-fade-in-up' : 'opacity-0 translate-y-8'}`}
                       style={{
-                        fontSize: typeof window !== 'undefined' && window.innerWidth < 640 ? 'calc(1.25rem + 0.20rem)' : undefined
+                        fontSize: isMobile ? 'calc(1.25rem + 0.20rem + 0.10rem - 0.04rem)' : undefined
                       }}
+                      suppressHydrationWarning={true}
                     >
                       Just legitimate playlist placements that put your music in front of people who actually want to hear it.
                         </p>
@@ -4786,6 +4963,10 @@ export default function Home() {
                     <p 
                       ref={authenticityGuaranteeRef}
                       className={`text-3xl md:text-4xl font-black text-white leading-relaxed transition-all duration-700 ${authenticityGuaranteeInView ? 'animate-fade-in-up' : 'opacity-0 translate-y-8'}`}
+                      style={{
+                        fontSize: isMobile ? 'calc(1.875rem - 0.25rem - 0.25rem)' : undefined
+                      }}
+                      suppressHydrationWarning={true}
                     >
                       That's not marketing speak. That's a guarantee.
                     </p>
@@ -4954,7 +5135,7 @@ export default function Home() {
               <div className="flex flex-col lg:grid lg:grid-cols-[45%_55%] gap-12 items-center">
                 
                 {/* Left Side - Kendrick Image */}
-                <div className="relative group">
+                <div className={`relative group order-2 lg:order-1 ${isMobile ? '-mb-[30px]' : ''}`}>
                   {/* Epic Glow Behind Image */}
                   <div className="absolute inset-0 bg-gradient-to-r from-[#8b5cf6]/50 via-[#14c0ff]/60 to-[#59e3a5]/50 rounded-3xl blur-2xl opacity-70 group-hover:opacity-90 transition-opacity duration-700 transform group-hover:scale-110"></div>
                   <div className="absolute inset-0 bg-gradient-to-tr from-[#59e3a5]/40 via-[#8b5cf6]/50 to-[#14c0ff]/40 rounded-3xl blur-xl opacity-60 group-hover:opacity-80 transition-opacity duration-700 transform group-hover:scale-105"></div>
@@ -4993,12 +5174,12 @@ export default function Home() {
                 </div>
                 
                 {/* Right Side - Content */}
-                <div className="space-y-8 pr-[4vw] sm:pr-[3vw] md:pr-[2.5vw] lg:pr-[2vw] xl:pr-8 pl-2">
+                <div className="space-y-8 pr-[4vw] sm:pr-[3vw] md:pr-[2.5vw] lg:pr-[2vw] xl:pr-8 pl-2 order-1 lg:order-2">
                   {/* Header */}
                   <div className="space-y-6">
                     <h2 
                       className="font-black leading-tight text-center -mt-[95px] md:mt-0" 
-                      style={{ fontSize: isMobile ? '2.0rem' : 'calc(1.25rem + 1.4rem)' }}
+                      style={{ fontSize: isMobile ? '1.64rem' : 'calc(1.25rem + 1.4rem)' }}
                     >
                       <span className="bg-gradient-to-r from-[#8b5cf6] via-[#14c0ff] to-[#59e3a5] bg-clip-text text-transparent drop-shadow-2xl">
                         What Do You Actually Get?
@@ -5022,90 +5203,90 @@ export default function Home() {
                     
                     {/* Main Card Container */}
                     <div className="relative bg-gradient-to-r from-[#8b5cf6] via-[#14c0ff] to-[#59e3a5] p-0.5 rounded-3xl shadow-2xl">
-                      <div className="bg-gradient-to-br from-[#1a1a2e]/95 via-[#16213e]/90 to-[#0a0a13]/95 rounded-3xl p-10 border border-white/10 backdrop-blur-sm">
+                      <div className={`bg-gradient-to-br from-[#1a1a2e]/95 via-[#16213e]/90 to-[#0a0a13]/95 rounded-3xl ${isMobile ? 'p-8' : 'p-10'} border border-white/10 backdrop-blur-sm`}>
                         
                         {/* Features List */}
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                          <div className="space-y-6">
+                          <div className={`${isMobile ? 'space-y-8' : 'space-y-6'}`}>
                             <div className="flex items-center space-x-4">
-                              <div className="w-14 h-14 bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] rounded-xl flex items-center justify-center text-xl flex-shrink-0">
+                              <div className={`${isMobile ? 'w-12 h-12' : 'w-14 h-14'} bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] rounded-xl flex items-center justify-center text-xl flex-shrink-0`}>
                                 <span>⚡</span>
                               </div>
                               <div>
-                                <h4 className="font-bold text-white mb-0.5" style={{ fontSize: 'calc(1.125rem - 0.07rem)' }}>Lightning Fast Pitching</h4>
-                                <p className="text-gray-300" style={{ fontSize: 'calc(0.875rem + 0.075rem)' }}>Your track hits curator inboxes within 24 hours of launch</p>
+                                <h4 className="font-bold text-white mb-0.5" style={{ fontSize: isMobile ? 'calc(1.125rem - 0.07rem + 0.1rem)' : 'calc(1.125rem - 0.07rem)' }}>Lightning Fast Pitching</h4>
+                                <p className="text-gray-300" style={{ fontSize: isMobile ? 'calc(0.875rem + 0.075rem + 0.1rem)' : 'calc(0.875rem + 0.075rem)' }}>Your track hits curator inboxes within 24 hours of launch</p>
                               </div>
                             </div>
                             
                             <div className="flex items-center space-x-4">
-                              <div className="w-14 h-14 bg-gradient-to-r from-[#14c0ff] to-[#8b5cf6] rounded-xl flex items-center justify-center text-xl flex-shrink-0">
+                              <div className={`${isMobile ? 'w-12 h-12' : 'w-14 h-14'} bg-gradient-to-r from-[#14c0ff] to-[#8b5cf6] rounded-xl flex items-center justify-center text-xl flex-shrink-0`}>
                                 <span>🎯</span>
                               </div>
                               <div>
-                                <h4 className="font-bold text-white mb-0.5" style={{ fontSize: 'calc(1.125rem - 0.07rem)' }}>Guaranteed Playlisting</h4>
-                                <p className="text-gray-300" style={{ fontSize: 'calc(0.875rem + 0.075rem)' }}>We don't "try" or "hope". You absolutely WILL land on major playlists</p>
+                                <h4 className="font-bold text-white mb-0.5" style={{ fontSize: isMobile ? 'calc(1.125rem - 0.07rem + 0.1rem)' : 'calc(1.125rem - 0.07rem)' }}>Guaranteed Playlisting</h4>
+                                <p className="text-gray-300" style={{ fontSize: isMobile ? 'calc(0.875rem + 0.075rem + 0.1rem)' : 'calc(0.875rem + 0.075rem)' }}>We don't "try" or "hope". You absolutely WILL land on major playlists</p>
                               </div>
                             </div>
                             
                             <div className="flex items-center space-x-4">
-                              <div className="w-14 h-14 bg-gradient-to-r from-[#8b5cf6] to-[#59e3a5] rounded-xl flex items-center justify-center text-xl flex-shrink-0">
+                              <div className={`${isMobile ? 'w-12 h-12' : 'w-14 h-14'} bg-gradient-to-r from-[#8b5cf6] to-[#59e3a5] rounded-xl flex items-center justify-center text-xl flex-shrink-0`}>
                                 <span>👥</span>
                               </div>
                               <div>
-                                <h4 className="font-bold text-white mb-0.5" style={{ fontSize: 'calc(1.125rem - 0.07rem)' }}>Real Human Listeners</h4>
-                                <p className="text-gray-300" style={{ fontSize: 'calc(0.875rem + 0.075rem)' }}>People who actually save your music, follow you, and come back for more</p>
+                                <h4 className="font-bold text-white mb-0.5" style={{ fontSize: isMobile ? 'calc(1.125rem - 0.07rem + 0.1rem)' : 'calc(1.125rem - 0.07rem)' }}>Real Human Listeners</h4>
+                                <p className="text-gray-300" style={{ fontSize: isMobile ? 'calc(0.875rem + 0.075rem + 0.1rem)' : 'calc(0.875rem + 0.075rem)' }}>People who actually save your music, follow you, and come back for more</p>
                               </div>
                             </div>
                             
                             <div className="flex items-center space-x-4">
-                              <div className="w-14 h-14 bg-gradient-to-r from-[#59e3a5] to-[#8b5cf6] rounded-xl flex items-center justify-center text-xl flex-shrink-0">
+                              <div className={`${isMobile ? 'w-12 h-12' : 'w-14 h-14'} bg-gradient-to-r from-[#59e3a5] to-[#8b5cf6] rounded-xl flex items-center justify-center text-xl flex-shrink-0`}>
                                 <span>🔍</span>
                               </div>
                               <div>
-                                <h4 className="font-bold text-white mb-0.5" style={{ fontSize: 'calc(1.125rem - 0.07rem)' }}>Complete Transparency</h4>
-                                <p className="text-gray-300" style={{ fontSize: 'calc(0.875rem + 0.075rem)' }}>Know exactly which playlists added you (no mysterious "private playlists")</p>
+                                <h4 className="font-bold text-white mb-0.5" style={{ fontSize: isMobile ? 'calc(1.125rem - 0.07rem + 0.1rem)' : 'calc(1.125rem - 0.07rem)' }}>Complete Transparency</h4>
+                                <p className="text-gray-300" style={{ fontSize: isMobile ? 'calc(0.875rem + 0.075rem + 0.1rem)' : 'calc(0.875rem + 0.075rem)' }}>Know exactly which playlists added you (no mysterious "private playlists")</p>
                               </div>
                             </div>
                           </div>
                           
-                          <div className="space-y-6">
+                          <div className={`${isMobile ? 'space-y-8' : 'space-y-6'}`}>
                             <div className="flex items-center space-x-4">
-                              <div className="w-14 h-14 bg-gradient-to-r from-[#14c0ff] to-[#59e3a5] rounded-xl flex items-center justify-center text-xl flex-shrink-0">
+                              <div className={`${isMobile ? 'w-12 h-12' : 'w-14 h-14'} bg-gradient-to-r from-[#14c0ff] to-[#59e3a5] rounded-xl flex items-center justify-center text-xl flex-shrink-0`}>
                                 <span>📱</span>
                               </div>
                               <div>
-                                <h4 className="font-bold text-white mb-0.5" style={{ fontSize: 'calc(1.125rem - 0.07rem)' }}>Your Own Dashboard</h4>
-                                <p className="text-gray-300" style={{ fontSize: 'calc(0.875rem + 0.075rem)' }}>Track everything 24/7. Even from your phone at 3am (we know you will)</p>
+                                <h4 className="font-bold text-white mb-0.5" style={{ fontSize: isMobile ? 'calc(1.125rem - 0.07rem + 0.1rem)' : 'calc(1.125rem - 0.07rem)' }}>Your Own Dashboard</h4>
+                                <p className="text-gray-300" style={{ fontSize: isMobile ? 'calc(0.875rem + 0.075rem + 0.1rem)' : 'calc(0.875rem + 0.075rem)' }}>Track everything 24/7. Even from your phone at 3am (we know you will)</p>
                               </div>
                             </div>
                             
                             <div className="flex items-center space-x-4">
-                              <div className="w-14 h-14 bg-gradient-to-r from-[#8b5cf6] to-[#14c0ff] rounded-xl flex items-center justify-center text-xl flex-shrink-0">
+                              <div className={`${isMobile ? 'w-12 h-12' : 'w-14 h-14'} bg-gradient-to-r from-[#8b5cf6] to-[#14c0ff] rounded-xl flex items-center justify-center text-xl flex-shrink-0`}>
                                 <span>🏆</span>
                               </div>
                               <div>
-                                <h4 className="font-bold text-white mb-0.5" style={{ fontSize: 'calc(1.125rem - 0.07rem)' }}>Industry Veteran Strategy</h4>
-                                <p className="text-gray-300" style={{ fontSize: 'calc(0.875rem + 0.075rem)' }}>Our team built careers for artists you listen to daily</p>
+                                <h4 className="font-bold text-white mb-0.5" style={{ fontSize: isMobile ? 'calc(1.125rem - 0.07rem + 0.1rem)' : 'calc(1.125rem - 0.07rem)' }}>Industry Veterans</h4>
+                                <p className="text-gray-300" style={{ fontSize: isMobile ? 'calc(0.875rem + 0.075rem + 0.1rem)' : 'calc(0.875rem + 0.075rem)' }}>Our team built careers for artists you listen to daily</p>
                               </div>
                             </div>
                             
                             <div className="flex items-center space-x-4">
-                              <div className="w-14 h-14 bg-gradient-to-r from-[#59e3a5] to-[#8b5cf6] rounded-xl flex items-center justify-center text-xl flex-shrink-0">
+                              <div className={`${isMobile ? 'w-12 h-12' : 'w-14 h-14'} bg-gradient-to-r from-[#59e3a5] to-[#8b5cf6] rounded-xl flex items-center justify-center text-xl flex-shrink-0`}>
                                 <span>🎵</span>
                               </div>
                               <div>
-                                <h4 className="font-bold text-white mb-0.5" style={{ fontSize: 'calc(1.125rem - 0.07rem)' }}>Every Genre Covered</h4>
-                                <p className="text-gray-300" style={{ fontSize: 'calc(0.875rem + 0.075rem)' }}>Trap metal? Lo-fi jazz? Meditation podcasts? We have playlists for everything</p>
+                                <h4 className="font-bold text-white mb-0.5" style={{ fontSize: isMobile ? 'calc(1.125rem - 0.07rem + 0.1rem)' : 'calc(1.125rem - 0.07rem)' }}>Every Genre Covered</h4>
+                                <p className="text-gray-300" style={{ fontSize: isMobile ? 'calc(0.875rem + 0.075rem + 0.1rem)' : 'calc(0.875rem + 0.075rem)' }}>Trap metal? Lo-fi jazz? Meditation podcasts? We have playlists for everything</p>
                               </div>
                             </div>
                             
                             <div className="flex items-center space-x-4">
-                              <div className="w-14 h-14 bg-gradient-to-r from-[#14c0ff] to-[#8b5cf6] rounded-xl flex items-center justify-center text-xl flex-shrink-0">
+                              <div className={`${isMobile ? 'w-12 h-12' : 'w-14 h-14'} bg-gradient-to-r from-[#14c0ff] to-[#8b5cf6] rounded-xl flex items-center justify-center text-xl flex-shrink-0`}>
                                 <span>⏰</span>
                               </div>
                               <div>
-                                <h4 className="font-bold text-white mb-0.5" style={{ fontSize: 'calc(1.125rem - 0.07rem)' }}>Results in 48-72 Hours</h4>
-                                <p className="text-gray-300" style={{ fontSize: 'calc(0.875rem + 0.075rem)' }}>Watch your first placements roll in while other services are still "processing"</p>
+                                <h4 className="font-bold text-white mb-0.5" style={{ fontSize: isMobile ? 'calc(1.125rem - 0.07rem + 0.1rem)' : 'calc(1.125rem - 0.07rem)' }}>Results in 48-72 Hours</h4>
+                                <p className="text-gray-300" style={{ fontSize: isMobile ? 'calc(0.875rem + 0.075rem + 0.1rem)' : 'calc(0.875rem + 0.075rem)' }}>Watch your first placements roll in while other services are still "processing"</p>
                               </div>
                             </div>
                           </div>

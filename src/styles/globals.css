@@ -20,6 +20,12 @@ body {
   max-width: 100%;
   margin: 0;
   padding: 0;
+  /* Mobile scaling fixes */
+  -webkit-text-size-adjust: 100%;
+  -ms-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+  touch-action: manipulation;
+  overscroll-behavior: none;
 }
 
 /* Text overflow prevention - no hyphenation */
@@ -858,8 +864,40 @@ input:-webkit-autofill:active {
   }
 }
 
+@keyframes fadeInDown {
+  from {
+    opacity: 0;
+    transform: translateY(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
 .animate-fade-in-up {
   animation: fadeInUp 0.8s ease-out forwards;
+  opacity: 0;
+}
+
+.animate-fade-in-down {
+  animation: fadeInDown 0.4s ease-out forwards;
+  opacity: 0;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-100%);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-slide-down {
+  animation: slideDown 0.6s ease-out forwards;
   opacity: 0;
 }
 
@@ -882,6 +920,73 @@ input:-webkit-autofill:active {
 .animation-delay-1000 {
   animation-delay: 1.0s;
 }
+
+/* Genre list slide animations */
+@keyframes slideInFromLeft {
+  from {
+    opacity: 0;
+    transform: translateX(-60px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes slideInFromRight {
+  from {
+    opacity: 0;
+    transform: translateX(60px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.animate-slide-left {
+  animation: slideInFromLeft 0.6s ease-out forwards;
+  opacity: 0;
+}
+
+.animate-slide-right {
+  animation: slideInFromRight 0.6s ease-out forwards;
+  opacity: 0;
+}
+
+/* Container grow animation */
+@keyframes growIn {
+  from {
+    opacity: 0;
+    transform: scale(0.8);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.animate-grow-in {
+  animation: growIn 0.8s ease-out forwards;
+  opacity: 0;
+}
+
+/* Staggered delay classes for genre rows */
+.animation-delay-0 { animation-delay: 0ms; }
+.animation-delay-25 { animation-delay: 25ms; }
+.animation-delay-50 { animation-delay: 50ms; }
+.animation-delay-75 { animation-delay: 75ms; }
+.animation-delay-100 { animation-delay: 100ms; }
+.animation-delay-125 { animation-delay: 125ms; }
+.animation-delay-150 { animation-delay: 150ms; }
+.animation-delay-175 { animation-delay: 175ms; }
+.animation-delay-200 { animation-delay: 200ms; }
+.animation-delay-225 { animation-delay: 225ms; }
+.animation-delay-250 { animation-delay: 250ms; }
+.animation-delay-275 { animation-delay: 275ms; }
+.animation-delay-300 { animation-delay: 300ms; }
+.animation-delay-325 { animation-delay: 325ms; }
+.animation-delay-350 { animation-delay: 350ms; }
 
 .animation-delay-1200 {
   animation-delay: 1.2s;
