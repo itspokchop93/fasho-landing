@@ -169,7 +169,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     }
 
     // Determine base URL for iframe communicator and return URLs based on environment
-    // For localhost development, we need to use a different approach
     let iframeCommunicatorBaseUrl, returnBaseUrl;
     
     // Always use production URLs for Authorize.net (they require HTTPS)

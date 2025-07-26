@@ -1,26 +1,48 @@
-<!-- Local development iframe communicator for localhost testing -->
 <!DOCTYPE html>
 <html>
 <head>
     <meta charset="utf-8">
-    <title>Payment Communicator (Local)</title>
+    <title>Payment Communicator - Local Debug</title>
 </head>
 <body>
     <script type="text/javascript">
-        console.log('🔧 LOCAL IFRAME COMMUNICATOR: Loaded successfully!');
+        console.log('🔧 LOCAL IFRAME COMMUNICATOR: ===== LOADED SUCCESSFULLY =====');
         console.log('🔧 LOCAL IFRAME COMMUNICATOR: window.location.href:', window.location.href);
         console.log('🔧 LOCAL IFRAME COMMUNICATOR: document.referrer:', document.referrer);
         console.log('🔧 LOCAL IFRAME COMMUNICATOR: window.parent === window.top:', window.parent === window.top);
         console.log('🔧 LOCAL IFRAME COMMUNICATOR: AuthorizeNetIFrame object created:', typeof window.AuthorizeNetIFrame);
+        
+        // Send immediate test message to confirm iframe communicator is loaded
+        setTimeout(function() {
+            console.log('🔧 LOCAL IFRAME COMMUNICATOR: Sending immediate test message to confirm loading');
+            sendToAllParents({
+                type: 'IFRAME_COMMUNICATOR_LOADED',
+                message: 'Local iframe communicator is loaded and ready',
+                timestamp: new Date().toISOString(),
+                source: 'local-debug'
+            });
+        }, 500);
         
         // Test if we can communicate with parent immediately
         setTimeout(function() {
             console.log('🔧 LOCAL IFRAME COMMUNICATOR: Testing parent communication...');
             sendToAllParents({
                 type: 'IFRAME_LOADED',
-                message: 'Local iframe communicator is ready'
+                message: 'Local iframe communicator is ready',
+                source: 'local-debug'
             });
         }, 1000);
+        
+        // Send periodic test messages for localhost
+        console.log('🔧 LOCAL IFRAME COMMUNICATOR: Setting up periodic test messages for localhost');
+        setInterval(function() {
+            sendToAllParents({
+                type: 'PERIODIC_TEST',
+                message: 'Periodic test message from local iframe communicator',
+                timestamp: new Date().toISOString(),
+                source: 'local-debug'
+            });
+        }, 10000); // Every 10 seconds
         
         // Parse query string function
         function parseQueryString(str) {
@@ -40,32 +62,27 @@
             console.log('🔧 LOCAL IFRAME COMMUNICATOR: ===== SENDING SINGLE MESSAGE TO PARENT =====');
             console.log('🔧 LOCAL IFRAME COMMUNICATOR: Message to send:', message);
             console.log('🔧 LOCAL IFRAME COMMUNICATOR: Current window location:', window.location.href);
+            console.log('🔧 LOCAL IFRAME COMMUNICATOR: window.parent === window.top:', window.parent === window.top);
             
             var messageSent = false;
             
-            // Try to send to window.parent first (most common case)
-            if (window.parent && window.parent.postMessage && !messageSent) {
-                console.log('🔧 LOCAL IFRAME COMMUNICATOR: Sending to window.parent with wildcard origin');
-                try {
-                    window.parent.postMessage(message, '*');
-                    messageSent = true;
-                    console.log('🔧 LOCAL IFRAME COMMUNICATOR: ✅ Successfully sent to window.parent - DONE');
-                    return; // Exit immediately after first successful send
-                } catch (e) {
-                    console.error('🔧 LOCAL IFRAME COMMUNICATOR: ❌ Failed to send to window.parent:', e);
-                }
-            }
+            // Try multiple targets to ensure message gets through
+            var targets = [
+                { name: 'window.top', target: window.top },
+                { name: 'window.parent', target: window.parent }
+            ];
             
-            // Fallback to window.top only if parent failed
-            if (window.top && window.top !== window && window.top.postMessage && !messageSent) {
-                console.log('🔧 LOCAL IFRAME COMMUNICATOR: Fallback - sending to window.top');
-                try {
-                    window.top.postMessage(message, '*');
-                    messageSent = true;
-                    console.log('🔧 LOCAL IFRAME COMMUNICATOR: ✅ Successfully sent to window.top - DONE');
-                    return; // Exit immediately after successful send
-                } catch (e) {
-                    console.error('🔧 LOCAL IFRAME COMMUNICATOR: ❌ Failed to send to window.top:', e);
+            for (var i = 0; i < targets.length && !messageSent; i++) {
+                var target = targets[i];
+                if (target.target && target.target !== window && target.target.postMessage) {
+                    console.log('🔧 LOCAL IFRAME COMMUNICATOR: Attempting to send to ' + target.name);
+                    try {
+                        target.target.postMessage(message, '*');
+                        messageSent = true;
+                        console.log('🔧 LOCAL IFRAME COMMUNICATOR: ✅ Successfully sent to ' + target.name + ' - DONE');
+                    } catch (e) {
+                        console.error('🔧 LOCAL IFRAME COMMUNICATOR: ❌ Failed to send to ' + target.name + ':', e);
+                    }
                 }
             }
             
@@ -90,7 +107,8 @@
                         console.log('🔧 LOCAL IFRAME COMMUNICATOR: Payment profile saved successfully');
                         sendToAllParents({
                             type: 'PAYMENT_SUCCESS',
-                            action: 'successfulSave'
+                            action: 'successfulSave',
+                            source: 'local-debug'
                         });
                         break;
                     
@@ -98,7 +116,8 @@
                         console.log('🔧 LOCAL IFRAME COMMUNICATOR: Payment was cancelled by user');
                         sendToAllParents({
                             type: 'PAYMENT_CANCELLED',
-                            action: 'cancel'
+                            action: 'cancel',
+                            source: 'local-debug'
                         });
                         break;
                     
@@ -112,7 +131,8 @@
                         var messageToSend = {
                             type: 'PAYMENT_COMPLETE',
                             action: 'transactResponse',
-                            response: response
+                            response: response,
+                            source: 'local-debug'
                         };
                         sendToAllParents(messageToSend);
                         console.log('🚀 LOCAL IFRAME COMMUNICATOR: Message sent successfully to all parent targets');
@@ -127,7 +147,8 @@
                             type: 'RESIZE_IFRAME',
                             action: 'resizeWindow',
                             width: w,
-                            height: h
+                            height: h,
+                            source: 'local-debug'
                         });
                         break;
                     
@@ -146,11 +167,8 @@
             console.log('🔧 LOCAL IFRAME COMMUNICATOR: Event origin:', event.origin);
             console.log('🔧 LOCAL IFRAME COMMUNICATOR: Event data:', event.data);
             
-            // Verify origin for security
-            if (event.origin !== "https://test.authorize.net" && event.origin !== "https://accept.authorize.net") {
-                console.log('🔧 LOCAL IFRAME COMMUNICATOR: Origin not allowed:', event.origin);
-                return;
-            }
+            // For local debugging, accept all origins
+            console.log('🔧 LOCAL IFRAME COMMUNICATOR: Local debug mode - accepting all origins');
 
             // Call the AuthorizeNetIFrame handler
             window.AuthorizeNetIFrame.onReceiveCommunication(event.data);
@@ -159,9 +177,22 @@
         // Listen for messages from Authorize.net
         if (window.addEventListener) {
             window.addEventListener("message", receiveMessage, false);
+            console.log('🔧 LOCAL IFRAME COMMUNICATOR: Message listener added via addEventListener');
         } else if (window.attachEvent) {
             window.attachEvent("onmessage", receiveMessage);
+            console.log('🔧 LOCAL IFRAME COMMUNICATOR: Message listener added via attachEvent');
         }
+        
+        // Send a final confirmation message
+        setTimeout(function() {
+            console.log('🔧 LOCAL IFRAME COMMUNICATOR: Sending final setup confirmation');
+            sendToAllParents({
+                type: 'IFRAME_SETUP_COMPLETE',
+                message: 'Local iframe communicator setup complete',
+                timestamp: new Date().toISOString(),
+                source: 'local-debug'
+            });
+        }, 2000);
     </script>
 </body>
 </html> 

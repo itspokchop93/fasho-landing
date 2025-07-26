@@ -2,94 +2,44 @@
 <html>
 <head>
     <meta charset="utf-8">
-    <title>Test Payment Communicator</title>
+    <title>Test Iframe Communicator</title>
 </head>
 <body>
-    <script type="text/javascript">
-        console.log('🔧 TEST IFRAME COMMUNICATOR: ===== LOADED SUCCESSFULLY =====');
-        console.log('🔧 TEST IFRAME COMMUNICATOR: window.location.href:', window.location.href);
-        console.log('🔧 TEST IFRAME COMMUNICATOR: document.referrer:', document.referrer);
-        console.log('🔧 TEST IFRAME COMMUNICATOR: window.parent === window.top:', window.parent === window.top);
+    <h2>Test Iframe Communicator</h2>
+    <button onclick="sendTestMessage()">Send Test Message</button>
+    <script>
+        console.log('🧪 TEST IFRAME: Loaded successfully');
         
-        // Send immediate test message to confirm iframe communicator is loaded
-        setTimeout(function() {
-            console.log('🔧 TEST IFRAME COMMUNICATOR: Sending immediate test message to confirm loading');
-            if (window.parent && window.parent.postMessage) {
-                window.parent.postMessage({
-                    type: 'IFRAME_COMMUNICATOR_LOADED',
-                    message: 'Test iframe communicator is loaded and ready',
-                    timestamp: new Date().toISOString()
-                }, '*');
-                console.log('🔧 TEST IFRAME COMMUNICATOR: Test message sent to parent');
+        function sendTestMessage() {
+            console.log('🧪 TEST IFRAME: Sending test message to parent');
+            
+            const message = {
+                type: 'PAYMENT_COMPLETE',
+                action: 'transactResponse',
+                response: {
+                    responseCode: '1',
+                    transId: 'TEST123',
+                    responseReasonText: 'This is a test message'
+                }
+            };
+            
+            console.log('🧪 TEST IFRAME: Message to send:', message);
+            
+            if (window.parent && window.parent !== window) {
+                window.parent.postMessage(message, '*');
+                console.log('🧪 TEST IFRAME: Message sent to window.parent');
             }
-            if (window.top && window.top !== window && window.top.postMessage) {
-                window.top.postMessage({
-                    type: 'IFRAME_COMMUNICATOR_LOADED',
-                    message: 'Test iframe communicator is loaded and ready',
-                    timestamp: new Date().toISOString()
-                }, '*');
-                console.log('🔧 TEST IFRAME COMMUNICATOR: Test message sent to top');
+            
+            if (window.top && window.top !== window) {
+                window.top.postMessage(message, '*');
+                console.log('🧪 TEST IFRAME: Message sent to window.top');
             }
-        }, 500);
+        }
         
-        // Create the AuthorizeNetIFrame global object as required by the API
-        window.AuthorizeNetIFrame = {
-            onReceiveCommunication: function(querystr) {
-                console.log('🔧 TEST IFRAME COMMUNICATOR: AuthorizeNetIFrame.onReceiveCommunication called with:', querystr);
-                
-                // Parse the query string to get the response
-                var params = {};
-                var pairs = querystr.split('&');
-                for (var i = 0; i < pairs.length; i++) {
-                    var pair = pairs[i].split('=');
-                    params[decodeURIComponent(pair[0])] = decodeURIComponent(pair[1] || '');
-                }
-                
-                console.log('🔧 TEST IFRAME COMMUNICATOR: Parsed response:', params);
-                
-                // Send the payment completion message to the parent
-                var message = {
-                    type: 'PAYMENT_COMPLETE',
-                    response: params
-                };
-                
-                console.log('🔧 TEST IFRAME COMMUNICATOR: Sending payment completion message:', message);
-                
-                // Try to send to both parent and top
-                var messageSent = false;
-                
-                if (window.parent && window.parent.postMessage) {
-                    try {
-                        window.parent.postMessage(message, '*');
-                        messageSent = true;
-                        console.log('🔧 TEST IFRAME COMMUNICATOR: Payment completion message sent to parent');
-                    } catch (e) {
-                        console.error('🔧 TEST IFRAME COMMUNICATOR: Failed to send to parent:', e);
-                    }
-                }
-                
-                if (!messageSent && window.top && window.top !== window && window.top.postMessage) {
-                    try {
-                        window.top.postMessage(message, '*');
-                        messageSent = true;
-                        console.log('🔧 TEST IFRAME COMMUNICATOR: Payment completion message sent to top');
-                    } catch (e) {
-                        console.error('🔧 TEST IFRAME COMMUNICATOR: Failed to send to top:', e);
-                    }
-                }
-                
-                if (!messageSent) {
-                    console.error('🔧 TEST IFRAME COMMUNICATOR: Failed to send payment completion message to any parent');
-                }
-            }
-        };
-        
-        console.log('🔧 TEST IFRAME COMMUNICATOR: AuthorizeNetIFrame object created:', typeof window.AuthorizeNetIFrame);
-        
-        // Simulate a payment completion for testing
-        setTimeout(function() {
-            console.log('🔧 TEST IFRAME COMMUNICATOR: Simulating payment completion for testing...');
-            window.AuthorizeNetIFrame.onReceiveCommunication('response_code=1&response_reason_text=This+transaction+has+been+approved.&transaction_id=123456789&auth_code=123456');
+        // Auto-send a test message after 2 seconds
+        setTimeout(() => {
+            console.log('🧪 TEST IFRAME: Auto-sending test message');
+            sendTestMessage();
         }, 2000);
     </script>
 </body>

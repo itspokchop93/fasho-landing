@@ -752,6 +752,40 @@ export default function PackagesPage() {
       <Head>
         <title>Choose Campaign Package – Fasho.co</title>
       </Head>
+      <style jsx>{`
+        .feature-text-mobile {
+          font-size: calc(0.875rem + 0.13rem);
+        }
+        .compare-heading-mobile {
+          font-size: calc(1.875rem - 0.15rem);
+        }
+        .compare-emoji-mobile {
+          font-size: calc(1.875rem - 0.15rem);
+        }
+        .compare-subheading-mobile {
+          font-size: calc(1.25rem - 0.08rem);
+        }
+        .money-heading-mobile {
+          font-size: calc(1.875rem - 0.27rem);
+        }
+        @media (min-width: 768px) {
+          .feature-text-mobile {
+            font-size: calc(0.875rem - 0.02rem);
+          }
+          .compare-heading-mobile {
+            font-size: 3rem;
+          }
+          .compare-emoji-mobile {
+            font-size: 3rem;
+          }
+          .compare-subheading-mobile {
+            font-size: 1.25rem;
+          }
+          .money-heading-mobile {
+            font-size: 2.25rem;
+          }
+        }
+      `}</style>
       <Header />
       <main className="min-h-screen relative text-white pt-28 pb-12 px-4">
         {/* Background layers */}
@@ -1155,7 +1189,7 @@ export default function PackagesPage() {
               )}
 
               {/* Mobile Campaign Features Section */}
-              <div className="mt-6 bg-gradient-to-br from-white/5 via-white/3 to-white/5 rounded-2xl p-4 border border-white/10 backdrop-blur-sm relative overflow-hidden">
+              <div className="mt-6 bg-gradient-to-br from-white/5 via-white/3 to-white/5 rounded-2xl px-4 py-[20px] md:p-4 border border-white/10 backdrop-blur-sm relative overflow-hidden">
                 {/* Subtle gradient glow */}
                 <div className="absolute inset-0 bg-gradient-to-br from-[#59e3a5]/5 via-[#14c0ff]/5 to-[#8b5cf6]/5 rounded-2xl blur-xl opacity-60"></div>
                 
@@ -1167,8 +1201,8 @@ export default function PackagesPage() {
                       Inside Your Campaign 🚀
                     </h3>
                   </div>
-                  {/* Featured list - 1 column, left-aligned on mobile, with 15px left padding */}
-                  <div className="grid grid-cols-1 gap-y-3 justify-items-start text-left pl-[15px] md:grid-cols-2 md:gap-x-6 md:justify-items-start md:text-left md:pl-0">
+                  {/* Featured list - 1 column, center-aligned on mobile, with 15px left padding */}
+                  <div className="grid grid-cols-1 gap-y-3.5 justify-items-center text-center pl-[15px] md:grid-cols-2 md:gap-x-6 md:gap-y-3 md:justify-items-start md:text-left md:pl-0">
                     {[
                       'Campaign starts within only 24-48 hours',
                       'All streams achieved in only 7-10 days', 
@@ -1183,12 +1217,14 @@ export default function PackagesPage() {
                     ].map((feature, index) => (
                       <div key={index} className="flex items-start space-x-2 group justify-center md:justify-start">
                         {/* Green checkmark icon */}
-                        <div className="w-4 h-4 bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] rounded-full flex items-center justify-center flex-shrink-0 mt-0.5 shadow-md group-hover:scale-110 transition-transform duration-200">
+                        <div className="w-4 h-4 bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] rounded-full flex items-center justify-center flex-shrink-0 mt-1 md:mt-0.5 shadow-md group-hover:scale-110 transition-transform duration-200">
                           <svg className="w-2.5 h-2.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
                           </svg>
                         </div>
-                        <span className="text-white/90 text-xs leading-relaxed group-hover:text-white transition-colors duration-200 text-center md:text-left" style={{ fontSize: 'calc(0.875rem - 0.02rem)' }}>
+                        <span 
+                          className="text-white/90 text-xs leading-relaxed group-hover:text-white transition-colors duration-200 text-center md:text-left feature-text-mobile" 
+                        >
                           {feature.includes('<gradient>') ? (
                             <>
                               {feature.split('<gradient>')[0]}
@@ -1625,7 +1661,7 @@ export default function PackagesPage() {
                </div>
 
                {/* Campaign Features Section */}
-               <div className="mt-8 bg-gradient-to-br from-white/5 via-white/3 to-white/5 rounded-2xl pl-6 pr-3 py-6 border border-white/10 backdrop-blur-sm relative overflow-hidden">
+               <div className="mt-8 bg-gradient-to-br from-white/5 via-white/3 to-white/5 rounded-2xl pl-6 pr-3 py-[26px] md:py-6 border border-white/10 backdrop-blur-sm relative overflow-hidden">
                  {/* Subtle gradient glow */}
                  <div className="absolute inset-0 bg-gradient-to-br from-[#59e3a5]/5 via-[#14c0ff]/5 to-[#8b5cf6]/5 rounded-2xl blur-xl opacity-60"></div>
                  
@@ -1637,8 +1673,8 @@ export default function PackagesPage() {
                        Inside Your Campaign 🚀
                      </h3>
                    </div>
-                   {/* Featured list - 1 column, left-aligned on mobile, with 15px left padding */}
-                   <div className="grid grid-cols-1 gap-y-3 justify-items-start text-left pl-[15px] md:grid-cols-2 md:gap-x-6 md:justify-items-start md:text-left md:pl-0">
+                   {/* Featured list - 1 column, center-aligned on mobile, with 15px left padding */}
+                   <div className="grid grid-cols-1 gap-y-3.5 justify-items-center text-center pl-[15px] md:grid-cols-2 md:gap-x-6 md:gap-y-3 md:justify-items-start md:text-left md:pl-0">
                      {[
                        'Campaign starts within only 24-48 hours',
                        'All streams achieved in only 7-10 days', 
@@ -1653,12 +1689,12 @@ export default function PackagesPage() {
                      ].map((feature, index) => (
                        <div key={index} className="flex items-start space-x-2 group justify-center md:justify-start">
                          {/* Green checkmark icon */}
-                         <div className="w-4 h-4 bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] rounded-full flex items-center justify-center flex-shrink-0 mt-0.5 shadow-md group-hover:scale-110 transition-transform duration-200">
+                         <div className="w-4 h-4 bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] rounded-full flex items-center justify-center flex-shrink-0 mt-1 md:mt-0.5 shadow-md group-hover:scale-110 transition-transform duration-200">
                            <svg className="w-2.5 h-2.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
                            </svg>
                          </div>
-                         <span className="text-white/90 text-xs leading-relaxed group-hover:text-white transition-colors duration-200 text-center md:text-left" style={{ fontSize: 'calc(0.875rem - 0.02rem)' }}>
+                         <span className="text-white/90 text-xs leading-relaxed group-hover:text-white transition-colors duration-200 text-center md:text-left feature-text-mobile">
                            {feature.includes('<gradient>') ? (
                              <>
                                {feature.split('<gradient>')[0]}
@@ -1774,18 +1810,18 @@ export default function PackagesPage() {
         <div className="w-full bg-transparent relative z-30">
           <div className="max-w-7xl mx-auto px-4 py-20">
             <div className="text-center mb-8 relative z-50">
-              <h2 className="text-4xl md:text-5xl font-black mb-4 text-white leading-tight px-4 relative z-50">
-                <span className="text-4xl md:text-5xl">📊</span>{' '}
+              <h2 className="text-3xl md:text-5xl font-black mb-4 text-white leading-tight px-1 md:px-4 relative z-50 compare-heading-mobile">
+                <span className="text-3xl md:text-5xl compare-emoji-mobile">📊</span>{' '}
                 <span style={{
                   background: 'linear-gradient(to right, #59e3a5, #14c0ff)',
                   WebkitBackgroundClip: 'text',
                   WebkitTextFillColor: 'transparent',
                   backgroundClip: 'text'
                 }}>
-                  Compare Your Campaigns
+                  Compare Campaigns
                 </span>
               </h2>
-              <p className="text-xl text-gray-300">
+              <p className="text-xl text-gray-300 px-1 md:px-4 compare-subheading-mobile mb-[16px] md:mb-0">
                 Compare all features across our packages
               </p>
               
@@ -2295,7 +2331,7 @@ export default function PackagesPage() {
                   WebkitTextFillColor: 'transparent',
                   backgroundClip: 'text'
                 }}>
-                  Why FASHO.co Gets Results
+                  Why FASHO.co <br className="md:hidden" />Gets Results
                 </span>
               </h2>
             </div>
@@ -2373,7 +2409,7 @@ export default function PackagesPage() {
             {/* Every Stream = Money in Your Pocket */}
             <div className="bg-gradient-to-br from-yellow-500/10 to-orange-500/10 backdrop-blur-sm rounded-2xl border border-yellow-500/20 p-8 text-center relative z-30">
               <div className="max-w-4xl mx-auto">
-                <h2 className="text-3xl md:text-4xl font-black mb-6 bg-gradient-to-r from-yellow-400 to-orange-400 bg-clip-text text-transparent">
+                <h2 className="text-3xl md:text-4xl font-black mb-6 bg-gradient-to-r from-yellow-400 to-orange-400 bg-clip-text text-transparent money-heading-mobile">
                   💰 Every Stream = Money in Your Pocket
                 </h2>
                 <p className="text-xl text-gray-300 leading-relaxed">

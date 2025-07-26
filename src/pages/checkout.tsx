@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useRouter } from 'next/router';
 import Head from 'next/head';
 import Image from 'next/image';
@@ -1039,155 +1039,7 @@ export default function CheckoutPage() {
 
 
 
-  // Listen for iframe communication messages
-  useEffect(() => {
-    const handleMessage = (event: MessageEvent) => {
-      console.log('🎯 PARENT PAGE: Received message from iframe:', event);
-      console.log('🎯 PARENT PAGE: Message origin:', event.origin);
-      console.log('🎯 PARENT PAGE: Message data:', event.data);
-      console.log('🎯 PARENT PAGE: Current window location:', window.location.href);
-      
-      // Accept messages from allowed origins
-      const allowedOrigins = [
-        'https://www.fasho.co',
-        'https://fasho-landing.vercel.app',
-        window.location.origin,
-        'http://localhost:3000',
-        'http://localhost:3001',
-        'https://test.authorize.net',
-        'https://accept.authorize.net'
-      ];
-      
-      // For development, accept all origins but log everything
-      if (process.env.NODE_ENV === 'development') {
-        console.log('🔍 PARENT PAGE: Development mode - accepting all origins. Origin:', event.origin);
-      } else {
-        if (!allowedOrigins.includes(event.origin)) {
-          console.log('🚫 PARENT PAGE: Message origin not allowed. Expected one of:', allowedOrigins, 'Got:', event.origin);
-          return;
-        }
-      }
-      console.log('✅ PARENT PAGE: Message origin check passed. Origin:', event.origin);
-      
-      const data = event.data;
-      console.log('🎯 PARENT PAGE: Processing message type:', data?.type, '| typeof:', typeof data, '| Full data:', data);
-      
-      switch (data.type) {
-        case 'PAYMENT_COMPLETE':
-          console.log('🚨 MESSAGE: ===== PAYMENT_COMPLETE MESSAGE RECEIVED =====');
-          console.log('🚨 MESSAGE: Message event origin:', event.origin);
-          console.log('🚨 MESSAGE: Message timestamp:', new Date().toISOString());
-          console.log('🚨 MESSAGE: Payment completed, processing response:', data.response);
-          console.log('🚨 MESSAGE: handleSuccessfulPaymentRef exists:', !!handleSuccessfulPaymentRef.current);
-          
-          // Show processing popup only once when payment is submitted
-          if (!hasShownProcessingPopup) {
-            console.log('🔄 PARENT PAGE: Showing processing popup for first time');
-            setShowProcessingPopup(true);
-            setHasShownProcessingPopup(true);
-          }
-          
-          // Use ref to always get latest function
-          const response = data.response;
-          console.log('🔍 PAYMENT: Iframe response received:', response);
-
-          if (!response || typeof response !== 'object') {
-            console.error('🔍 PAYMENT: Invalid response format');
-            setError('No payment response received. Please try again.');
-            setIsLoading(false);
-            setShowPaymentForm(false);
-            setShowProcessingPopup(false);
-            return;
-          }
-
-          console.log('🔍 PAYMENT: Response code:', response.responseCode);
-          console.log('🔍 PAYMENT: Response reason:', response.responseReasonText);
-
-          if (response.responseCode === '1') {
-            // Transaction successful
-            console.log('🔍 PAYMENT: Transaction approved, calling handleSuccessfulPayment');
-            console.log('🚨 MESSAGE: ABOUT TO CALL handleSuccessfulPayment WITH:', response?.transId);
-            try {
-              handleSuccessfulPaymentRef.current(response);
-            } catch (error) {
-              console.error('🔍 PAYMENT: Error in handleSuccessfulPayment:', error);
-              setError('Payment was successful but there was an error processing your order. Please contact support.');
-              setShowProcessingPopup(false);
-            }
-          } else {
-            // Transaction failed - provide more specific error messages
-            console.error('🔍 PAYMENT: Transaction failed with code:', response.responseCode);
-            let errorMessage = 'Payment failed. Please try again.';
-            
-            // Provide specific error messages based on response code
-            if (response.responseCode === '2') {
-              errorMessage = 'Payment was declined. Please check your card details and try again.';
-            } else if (response.responseCode === '3') {
-              errorMessage = 'Payment error occurred. Please verify your card information and try again.';
-            } else if (response.responseCode === '4') {
-              errorMessage = 'Payment is being reviewed. You will receive an email confirmation shortly.';
-            } else if (response.responseReasonText) {
-              // Use the specific reason text if available
-              errorMessage = `Payment failed: ${response.responseReasonText}`;
-            }
-            
-            setError(errorMessage);
-            setIsLoading(false);
-            setShowPaymentForm(false);
-            setShowProcessingPopup(false);
-          }
-          break;
-        case 'PAYMENT_CANCELLED':
-          console.log('❌ PARENT PAGE: Payment was cancelled');
-          setError('Payment was cancelled');
-          setIsLoading(false);
-          setShowPaymentForm(false);
-          setShowProcessingPopup(false);
-          break;
-        case 'PAYMENT_SUCCESS':
-          console.log('✅ PARENT PAGE: Payment success event received');
-          // Handle successful save if needed
-          break;
-
-        case 'RESIZE_IFRAME':
-          console.log('📏 PARENT PAGE: Resize iframe request:', data.width, 'x', data.height);
-          // Resize iframe if needed
-          const iframe = document.getElementById('paymentIframe') as HTMLIFrameElement;
-          if (iframe && data.width && data.height) {
-            iframe.style.width = data.width + 'px';
-            iframe.style.height = data.height + 'px';
-          }
-          break;
-        case 'IFRAME_LOADED':
-          console.log('🔧 PARENT PAGE: Iframe communicator loaded successfully:', data.message);
-          break;
-        case 'TEST_MESSAGE':
-          console.log('🔧 PARENT PAGE: Test message received from iframe communicator:', data.message);
-          console.log('🔧 PARENT PAGE: This confirms iframe communicator is loading and can send messages');
-          break;
-        case 'IFRAME_LOADED':
-          console.log('🔧 PARENT PAGE: Iframe communicator loaded successfully:', data.message);
-          console.log('🔧 PARENT PAGE: Iframe communication is working');
-          break;
-        case 'IFRAME_COMMUNICATOR_LOADED':
-          console.log('🔧 PARENT PAGE: ===== IFRAME COMMUNICATOR LOADED =====');
-          console.log('🔧 PARENT PAGE: Message:', data.message);
-          console.log('🔧 PARENT PAGE: Timestamp:', data.timestamp);
-          console.log('🔧 PARENT PAGE: Iframe communicator is loaded and ready');
-          break;
-        default:
-          console.log('❓ PARENT PAGE: Unknown message type:', data.type, '| Full data:', data);
-      }
-    };
-
-    console.log('🎯 PARENT PAGE: Setting up single message listener');
-    window.addEventListener('message', handleMessage);
-    
-    return () => {
-      console.log('🎯 PARENT PAGE: Cleaning up message listener');
-      window.removeEventListener('message', handleMessage);
-    };
-  }, []);
+  // Message listener is now defined after stableHandleSuccessfulPayment function
 
   // Handle payment form display and submission
   useEffect(() => {
@@ -1394,66 +1246,20 @@ export default function CheckoutPage() {
                 billing_state: billingData.state,
                 billing_zip: billingData.zip,
                 billing_country: billingData.country,
-                                 billing_phone: billingData.phoneNumber,
-                source: 'checkout'
-              })
+                billing_phone: billingData.phoneNumber,
+              }),
             });
-
-            if (syncResponse.ok) {
-              console.log('🔄 CHECKOUT: ✅ New user profile synced successfully');
-            } else {
-              console.log('🔄 CHECKOUT: ❌ New user profile sync failed');
-            }
+            console.log('🔄 CHECKOUT: User profile sync response:', syncResponse);
           } catch (syncError) {
-            console.error('🔄 CHECKOUT: ❌ Error syncing new user profile:', syncError);
+            console.error('🔄 CHECKOUT: Error syncing user profile:', syncError);
           }
-        }
-        
-        if (authError) {
-          console.error('🚨 CHECKOUT: Error creating account after payment:', authError);
-          console.error('🚨 CHECKOUT: Auth error details:', JSON.stringify(authError, null, 2));
-          // Don't fail the entire checkout if account creation fails - payment was successful
         } else {
-          console.log('✅ CHECKOUT: Account created successfully after payment');
-          console.log('✅ CHECKOUT: New user data:', {
-            userId: authData.user?.id,
-            email: authData.user?.email,
-            emailConfirmed: authData.user?.email_confirmed_at
-          });
-          
-          // Auto-confirm the user to bypass email verification
-          try {
-            console.log('🔧 CHECKOUT: Auto-confirming user email...');
-            const confirmResponse = await fetch('/api/auto-confirm-user', {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-              },
-              body: JSON.stringify({ email: formData.email }),
-            });
-
-            const confirmResult = await confirmResponse.json();
-            
-            if (confirmResponse.ok) {
-              console.log('🔧 CHECKOUT: ✅ User auto-confirmed successfully');
-            } else {
-              console.error('🔧 CHECKOUT: ❌ Auto-confirm failed:', confirmResult);
-            }
-          } catch (confirmError) {
-            console.error('🔧 CHECKOUT: ❌ Error auto-confirming user:', confirmError);
-          }
-          
-          newAccountCreated = true;
-          userId = authData.user?.id || null;
+          console.error('🔍 CHECKOUT: Error creating user account:', authError);
         }
-      } else {
-        console.log('✅ CHECKOUT: User already authenticated, using existing account:', {
-          userId: currentUser.id,
-          email: currentUser.email
-        });
       }
-      
-      // Create order in database
+
+      // Proceed with order creation
+      console.log('🚀 CHECKOUT: Proceeding with order creation...');
       const orderPayload = {
         items: pendingOrder.items,
         addOnItems: pendingOrder.addOnItems || [], // Include add-on items
@@ -1552,10 +1358,11 @@ export default function CheckoutPage() {
       sessionStorage.removeItem('pendingOrder');
       localStorage.removeItem('selectedAddOns');
       
-      console.log('🚀 CHECKOUT: completedOrder stored, redirecting to thank-you with order number');
+      console.log('🚀 CHECKOUT: completedOrder stored successfully');
       
       // Hide processing popup before redirect
       setShowProcessingPopup(false);
+      console.log('🚀 CHECKOUT: Processing popup hidden');
       
       // Redirect to thank you page with order number for persistence
       router.push(`/thank-you?order=${orderResult.order.orderNumber}`);
@@ -1568,6 +1375,7 @@ export default function CheckoutPage() {
       
       // Hide processing popup on error
       setShowProcessingPopup(false);
+      console.log('🚀 CHECKOUT: Processing popup hidden due to error');
     }
   };
 
@@ -1886,9 +1694,161 @@ export default function CheckoutPage() {
   const processedTransactionIdsRef = useRef(new Set<string>());
 
   const handleSuccessfulPaymentRef = useRef(handleSuccessfulPayment);
+  
+  // Update the ref whenever the function changes, but add logging to track updates
   useEffect(() => {
+    console.log('🔧 CHECKOUT: Updating handleSuccessfulPaymentRef - function recreated');
     handleSuccessfulPaymentRef.current = handleSuccessfulPayment;
   }, [handleSuccessfulPayment]);
+  
+  // Create a stable wrapper function that always calls the latest version
+  const stableHandleSuccessfulPayment = useCallback(async (response: any) => {
+    console.log('🔧 CHECKOUT: stableHandleSuccessfulPayment called, delegating to current ref');
+    if (handleSuccessfulPaymentRef.current) {
+      return handleSuccessfulPaymentRef.current(response);
+    } else {
+      console.error('🔧 CHECKOUT: handleSuccessfulPaymentRef.current is null!');
+    }
+  }, []); // No dependencies - this function never changes
+
+  // Listen for iframe communication messages - MOVED AFTER stableHandleSuccessfulPayment
+  useEffect(() => {
+    const handleMessage = (event: MessageEvent) => {
+      console.log('🎯 PARENT PAGE: ===== MESSAGE RECEIVED =====');
+      console.log('🎯 PARENT PAGE: Received message from iframe:', event);
+      console.log('🎯 PARENT PAGE: Message origin:', event.origin);
+      console.log('🎯 PARENT PAGE: Message data:', event.data);
+      console.log('🎯 PARENT PAGE: Current window location:', window.location.href);
+      console.log('🎯 PARENT PAGE: Message data type:', typeof event.data);
+      console.log('🎯 PARENT PAGE: Message data.type:', event.data?.type);
+      
+      // Accept messages from allowed origins
+      const allowedOrigins = [
+        'https://www.fasho.co',
+        'https://fasho-landing.vercel.app',
+        window.location.origin,
+        'http://localhost:3000',
+        'http://localhost:3001',
+        'https://test.authorize.net',
+        'https://accept.authorize.net'
+      ];
+      
+      // For development, accept all origins but log everything
+      if (process.env.NODE_ENV === 'development') {
+        console.log('🔍 PARENT PAGE: Development mode - accepting all origins. Origin:', event.origin);
+      } else {
+        if (!allowedOrigins.includes(event.origin)) {
+          console.log('🚫 PARENT PAGE: Message origin not allowed. Expected one of:', allowedOrigins, 'Got:', event.origin);
+          return;
+        }
+      }
+      console.log('✅ PARENT PAGE: Message origin check passed. Origin:', event.origin);
+      
+      const data = event.data;
+      console.log('🎯 PARENT PAGE: Processing message type:', data?.type, '| typeof:', typeof data, '| Full data:', data);
+      
+      switch (data.type) {
+        case 'PAYMENT_COMPLETE':
+          console.log('🚨 MESSAGE: ===== PAYMENT_COMPLETE MESSAGE RECEIVED =====');
+          console.log('🚨 MESSAGE: Message event origin:', event.origin);
+          console.log('🚨 MESSAGE: Message timestamp:', new Date().toISOString());
+          console.log('🚨 MESSAGE: Payment completed, processing response:', data.response);
+          console.log('🚨 MESSAGE: stableHandleSuccessfulPayment exists:', !!stableHandleSuccessfulPayment);
+          
+          // Show processing popup only once when payment is submitted
+          if (!hasShownProcessingPopup) {
+            console.log('🔄 PARENT PAGE: Showing processing popup for first time');
+            setShowProcessingPopup(true);
+            setHasShownProcessingPopup(true);
+          }
+          
+          // Use the stable function
+          const response = data.response;
+          console.log('🔍 PAYMENT: Iframe response received:', response);
+
+          if (!response || typeof response !== 'object') {
+            console.error('🔍 PAYMENT: Invalid response format');
+            setError('No payment response received. Please try again.');
+            setIsLoading(false);
+            setShowPaymentForm(false);
+            setShowProcessingPopup(false);
+            return;
+          }
+
+          console.log('🔍 PAYMENT: Response code:', response.responseCode);
+          console.log('🔍 PAYMENT: Response reason:', response.responseReasonText);
+
+          if (response.responseCode === '1') {
+            console.log('✅ PAYMENT: Transaction approved, processing success');
+            console.log('🚨 MESSAGE: ABOUT TO CALL stableHandleSuccessfulPayment WITH:', response?.transId);
+            try {
+              stableHandleSuccessfulPayment(response);
+            } catch (error) {
+              console.error('🔍 PAYMENT: Error in stableHandleSuccessfulPayment:', error);
+              setError('Payment was successful but there was an error processing your order. Please contact support.');
+              setShowProcessingPopup(false);
+            }
+          } else {
+            console.error('🔍 PAYMENT: Transaction declined or error:', response.responseReasonText);
+            setError(`Payment failed: ${response.responseReasonText}`);
+            setIsLoading(false);
+            setShowPaymentForm(false);
+            setShowProcessingPopup(false);
+          }
+          break;
+
+        case 'PAYMENT_CANCELLED':
+          console.log('❌ PARENT PAGE: Payment was cancelled');
+          setError('Payment was cancelled');
+          setIsLoading(false);
+          setShowPaymentForm(false);
+          setShowProcessingPopup(false);
+          break;
+        case 'PAYMENT_SUCCESS':
+          console.log('✅ PARENT PAGE: Payment success event received');
+          break;
+
+        case 'RESIZE_IFRAME':
+          console.log('📏 PARENT PAGE: Resize iframe request:', data.width, 'x', data.height);
+          const iframe = document.getElementById('paymentIframe') as HTMLIFrameElement;
+          if (iframe && data.width && data.height) {
+            iframe.style.width = data.width + 'px';
+            iframe.style.height = data.height + 'px';
+          }
+          break;
+        case 'IFRAME_LOADED':
+          console.log('🔧 PARENT PAGE: Iframe communicator loaded successfully:', data.message);
+          break;
+        case 'TEST_MESSAGE':
+          console.log('🔧 PARENT PAGE: Test message received:', data.message);
+          break;
+        case 'IFRAME_COMMUNICATOR_LOADED':
+          console.log('🔧 PARENT PAGE: ===== IFRAME COMMUNICATOR LOADED =====');
+          console.log('🔧 PARENT PAGE: Message:', data.message);
+          console.log('🔧 PARENT PAGE: Iframe communicator is loaded and ready');
+          break;
+        default:
+          console.log('❓ PARENT PAGE: Unknown message type:', data.type, '| Full data:', data);
+      }
+    };
+
+    console.log('🎯 PARENT PAGE: Setting up message listener (CORRECT POSITION)');
+    window.addEventListener('message', handleMessage);
+    
+    // Test message listener after a delay
+    setTimeout(() => {
+      console.log('🎯 PARENT PAGE: Testing message listener with test message');
+      window.postMessage({
+        type: 'TEST_MESSAGE',
+        message: 'Test from parent window'
+      }, window.location.origin);
+    }, 3000);
+    
+    return () => {
+      console.log('🎯 PARENT PAGE: Cleaning up message listener (CORRECT POSITION)');
+      window.removeEventListener('message', handleMessage);
+    };
+  }, []); // Empty dependency array is fine here
 
   // Auto-submit the payment form when token is available
   useEffect(() => {
