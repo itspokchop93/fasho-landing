@@ -8,6 +8,7 @@ import { createClient } from '../utils/supabase/client';
 import { userProfileService, UserProfileData, ArtistProfile } from '../utils/userProfile';
 import LegalModal from '../components/LegalModal';
 import SpotlightCard from '../components/SpotlightCard';
+import { useAuth } from '../utils/authContext';
 
 interface Package {
   id: string;
@@ -119,6 +120,9 @@ export default function CheckoutPage() {
   const router = useRouter();
   const { tracks: tracksParam, selectedPackages: selectedPackagesParam } = router.query;
   const supabase = createClient();
+  
+  // Use the auth context instead of managing our own auth state
+  const { user: currentUser, loading: authLoading } = useAuth();
 
   const [tracks, setTracks] = useState<Track[]>([]);
   const [selectedPackages, setSelectedPackages] = useState<{[key: number]: string}>({});
@@ -143,7 +147,6 @@ export default function CheckoutPage() {
   const [formError, setFormError] = useState('');
   const [sessionId, setSessionId] = useState<string>('');
   const [fieldErrors, setFieldErrors] = useState<{[key: string]: string}>({});
-  const [currentUser, setCurrentUser] = useState<any>(null);
   const [isLoginMode, setIsLoginMode] = useState(false);
   const [isCheckingEmail, setIsCheckingEmail] = useState(false);
   const [showPaymentForm, setShowPaymentForm] = useState(false);
@@ -1002,137 +1005,39 @@ export default function CheckoutPage() {
     }
   };
 
-  // Check if user is already logged in
+  // Respond to authentication changes from auth context
   useEffect(() => {
-    console.log('🔐 CHECKOUT: Starting authentication check...');
+    console.log('🔐 CHECKOUT: Auth context changed - user:', currentUser?.email || 'null', 'loading:', authLoading);
     
-    const checkUser = async () => {
-      try {
-        console.log('🔐 CHECKOUT: About to call supabase.auth.getUser()');
-        
-        // Try multiple methods to get the user
-        let user: any = null;
-        let authMethod = 'none';
-        
-        // Method 1: getUser()
-        try {
-          const { data: { user: userData }, error } = await supabase.auth.getUser();
-          if (userData && !error) {
-            user = userData;
-            authMethod = 'getUser';
-          } else if (error) {
-            console.log('🔐 CHECKOUT: getUser() failed:', error.message);
-          }
-        } catch (err) {
-          console.log('🔐 CHECKOUT: getUser() exception:', err);
-        }
-        
-        // Method 2: getSession() fallback
-        if (!user) {
-          try {
-            const { data: { session }, error: sessionError } = await supabase.auth.getSession();
-            if (session?.user && !sessionError) {
-              user = session.user;
-              authMethod = 'getSession';
-            } else if (sessionError) {
-              console.log('🔐 CHECKOUT: getSession() failed:', sessionError.message);
-            }
-          } catch (err) {
-            console.log('🔐 CHECKOUT: getSession() exception:', err);
-          }
-        }
-        
-        // Method 3: Server-side auth check as final fallback
-        if (!user) {
-          try {
-            const response = await fetch('/api/test-auth', {
-              method: 'GET',
-              credentials: 'include'
-            });
-            const authData = await response.json();
-            if (authData.authenticated && authData.user) {
-              user = authData.user;
-              authMethod = 'serverCheck';
-            } else {
-              console.log('🔐 CHECKOUT: Server auth check failed:', authData.error);
-            }
-          } catch (err) {
-            console.log('🔐 CHECKOUT: Server auth check exception:', err);
-          }
-        }
-        
-        console.log('🔐 CHECKOUT: Final auth result:', {
-          hasUser: !!user,
-          email: user?.email || 'none',
-          method: authMethod
-        });
-        
-        setCurrentUser(user);
-        
-        // Autofill billing data if user is authenticated
-        if (user?.id) {
-          await autofillUserProfile(user.id);
-        }
-        
-        // Fetch artist profile if user is authenticated
-        if (user?.id) {
-          fetchArtistProfile(user);
-        }
-        
-        // If user is found, also update the form email field
-        if (user?.email) {
-          console.log('🔐 CHECKOUT: Pre-filling email field with user email:', user.email);
-          setFormData(prev => ({
-            ...prev,
-            email: user.email || ''
-          }));
-        }
-      } catch (err) {
-        console.error('🔐 CHECKOUT: Exception in checkUser:', err);
-        setCurrentUser(null);
+    if (currentUser && !authLoading) {
+      console.log('🔐 CHECKOUT: User authenticated, fetching profile data...');
+      
+      // Autofill billing data if user is authenticated
+      if (currentUser?.id) {
+        autofillUserProfile(currentUser.id);
       }
-    };
-    
-    checkUser();
-
-    // Listen for auth changes to ensure we detect login/logout events
-    console.log('🔐 CHECKOUT: Setting up onAuthStateChange listener');
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, session) => {
-        console.log('🔐 CHECKOUT: Auth state changed:', event, 'User:', session?.user?.email || 'None');
-        console.log('🔐 CHECKOUT: Full session object:', session);
-        setCurrentUser(session?.user ?? null);
-        
-        // Fetch artist profile if user is authenticated
-        if (session?.user?.id) {
-          fetchArtistProfile(session.user);
-        }
-        
-        // Update email field when user logs in
-        if (session?.user?.email) {
-          console.log('🔐 CHECKOUT: Auth change - updating email field:', session.user.email);
-          setFormData(prev => ({
-            ...prev,
-            email: session.user.email || ''
-          }));
-        }
+      
+      // Fetch artist profile if user is authenticated
+      if (currentUser?.id) {
+        fetchArtistProfile(currentUser);
       }
-    );
-
-    return () => {
-      console.log('🔐 CHECKOUT: Cleaning up auth listener');
-      subscription.unsubscribe();
-    };
-  }, []);
-
-  // Fetch artist profile when user changes
-  useEffect(() => {
-    if (currentUser) {
-      fetchArtistProfile();
-    } else {
+      
+      // Pre-fill email field with user email
+      if (currentUser?.email) {
+        console.log('🔐 CHECKOUT: Pre-filling email field with user email:', currentUser.email);
+        setFormData(prev => ({
+          ...prev,
+          email: currentUser.email || ''
+        }));
+      }
+    } else if (!currentUser && !authLoading) {
+      console.log('🔐 CHECKOUT: No user, clearing profile data...');
       setArtistProfile(null);
+      // Don't clear form data here as user might be in the middle of filling it out
     }
-  }, [currentUser]);
+  }, [currentUser, authLoading]);
+
+
 
   // Listen for iframe communication messages
   useEffect(() => {
@@ -1999,7 +1904,7 @@ export default function CheckoutPage() {
     }
   }, [paymentToken, showPaymentForm]);
 
-  if (!router.isReady || (orderItems.length === 0 && !error)) {
+  if (!router.isReady || authLoading || (orderItems.length === 0 && !error)) {
     return (
       <div className="min-h-screen bg-black text-white flex items-center justify-center">
         <div className="text-center">
@@ -2105,7 +2010,7 @@ export default function CheckoutPage() {
               {/* Left Column - Account & Payment */}
               <div className="space-y-6">
                 {/* Account Details or Signed In Status */}
-                {currentUser ? (
+                {currentUser && !authLoading ? (
                   <div className="bg-white/5 rounded-xl p-6 border border-white/20">
                     <div className="flex items-center justify-between mb-4">
                       <h2 className="text-lg font-semibold">Account</h2>
@@ -2131,7 +2036,7 @@ export default function CheckoutPage() {
                       </div>
                     </div>
                   </div>
-                ) : (
+                ) : !authLoading ? (
                   <div className="bg-white/5 rounded-xl p-6 border border-white/20">
                     <div className="flex items-center justify-between mb-2">
                       <h2 className="text-lg font-semibold">
@@ -2360,11 +2265,42 @@ export default function CheckoutPage() {
                       </div>
                     )}
                   </div>
+                ) : (
+                  <div className="bg-white/5 rounded-xl p-6 border border-white/20">
+                    <div className="flex items-center justify-center">
+                      <div className="w-6 h-6 border-2 border-[#59e3a5] border-t-transparent rounded-full animate-spin mr-3"></div>
+                      <span className="text-white/80">Loading account...</span>
+                    </div>
+                  </div>
                 )}
 
                 {/* Billing Information */}
                 <div className="bg-white/5 rounded-xl p-6 border border-white/20">
-                  <h2 className="text-lg font-semibold mb-2">Billing Information</h2>
+                  <div className="flex items-center justify-between mb-2">
+                    <h2 className="text-lg font-semibold">Billing Information</h2>
+                    {/* Clear billing form link - only show if form has values */}
+                    {(billingData.firstName || billingData.lastName || billingData.address || 
+                      billingData.city || billingData.state || billingData.zip || billingData.phoneNumber) && (
+                      <button
+                        type="button"
+                        onClick={() => setBillingData({
+                          firstName: '',
+                          lastName: '',
+                          address: '',
+                          address2: '',
+                          city: '',
+                          state: '',
+                          zip: '',
+                          country: 'US',
+                          countryCode: '+1',
+                          phoneNumber: ''
+                        })}
+                        className="text-red-400 hover:text-red-300 text-sm transition-colors"
+                      >
+                        Clear billing form
+                      </button>
+                    )}
+                  </div>
                   <p className="text-sm text-white/60 mb-6">
                     Enter your billing address for payment verification.
                   </p>

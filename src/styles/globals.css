@@ -39,66 +39,34 @@ h1, h2, h3, h4, h5, h6, p, div {
   word-break: keep-all;
 }
 
-/* Enhanced Autofill styling override - preserves all styling */
+/* CHROME AUTOFILL OVERRIDE - Most effective solution for pre-filled fields */
+
+/* Primary method: Transition delay - prevents Chrome's yellow background from ever showing */
 input:-webkit-autofill,
 input:-webkit-autofill:hover,
 input:-webkit-autofill:focus,
-input:-webkit-autofill:active,
-input:-webkit-autofill:valid {
+input:-webkit-autofill:active {
+  -webkit-transition-delay: 99999s !important;
+  -webkit-transition-property: background-color, color !important;
+}
+
+/* Secondary method: Box shadow inset - for manual autofill selections */
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus,
+input:-webkit-autofill:active {
   -webkit-box-shadow: 0 0 0 1000px transparent inset !important;
   -webkit-text-fill-color: white !important;
-  background-color: transparent !important;
-  background-image: none !important;
-  background-attachment: fixed !important;
-  transition: background-color 99999s ease-in-out 0s !important;
-  caret-color: white !important;
-  color: white !important;
-  border-color: inherit !important;
-  font-family: inherit !important;
-  font-size: inherit !important;
-  font-weight: inherit !important;
-  line-height: inherit !important;
 }
 
-/* Force styling on page load for pre-filled fields */
-input[type="email"],
-input[type="password"],
-input[type="text"] {
-  color: white !important;
-  background-color: transparent !important;
-  background-image: none !important;
-}
-
-/* Aggressive autofill override for immediate page load */
-@-webkit-keyframes autofill {
-  0%,100% {
-    color: white !important;
-    background: transparent !important;
-  }
-}
-
-input:-webkit-autofill {
-  -webkit-animation-delay: 1s;
-  -webkit-animation-name: autofill;
-  -webkit-animation-fill-mode: both;
-}
-
+/* Input type specific autofill overrides */
 input[type="email"]:-webkit-autofill,
 input[type="password"]:-webkit-autofill,
-input[type="text"]:-webkit-autofill,
-input[type="email"]:-webkit-autofill:valid,
-input[type="password"]:-webkit-autofill:valid,
-input[type="text"]:-webkit-autofill:valid {
-  -webkit-box-shadow: 0 0 0 30px transparent inset !important;
+input[type="text"]:-webkit-autofill {
+  -webkit-transition-delay: 99999s !important;
+  -webkit-transition-property: background-color, color !important;
+  -webkit-box-shadow: 0 0 0 1000px transparent inset !important;
   -webkit-text-fill-color: white !important;
-  background-color: transparent !important;
-  background-image: none !important;
-  transition: background-color 5000s ease-in-out 0s !important;
-  caret-color: white !important;
-  font-family: inherit !important;
-  font-size: inherit !important;
-  font-weight: inherit !important;
-  line-height: inherit !important;
 }
 
 /* Firefox autofill override */
@@ -114,30 +82,36 @@ input:-moz-autofill:focus {
   line-height: inherit !important;
 }
 
-/* Enhanced Autofill class for manual application */
+/* Autofill override class for manual application */
 .autofill-override:-webkit-autofill,
 .autofill-override:-webkit-autofill:hover,
 .autofill-override:-webkit-autofill:focus,
-.autofill-override:-webkit-autofill:active,
-.autofill-override:-webkit-autofill:valid {
-  -webkit-box-shadow: 0 0 0 30px transparent inset !important;
+.autofill-override:-webkit-autofill:active {
+  -webkit-transition-delay: 99999s !important;
+  -webkit-transition-property: background-color, color !important;
+  -webkit-box-shadow: 0 0 0 1000px transparent inset !important;
   -webkit-text-fill-color: white !important;
-  background-color: transparent !important;
-  background-image: none !important;
-  transition: background-color 5000s ease-in-out 0s !important;
-  caret-color: white !important;
-  font-family: inherit !important;
-  font-size: inherit !important;
-  font-weight: inherit !important;
-  line-height: inherit !important;
-  border-color: inherit !important;
 }
 
-/* Additional override for pre-filled fields on page load */
-.autofill-override {
-  color: white !important;
-  background-color: transparent !important;
-  background-image: none !important;
+/* Welcome message desktop styling */
+.welcome-message-desktop {
+  font-size: 1.975rem; /* 1.875rem (text-3xl) + 0.10rem */
+}
+
+@media (min-width: 1024px) {
+  .welcome-message-desktop {
+    font-size: 2.35rem; /* 2.25rem (text-4xl) + 0.10rem */
+  }
+}
+
+.welcome-fasho-desktop {
+  font-size: 1.975rem; /* 1.875rem (text-3xl) + 0.10rem */
+}
+
+@media (min-width: 1024px) {
+  .welcome-fasho-desktop {
+    font-size: 2.35rem; /* 2.25rem (text-4xl) + 0.10rem */
+  }
 }
 
 .autofill-override:-moz-autofill,

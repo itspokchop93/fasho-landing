@@ -727,7 +727,7 @@ export default function SignUpPage() {
         {/* Desktop Layout */}
         <div className="hidden md:flex min-h-screen relative">
           {/* Left side - Form */}
-          <div className="w-1/2 relative flex items-center justify-center p-8 lg:p-16">
+          <div className="w-1/2 relative flex items-start justify-center p-8 lg:p-16 pt-24 lg:pt-32">
             {/* Marble background for form side */}
             <div className="absolute inset-0 bg-black z-0"></div>
             <div 
@@ -736,13 +736,13 @@ export default function SignUpPage() {
             ></div>
 
             <div className="w-full max-w-md relative z-20">
-              <div className="mb-8">
-                <h1 className="text-4xl lg:text-5xl font-extrabold mb-4">
-                  welcome to
+              <div className="mb-8 text-center">
+                <h1 className="font-extrabold mb-4 leading-tight welcome-message-desktop">
+                  welcome to<br />
+                  <span className="bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] bg-clip-text text-transparent welcome-fasho-desktop">
+                    fasho.co
+                  </span>
                 </h1>
-                <h2 className="text-4xl lg:text-5xl font-extrabold bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] bg-clip-text text-transparent">
-                  fasho.co
-                </h2>
               </div>
 
               {/* Message display */}
@@ -769,14 +769,6 @@ export default function SignUpPage() {
                         onChange={handleInputChange}
                         autoComplete="name"
                         className="w-full bg-transparent border-b-2 border-white/30 pb-3 text-white placeholder-white/60 focus:border-[#59e3a5] focus:outline-none transition-colors text-lg autofill-override"
-                        style={{
-                          WebkitTextFillColor: 'white !important',
-                          WebkitBoxShadow: '0 0 0 1000px transparent inset !important',
-                          backgroundColor: 'transparent !important',
-                          backgroundImage: 'none !important',
-                          caretColor: 'white !important',
-                          transition: 'background-color 5000s ease-in-out 0s !important'
-                        }}
                         required
                       />
                     </div>
@@ -795,14 +787,6 @@ export default function SignUpPage() {
                         emailStatus === 'exists' || emailStatus === 'invalid' ? 'border-red-500' :
                         'border-white/30 focus:border-[#59e3a5]'
                       }`}
-                      style={{
-                        WebkitTextFillColor: 'white !important',
-                        WebkitBoxShadow: '0 0 0 1000px transparent inset !important',
-                        backgroundColor: 'transparent !important',
-                        backgroundImage: 'none !important',
-                        caretColor: 'white !important',
-                        transition: 'background-color 5000s ease-in-out 0s !important'
-                      }}
                       required
                     />
                     
@@ -862,14 +846,6 @@ export default function SignUpPage() {
                           ? 'border-red-500 focus:border-red-500' 
                           : 'border-white/30 focus:border-[#59e3a5]'
                       }`}
-                      style={{
-                        WebkitTextFillColor: 'white !important',
-                        WebkitBoxShadow: '0 0 0 1000px transparent inset !important',
-                        backgroundColor: 'transparent !important',
-                        backgroundImage: 'none !important',
-                        caretColor: 'white !important',
-                        transition: 'background-color 5000s ease-in-out 0s !important'
-                      }}
                       required
                     />
                     <button

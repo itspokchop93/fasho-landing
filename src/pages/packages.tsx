@@ -1168,14 +1168,14 @@ export default function PackagesPage() {
                     </h3>
                   </div>
                   {/* Featured list - 1 column, left-aligned on mobile, with 15px left padding */}
-                  <div className="grid grid-cols-1 gap-y-3 justify-items-start text-left pl-[15px] md:grid-cols-2 md:justify-items-start md:text-left md:pl-0">
+                  <div className="grid grid-cols-1 gap-y-3 justify-items-start text-left pl-[15px] md:grid-cols-2 md:gap-x-6 md:justify-items-start md:text-left md:pl-0">
                     {[
                       'Campaign starts within only 24-48 hours',
                       'All streams achieved in only 7-10 days', 
-                      'Established playlist curators',
+                      '<gradient>Curator Connect+</gradient> Unlimited Access',
                       'All genres supported',
                       'Spotify-safe guarantee',
-                      'Dashboard tracking included',
+                      'Established playlist curators',
                       'Priority curator outreach',
                       'Major playlist targeting',
                       'VIP curator network access',
@@ -1188,8 +1188,18 @@ export default function PackagesPage() {
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
                           </svg>
                         </div>
-                        <span className="text-white/90 text-xs leading-relaxed group-hover:text-white transition-colors duration-200 text-center md:text-left" style={{ fontSize: 'calc(0.875rem + 0.15rem)' }}>
-                          {feature}
+                        <span className="text-white/90 text-xs leading-relaxed group-hover:text-white transition-colors duration-200 text-center md:text-left" style={{ fontSize: 'calc(0.875rem - 0.02rem)' }}>
+                          {feature.includes('<gradient>') ? (
+                            <>
+                              {feature.split('<gradient>')[0]}
+                                                              <span className="bg-gradient-to-r from-[#59e3a5] via-[#14c0ff] to-[#8b5cf6] bg-clip-text text-transparent font-semibold">
+                                  {feature.split('<gradient>')[1].split('</gradient>')[0]}
+                                </span>
+                              {feature.split('</gradient>')[1]}
+                            </>
+                          ) : (
+                            feature
+                          )}
                         </span>
                       </div>
                     ))}
@@ -1615,7 +1625,7 @@ export default function PackagesPage() {
                </div>
 
                {/* Campaign Features Section */}
-               <div className="mt-8 bg-gradient-to-br from-white/5 via-white/3 to-white/5 rounded-2xl p-6 border border-white/10 backdrop-blur-sm relative overflow-hidden">
+               <div className="mt-8 bg-gradient-to-br from-white/5 via-white/3 to-white/5 rounded-2xl pl-6 pr-3 py-6 border border-white/10 backdrop-blur-sm relative overflow-hidden">
                  {/* Subtle gradient glow */}
                  <div className="absolute inset-0 bg-gradient-to-br from-[#59e3a5]/5 via-[#14c0ff]/5 to-[#8b5cf6]/5 rounded-2xl blur-xl opacity-60"></div>
                  
@@ -1628,14 +1638,14 @@ export default function PackagesPage() {
                      </h3>
                    </div>
                    {/* Featured list - 1 column, left-aligned on mobile, with 15px left padding */}
-                   <div className="grid grid-cols-1 gap-y-3 justify-items-start text-left pl-[15px] md:grid-cols-2 md:justify-items-start md:text-left md:pl-0">
+                   <div className="grid grid-cols-1 gap-y-3 justify-items-start text-left pl-[15px] md:grid-cols-2 md:gap-x-6 md:justify-items-start md:text-left md:pl-0">
                      {[
                        'Campaign starts within only 24-48 hours',
                        'All streams achieved in only 7-10 days', 
-                       'Established playlist curators',
+                       '<gradient>Curator Connect+</gradient> Unlimited Access',
                        'All genres supported',
                        'Spotify-safe guarantee',
-                       'Dashboard tracking included',
+                       'Established playlist curators',
                        'Priority curator outreach',
                        'Major playlist targeting',
                        'VIP curator network access',
@@ -1648,8 +1658,18 @@ export default function PackagesPage() {
                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
                            </svg>
                          </div>
-                         <span className="text-white/90 text-xs leading-relaxed group-hover:text-white transition-colors duration-200 text-center md:text-left" style={{ fontSize: 'calc(0.875rem + 0.15rem)' }}>
-                           {feature}
+                         <span className="text-white/90 text-xs leading-relaxed group-hover:text-white transition-colors duration-200 text-center md:text-left" style={{ fontSize: 'calc(0.875rem - 0.02rem)' }}>
+                           {feature.includes('<gradient>') ? (
+                             <>
+                               {feature.split('<gradient>')[0]}
+                               <span className="bg-gradient-to-r from-[#59e3a5] via-[#14c0ff] to-[#8b5cf6] bg-clip-text text-transparent font-semibold">
+                                 {feature.split('<gradient>')[1].split('</gradient>')[0]}
+                               </span>
+                               {feature.split('</gradient>')[1]}
+                             </>
+                           ) : (
+                             feature
+                           )}
                          </span>
                        </div>
                      ))}
