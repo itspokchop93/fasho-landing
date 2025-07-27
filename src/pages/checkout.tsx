@@ -9,6 +9,7 @@ import { userProfileService, UserProfileData, ArtistProfile } from '../utils/use
 import LegalModal from '../components/LegalModal';
 import SpotlightCard from '../components/SpotlightCard';
 import { useAuth } from '../utils/authContext';
+import { sendPaymentFailedEmail, sendAdminPaymentFailedEmail } from '../utils/email/emailService';
 
 interface Package {
   id: string;
@@ -1858,8 +1859,58 @@ export default function CheckoutPage() {
               console.error('❌ TRANSACT RESPONSE: Sync error processing payment:', error);
             }
           } else {
-            console.log('❌ TRANSACT RESPONSE: Payment failed/declined');
-            console.log('ℹ️  NOTE: Payment failed emails are handled via Authorize.net webhooks, not iframe communication');
+            console.log('❌ TRANSACT RESPONSE: Payment failed/declined, triggering payment failed emails');
+            
+            // Payment failed - trigger our payment failed email logic
+            (async () => {
+              try {
+                console.log('📧 TRANSACT RESPONSE: Sending payment failed emails...');
+                
+                const pendingOrderData = sessionStorage.getItem('pendingOrder');
+                console.log('📧 TRANSACT RESPONSE: Retrieved pendingOrderData:', !!pendingOrderData);
+                
+                if (pendingOrderData) {
+                  const pendingOrder = JSON.parse(pendingOrderData);
+                  console.log('📧 TRANSACT RESPONSE: Parsed pendingOrder keys:', Object.keys(pendingOrder));
+                  
+                  const paymentData = {
+                    customer_email: pendingOrder.customerEmail,
+                    customer_name: pendingOrder.customerName,
+                    items: pendingOrder.items || [],
+                    addOnItems: pendingOrder.addOnItems || [],
+                    total: pendingOrder.total * 100,
+                    reason: parsedResponse?.responseReasonText || parsedResponse?.response_reason_text || 'Payment processing error'
+                  };
+                  
+                  console.log('📧 TRANSACT RESPONSE: Payment failed data:', paymentData);
+                  
+                  const supabase = createClient();
+                  console.log('📧 TRANSACT RESPONSE: Supabase client created');
+                  
+                  // Send customer notification
+                  try {
+                    console.log('📧 TRANSACT RESPONSE: About to call sendPaymentFailedEmail');
+                    const customerEmailSent = await sendPaymentFailedEmail(paymentData, supabase);
+                    console.log('📧 TRANSACT RESPONSE: Customer payment failed email sent:', customerEmailSent);
+                  } catch (emailError) {
+                    console.error('📧 TRANSACT RESPONSE: Error sending customer payment failed email:', emailError);
+                  }
+                  
+                  // Send admin notification
+                  try {
+                    console.log('📧 TRANSACT RESPONSE: About to call sendAdminPaymentFailedEmail');
+                    const adminEmailSent = await sendAdminPaymentFailedEmail(paymentData, supabase);
+                    console.log('📧 TRANSACT RESPONSE: Admin payment failed email sent:', adminEmailSent);
+                  } catch (emailError) {
+                    console.error('📧 TRANSACT RESPONSE: Error sending admin payment failed email:', emailError);
+                  }
+                } else {
+                  console.error('📧 TRANSACT RESPONSE: No pending order data found for payment failed emails');
+                }
+              } catch (emailError) {
+                console.error('📧 TRANSACT RESPONSE: Error in payment failed email process:', emailError);
+              }
+            })();
             
             // Update UI for failed payment
             setError(`Payment failed: ${parsedResponse?.responseReasonText || parsedResponse?.response_reason_text || 'Payment processing error'}`);
@@ -1928,7 +1979,61 @@ export default function CheckoutPage() {
           }
           } else {
             console.error('🔍 PAYMENT: Transaction declined or error:', response.responseReasonText);
-            console.log('ℹ️  NOTE: Payment failed emails are handled via Authorize.net webhooks, not iframe communication');
+            console.log('🚨 PAYMENT FAILED: About to trigger payment failed emails');
+            
+            // Send payment failed emails (async function to handle await)
+            (async () => {
+              try {
+                console.log('📧 CHECKOUT: Sending payment failed emails...');
+                console.log('📧 CHECKOUT: Starting payment failed email process');
+                
+                // Get pending order data for email details
+                const pendingOrderData = sessionStorage.getItem('pendingOrder');
+                console.log('📧 CHECKOUT: Retrieved pendingOrderData:', !!pendingOrderData);
+                if (pendingOrderData) {
+                  const pendingOrder = JSON.parse(pendingOrderData);
+                  console.log('📧 CHECKOUT: Parsed pendingOrder keys:', Object.keys(pendingOrder));
+                  
+                  // Prepare payment data for email
+                  const paymentData = {
+                    customer_email: pendingOrder.customerEmail,
+                    customer_name: pendingOrder.customerName,
+                    items: pendingOrder.items || [],
+                    addOnItems: pendingOrder.addOnItems || [],
+                    total: pendingOrder.total * 100, // Convert to cents for email service
+                    reason: response.responseReasonText || 'Payment processing error'
+                  };
+                  
+                  console.log('📧 CHECKOUT: Payment failed data:', paymentData);
+                  console.log('📧 CHECKOUT: About to import Supabase client');
+                  
+                  // Import Supabase client for email service
+                  const supabase = createClient();
+                  console.log('📧 CHECKOUT: Supabase client created');
+                  
+                  // Send customer notification
+                  try {
+                    console.log('📧 CHECKOUT: About to call sendPaymentFailedEmail');
+                    const customerEmailSent = await sendPaymentFailedEmail(paymentData, supabase);
+                    console.log('📧 CHECKOUT: Customer payment failed email sent:', customerEmailSent);
+                  } catch (emailError) {
+                    console.error('📧 CHECKOUT: Error sending customer payment failed email:', emailError);
+                  }
+                  
+                  // Send admin notification
+                  try {
+                    const adminEmailSent = await sendAdminPaymentFailedEmail(paymentData, supabase);
+                    console.log('📧 CHECKOUT: Admin payment failed email sent:', adminEmailSent);
+                  } catch (emailError) {
+                    console.error('📧 CHECKOUT: Error sending admin payment failed email:', emailError);
+                  }
+                } else {
+                  console.error('📧 CHECKOUT: No pending order data found for payment failed emails');
+                }
+              } catch (emailError) {
+                console.error('📧 CHECKOUT: Error sending payment failed emails:', emailError);
+              }
+            })();
             
             setError(`Payment failed: ${response.responseReasonText}`);
             setIsLoading(false);
@@ -1991,7 +2096,45 @@ export default function CheckoutPage() {
                 console.error('🚨 EMERGENCY: Sync error processing payment:', error);
               }
             } else {
-              console.log('🚨 EMERGENCY: Payment failed - handled via webhooks');
+              console.log('🚨 EMERGENCY: Payment failed, triggering payment failed emails');
+              // Payment failed - trigger our payment failed email logic
+              (async () => {
+                try {
+                  console.log('📧 EMERGENCY: Sending payment failed emails...');
+                  
+                  const pendingOrderData = sessionStorage.getItem('pendingOrder');
+                  if (pendingOrderData) {
+                    const pendingOrder = JSON.parse(pendingOrderData);
+                    
+                    const paymentData = {
+                      customer_email: pendingOrder.customerEmail,
+                      customer_name: pendingOrder.customerName,
+                      items: pendingOrder.items || [],
+                      addOnItems: pendingOrder.addOnItems || [],
+                      total: pendingOrder.total * 100,
+                      reason: data.response.responseReasonText || 'Payment processing error'
+                    };
+                    
+                    const supabase = createClient();
+                    
+                    try {
+                      const customerEmailSent = await sendPaymentFailedEmail(paymentData, supabase);
+                      console.log('📧 EMERGENCY: Customer payment failed email sent:', customerEmailSent);
+                    } catch (emailError) {
+                      console.error('📧 EMERGENCY: Error sending customer payment failed email:', emailError);
+                    }
+                    
+                    try {
+                      const adminEmailSent = await sendAdminPaymentFailedEmail(paymentData, supabase);
+                      console.log('📧 EMERGENCY: Admin payment failed email sent:', adminEmailSent);
+                    } catch (emailError) {
+                      console.error('📧 EMERGENCY: Error sending admin payment failed email:', emailError);
+                    }
+                  }
+                } catch (error) {
+                  console.error('📧 EMERGENCY: Error in payment failed email process:', error);
+                }
+              })();
             }
           }
           
@@ -2016,7 +2159,45 @@ export default function CheckoutPage() {
                 console.error('🚨 EMERGENCY 2: Sync error processing payment:', error);
               }
             } else {
-              console.log('🚨 EMERGENCY 2: Direct payment failed - handled via webhooks');
+              console.log('🚨 EMERGENCY 2: Direct payment failed, triggering emails');
+              // Direct payment failed - trigger our payment failed email logic
+              (async () => {
+                try {
+                  console.log('📧 EMERGENCY 2: Sending payment failed emails...');
+                  
+                  const pendingOrderData = sessionStorage.getItem('pendingOrder');
+                  if (pendingOrderData) {
+                    const pendingOrder = JSON.parse(pendingOrderData);
+                    
+                    const paymentData = {
+                      customer_email: pendingOrder.customerEmail,
+                      customer_name: pendingOrder.customerName,
+                      items: pendingOrder.items || [],
+                      addOnItems: pendingOrder.addOnItems || [],
+                      total: pendingOrder.total * 100,
+                      reason: data.responseReasonText || 'Payment processing error'
+                    };
+                    
+                    const supabase = createClient();
+                    
+                    try {
+                      const customerEmailSent = await sendPaymentFailedEmail(paymentData, supabase);
+                      console.log('📧 EMERGENCY 2: Customer payment failed email sent:', customerEmailSent);
+                    } catch (emailError) {
+                      console.error('📧 EMERGENCY 2: Error sending customer payment failed email:', emailError);
+                    }
+                    
+                    try {
+                      const adminEmailSent = await sendAdminPaymentFailedEmail(paymentData, supabase);
+                      console.log('📧 EMERGENCY 2: Admin payment failed email sent:', adminEmailSent);
+                    } catch (emailError) {
+                      console.error('📧 EMERGENCY 2: Error sending admin payment failed email:', emailError);
+                    }
+                  }
+                } catch (error) {
+                  console.error('📧 EMERGENCY 2: Error in payment failed email process:', error);
+                }
+              })();
             }
           }
       }
