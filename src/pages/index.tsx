@@ -189,7 +189,7 @@ const responsiveFontStyles = `
 // Custom hook for viewport intersection
 const useInView = (options: IntersectionObserverInit & { delay?: number } = {}) => {
   const [isInView, setIsInView] = useState(false);
-  const [hasAnimated, setHasAnimated] = useState(false);
+  const hasAnimatedRef = useRef(false);
   const ref = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -197,11 +197,11 @@ const useInView = (options: IntersectionObserverInit & { delay?: number } = {}) 
     
     const observer = new IntersectionObserver(
       ([entry]) => {
-        if (entry.isIntersecting && !hasAnimated) {
+        if (entry.isIntersecting && !hasAnimatedRef.current) {
+          hasAnimatedRef.current = true; // Prevent multiple triggers
           setTimeout(() => {
             setIsInView(true);
-            setHasAnimated(true);
-          }, delay); // Configurable delay after entering viewport
+          }, delay);
         }
       },
       { threshold: 0.1, ...observerOptions }
@@ -216,7 +216,7 @@ const useInView = (options: IntersectionObserverInit & { delay?: number } = {}) 
         observer.unobserve(ref.current);
       }
     };
-  }, [hasAnimated, options]);
+  }, []); // Empty dependency array to prevent re-creation
 
   return [ref, isInView] as const;
 };
