@@ -89,7 +89,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     
     const baseUrl = 'https://api.authorize.net/xml/v1/request.api';
 
-    console.log('🔧 PRODUCTION ENVIRONMENT CHECK:', {
+    console.log('🔧 PRODUCTION ENVIRONMENT CHECK (Updated Transaction Key):', {
       hasApiLoginId: !!apiLoginId,
       hasTransactionKey: !!transactionKey,
       apiLoginIdLength: apiLoginId?.length,
