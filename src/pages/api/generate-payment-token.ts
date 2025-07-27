@@ -281,14 +281,29 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     console.log('DEBUGGING: customerEmail type:', typeof customerEmail);
 
     // Make request to Authorize.net
-    const response = await fetch(`${baseUrl}/xml/v1/request.api`, {
+    // Handle SSL certificate issues in Node.js environments
+    const fetchOptions: any = {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         'Accept': 'application/json'
       },
       body: JSON.stringify(acceptHostedRequest),
-    });
+    };
+
+    // For Node.js environments, add SSL configuration
+    if (typeof process !== 'undefined' && process.env.NODE_ENV) {
+      const https = require('https');
+      const agent = new https.Agent({
+        // Use system's CA bundle instead of Node's limited bundle
+        rejectUnauthorized: true,
+        // Add system certificate authorities
+        ca: require('tls').rootCertificates
+      });
+      fetchOptions.agent = agent;
+    }
+
+    const response = await fetch(`${baseUrl}/xml/v1/request.api`, fetchOptions);
 
     console.log('Authorize.net response status:', response.status);
 
