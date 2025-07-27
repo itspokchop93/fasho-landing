@@ -1,4 +1,17 @@
 {
+  "functions": {
+    "src/pages/api/**/*.ts": {
+      "maxDuration": 30
+    }
+  },
+  "build": {
+    "env": {
+      "NODE_EXTRA_CA_CERTS": "./DigiCertGlobalRootG2.crt.pem"
+    }
+  },
+  "env": {
+    "NODE_EXTRA_CA_CERTS": "./DigiCertGlobalRootG2.crt.pem"
+  },
   "headers": [
     {
       "source": "/iframe-communicator.html",

@@ -281,51 +281,14 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     console.log('DEBUGGING: customerEmail type:', typeof customerEmail);
 
     // Make request to Authorize.net
-    // Handle SSL certificate issues in Node.js environments
-    const fetchOptions: any = {
+    const response = await fetch(`${baseUrl}/xml/v1/request.api`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         'Accept': 'application/json'
       },
       body: JSON.stringify(acceptHostedRequest),
-    };
-
-    // Configure SSL agent with DigiCert CA certificates for Authorize.net
-    if (typeof process !== 'undefined') {
-      const https = require('https');
-      
-      // DigiCert Global Root G2 certificate (used by Authorize.net)
-      const digiCertGlobalRootG2 = `-----BEGIN CERTIFICATE-----
-MIIDjjCCAnagAwIBAgIQAzrx5qcRqaC7KGSxHQn65TANBgkqhkiG9w0BAQsFADA5
-MQswCQYDVQQGEwJVUzEPMA0GA1UEChMGQW1hem9uMRkwFwYDVQQDExBBbWF6b24g
-Um9vdCBDQSAxMB4XDTE1MDUyNjAwMDAwMFoXDTM4MDExNzAwMDAwMFowOTELMAkG
-A1UEBhMCVVMxDzANBgNVBAoTBkFtYXpvbjEZMBcGA1UEAxMQQW1hem9uIFJvb3Qg
-Q0EgMTCCASIwDQYJKoZIhvcNAQEBBQADggEPADCCAQoCggEBALJ4gHHKeNXjca9H
-gFB0fW7Y14h29Jlo91ghYPl0hAEvrAIthtOgQ3pOsqTQNroBvo3bSMgHFzZM9O6I
-I8c+6zf1tRn4SWiw3te5djgdYZ6k/oI2peVKVuRF4fn9tBb6dNqcmzU5L/qwIFAG
-bHrQgLKm+a/sRxmPUDgH3KKHOVj4utWp+UhnMJbulHheb4mjUcAwhmahRWa6VOuj
-w5H5SNz/0egwLX0tdHA114gk957EWW67c4cX8jJGKLhD+rcdqsq08p8kDi1L93Fc
-Xmn/6pUCyziKrlA4b9v7LWIbxcceVOF34GfID5yHI9Y/QCB/IIDEgEw+OyQmjgSu
-bJrIqg0CAwEAAaNCMEAwDwYDVR0TAQH/BAUwAwEB/zAOBgNVHQ8BAf8EBAMCAYYw
-HQYDVR0OBBYEFIQYzIU07LwMlJQuCFmcx7IQTgoIMA0GCSqGSIb3DQEBCwUAA4IB
-AQCY8jdaQZChGsV2USggNiMOruYou6r4lK5IpDB/G/wkjUu0yKGX9rbxenDIU5PM
-CCjjmCXPI6T53iHTfIuJruydjsw2hUwsqdmHAiOBQU5fNQOKvDCtqJjVGKY25v2R
-gH2hZhb1V18d5sF8OJnJgfb9X2nC1+2KgG2YX4NWKqGQqBZeCJSu6pPGGApQFpB2
-R9/bv1z7YJY5T0QUQy0nMZlv9pmdNOeGPLONOUGpHzNJ1vCMIKd5VzrNMFM32MqD
-fMhgRYJNNvTHKN4ZBNQPqBZMG6+xqy8lN3GgNV5+3xKZY8jtTTXFmXgzNIYSwUbE
-CJqKYIBVGV0gnyQCDg8PSG0=
------END CERTIFICATE-----`;
-
-      const agent = new https.Agent({
-        ca: [digiCertGlobalRootG2],
-        rejectUnauthorized: true,
-        secureProtocol: 'TLSv1_2_method'
-      });
-      fetchOptions.agent = agent;
-    }
-
-    const response = await fetch(`${baseUrl}/xml/v1/request.api`, fetchOptions);
+    });
 
     console.log('Authorize.net response status:', response.status);
 
