@@ -1835,19 +1835,19 @@ export default function Home() {
               <p ref={text3Ref} className={`text-[calc(1.125rem+0.25rem)] sm:text-lg md:text-xl lg:text-[1.75rem] text-gray-300 pb-12 lg:pb-[3.5rem] font-medium text-center ${text3InView ? 'animate-fade-in-up' : 'opacity-0'} leading-relaxed lg:leading-relaxed`} suppressHydrationWarning={true}>
                 Meanwhile, some dude who recorded his whole album <b>on an iPhone</b> just hit <b>2 million</b> streams and <b>got signed.</b>
               </p>
-              <p ref={text4Ref} className={`text-[calc(2.25rem+0.20rem)] sm:text-4xl md:text-5xl lg:text-[3.5rem] font-black pb-5 lg:pb-[2rem] bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] bg-clip-text text-transparent transition-all duration-700 ${text4InView ? 'animate-fade-in-up' : 'opacity-0 translate-y-8'} leading-tight mb-[11px] sm:mb-0`}>
+              <p ref={text4Ref} className={`text-[calc(2.25rem+0.20rem)] sm:text-4xl md:text-5xl lg:text-[3.5rem] font-black pb-5 lg:pb-[2rem] bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] bg-clip-text text-transparent ${text4InView ? 'animate-fade-in-up' : 'opacity-0'} leading-tight mb-[11px] sm:mb-0`}>
                 Damn…
               </p>
-              <p ref={text5Ref} className={`text-3xl md:text-4xl lg:text-[2.15rem] font-black text-white pb-12 lg:pb-[3.5rem] pt-1 lg:pt-[2rem] transition-all duration-700 ${text5InView ? 'animate-fade-in-up' : 'opacity-0 translate-y-8'} leading-tight lg:leading-tight`}>
+              <p ref={text5Ref} className={`text-3xl md:text-4xl lg:text-[2.15rem] font-black text-white pb-12 lg:pb-[3.5rem] pt-1 lg:pt-[2rem] ${text5InView ? 'animate-fade-in-up' : 'opacity-0'} leading-tight lg:leading-tight`}>
                 Ready to know the truth?
               </p>
-              <p ref={text6bRef} className={`text-[calc(1.25rem+0.25rem)] sm:text-xl md:text-2xl lg:text-[2.0rem] font-black text-white pb-8 lg:pb-[2rem] text-center transition-all duration-700 ${text6bInView ? 'animate-fade-in-up' : 'opacity-0 translate-y-8'} leading-tight lg:leading-tight`}>
+              <p ref={text6bRef} className={`text-[calc(1.25rem+0.25rem)] sm:text-xl md:text-2xl lg:text-[2.0rem] font-black text-white pb-8 lg:pb-[2rem] text-center ${text6bInView ? 'animate-fade-in-up' : 'opacity-0'} leading-tight lg:leading-tight`}>
                 Talent and hard work DOES NOT guarantee<br className="hidden lg:block" /> success on Spotify.
               </p>
-              <p ref={text6Ref} className={`text-[calc(1.125rem+0.25rem)] sm:text-lg md:text-xl lg:text-[1.75rem] text-gray-300 pb-12 lg:pb-[3.5rem] font-medium text-center transition-all duration-700 ${text6InView ? 'animate-fade-in-up' : 'opacity-0 translate-y-8'} leading-relaxed lg:leading-relaxed pt-[9px] sm:pt-0 mb-[5px] sm:mb-0`}>
+              <p ref={text6Ref} className={`text-[calc(1.125rem+0.25rem)] sm:text-lg md:text-xl lg:text-[1.75rem] text-gray-300 pb-12 lg:pb-[3.5rem] font-medium text-center ${text6InView ? 'animate-fade-in-up' : 'opacity-0'} leading-relaxed lg:leading-relaxed pt-[9px] sm:pt-0 mb-[5px] sm:mb-0`}>
                 The platform only pushes artists who <b><i>ALREADY</i></b> have momentum. Big streams, high engagement, and playlist placements. If you've got them, Spotify's algorithm <b>LOVES</b> you. But if you don't? <b>You're invisible.</b>
               </p>
-              <div ref={text7Ref} className={`text-center pb-12 transition-all duration-700 ${text7InView ? 'animate-fade-in-up' : 'opacity-0 translate-y-8'}`}>
+              <div ref={text7Ref} className={`text-center pb-12 ${text7InView ? 'animate-fade-in-up' : 'opacity-0'}`}>
                 <p className="text-[calc(1.5rem+0.3rem)] sm:text-2xl md:text-3xl lg:text-[2.4rem] font-black text-white mb-2 lg:mt-3 leading-tight lg:leading-normal">
                   Here's the <span className="bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] bg-clip-text text-transparent">CATCH</span> that's
                 </p>
@@ -1855,21 +1855,21 @@ export default function Home() {
                   <span className="bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] bg-clip-text text-transparent">KILLING</span> independent artists…
                 </p>
               </div>
-              <p ref={text8Ref} className={`text-[calc(1.125rem+0.25rem)] sm:text-lg md:text-xl lg:text-[1.75rem] text-gray-300 pb-6 lg:pb-[1.75rem] font-medium text-center transition-all duration-700 ${text8InView ? 'animate-fade-in-up' : 'opacity-0 translate-y-8'} leading-relaxed lg:leading-relaxed`}>
+              <p ref={text8Ref} className={`text-[calc(1.125rem+0.25rem)] sm:text-lg md:text-xl lg:text-[1.75rem] text-gray-300 pb-6 lg:pb-[1.75rem] font-medium text-center ${text8InView ? 'animate-fade-in-up' : 'opacity-0'} leading-relaxed lg:leading-relaxed`}>
                 Spotify won't promote you if you <b><i><u>DON'T</u></i></b> have streams. But you can't get streams if Spotify <b><i><u>WON'T</u></i></b> promote you!
               </p>
-              <p ref={text8bRef} className={`text-[calc(1.125rem+0.25rem)] sm:text-lg md:text-xl lg:text-[1.75rem] text-gray-300 pb-12 lg:pb-[3.5rem] font-medium text-center transition-all duration-700 ${text8bInView ? 'animate-fade-in-up' : 'opacity-0 translate-y-8'} leading-relaxed lg:leading-relaxed`}>
+              <p ref={text8bRef} className={`text-[calc(1.125rem+0.25rem)] sm:text-lg md:text-xl lg:text-[1.75rem] text-gray-300 pb-12 lg:pb-[3.5rem] font-medium text-center ${text8bInView ? 'animate-fade-in-up' : 'opacity-0'} leading-relaxed lg:leading-relaxed`}>
                 You're trapped in a death loop where the only way to win is to <i><b><span className="bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] bg-clip-text text-transparent">ALREADY</span></b></i> be winning.
               </p>
-              <p ref={text9Ref} className={`text-[calc(1.5rem+0.2rem)] sm:text-2xl md:text-3xl lg:text-4xl font-bold text-white pb-12 transition-all duration-700 ${text9InView ? 'animate-fade-in-up' : 'opacity-0 translate-y-8'} leading-tight`}>
+              <p ref={text9Ref} className={`text-[calc(1.5rem+0.2rem)] sm:text-2xl md:text-3xl lg:text-4xl font-bold text-white pb-12 ${text9InView ? 'animate-fade-in-up' : 'opacity-0'} leading-tight`}>
                 Trust us, we know the struggle.
               </p>
-              <h2 ref={heading3Ref} className={`text-4xl md:text-5xl lg:text-[3.65rem] font-black pb-1 lg:pb-[1.25rem] pt-2 bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] bg-clip-text text-transparent transition-all duration-700 ${heading3InView ? 'animate-fade-in-up' : 'opacity-0 translate-y-8'} leading-tight`}>
+              <h2 ref={heading3Ref} className={`text-4xl md:text-5xl lg:text-[3.65rem] font-black pb-1 lg:pb-[1.25rem] pt-2 bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] bg-clip-text text-transparent ${heading3InView ? 'animate-fade-in-up' : 'opacity-0'} leading-tight`}>
                 But it gets worse….
               </h2>
             </div>
             {/* New Icon List */}
-            <div ref={iconListRef} className={`grid md:grid-cols-1 gap-8 lg:gap-10 mb-16 lg:mb-20 -mt-12 transition-all duration-700 ${iconListInView ? 'animate-fade-in-up' : 'opacity-0 translate-y-8'}`}>
+            <div ref={iconListRef} className={`grid md:grid-cols-1 gap-8 lg:gap-10 mb-16 lg:mb-20 -mt-12 ${iconListInView ? 'animate-fade-in-up' : 'opacity-0'}`}>
               <div className="flex items-start space-x-4 text-left">
                 <div className="flex-shrink-0 w-16 h-16 flex items-center justify-center mt-1">
                   <span className="bg-gradient-to-r from-red-500 via-red-400 to-red-500 bg-clip-text text-transparent font-bold text-5xl">✗</span>
@@ -1912,22 +1912,22 @@ export default function Home() {
               </div>
             </div>
             <div ref={bottomSectionRef}>
-            <p className={`text-2xl md:text-3xl lg:text-[1.9rem] font-bold text-white pb-12 text-center transition-all duration-700 ${bottomSectionInView ? 'animate-fade-in-up' : 'opacity-0 translate-y-8'} leading-tight lg:leading-relaxed`}>
+            <p className={`text-2xl md:text-3xl lg:text-[1.9rem] font-bold text-white pb-12 text-center ${bottomSectionInView ? 'animate-fade-in-up' : 'opacity-0'} leading-tight lg:leading-relaxed`}>
               And while you're still wondering if playlist placements are <i>"worth it"</i>, other artists are busy booking their first tours.
             </p>
-            <h2 ref={worstPartRef} className={`text-[calc(2.25rem-0.30rem)] md:text-5xl lg:text-[3.35rem] font-black pb-12 pt-8 bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] bg-clip-text text-transparent text-center transition-all duration-700 ${worstPartInView ? 'animate-fade-in-up' : 'opacity-0 translate-y-8'} leading-tight`}>
+            <h2 ref={worstPartRef} className={`text-[calc(2.25rem-0.30rem)] md:text-5xl lg:text-[3.35rem] font-black pb-12 pt-8 bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] bg-clip-text text-transparent text-center ${worstPartInView ? 'animate-fade-in-up' : 'opacity-0'} leading-tight`}>
               But The WORST Part Is...
             </h2>
-            <p ref={fakeAgenciesRef} className={`text-[calc(1.5rem+0.20rem)] sm:text-2xl md:text-3xl lg:text-[2.05rem] font-bold text-white pb-12 text-center transition-all duration-700 ${fakeAgenciesInView ? 'animate-fade-in-up' : 'opacity-0 translate-y-8'} leading-tight lg:leading-relaxed`}>
+            <p ref={fakeAgenciesRef} className={`text-[calc(1.5rem+0.20rem)] sm:text-2xl md:text-3xl lg:text-[2.05rem] font-bold text-white pb-12 text-center ${fakeAgenciesInView ? 'animate-fade-in-up' : 'opacity-0'} leading-tight lg:leading-relaxed`}>
               REAL Spotify growth is trapped behind a field of landmines.
             </p>
-            <p ref={fakeAgenciesParaRef} className={`text-[calc(1.125rem+0.25rem)] sm:text-lg md:text-xl lg:text-[1.75rem] text-gray-300 pb-12 lg:pb-[3.5rem] font-medium text-center transition-all duration-700 ${fakeAgenciesParaInView ? 'animate-fade-in-up' : 'opacity-0 translate-y-8'} leading-relaxed lg:leading-relaxed`}>
+            <p ref={fakeAgenciesParaRef} className={`text-[calc(1.125rem+0.25rem)] sm:text-lg md:text-xl lg:text-[1.75rem] text-gray-300 pb-12 lg:pb-[3.5rem] font-medium text-center ${fakeAgenciesParaInView ? 'animate-fade-in-up' : 'opacity-0'} leading-relaxed lg:leading-relaxed`}>
               Fake agencies charging <b>$99</b> for <b>bot plays</b> from <b>Kazakstan.</b> Scammers in your DMs with <b>"PROMO 4 SALE"</b> messages. Snake oil companies on <b>Google</b> who put you on <b>handmade playlists</b> with only <b>52 followers.</b>
             </p>
-            <p ref={noCapRef} className={`text-[calc(1.5rem+0.20rem)] sm:text-2xl md:text-3xl lg:text-4xl font-bold text-white pb-12 text-center transition-all duration-700 ${noCapInView ? 'animate-fade-in-up' : 'opacity-0 translate-y-8'} leading-tight lg:leading-relaxed`}>
+            <p ref={noCapRef} className={`text-[calc(1.5rem+0.20rem)] sm:text-2xl md:text-3xl lg:text-4xl font-bold text-white pb-12 text-center ${noCapInView ? 'animate-fade-in-up' : 'opacity-0'} leading-tight lg:leading-relaxed`}>
               No Cap - Finding <span className="bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] bg-clip-text text-transparent">REAL</span> Spotify Marketing is Harder Than Finding a PS5 to Buy During COVID
             </p>
-            <h2 ref={thatsWhyRef} className={`text-4xl md:text-5xl lg:text-[2.55rem] font-black pb-12 pt-2 lg:pt-[2rem] bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] bg-clip-text text-transparent text-center transition-all duration-700 ${thatsWhyInView ? 'animate-fade-in-up' : 'opacity-0 translate-y-8'} leading-tight`}>
+            <h2 ref={thatsWhyRef} className={`text-4xl md:text-5xl lg:text-[2.55rem] font-black pb-12 pt-2 lg:pt-[2rem] bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] bg-clip-text text-transparent text-center ${thatsWhyInView ? 'animate-fade-in-up' : 'opacity-0'} leading-tight`}>
               That's Why Over 25K Creators Use…
             </h2>
             <div ref={logoRef} className={`flex justify-center items-center pb-12 pt-2 relative ${logoInView ? 'animate-bounce-in-spectacular' : 'opacity-0'}`}>
@@ -1945,41 +1945,41 @@ export default function Home() {
                 </div>
               )}
             </div>
-            <p ref={onlySpotifyRef} className={`text-2xl md:text-3xl lg:text-[2.0rem] font-bold text-white pb-12 text-center transition-all duration-700 ${onlySpotifyInView ? 'animate-fade-in-up' : 'opacity-0 translate-y-8'} leading-tight lg:leading-tight`}>
+            <p ref={onlySpotifyRef} className={`text-2xl md:text-3xl lg:text-[2.0rem] font-bold text-white pb-12 text-center ${onlySpotifyInView ? 'animate-fade-in-up' : 'opacity-0'} leading-tight lg:leading-tight`}>
               The ONLY Spotify marketing service with DIRECT access to the world's BIGGEST playlists.
             </p>
-            <p ref={dontMessRef} className={`text-[calc(1.125rem+0.25rem)] sm:text-lg md:text-xl lg:text-[1.75rem] text-gray-300 pb-12 lg:pb-[3.5rem] font-medium text-center transition-all duration-700 ${dontMessInView ? 'animate-fade-in-up' : 'opacity-0 translate-y-8'} leading-relaxed lg:leading-relaxed`}>
+            <p ref={dontMessRef} className={`text-[calc(1.125rem+0.25rem)] sm:text-lg md:text-xl lg:text-[1.75rem] text-gray-300 pb-12 lg:pb-[3.5rem] font-medium text-center ${dontMessInView ? 'animate-fade-in-up' : 'opacity-0'} leading-relaxed lg:leading-relaxed`}>
               We don't mess with <b>bots.</b> We don't own <b>sketchy playlists.</b> We don't make <b>empty promises.</b>
             </p>
-            <p ref={getMusicRef} className={`text-[calc(1.125rem+0.25rem)] sm:text-lg md:text-xl lg:text-[1.75rem] text-gray-300 pb-12 lg:pb-[3.5rem] font-medium text-center transition-all duration-700 ${getMusicInView ? 'animate-fade-in-up' : 'opacity-0 translate-y-8'} leading-relaxed lg:leading-relaxed`}>
+            <p ref={getMusicRef} className={`text-[calc(1.125rem+0.25rem)] sm:text-lg md:text-xl lg:text-[1.75rem] text-gray-300 pb-12 lg:pb-[3.5rem] font-medium text-center ${getMusicInView ? 'animate-fade-in-up' : 'opacity-0'} leading-relaxed lg:leading-relaxed`}>
               We get your music directly in front of playlist curators who control <b><i><span className="bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] bg-clip-text text-transparent">MILLIONS</span></i></b> of real listeners.
             </p>
-            <p ref={rapCaviarRef} className={`text-2xl md:text-3xl lg:text-[2.0rem] font-bold text-white pb-12 text-center transition-all duration-700 ${rapCaviarInView ? 'animate-fade-in-up' : 'opacity-0 translate-y-8'} leading-tight lg:leading-tight`}>
+            <p ref={rapCaviarRef} className={`text-2xl md:text-3xl lg:text-[2.0rem] font-bold text-white pb-12 text-center ${rapCaviarInView ? 'animate-fade-in-up' : 'opacity-0'} leading-tight lg:leading-tight`}>
               RapCaviar. Today's Top Hits. Viva Latino. The playlists that actually move the needle on careers.
             </p>
-            <p ref={whileOtherRef} className={`text-[calc(1.125rem+0.25rem)] sm:text-lg md:text-xl lg:text-[1.75rem] text-gray-300 pb-12 lg:pb-[3.5rem] font-medium text-center transition-all duration-700 ${whileOtherInView ? 'animate-fade-in-up' : 'opacity-0 translate-y-8'} leading-relaxed lg:leading-relaxed`}>
+            <p ref={whileOtherRef} className={`text-[calc(1.125rem+0.25rem)] sm:text-lg md:text-xl lg:text-[1.75rem] text-gray-300 pb-12 lg:pb-[3.5rem] font-medium text-center ${whileOtherInView ? 'animate-fade-in-up' : 'opacity-0'} leading-relaxed lg:leading-relaxed`}>
               While other companies are cold emailing <b>random</b> curators hoping for a response, we're on <b>first name basis</b> with the people who matter. We've spent <b>10 years</b> building these relationships so <b>you don't have to.</b>
             </p>
-            <h2 ref={whoIsFashoRef} className={`text-3xl md:text-4xl lg:text-5xl font-black pt-2 pb-14 bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] bg-clip-text text-transparent text-center transition-all duration-700 ${whoIsFashoInView ? 'animate-fade-in-up' : 'opacity-0 translate-y-8'} leading-tight`}>
+            <h2 ref={whoIsFashoRef} className={`text-3xl md:text-4xl lg:text-5xl font-black pt-2 pb-14 bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] bg-clip-text text-transparent text-center ${whoIsFashoInView ? 'animate-fade-in-up' : 'opacity-0'} leading-tight`}>
               Welcome to the A-Team...
             </h2>
-                        <p ref={ourTeamRef} className={`text-[calc(1.125rem+0.25rem)] sm:text-lg md:text-xl lg:text-[1.75rem] text-gray-300 pb-6 lg:pb-[1.75rem] font-medium text-center transition-all duration-700 ${ourTeamInView ? 'animate-fade-in-up' : 'opacity-0 translate-y-8'} leading-relaxed lg:leading-relaxed`}>
+                        <p ref={ourTeamRef} className={`text-[calc(1.125rem+0.25rem)] sm:text-lg md:text-xl lg:text-[1.75rem] text-gray-300 pb-6 lg:pb-[1.75rem] font-medium text-center ${ourTeamInView ? 'animate-fade-in-up' : 'opacity-0'} leading-relaxed lg:leading-relaxed`}>
               Our team is stacked with former directors and executives from labels like <b>Universal, Sony, RCA, Atlantic,</b> and <b>Roc Nation.</b>
             </p>
-            <p ref={teamCampaignsRef} className={`text-[calc(1.125rem+0.25rem)] sm:text-lg md:text-xl lg:text-[1.75rem] text-gray-300 pb-12 lg:pb-[3.5rem] font-medium text-center transition-all duration-700 ${teamCampaignsInView ? 'animate-fade-in-up' : 'opacity-0 translate-y-8'} leading-relaxed lg:leading-relaxed mt-[15px]`}>
+            <p ref={teamCampaignsRef} className={`text-[calc(1.125rem+0.25rem)] sm:text-lg md:text-xl lg:text-[1.75rem] text-gray-300 pb-12 lg:pb-[3.5rem] font-medium text-center ${teamCampaignsInView ? 'animate-fade-in-up' : 'opacity-0'} leading-relaxed lg:leading-relaxed mt-[15px]`}>
               The same people who built marketing campaigns for <b>Beyonce, Justin Bieber, Billie Eilish,</b> and <b>Kendrick Lamar</b> now work for <b>YOU.</b>
             </p>
-            <p ref={gotTiredRef} className={`text-[calc(1.125rem+0.25rem)] sm:text-lg md:text-xl lg:text-[1.75rem] text-gray-300 pb-6 lg:pb-[1.5rem] font-medium text-center transition-all duration-700 ${gotTiredInView ? 'animate-fade-in-up' : 'opacity-0 translate-y-8'} leading-relaxed lg:leading-relaxed`}>
+            <p ref={gotTiredRef} className={`text-[calc(1.125rem+0.25rem)] sm:text-lg md:text-xl lg:text-[1.75rem] text-gray-300 pb-6 lg:pb-[1.5rem] font-medium text-center ${gotTiredInView ? 'animate-fade-in-up' : 'opacity-0'} leading-relaxed lg:leading-relaxed`}>
               We got tired of watching talented artists get <b>chewed up</b> and <b>spit out</b> by an industry that only cares about <b>who you know.</b> Gatekeepers controlling <b>everything.</b> Labels taking <b>80%</b> of your revenue.
             </p>
-            <p ref={gameRiggedRef} className={`text-[calc(1.5rem+0.25rem)] md:text-3xl lg:text-4xl font-bold text-white pt-1.5 lg:pt-[2rem] pb-14 text-center transition-all duration-700 ${gameRiggedInView ? 'animate-fade-in-up' : 'opacity-0 translate-y-8'} leading-tight pt-[calc(6px+5px)] sm:pt-1.5 lg:pt-[2rem]`}>
+            <p ref={gameRiggedRef} className={`text-[calc(1.5rem+0.25rem)] md:text-3xl lg:text-4xl font-bold text-white pt-1.5 lg:pt-[2rem] pb-14 text-center ${gameRiggedInView ? 'animate-fade-in-up' : 'opacity-0'} leading-tight pt-[calc(6px+5px)] sm:pt-1.5 lg:pt-[2rem]`}>
               The game was rigged from the start.
             </p>
-            <p ref={builtFashoRef} className={`text-[calc(1.125rem+0.25rem)] sm:text-lg md:text-xl lg:text-[1.75rem] text-gray-300 pb-12 lg:pb-[3.5rem] font-medium text-center transition-all duration-700 ${builtFashoInView ? 'animate-fade-in-up' : 'opacity-0 translate-y-8'} leading-relaxed lg:leading-relaxed`}>
+            <p ref={builtFashoRef} className={`text-[calc(1.125rem+0.25rem)] sm:text-lg md:text-xl lg:text-[1.75rem] text-gray-300 pb-12 lg:pb-[3.5rem] font-medium text-center ${builtFashoInView ? 'animate-fade-in-up' : 'opacity-0'} leading-relaxed lg:leading-relaxed`}>
               So we built <b className="bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] bg-clip-text text-transparent font-black">FASHO.co</b> to flip the script. To give independent artists <b>direct</b> access to the <b>same tools</b> and <b>connections</b> that major labels pay <b><i>millions</i></b> for.
             </p>
 
-            <p ref={isntHopeRef} className={`text-2xl md:text-3xl lg:text-[2.1rem] font-bold text-white pb-16 text-center transition-all duration-700 -mb-9 md:mb-0 ${isntHopeInView ? 'animate-fade-in-up' : 'opacity-0 translate-y-8'} leading-tight lg:leading-tight`}>
+            <p ref={isntHopeRef} className={`text-2xl md:text-3xl lg:text-[2.1rem] font-bold text-white pb-16 text-center -mb-9 md:mb-0 ${isntHopeInView ? 'animate-fade-in-up' : 'opacity-0'} leading-tight lg:leading-tight`}>
               This isn't hope. It's a guarantee. Your music, on major playlists, reaching massive audiences, starting TODAY.
             </p>
             </div>
@@ -2989,7 +2989,7 @@ export default function Home() {
               <div className="text-center mb-20">
                 <h3 
                   ref={forgetTextRef}
-                  className={`text-[calc(1.5rem+0.25rem)] sm:text-2xl md:text-3xl lg:text-4xl font-black text-white max-w-3xl mx-auto leading-relaxed lg:leading-[1.5] transition-all duration-700 ${forgetTextInView ? 'animate-fade-in-up' : 'opacity-0 translate-y-8'} -mt-[10px] sm:mt-0 mb-[5px] sm:mb-0`}
+                  className={`text-[calc(1.5rem+0.25rem)] sm:text-2xl md:text-3xl lg:text-4xl font-black text-white max-w-3xl mx-auto leading-relaxed lg:leading-[1.5] ${forgetTextInView ? 'animate-fade-in-up' : 'opacity-0'} -mt-[10px] sm:mt-0 mb-[5px] sm:mb-0`}
                 >
                   Forget everything you think you know about playlist marketing. We've made it stupid simple. You submit, we connect, you grow. That's it.
                 </h3>
@@ -3000,7 +3000,7 @@ export default function Home() {
                 <button
                   ref={blowUpButtonRef as any}
                   onClick={scrollToTrackInput}
-                  className={`px-12 py-4 bg-gradient-to-r from-[#59e3a5] via-[#14c0ff] to-[#8b5cf6] text-white font-bold rounded-2xl hover:shadow-2xl hover:shadow-[#14c0ff]/30 transition-all duration-700 transform hover:scale-105 active:scale-95 relative overflow-hidden group text-lg ${blowUpButtonInView ? 'animate-fade-in-up' : 'opacity-0 translate-y-8'}`}
+                  className={`px-12 py-4 bg-gradient-to-r from-[#59e3a5] via-[#14c0ff] to-[#8b5cf6] text-white font-bold rounded-2xl hover:shadow-2xl hover:shadow-[#14c0ff]/30 transform hover:scale-105 active:scale-95 relative overflow-hidden group text-lg ${blowUpButtonInView ? 'animate-fade-in-up' : 'opacity-0'}`}
                 >
                   <span className="relative z-10">I'M READY TO BLOW UP</span>
                   <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-700"></div>
@@ -3159,7 +3159,7 @@ export default function Home() {
               <div className="text-center mb-4 md:mb-16">
                 <h2 
                   ref={commandCenterRef}
-                  className={`text-4xl md:text-5xl lg:text-6xl font-black mb-4 md:mb-8 bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] bg-clip-text text-transparent transition-all duration-700 mt-[25px] md:mt-0 pt-[10px] sm:pt-0 ${commandCenterInView ? 'animate-fade-in-up' : 'opacity-0 translate-y-8'}`} 
+                  className={`text-4xl md:text-5xl lg:text-6xl font-black mb-4 md:mb-8 bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] bg-clip-text text-transparent mt-[25px] md:mt-0 pt-[10px] sm:pt-0 ${commandCenterInView ? 'animate-fade-in-up' : 'opacity-0'}`} 
                   style={{ lineHeight: '1.3' }}
                 >
                   <span className="block sm:inline">Your Personal</span>
@@ -3167,7 +3167,7 @@ export default function Home() {
                 </h2>
                 <p 
                   ref={dashboardDescRef}
-                  className={`text-xl lg:text-[1.4rem] text-gray-300 max-w-3xl mx-auto leading-relaxed transition-all duration-700 ${dashboardDescInView ? 'animate-fade-in-up' : 'opacity-0 translate-y-8'} mb-[25px] sm:mb-[10px]`}
+                  className={`text-xl lg:text-[1.4rem] text-gray-300 max-w-3xl mx-auto leading-relaxed ${dashboardDescInView ? 'animate-fade-in-up' : 'opacity-0'} mb-[25px] sm:mb-[10px]`}
                   style={{ 
                     hyphens: 'none', 
                     WebkitHyphens: 'none', 
@@ -4253,14 +4253,14 @@ export default function Home() {
               <div className="text-center mb-8 lg:mt-[15px]">
                 <h2 
                   ref={genreHeadingRef}
-                  className={`text-3xl md:text-4xl lg:text-5xl font-black mb-8 bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] bg-clip-text text-transparent transition-all duration-700 ${genreHeadingInView ? 'animate-fade-in-up' : 'opacity-0 translate-y-8'}`} 
+                  className={`text-3xl md:text-4xl lg:text-5xl font-black mb-8 bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] bg-clip-text text-transparent ${genreHeadingInView ? 'animate-fade-in-up' : 'opacity-0'}`} 
                   style={{ lineHeight: '1.3' }}
                 >
                   " Wait, But I Make [Insert Genre Here] "
                 </h2>
                 <h3 
                   ref={genreSubheadingRef}
-                  className={`text-xl md:text-2xl lg:text-3xl font-black text-white max-w-3xl mx-auto leading-relaxed transition-all duration-700 ${genreSubheadingInView ? 'animate-fade-in-up' : 'opacity-0 translate-y-8'}`}
+                  className={`text-xl md:text-2xl lg:text-3xl font-black text-white max-w-3xl mx-auto leading-relaxed ${genreSubheadingInView ? 'animate-fade-in-up' : 'opacity-0'}`}
                 >
                   Say less. We work with playlists in EVERY genre known to mankind.
                 </h3>
@@ -4269,7 +4269,7 @@ export default function Home() {
               {/* Three Column Genre Lists */}
               <div 
                 ref={genreListContainerRef}
-                className={`mb-16 max-w-6xl mx-auto transition-all duration-700 ${genreListContainerInView ? 'animate-fade-in-up' : 'opacity-0 translate-y-8'}`}
+                className={`mb-16 max-w-6xl mx-auto ${genreListContainerInView ? 'animate-fade-in-up' : 'opacity-0'}`}
               >
                 <div className="relative">
                   {/* Subtle gradient glow behind container */}
@@ -4470,7 +4470,7 @@ export default function Home() {
               <div className="text-center mb-12">
                 <h3 
                   ref={experimentalTextRef}
-                  className={`text-2xl md:text-3xl lg:text-4xl font-black text-white max-w-4xl mx-auto leading-relaxed transition-all duration-700 ${experimentalTextInView ? 'animate-fade-in-up' : 'opacity-0 translate-y-8'}`}
+                  className={`text-2xl md:text-3xl lg:text-4xl font-black text-white max-w-4xl mx-auto leading-relaxed ${experimentalTextInView ? 'animate-fade-in-up' : 'opacity-0'}`}
                 >
                   Do you make experimental ambient-folk-trap-piano-blitz? Yup, we got playlists for that too.
                 </h3>
@@ -4481,7 +4481,7 @@ export default function Home() {
                 <button
                   ref={campaignButtonRef as any}
                   onClick={scrollToTrackInput}
-                  className={`px-12 py-4 bg-gradient-to-r from-[#59e3a5] via-[#14c0ff] to-[#8b5cf6] text-white font-bold rounded-2xl hover:shadow-2xl hover:shadow-[#14c0ff]/30 transition-all duration-700 transform hover:scale-105 active:scale-95 relative overflow-hidden group text-lg ${campaignButtonInView ? 'animate-fade-in-up' : 'opacity-0 translate-y-8'}`}
+                  className={`px-12 py-4 bg-gradient-to-r from-[#59e3a5] via-[#14c0ff] to-[#8b5cf6] text-white font-bold rounded-2xl hover:shadow-2xl hover:shadow-[#14c0ff]/30 transform hover:scale-105 active:scale-95 relative overflow-hidden group text-lg ${campaignButtonInView ? 'animate-fade-in-up' : 'opacity-0'}`}
                 >
                   <span className="relative z-10">LET'S START MY CAMPAIGN</span>
                   <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-700"></div>
@@ -4516,14 +4516,14 @@ export default function Home() {
               <div className="text-center mb-20">
                 <h2 
                   ref={playlistsHeadingRef}
-                  className={`md:text-6xl lg:text-6xl font-black mb-8 bg-gradient-to-r from-[#59e3a5] via-[#14c0ff] to-[#8b5cf6] bg-clip-text text-transparent drop-shadow-2xl transition-all duration-700 ${playlistsHeadingInView ? 'animate-fade-in-up' : 'opacity-0 translate-y-8'}`}
+                  className={`md:text-6xl lg:text-6xl font-black mb-8 bg-gradient-to-r from-[#59e3a5] via-[#14c0ff] to-[#8b5cf6] bg-clip-text text-transparent drop-shadow-2xl ${playlistsHeadingInView ? 'animate-fade-in-up' : 'opacity-0'}`}
                   style={{ lineHeight: '1.2', fontSize: 'clamp(2.6rem, 8vw, 4rem)' }}
                 >
                   The Playlists That Actually Matter
                 </h2>
                 <p 
                   ref={playlistsSubheadingRef}
-                  className={`text-xl md:text-2xl text-gray-300 max-w-4xl mx-auto leading-relaxed font-bold transition-all duration-700 ${playlistsSubheadingInView ? 'animate-fade-in-up' : 'opacity-0 translate-y-8'}`}
+                  className={`text-xl md:text-2xl text-gray-300 max-w-4xl mx-auto leading-relaxed font-bold ${playlistsSubheadingInView ? 'animate-fade-in-up' : 'opacity-0'}`}
                 >
                   We have direct relationships with curators who control the world's biggest playlists.
                 </p>
@@ -4532,7 +4532,7 @@ export default function Home() {
               {/* Playlist Grid with Creative Layout */}
               <div 
                 ref={playlistsGridRef}
-                className={`grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-8 mb-16 transition-all duration-700 relative z-20 opacity-100 md:opacity-100 ${playlistsGridInView ? 'animate-fade-in-up' : 'md:opacity-0 md:translate-y-8'}`}
+                className={`grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-8 mb-16 relative z-20 opacity-100 md:opacity-100 ${playlistsGridInView ? 'animate-fade-in-up' : 'md:opacity-0'}`}
                 style={{ minHeight: '200px' }}
               >
                 {[
@@ -4584,7 +4584,7 @@ export default function Home() {
               {/* "Thousands More" Statement */}
               <div 
                 ref={thousandsMoreRef}
-                className={`text-center mb-16 mt-5 transition-all duration-700 ${thousandsMoreInView ? 'animate-fade-in-up' : 'opacity-0 translate-y-8'}`}
+                className={`text-center mb-16 mt-5 ${thousandsMoreInView ? 'animate-fade-in-up' : 'opacity-0'}`}
               >
                 <div className="relative inline-block">
                   {/* Glow Effect Behind Text - Hidden on mobile */}
@@ -4607,7 +4607,7 @@ export default function Home() {
               {/* CTA Button */}
               <div 
                 ref={playlistsButtonRef}
-                className={`text-center transition-all duration-700 ${playlistsButtonInView ? 'animate-fade-in-up' : 'opacity-0 translate-y-8'}`}
+                className={`text-center ${playlistsButtonInView ? 'animate-fade-in-up' : 'opacity-0'}`}
               >
                 <button
                   onClick={scrollToTrackInput}
@@ -4848,7 +4848,7 @@ export default function Home() {
               <div className="text-center mb-16 auth-header-container relative">
                 <h2 
                   ref={authenticityHeadingRef}
-                  className={`text-[2.9rem] md:text-5xl lg:text-6xl font-black mb-8 bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] bg-clip-text text-transparent flex items-center justify-center transition-all duration-700 ${authenticityHeadingInView ? 'animate-fade-in-up' : 'opacity-0 translate-y-8'}`} 
+                  className={`text-[2.9rem] md:text-5xl lg:text-6xl font-black mb-8 bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] bg-clip-text text-transparent flex items-center justify-center ${authenticityHeadingInView ? 'animate-fade-in-up' : 'opacity-0'}`} 
                   style={{ 
                     lineHeight: '1.3', 
                     gap: typeof window !== 'undefined' && window.innerWidth < 640 ? '0px' : '20px',
@@ -4886,7 +4886,7 @@ export default function Home() {
                 
                 <h3 
                   ref={authenticitySubheadingRef}
-                  className={`text-[1.8rem] md:text-3xl lg:text-4xl font-black text-white max-w-4xl mx-auto leading-relaxed mb-0 md:mb-12 auth-skeptical-text transition-all duration-700 ${authenticitySubheadingInView ? 'animate-fade-in-up' : 'opacity-0 translate-y-8'}`}
+                  className={`text-[1.8rem] md:text-3xl lg:text-4xl font-black text-white max-w-4xl mx-auto leading-relaxed mb-0 md:mb-12 auth-skeptical-text ${authenticitySubheadingInView ? 'animate-fade-in-up' : 'opacity-0'}`}
                   style={{
                     marginBottom: typeof window !== 'undefined' && window.innerWidth < 640 ? '-25px' : undefined
                   }}
@@ -4908,13 +4908,13 @@ export default function Home() {
                   <div className="text-center mb-12">
                     <p 
                       ref={authenticityIntroRef}
-                      className={`text-[1.4rem] md:text-2xl text-gray-300 leading-relaxed mb-8 font-bold transition-all duration-700 ${authenticityIntroInView ? 'animate-fade-in-up' : 'opacity-0 translate-y-8'}`}
+                      className={`text-[1.4rem] md:text-2xl text-gray-300 leading-relaxed mb-8 font-bold ${authenticityIntroInView ? 'animate-fade-in-up' : 'opacity-0'}`}
                     >
                       The Spotify marketing world is full of companies running bot farms from their mom's basement. They promise millions, deliver garbage, and disappear with your money.
                     </p>
                     <p 
                       ref={authenticityOperatesRef}
-                      className={`text-[1.8rem] md:text-4xl font-black text-white leading-relaxed auth-operates-text transition-all duration-700 ${authenticityOperatesInView ? 'animate-fade-in-up' : 'opacity-0 translate-y-8'}`}
+                      className={`text-[1.8rem] md:text-4xl font-black text-white leading-relaxed auth-operates-text ${authenticityOperatesInView ? 'animate-fade-in-up' : 'opacity-0'}`}
                       style={{
                         fontSize: typeof window !== 'undefined' && window.innerWidth < 640 ? 'calc(1.8rem - 0.25rem)' : undefined,
                         marginBottom: typeof window !== 'undefined' && window.innerWidth < 640 ? '-20px' : undefined
@@ -4927,7 +4927,7 @@ export default function Home() {
                   {/* Icon List with Unique Layout */}
                   <div 
                     ref={authenticityListRef}
-                    className={`grid md:grid-cols-2 gap-8 mb-12 transition-all duration-700 ${authenticityListInView ? 'animate-fade-in-up' : 'opacity-0 translate-y-8'}`}
+                    className={`grid md:grid-cols-2 gap-8 mb-12 ${authenticityListInView ? 'animate-fade-in-up' : 'opacity-0'}`}
                   >
                     {[
                       { text: 'playlist curators who we\'ve worked with for years', real: 'REAL' },
@@ -4953,7 +4953,7 @@ export default function Home() {
                   <div className="text-center space-y-8">
                     <p 
                       ref={authenticityClosingRef}
-                      className={`text-xl md:text-2xl text-gray-300 leading-relaxed font-bold transition-all duration-700 ${authenticityClosingInView ? 'animate-fade-in-up' : 'opacity-0 translate-y-8'}`}
+                      className={`text-xl md:text-2xl text-gray-300 leading-relaxed font-bold ${authenticityClosingInView ? 'animate-fade-in-up' : 'opacity-0'}`}
                       style={{
                         fontSize: isMobile ? 'calc(1.25rem + 0.20rem + 0.10rem - 0.04rem)' : undefined
                       }}
@@ -4964,7 +4964,7 @@ export default function Home() {
                     
                     <p 
                       ref={authenticityHighlightRef}
-                      className={`text-xl md:text-2xl text-gray-300 leading-relaxed font-bold transition-all duration-700 ${authenticityHighlightInView ? 'animate-fade-in-up' : 'opacity-0 translate-y-8'}`}
+                      className={`text-xl md:text-2xl text-gray-300 leading-relaxed font-bold ${authenticityHighlightInView ? 'animate-fade-in-up' : 'opacity-0'}`}
                       style={{
                         fontSize: isMobile ? 'calc(1.25rem + 0.20rem + 0.10rem - 0.04rem)' : undefined
                       }}
@@ -4975,7 +4975,7 @@ export default function Home() {
 
                     <p 
                       ref={authenticityGuaranteeRef}
-                      className={`text-3xl md:text-4xl font-black text-white leading-relaxed transition-all duration-700 ${authenticityGuaranteeInView ? 'animate-fade-in-up' : 'opacity-0 translate-y-8'}`}
+                      className={`text-3xl md:text-4xl font-black text-white leading-relaxed ${authenticityGuaranteeInView ? 'animate-fade-in-up' : 'opacity-0'}`}
                       style={{
                         fontSize: isMobile ? 'calc(1.875rem - 0.25rem - 0.25rem)' : undefined
                       }}
@@ -5006,7 +5006,7 @@ export default function Home() {
               <div className="text-center mb-12">
                 <h2 
                   ref={testimonialsHeadingRef}
-                  className={`text-4xl md:text-5xl lg:text-6xl font-black mb-8 bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] bg-clip-text text-transparent transition-all duration-700 ${testimonialsHeadingInView ? 'animate-fade-in-up' : 'opacity-0 translate-y-8'}`} 
+                  className={`text-4xl md:text-5xl lg:text-6xl font-black mb-8 bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] bg-clip-text text-transparent ${testimonialsHeadingInView ? 'animate-fade-in-up' : 'opacity-0'}`} 
                   style={{ 
                     lineHeight: '1.3', 
                     marginTop: '-50px',
@@ -5017,7 +5017,7 @@ export default function Home() {
                 </h2>
                 <p 
                   ref={testimonialsSubheadingRef}
-                  className={`text-[1.275rem] md:text-[1.4rem] text-gray-300 max-w-4xl mx-auto leading-relaxed font-bold transition-all duration-700 ${testimonialsSubheadingInView ? 'animate-fade-in-up' : 'opacity-0 translate-y-8'}`}
+                  className={`text-[1.275rem] md:text-[1.4rem] text-gray-300 max-w-4xl mx-auto leading-relaxed font-bold ${testimonialsSubheadingInView ? 'animate-fade-in-up' : 'opacity-0'}`}
                   style={{
                     fontSize: typeof window !== 'undefined' && window.innerWidth < 640 ? 'calc(1.275rem - 0.15rem)' : undefined
                   }}
