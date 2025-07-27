@@ -87,7 +87,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       });
     }
     
-    const baseUrl = 'https://api.authorize.net';
+    const baseUrl = 'https://api.authorize.net/xml/v1/request.api';
 
     console.log('🔧 PRODUCTION ENVIRONMENT CHECK:', {
       hasApiLoginId: !!apiLoginId,
@@ -300,6 +300,15 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     console.log('DEBUGGING: customerEmail:', customerEmail);
     console.log('DEBUGGING: customerEmail length:', customerEmail.length);
     console.log('DEBUGGING: customerEmail type:', typeof customerEmail);
+    
+    // DEBUG: Log the exact authentication being sent
+    console.log('🚨 DEBUGGING ACTUAL AUTH BEING SENT:');
+    console.log('🚨 API Login ID (full):', `"${apiLoginId}"`);
+    console.log('🚨 Transaction Key (full):', `"${transactionKey}"`);
+    console.log('🚨 API Login ID length:', apiLoginId.length);
+    console.log('🚨 Transaction Key length:', transactionKey.length);
+    console.log('🚨 API Login ID has whitespace?', apiLoginId !== apiLoginId.trim());
+    console.log('🚨 Transaction Key has whitespace?', transactionKey !== transactionKey.trim());
 
     // Make request to Authorize.net
     const response = await fetch(`${baseUrl}/xml/v1/request.api`, {
