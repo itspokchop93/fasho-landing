@@ -40,6 +40,9 @@ export default function Dashboard({ user }: DashboardProps) {
   const [artistSearchLoading, setArtistSearchLoading] = useState(false)
   const [artistTracks, setArtistTracks] = useState<any[]>([])
   const [artistTracksLoading, setArtistTracksLoading] = useState(false)
+  const [statsBoxesAnimated, setStatsBoxesAnimated] = useState(false)
+  const [campaignsAnimated, setCampaignsAnimated] = useState(false)
+  const [dashboardCampaignsAnimated, setDashboardCampaignsAnimated] = useState(false)
   const lottieRef = useRef<any>(null)
   const dropdownRef = useRef<HTMLDivElement>(null)
   const supabase = createClient()
@@ -480,12 +483,31 @@ export default function Dashboard({ user }: DashboardProps) {
     fetchOrders()
   }, [])
 
+  // Function to update URL hash when tab changes
+  const updateUrlHash = (tabName: string) => {
+    if (typeof window !== 'undefined') {
+      const newHash = tabName === 'dashboard' ? '' : tabName
+      const newUrl = `${window.location.pathname}${newHash ? `#${newHash}` : ''}`
+      window.history.replaceState(null, '', newUrl)
+    }
+  }
+
+  // Enhanced function to change tabs and update URL
+  const changeTab = (tabName: string) => {
+    setActiveTab(tabName)
+    updateUrlHash(tabName)
+  }
+
   // Handle hash navigation for tab switching
   useEffect(() => {
     const handleHashChange = () => {
       const hash = window.location.hash.slice(1) // Remove the '#' character
+      const validTabs = ['dashboard', 'campaigns', 'curator-connect', 'packages', 'faq', 'contact', 'settings', 'logout']
+      
       if (hash === 'campaigns') {
         setActiveTab('campaigns')
+      } else if (hash === 'curator-connect') {
+        setActiveTab('curator-connect')
       } else if (hash === 'packages') {
         setActiveTab('packages')
       } else if (hash === 'contact') {
@@ -496,6 +518,10 @@ export default function Dashboard({ user }: DashboardProps) {
         setActiveTab('settings')
       } else if (hash === 'help') {
         setActiveTab('contact') // 'help' maps to 'contact' tab
+      } else if (hash === 'logout') {
+        // Handle logout hash - trigger sign out modal
+        setShowSignOutModal(true)
+        // Don't change the active tab, just show the modal
       } else if (hash === '' || hash === 'dashboard') {
         setActiveTab('dashboard')
       }
@@ -512,6 +538,41 @@ export default function Dashboard({ user }: DashboardProps) {
       window.removeEventListener('hashchange', handleHashChange)
     }
   }, [])
+
+  // Trigger stats boxes animation on component mount
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setStatsBoxesAnimated(true)
+    }, 100) // Small delay to ensure DOM is ready
+
+    return () => clearTimeout(timer)
+  }, [])
+
+  // Trigger dashboard campaigns animation on main dashboard
+  useEffect(() => {
+    if (activeTab === 'dashboard') {
+      const timer = setTimeout(() => {
+        setDashboardCampaignsAnimated(true)
+      }, 300) // Delay after stats boxes
+
+      return () => clearTimeout(timer)
+    } else {
+      setDashboardCampaignsAnimated(false)
+    }
+  }, [activeTab])
+
+  // Trigger campaigns animation when switching to campaigns tab
+  useEffect(() => {
+    if (activeTab === 'campaigns') {
+      const timer = setTimeout(() => {
+        setCampaignsAnimated(true)
+      }, 150) // Slight delay after tab switch
+
+      return () => clearTimeout(timer)
+    } else {
+      setCampaignsAnimated(false)
+    }
+  }, [activeTab])
 
   // Generate realistic offset numbers that don't end with 00
   const generateRealisticNumber = (baseNumber: number): number => {
@@ -801,6 +862,26 @@ export default function Dashboard({ user }: DashboardProps) {
     return statusConfig?.textClass || 'text-gray-400'
   }
 
+  const getMobileStatusClasses = (status: string) => {
+    const statusConfig = ORDER_STATUSES.find(s => s.value === status)
+    if (!statusConfig) return 'bg-gray-500/20 text-gray-400 border border-gray-500/30'
+    
+    switch (statusConfig.color) {
+      case 'yellow':
+        return 'bg-yellow-500/20 text-yellow-400 border border-yellow-500/30'
+      case 'green':
+        return 'bg-green-500/20 text-green-400 border border-green-500/30'
+      case 'blue':
+        return 'bg-blue-500/20 text-blue-400 border border-blue-500/30'
+      case 'orange':
+        return 'bg-orange-500/20 text-orange-400 border border-orange-500/30'
+      case 'red':
+        return 'bg-red-500/20 text-red-400 border border-red-500/30'
+      default:
+        return 'bg-gray-500/20 text-gray-400 border border-gray-500/30'
+    }
+  }
+
   // Format numbers with K notation for Y-axis labels
   const formatNumberWithK = (num: number): string => {
     if (num >= 1000000) {
@@ -1009,14 +1090,20 @@ export default function Dashboard({ user }: DashboardProps) {
         </h2>
       </div>
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 lg:gap-6">
-        <div className="bg-gradient-to-br from-gray-950/90 to-gray-900/90 backdrop-blur-sm rounded-2xl p-4 lg:p-6 border border-gray-800/30 relative z-10">
+      <div 
+        className={`grid grid-cols-1 md:grid-cols-3 gap-4 lg:gap-6 transition-all duration-800 ease-out ${
+          statsBoxesAnimated 
+            ? 'opacity-100 translate-y-0 scale-100' 
+            : 'opacity-0 translate-y-10 scale-95'
+        }`}
+      >
+        <div className="bg-gradient-to-br from-gray-950/90 to-gray-900/90 backdrop-blur-sm rounded-2xl p-4 lg:p-6 border border-gray-800/30 relative z-10 transform transition-all duration-300 hover:scale-105 hover:-translate-y-1 hover:shadow-xl hover:shadow-green-500/10">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-gray-400 text-sm font-medium">Total Campaigns</p>
               <p className="text-2xl lg:text-3xl font-bold text-white mt-2">{totalCampaigns}</p>
             </div>
-            <div className="w-10 h-10 lg:w-12 lg:h-12 bg-gradient-to-br from-green-500 to-green-600 rounded-xl flex items-center justify-center">
+            <div className="w-10 h-10 lg:w-12 lg:h-12 bg-gradient-to-br from-green-500 to-green-600 rounded-xl flex items-center justify-center transition-transform duration-300 hover:scale-110 hover:rotate-3">
               <svg className="w-5 h-5 lg:w-6 lg:h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3" />
               </svg>
@@ -1024,13 +1111,13 @@ export default function Dashboard({ user }: DashboardProps) {
           </div>
         </div>
 
-        <div className="bg-gradient-to-br from-gray-950/90 to-gray-900/90 backdrop-blur-sm rounded-2xl p-4 lg:p-6 border border-gray-800/30 relative z-10">
+        <div className="bg-gradient-to-br from-gray-950/90 to-gray-900/90 backdrop-blur-sm rounded-2xl p-4 lg:p-6 border border-gray-800/30 relative z-10 transform transition-all duration-300 hover:scale-105 hover:-translate-y-1 hover:shadow-xl hover:shadow-blue-500/10">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-gray-400 text-sm font-medium">Running Campaigns</p>
               <p className="text-2xl lg:text-3xl font-bold text-white mt-2">{runningCampaigns}/{totalCampaigns}</p>
             </div>
-            <div className="w-10 h-10 lg:w-12 lg:h-12 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl flex items-center justify-center">
+            <div className="w-10 h-10 lg:w-12 lg:h-12 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl flex items-center justify-center transition-transform duration-300 hover:scale-110 hover:rotate-3">
               <svg className="w-5 h-5 lg:w-6 lg:h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
               </svg>
@@ -1038,13 +1125,13 @@ export default function Dashboard({ user }: DashboardProps) {
           </div>
         </div>
 
-        <div className="bg-gradient-to-br from-gray-950/90 to-gray-900/90 backdrop-blur-sm rounded-2xl p-4 lg:p-6 border border-gray-800/30 relative z-10">
+        <div className="bg-gradient-to-br from-gray-950/90 to-gray-900/90 backdrop-blur-sm rounded-2xl p-4 lg:p-6 border border-gray-800/30 relative z-10 transform transition-all duration-300 hover:scale-105 hover:-translate-y-1 hover:shadow-xl hover:shadow-purple-500/10">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-gray-400 text-sm font-medium">Completed Campaigns</p>
               <p className="text-2xl lg:text-3xl font-bold text-white mt-2">{completedCampaigns}/{totalCampaigns}</p>
             </div>
-            <div className="w-10 h-10 lg:w-12 lg:h-12 bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl flex items-center justify-center">
+            <div className="w-10 h-10 lg:w-12 lg:h-12 bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl flex items-center justify-center transition-transform duration-300 hover:scale-110 hover:rotate-3">
               <svg className="w-5 h-5 lg:w-6 lg:h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
@@ -1733,7 +1820,7 @@ export default function Dashboard({ user }: DashboardProps) {
         <div className="flex items-center justify-between mb-4 lg:mb-6">
           <h3 className="text-xl lg:text-2xl font-bold text-white">Your Campaigns</h3>
           <button 
-            onClick={() => setActiveTab('campaigns')}
+            onClick={() => changeTab('campaigns')}
             className="text-green-400 hover:text-green-300 font-medium transition-colors text-sm lg:text-base"
           >
             View All →
@@ -1756,23 +1843,107 @@ export default function Dashboard({ user }: DashboardProps) {
             </button>
           </div>
         ) : (
-          <div className="space-y-4">
-            {orders.slice(0, 3).map((order) => (
-              <div key={order.id}>
-                {/* Main Campaign Container with Gradient Border */}
-                <div className="bg-gradient-to-r from-gray-600/30 via-gray-500/20 to-gray-600/30 p-[1px] rounded-xl">
-                  <div className="bg-gray-800/50 rounded-xl overflow-hidden">
-                  {/* Collapsed Order Row - Column Layout */}
+          <div className={`space-y-4 transition-all duration-500 ease-out ${
+            dashboardCampaignsAnimated 
+              ? 'opacity-100 translate-y-0' 
+              : 'opacity-0 translate-y-6'
+          }`}>
+            {orders.slice(0, 3).map((order, index) => (
+              <div key={order.id}
+                className={`campaign-card transition-all duration-600 ease-out ${
+                  dashboardCampaignsAnimated 
+                    ? 'opacity-100 translate-y-0' 
+                    : 'opacity-0 translate-y-8'
+                }`}
+                style={{
+                  animationDelay: dashboardCampaignsAnimated ? `${index * 100}ms` : '0ms',
+                  animation: dashboardCampaignsAnimated ? `slideInCard 0.6s ease-out ${index * 0.1}s both` : 'none'
+                }}
+              >
+                {/* Modern App-Style Campaign Card */}
+                <div className="bg-white/[0.02] backdrop-blur-xl rounded-[20px] border border-white/[0.08] shadow-xl overflow-hidden hover:shadow-2xl transition-all duration-300">
+                  {/* Card Header - Mobile Optimized */}
                   <div 
-                    className="flex flex-col md:grid md:grid-cols-12 gap-4 p-4 cursor-pointer hover:bg-gray-700/50 transition-colors items-center"
+                    className="p-5 cursor-pointer active:scale-[0.98] transition-transform duration-150"
                     onClick={() => toggleOrderExpansion(order.id)}
                   >
-                    {/* Album Artwork - 25% smaller on mobile, stacked on top */}
-                    <div className="w-[123px] h-[123px] md:col-span-2 flex-shrink-0 flex justify-center items-center mb-3 md:mb-0 relative" style={{ width: '123px', height: '123px' }}>
+                    {/* Mobile: Artwork + Basic Info */}
+                    <div className="md:hidden">
+                      <div className="flex items-start space-x-4 mb-4">
+                        {/* Artwork - Compact size for mobile */}
+                        <div className="relative flex-shrink-0">
+                          <div className="w-[80px] h-[80px] rounded-[16px] overflow-hidden bg-black/20 shadow-lg">
+                            {order.items && order.items.length > 0 ? (
+                              <div className={`w-full h-full ${order.items.length === 1 ? '' : 'grid grid-cols-2 gap-[1px]'}`}> 
+                                {order.items.slice(0, 4).map((item: any, idx: number) => (
+                                  <div key={idx} className="bg-black/20 overflow-hidden">
+                                    <img 
+                                      src={item.track.imageUrl} 
+                                      alt={item.track.title}
+                                      className="w-full h-full object-cover"
+                                    />
+                                  </div>
+                                ))}
+                              </div>
+                            ) : (
+                              <div className="w-full h-full bg-black/20 flex items-center justify-center">
+                                <span className="text-white/60 text-lg">🎵</span>
+                              </div>
+                            )}
+                          </div>
+                          
+                          {/* Track Count Badge */}
+                          {order.items && order.items.length > 1 && (
+                            <div className="absolute -top-2 -right-2 w-6 h-6 bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] rounded-full flex items-center justify-center shadow-lg">
+                              <span className="text-white text-xs font-bold">{order.items.length}</span>
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Campaign Info */}
+                        <div className="flex-1 min-w-0">
+                          <h3 className="text-white font-semibold text-lg truncate mb-2">
+                            Campaign #{order.orderNumber}
+                          </h3>
+                          
+                          <div className="flex items-center justify-between text-sm mb-3">
+                            <span className="text-white/70">${Math.round(order.total)}</span>
+                            <span className="text-white/50 text-xs">{new Date(order.createdAt).toLocaleDateString()}</span>
+                          </div>
+
+                          {/* Status on its own line - Mobile only */}
+                          <div className={`inline-flex items-center space-x-1 px-2 py-1 rounded-full text-xs font-medium ${getMobileStatusClasses(order.status)}`}>
+                            <div className={`w-1.5 h-1.5 rounded-full status-glow ${getStatusBgClass(order.status)}`}></div>
+                            <span className="text-xs">
+                              {getStatusLabel(order.status)}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Progress Bar - Mobile shows on main card */}
+                      <div className="md:hidden mt-4">
+                        <div className="bg-black/10 rounded-xl p-3 border border-white/10">
+                          <CampaignProgressBar 
+                            orderCreatedAt={order.createdAt}
+                            orderStatus={order.status}
+                            showMessage={true}
+                            size="small"
+                            className="w-full"
+                          />
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Desktop Layout */}
+                    <div className="hidden md:grid md:grid-cols-12 gap-4 items-center">
+                      {/* Desktop Artwork */}
+                      <div className="md:col-span-2 flex justify-center">
+                        <div className="w-[110px] h-[110px] rounded-xl overflow-hidden bg-black/20 shadow-lg relative">
                       {order.items && order.items.length > 0 ? (
                         <div className={`w-full h-full ${order.items.length === 1 ? '' : 'grid grid-cols-2 grid-rows-2 gap-1'}`}> 
                           {order.items.slice(0, 4).map((item: any, idx: number) => (
-                            <div key={idx} className={`${getArtworkSize(Math.min(order.items.length, 4))} rounded-lg overflow-hidden bg-gray-800`}>
+                                <div key={idx} className={`${getArtworkSize(Math.min(order.items.length, 4))} overflow-hidden bg-black/20`}>
                               <img 
                                 src={item.track.imageUrl} 
                                 alt={item.track.title}
@@ -1782,25 +1953,28 @@ export default function Dashboard({ user }: DashboardProps) {
                           ))}
                         </div>
                       ) : (
-                        <div className="w-full h-full bg-gray-800 rounded-lg flex items-center justify-center">
-                          <span className="text-gray-400 text-xs">🎵</span>
+                            <div className="w-full h-full bg-black/20 flex items-center justify-center">
+                              <span className="text-white/60 text-lg">🎵</span>
                         </div>
                       )}
                       
-                      {/* Additional songs indicator */}
                       {order.items && order.items.length > 4 && (
-                        <div className="absolute -top-2 -right-2 w-8 h-8 bg-gradient-to-r from-green-500 to-green-600 rounded-full flex items-center justify-center border-2 border-gray-900 shadow-lg">
-                          <span className="text-white text-xs font-bold px-1">+{order.items.length - 4}</span>
+                            <div className="absolute -top-2 -right-2 w-7 h-7 bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] rounded-full flex items-center justify-center border-2 border-gray-900 shadow-lg">
+                              <span className="text-white text-xs font-bold">+{order.items.length - 4}</span>
                         </div>
                       )}
                     </div>
-                    {/* Order Info & Progress Bar - stacked below artwork on mobile */}
-                    <div className="flex-1 md:col-span-6 w-full">
-                      <p className="text-white font-semibold mb-2 text-lg text-center md:text-left mt-2 md:mt-0">
-                        Order #{order.orderNumber} • <span className="text-gray-400 font-normal text-xs">${Math.round(order.total)} • {new Date(order.createdAt).toLocaleDateString()}</span>
-                      </p>
-                      {/* Campaign Progress Bar Container - Small size for collapsed view */}
-                      <div className="bg-gray-800/30 rounded-lg p-3 mt-2 border border-gray-700/30 hidden md:block" style={{ width: '500px', maxWidth: '100%' }}>
+                      </div>
+
+                      {/* Desktop Order Info */}
+                      <div className="flex-1 md:col-span-6">
+                        <h3 className="text-white font-semibold text-lg mb-2">
+                          Campaign #{order.orderNumber}
+                        </h3>
+                        <div className="text-sm text-white/70 mb-3">
+                          ${Math.round(order.total)} • {new Date(order.createdAt).toLocaleDateString()}
+                        </div>
+                        <div className={`bg-black/10 rounded-lg p-3 border border-white/10 ${expandedOrders.has(order.id) ? 'hidden' : 'block'}`}>
                         <CampaignProgressBar 
                           orderCreatedAt={order.createdAt}
                           orderStatus={order.status}
@@ -1810,12 +1984,12 @@ export default function Dashboard({ user }: DashboardProps) {
                         />
                       </div>
                     </div>
-                    {/* Status & Expand Button - stacked below on mobile, right on desktop */}
-                    <div className="flex md:col-span-4 items-center justify-between md:justify-end w-full mt-3 md:mt-0 space-x-4">
+
+                      {/* Desktop Status & Controls */}
+                      <div className="flex md:col-span-4 items-center justify-end space-x-4">
                       <div className="flex items-center space-x-2">
-                        <div className={`w-3 h-3 rounded-full animate-pulse ${getStatusBgClass(order.status)}`} 
+                          <div className={`w-3 h-3 rounded-full ${getStatusBgClass(order.status)}`} 
                           style={{
-                            animation: 'glow 2s infinite',
                             filter: 'drop-shadow(0 0 4px currentColor)',
                           }}></div>
                         <span className={`text-sm font-medium ${getStatusTextClass(order.status)}`}>
@@ -1823,7 +1997,7 @@ export default function Dashboard({ user }: DashboardProps) {
                         </span>
                       </div>
                       <svg 
-                        className={`w-5 h-5 text-gray-400 transition-transform ${
+                          className={`w-5 h-5 text-white/40 transition-transform duration-300 ${
                           expandedOrders.has(order.id) ? 'rotate-180' : ''
                         }`}
                         fill="none" 
@@ -1832,14 +2006,35 @@ export default function Dashboard({ user }: DashboardProps) {
                       >
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                       </svg>
+                      </div>
+                    </div>
+
+                    {/* Expand/Collapse Indicator - Mobile */}
+                    <div className="md:hidden flex justify-center items-center mt-4 pt-3 border-t border-white/10">
+                      <div className="flex items-center space-x-2 text-white/60">
+                        <span className="text-xs font-medium">
+                          {expandedOrders.has(order.id) ? 'Show Less' : 'View Details'}
+                        </span>
+                        <svg 
+                          className={`w-4 h-4 transition-transform duration-300 ${
+                            expandedOrders.has(order.id) ? 'rotate-180' : ''
+                          }`}
+                          fill="none" 
+                          stroke="currentColor" 
+                          viewBox="0 0 24 24"
+                        >
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                        </svg>
+                      </div>
                     </div>
                   </div>
                 
                   {/* Expanded Order Details */}
                   {expandedOrders.has(order.id) && (
-                    <div className="border-t border-gray-700/50 p-4 bg-gray-800/30">
-                      {/* Campaign Progress Bar - Medium size for expanded view */}
-                      <div className="mb-6" style={{ width: '500px', maxWidth: '100%' }}>
+                    <div className="border-t border-white/10 bg-white/[0.02] backdrop-blur-sm">
+                      {/* Progress Bar for Expanded View - Mobile Hidden */}
+                      <div className="hidden md:block p-5 pb-0">
+                        <div className="bg-black/20 rounded-xl p-4 border border-white/10">
                         <CampaignProgressBar 
                           orderCreatedAt={order.createdAt}
                           orderStatus={order.status}
@@ -1847,44 +2042,69 @@ export default function Dashboard({ user }: DashboardProps) {
                           size="medium"
                         />
                       </div>
-                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                        {/* Song Cards */}
+                      </div>
+
+                      {/* Track Cards Grid */}
+                      <div className="p-5">
+                        <h4 className="text-white font-semibold mb-4 text-lg">Track Details</h4>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         {order.items && order.items.map((item: any, idx: number) => (
-                          <div key={idx} className="bg-gray-900/50 rounded-xl p-4 border border-gray-700/30">
-                            <div className="flex flex-col items-center space-y-3">
-                              <div className="w-20 h-20 rounded-lg overflow-hidden bg-gray-800">
+                            <div key={idx} className="bg-white/[0.03] rounded-2xl p-4 border border-white/15 backdrop-blur-sm">
+                              <div className="flex items-center space-x-4">
+                                <div className="w-20 h-20 md:w-24 md:h-24 rounded-xl overflow-hidden bg-black/20 flex-shrink-0">
                                 <img 
                                   src={item.track.imageUrl} 
                                   alt={item.track.title}
                                   className="w-full h-full object-cover"
                                 />
                               </div>
-                              <div className="text-center">
-                                <h4 className="text-white font-medium text-sm mb-1">{item.track.title}</h4>
-                                <p className="text-gray-400 text-xs mb-2">{item.package.name} Package</p>
-                                <div className="bg-gradient-to-r from-green-500/20 to-green-600/20 border border-green-500/30 rounded-lg p-2">
-                                  <p className="text-green-400 text-xs font-medium">{item.package.plays}</p>
-                                  <p className="text-green-400 text-xs">{item.package.placements}</p>
-                                </div>
+                                <div className="flex-1 min-w-0">
+                                  <h5 className="text-white font-medium text-sm md:text-base truncate mb-2">{item.track.title}</h5>
+                                  
+                                  {/* Package Badge - Separate Container */}
+                                  <div className="mb-3">
+                                    <span className="inline-flex items-center px-3 py-1 rounded-lg bg-gradient-to-r from-[#59e3a5]/20 to-[#14c0ff]/20 border border-[#59e3a5]/40 text-[#59e3a5] text-xs font-semibold">
+                                      {item.package.name} Package
+                                    </span>
+                                  </div>
+                                  
+                                  {/* Campaign Benefits List - Separate Container */}
+                                  <div className="bg-white/[0.05] rounded-lg p-3 border border-white/10">
+                                    <div className="space-y-3 md:space-y-3">
+                                      <div className="flex items-center space-x-2">
+                                        <svg className="w-3 h-3 text-[#59e3a5] flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                                          <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                                        </svg>
+                                        <span className="text-white/90 text-xs md:text-base font-medium">{item.package.plays}</span>
+                                      </div>
+                                      <div className="flex items-center space-x-2">
+                                        <svg className="w-3 h-3 text-[#14c0ff] flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                                          <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                                        </svg>
+                                        <span className="text-white/90 text-xs md:text-base font-medium">{item.package.placements}</span>
+                                      </div>
+                                    </div>
+                                  </div>
                               </div>
                             </div>
                           </div>
                         ))}
+                        </div>
                       </div>
                       
                       {/* Add-ons Section */}
                       {order.addOnItems && order.addOnItems.length > 0 && (
-                        <div className="mt-4 pt-4 border-t border-gray-700/50">
-                          <h4 className="text-white font-medium mb-3">Add-ons</h4>
+                        <div className="px-5 pb-5">
+                          <h4 className="text-white font-semibold mb-4 text-lg">Add-ons</h4>
                           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                                                     {order.addOnItems.map((addon: any, idx: number) => (
-                            <div key={idx} className="flex items-center space-x-3 bg-gray-900/30 rounded-lg p-3 border border-gray-700/30">
-                              <div className="w-8 h-8 bg-gray-800 rounded-full flex items-center justify-center">
-                                <span className="text-sm">{addon.emoji}</span>
+                              <div key={idx} className="flex items-center space-x-3 bg-white/[0.02] rounded-xl p-3 border border-white/10">
+                                <div className="w-10 h-10 bg-gradient-to-r from-[#59e3a5]/20 to-[#14c0ff]/20 rounded-xl flex items-center justify-center border border-white/10">
+                                  <span className="text-lg">{addon.emoji}</span>
                               </div>
                               <div className="flex-1">
-                                <p className="text-white text-sm font-medium">{addon.name}</p>
-                                <p className="text-green-400 text-xs">${addon.price >= 600 ? Math.round(addon.price / 100) : addon.price}</p>
+                                  <p className="text-white font-medium text-sm">{addon.name}</p>
+                                  <p className="text-[#59e3a5] text-xs font-medium">${addon.price >= 600 ? Math.round(addon.price / 100) : addon.price}</p>
                               </div>
                             </div>
                           ))}
@@ -1894,22 +2114,6 @@ export default function Dashboard({ user }: DashboardProps) {
                     </div>
                   )}
                   </div>
-                </div>
-                
-                {/* Mobile version - Bottom border extension with add-on styling */}
-                {!expandedOrders.has(order.id) && (
-                  <div className="md:hidden">
-                    <div className="bg-gray-800/40 rounded-b-lg p-3 border border-gray-700/40 border-t-0 -mt-1">
-                      <CampaignProgressBar 
-                        orderCreatedAt={order.createdAt}
-                        orderStatus={order.status}
-                        showMessage={true}
-                        size="small"
-                        className="w-full"
-                      />
-                    </div>
-                  </div>
-                )}
               </div>
             ))}
           </div>
@@ -1947,52 +2151,138 @@ export default function Dashboard({ user }: DashboardProps) {
           </button>
         </div>
       ) : (
-        <div className="space-y-4">
-          {orders.map((order) => (
-            <div key={order.id}>
-              {/* Main Campaign Container with Gradient Border */}
-              <div className="bg-gradient-to-r from-gray-600/30 via-gray-500/20 to-gray-600/30 p-[1px] rounded-2xl">
-                <div className="bg-gray-900/95 backdrop-blur-sm rounded-2xl overflow-hidden">
-                {/* Collapsed Order Row - Column Layout */}
+        <div className={`space-y-4 transition-all duration-500 ease-out ${
+          campaignsAnimated 
+            ? 'opacity-100 translate-y-0' 
+            : 'opacity-0 translate-y-6'
+        }`}>
+          {orders.map((order, index) => (
+            <div key={order.id}
+              className={`campaign-card transition-all duration-600 ease-out ${
+                campaignsAnimated 
+                  ? 'opacity-100 translate-y-0' 
+                  : 'opacity-0 translate-y-8'
+              }`}
+              style={{
+                animationDelay: campaignsAnimated ? `${index * 100}ms` : '0ms',
+                animation: campaignsAnimated ? `slideInCard 0.6s ease-out ${index * 0.1}s both` : 'none'
+              }}
+            >
+              {/* Modern App-Style Campaign Card */}
+              <div className="bg-white/[0.02] backdrop-blur-xl rounded-[20px] border border-white/[0.08] shadow-xl overflow-hidden hover:shadow-2xl transition-all duration-300">
+                {/* Card Header - Mobile Optimized */}
                 <div 
-                  className="flex flex-col md:grid md:grid-cols-12 gap-4 p-4 cursor-pointer hover:bg-gray-800/50 transition-colors items-center"
-                onClick={() => toggleOrderExpansion(order.id)}
-              >
-                  {/* Column 1: Album Artwork Thumbnails (2x2 Grid) */}
-                  <div className="col-span-2 flex justify-center items-center relative" style={{ width: '110px', height: '110px' }}>
-                    {order.items && order.items.length > 0 ? (
-                      <div className={`w-full h-full ${order.items.length === 1 ? '' : 'grid grid-cols-2 grid-rows-2 gap-1'}`}>
-                        {order.items.slice(0, 4).map((item: any, idx: number) => (
-                          <div key={idx} className={`${getArtworkSize(Math.min(order.items.length, 4))} rounded-lg overflow-hidden bg-gray-800`}>
-                          <img 
-                            src={item.track.imageUrl} 
-                            alt={item.track.title}
-                            className="w-full h-full object-cover"
-                          />
+                  className="p-5 cursor-pointer active:scale-[0.98] transition-transform duration-150"
+                  onClick={() => toggleOrderExpansion(order.id)}
+                >
+                  {/* Mobile: Artwork + Basic Info */}
+                  <div className="md:hidden">
+                    <div className="flex items-start space-x-4 mb-4">
+                      {/* Artwork - Compact size for mobile */}
+                      <div className="relative flex-shrink-0">
+                        <div className="w-[80px] h-[80px] rounded-[16px] overflow-hidden bg-black/20 shadow-lg">
+                          {order.items && order.items.length > 0 ? (
+                            <div className={`w-full h-full ${order.items.length === 1 ? '' : 'grid grid-cols-2 gap-[1px]'}`}> 
+                              {order.items.slice(0, 4).map((item: any, idx: number) => (
+                                <div key={idx} className="bg-black/20 overflow-hidden">
+                                  <img 
+                                    src={item.track.imageUrl} 
+                                    alt={item.track.title}
+                                    className="w-full h-full object-cover"
+                                  />
+                                </div>
+                              ))}
+                            </div>
+                          ) : (
+                            <div className="w-full h-full bg-black/20 flex items-center justify-center">
+                              <span className="text-white/60 text-lg">🎵</span>
+                            </div>
+                          )}
                         </div>
+                        
+                        {/* Track Count Badge */}
+                        {order.items && order.items.length > 1 && (
+                          <div className="absolute -top-2 -right-2 w-6 h-6 bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] rounded-full flex items-center justify-center shadow-lg">
+                            <span className="text-white text-xs font-bold">{order.items.length}</span>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Campaign Info */}
+                      <div className="flex-1 min-w-0">
+                        <h3 className="text-white font-semibold text-lg truncate mb-2">
+                          Campaign #{order.orderNumber}
+                        </h3>
+                        
+                        <div className="flex items-center justify-between text-sm mb-3">
+                          <span className="text-white/70">${Math.round(order.total)}</span>
+                          <span className="text-white/50 text-xs">{new Date(order.createdAt).toLocaleDateString()}</span>
+                        </div>
+
+                        {/* Status on its own line - Mobile only */}
+                        <div className={`inline-flex items-center space-x-1 px-2 py-1 rounded-full text-xs font-medium ${getMobileStatusClasses(order.status)}`}>
+                          <div className={`w-1.5 h-1.5 rounded-full status-glow ${getStatusBgClass(order.status)}`}></div>
+                          <span className="text-xs">
+                            {getStatusLabel(order.status)}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Progress Bar - Mobile shows on main card */}
+                    <div className="md:hidden mt-4">
+                      <div className="bg-black/10 rounded-xl p-3 border border-white/10">
+                        <CampaignProgressBar 
+                          orderCreatedAt={order.createdAt}
+                          orderStatus={order.status}
+                          showMessage={true}
+                          size="small"
+                          className="w-full"
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Desktop Layout */}
+                  <div className="hidden md:grid md:grid-cols-12 gap-4 items-center">
+                    {/* Desktop Artwork */}
+                    <div className="md:col-span-2 flex justify-center">
+                      <div className="w-[110px] h-[110px] rounded-xl overflow-hidden bg-black/20 shadow-lg relative">
+                    {order.items && order.items.length > 0 ? (
+                      <div className={`w-full h-full ${order.items.length === 1 ? '' : 'grid grid-cols-2 grid-rows-2 gap-1'}`}> 
+                        {order.items.slice(0, 4).map((item: any, idx: number) => (
+                              <div key={idx} className={`${getArtworkSize(Math.min(order.items.length, 4))} overflow-hidden bg-black/20`}>
+                            <img 
+                              src={item.track.imageUrl} 
+                              alt={item.track.title}
+                              className="w-full h-full object-cover"
+                            />
+                          </div>
                         ))}
                       </div>
                     ) : (
-                      <div className="w-full h-full bg-gray-800 rounded-lg flex items-center justify-center">
-                        <span className="text-gray-400 text-xs">🎵</span>
+                          <div className="w-full h-full bg-black/20 flex items-center justify-center">
+                            <span className="text-white/60 text-lg">🎵</span>
                       </div>
                     )}
                     
-                    {/* Additional songs indicator */}
                     {order.items && order.items.length > 4 && (
-                      <div className="absolute -top-2 -right-2 w-8 h-8 bg-gradient-to-r from-green-500 to-green-600 rounded-full flex items-center justify-center border-2 border-gray-900 shadow-lg">
-                        <span className="text-white text-xs font-bold px-1">+{order.items.length - 4}</span>
+                          <div className="absolute -top-2 -right-2 w-7 h-7 bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] rounded-full flex items-center justify-center border-2 border-gray-900 shadow-lg">
+                            <span className="text-white text-xs font-bold">+{order.items.length - 4}</span>
                       </div>
                     )}
                   </div>
-                  
-                  {/* Column 2: Order Info & Progress Bar (Flexible Width) */}
-                  <div className="col-span-6">
-                    <p className="text-white font-semibold mb-2 text-lg">
-                      Order #{order.orderNumber} • <span className="text-gray-400 font-normal text-xs">${Math.round(order.total)} • {new Date(order.createdAt).toLocaleDateString()}</span>
-                    </p>
-                    {/* Campaign Progress Bar Container - Small size for collapsed view */}
-                    <div className="bg-gray-800/30 rounded-lg p-3 mt-2 border border-gray-700/30 md:block hidden" style={{ width: '500px', maxWidth: '100%' }}>
+                    </div>
+
+                    {/* Desktop Order Info */}
+                    <div className="flex-1 md:col-span-6">
+                      <h3 className="text-white font-semibold text-lg mb-2">
+                        Campaign #{order.orderNumber}
+                      </h3>
+                      <div className="text-sm text-white/70 mb-3">
+                        ${Math.round(order.total)} • {new Date(order.createdAt).toLocaleDateString()}
+                      </div>
+                      <div className={`bg-black/10 rounded-lg p-3 border border-white/10 ${expandedOrders.has(order.id) ? 'hidden' : 'block'}`}>
                       <CampaignProgressBar 
                         orderCreatedAt={order.createdAt}
                         orderStatus={order.status}
@@ -2000,149 +2290,138 @@ export default function Dashboard({ user }: DashboardProps) {
                         size="small"
                         className="w-full"
                       />
+                    </div>
                   </div>
-                </div>
-                
-                  {/* Column 3: Status & Expand Button (Fixed Width) */}
-                  <div className="w-full md:col-span-4 flex flex-row items-center justify-between md:justify-end mt-2 md:mt-0">
+
+                    {/* Desktop Status & Controls */}
+                    <div className="flex md:col-span-4 items-center justify-end space-x-4">
                     <div className="flex items-center space-x-2">
-                      <div className={`w-3 h-3 rounded-full animate-pulse ${getStatusBgClass(order.status)}`}
+                        <div className={`w-3 h-3 rounded-full ${getStatusBgClass(order.status)}`} 
                         style={{
-                          animation: 'glow 2s infinite',
                           filter: 'drop-shadow(0 0 4px currentColor)',
                         }}></div>
-                      <span className={`text-sm font-medium ${getStatusTextClass(order.status)} mr-3`}>
+                      <span className={`text-sm font-medium ${getStatusTextClass(order.status)}`}>
                         {getStatusLabel(order.status)}
                       </span>
                     </div>
-                    <svg
-                      className={`w-5 h-5 text-gray-400 transition-transform ml-2 ${
+                    <svg 
+                        className={`w-5 h-5 text-white/40 transition-transform duration-300 ${
                         expandedOrders.has(order.id) ? 'rotate-180' : ''
                       }`}
-                      fill="none"
-                      stroke="currentColor"
+                      fill="none" 
+                      stroke="currentColor" 
                       viewBox="0 0 24 24"
                     >
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                     </svg>
+                    </div>
                   </div>
-              </div>
+
+                  {/* Expand/Collapse Indicator - Mobile */}
+                  <div className="md:hidden flex justify-center items-center mt-4 pt-3 border-t border-white/10">
+                    <div className="flex items-center space-x-2 text-white/60">
+                      <span className="text-xs font-medium">
+                        {expandedOrders.has(order.id) ? 'Show Less' : 'View Details'}
+                      </span>
+                      <svg 
+                        className={`w-4 h-4 transition-transform duration-300 ${
+                          expandedOrders.has(order.id) ? 'rotate-180' : ''
+                        }`}
+                        fill="none" 
+                        stroke="currentColor" 
+                        viewBox="0 0 24 24"
+                      >
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                      </svg>
+                    </div>
+                  </div>
+                </div>
               
-              {/* Expanded Order Details */}
-              {expandedOrders.has(order.id) && (
-                <div className="border-t border-gray-800/50 p-4 bg-gray-950/50">
-                  {/* Campaign Progress Bar - Medium size for expanded view */}
-                  <div className="mb-6" style={{ width: '500px', maxWidth: '100%' }}>
-                    <CampaignProgressBar 
-                      orderCreatedAt={order.createdAt}
-                      orderStatus={order.status}
-                      showMessage={true}
-                      size="medium"
-                    />
-                  </div>
-                  <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4">
-                    {/* Song Cards */}
-                    {order.items && order.items.length > 0 && order.items.map((item: any, idx: number) => (
-                      <div key={idx} className="bg-gray-900/80 rounded-xl p-4 border border-gray-800/50">
-                        <div className="flex flex-col items-center space-y-3">
-                          <div className="w-20 h-20 rounded-lg overflow-hidden bg-gray-800">
-                            <img 
-                              src={item.track.imageUrl} 
-                              alt={item.track.title}
-                              className="w-full h-full object-cover"
-                            />
-                          </div>
-                          <div className="text-center">
-                            <h4 className="text-white font-medium text-sm line-clamp-2">{item.track.title}</h4>
-                            {item.track.artist && (
-                              <p className="text-gray-400 text-xs mt-1">{item.track.artist}</p>
-                            )}
-                          </div>
-                          <div className="w-full bg-gradient-to-r from-green-500/20 to-green-600/20 rounded-lg p-3 text-center">
-                            <p className="text-green-400 font-medium text-sm">{item.package.name}</p>
-                            <p className="text-gray-300 text-xs mt-1">{item.package.plays}</p>
-                            <p className="text-gray-300 text-xs">{item.package.placements}</p>
+                {/* Expanded Order Details */}
+                {expandedOrders.has(order.id) && (
+                  <div className="border-t border-white/10 bg-white/[0.02] backdrop-blur-sm">
+                    {/* Progress Bar for Expanded View - Mobile Hidden */}
+                    <div className="hidden md:block p-5 pb-0">
+                      <div className="bg-black/20 rounded-xl p-4 border border-white/10">
+                      <CampaignProgressBar 
+                        orderCreatedAt={order.createdAt}
+                        orderStatus={order.status}
+                        showMessage={true}
+                        size="medium"
+                      />
+                    </div>
+                    </div>
+
+                    {/* Track Cards Grid */}
+                    <div className="p-5">
+                      <h4 className="text-white font-semibold mb-4 text-lg">Track Details</h4>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {order.items && order.items.map((item: any, idx: number) => (
+                          <div key={idx} className="bg-white/[0.03] rounded-2xl p-4 border border-white/15 backdrop-blur-sm">
+                            <div className="flex items-center space-x-4">
+                              <div className="w-20 h-20 md:w-24 md:h-24 rounded-xl overflow-hidden bg-black/20 flex-shrink-0">
+                              <img 
+                                src={item.track.imageUrl} 
+                                alt={item.track.title}
+                                className="w-full h-full object-cover"
+                              />
+                            </div>
+                              <div className="flex-1 min-w-0">
+                                <h5 className="text-white font-medium text-sm md:text-base truncate mb-2">{item.track.title}</h5>
+                                
+                                {/* Package Badge - Separate Container */}
+                                <div className="mb-3">
+                                  <span className="inline-flex items-center px-3 py-1 rounded-lg bg-gradient-to-r from-[#59e3a5]/20 to-[#14c0ff]/20 border border-[#59e3a5]/40 text-[#59e3a5] text-xs font-semibold">
+                                    {item.package.name} Package
+                                  </span>
+                                </div>
+                                
+                                {/* Campaign Benefits List - Separate Container */}
+                                <div className="bg-white/[0.05] rounded-lg p-3 border border-white/10">
+                                  <div className="space-y-3 md:space-y-3">
+                                    <div className="flex items-center space-x-2">
+                                      <svg className="w-3 h-3 text-[#59e3a5] flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                                        <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                                      </svg>
+                                      <span className="text-white/90 text-xs md:text-base font-medium">{item.package.plays}</span>
+                                    </div>
+                                    <div className="flex items-center space-x-2">
+                                      <svg className="w-3 h-3 text-[#14c0ff] flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                                        <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                                      </svg>
+                                      <span className="text-white/90 text-xs md:text-base font-medium">{item.package.placements}</span>
+                                    </div>
+                                  </div>
+                                </div>
+                            </div>
                           </div>
                         </div>
+                      ))}
                       </div>
-                    ))}
-                  </div>
-                  
-                  {/* Add-ons Section */}
-                  {order.addOnItems && order.addOnItems.length > 0 && (
-                    <div className="mt-6">
-                      <h4 className="text-white font-medium mb-3">Add-ons</h4>
-                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-                        {order.addOnItems.map((addon: any, idx: number) => (
-                          <div key={idx} className="bg-gray-900/80 rounded-lg p-3 border border-gray-800/50">
-                            <div className="flex items-center space-x-3">
-                              <div className="w-8 h-8 bg-gray-800 rounded-full flex items-center justify-center">
-                                <span className="text-sm">{addon.emoji}</span>
-                              </div>
-                              <div className="flex-1">
-                                <p className="text-white text-sm font-medium">{addon.name}</p>
-                                                                  <p className="text-gray-400 text-xs">
-                                    ${addon.price >= 600 ? Math.round(addon.price / 100) : addon.price}
-                                    {addon.isOnSale && addon.originalPrice && (
-                                      <span className="ml-1 line-through text-gray-500">
-                                        ${addon.originalPrice >= 600 ? Math.round(addon.originalPrice / 100) : addon.originalPrice}
-                                      </span>
-                                    )}
-                                  </p>
-                              </div>
+                    </div>
+                    
+                    {/* Add-ons Section */}
+                    {order.addOnItems && order.addOnItems.length > 0 && (
+                      <div className="px-5 pb-5">
+                        <h4 className="text-white font-semibold mb-4 text-lg">Add-ons</h4>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                                  {order.addOnItems.map((addon: any, idx: number) => (
+                            <div key={idx} className="flex items-center space-x-3 bg-white/[0.02] rounded-xl p-3 border border-white/10">
+                              <div className="w-10 h-10 bg-gradient-to-r from-[#59e3a5]/20 to-[#14c0ff]/20 rounded-xl flex items-center justify-center border border-white/10">
+                                <span className="text-lg">{addon.emoji}</span>
+                            </div>
+                            <div className="flex-1">
+                                <p className="text-white font-medium text-sm">{addon.name}</p>
+                                <p className="text-[#59e3a5] text-xs font-medium">${addon.price >= 600 ? Math.round(addon.price / 100) : addon.price}</p>
                             </div>
                           </div>
                         ))}
-                      </div>
-                    </div>
-                  )}
-                  
-                  {/* Order Summary */}
-                  <div className="mt-6 pt-4 border-t border-gray-800/50">
-                    <div className="flex justify-between items-center text-sm">
-                      <span className="text-gray-400">Customer:</span>
-                      <span className="text-white">{order.customerName}</span>
-                    </div>
-                    <div className="flex justify-between items-center text-sm mt-1">
-                      <span className="text-gray-400">Email:</span>
-                      <span className="text-white">{order.customerEmail}</span>
-                    </div>
-                    {order.discount > 0 && (
-                      <div className="flex justify-between items-center text-sm mt-1">
-                        <span className="text-gray-400">Multi-song discount:</span>
-                        <span className="text-green-400">-${Math.round(order.discount)}</span>
+                        </div>
                       </div>
                     )}
-                    {order.couponCode && order.couponDiscount > 0 && (
-                      <div className="flex justify-between items-center text-sm mt-1">
-                        <span className="text-gray-400">Coupon ({order.couponCode}):</span>
-                        <span className="text-green-400">-${Math.round(order.couponDiscount)}</span>
-                      </div>
-                    )}
-                    <div className="flex justify-between items-center text-sm mt-1 pt-2 border-t border-gray-800/50">
-                      <span className="text-gray-400">Total:</span>
-                      <span className="text-white font-semibold">${Math.round(order.total)}</span>
-                    </div>
                   </div>
+                )}
                 </div>
-              )}
-                </div>
-              </div>
-              
-              {/* Mobile version - Bottom border extension with add-on styling */}
-              {!expandedOrders.has(order.id) && (
-                <div className="md:hidden">
-                  <div className="bg-gray-800/40 rounded-b-lg p-3 border border-gray-700/40 border-t-0 -mt-1">
-                    <CampaignProgressBar 
-                      orderCreatedAt={order.createdAt}
-                      orderStatus={order.status}
-                      showMessage={true}
-                      size="small"
-                      className="w-full"
-                    />
-                  </div>
-                </div>
-              )}
             </div>
           ))}
         </div>
@@ -2372,19 +2651,75 @@ export default function Dashboard({ user }: DashboardProps) {
           </div>
           
           {/* Menu Items */}
-          <div className="p-2">
+          <div className="p-2 space-y-1">
             <button
               onClick={() => {
                 setShowUserDropdown(false)
-                setShowSignOutModal(true)
+                changeTab('dashboard')
               }}
               className="w-full flex items-center space-x-3 px-3 py-2 rounded-lg text-gray-300 hover:bg-gray-800/50 hover:text-white transition-colors"
             >
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+              </svg>
+              <span className="text-sm font-medium">Campaigns</span>
+            </button>
+            
+            <button
+              onClick={() => {
+                setShowUserDropdown(false)
+                changeTab('faq')
+              }}
+              className="w-full flex items-center space-x-3 px-3 py-2 rounded-lg text-gray-300 hover:bg-gray-800/50 hover:text-white transition-colors"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              <span className="text-sm font-medium">FAQ</span>
+            </button>
+            
+            <button
+              onClick={() => {
+                setShowUserDropdown(false)
+                changeTab('contact')
+              }}
+              className="w-full flex items-center space-x-3 px-3 py-2 rounded-lg text-gray-300 hover:bg-gray-800/50 hover:text-white transition-colors"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18.364 5.636l-3.536 3.536m0 5.656l3.536 3.536M9.172 9.172L5.636 5.636m3.536 9.192L5.636 18.364M12 2.25A9.75 9.75 0 1 0 21.75 12A9.75 9.75 0 0 0 12 2.25Z" />
+              </svg>
+              <span className="text-sm font-medium">Get Help</span>
+            </button>
+            
+            <button
+              onClick={() => {
+                setShowUserDropdown(false)
+                changeTab('settings')
+              }}
+              className="w-full flex items-center space-x-3 px-3 py-2 rounded-lg text-gray-300 hover:bg-gray-800/50 hover:text-white transition-colors"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+              </svg>
+              <span className="text-sm font-medium">Settings</span>
+            </button>
+            
+            <div className="border-t border-gray-700/50 mt-2 pt-2">
+              <button
+                onClick={() => {
+                  setShowUserDropdown(false)
+                  updateUrlHash('logout')
+                  setShowSignOutModal(true)
+                }}
+                className="w-full flex items-center space-x-3 px-3 py-2 rounded-lg text-gray-300 hover:bg-gray-800/50 hover:text-red-400 transition-colors"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
               </svg>
-              <span className="text-sm font-medium">Sign Out</span>
+                <span className="text-sm font-medium">Logout</span>
             </button>
+            </div>
           </div>
         </div>
       )}
@@ -2428,9 +2763,10 @@ export default function Dashboard({ user }: DashboardProps) {
                 onClick={() => {
                   setShowMobileSettingsDropdown(false);
                   if (item.id === 'signout') {
+                    updateUrlHash('logout')
                     setShowSignOutModal(true);
                   } else {
-                    setActiveTab(item.id);
+                    changeTab(item.id);
                   }
                 }}
                 className="w-full flex items-center space-x-4 px-4 py-4 rounded-xl text-left text-gray-300 hover:text-white hover:bg-gray-800/50 transition-all duration-200 active:scale-[0.97] transform"
@@ -4138,40 +4474,165 @@ Thank you,
       <Head>
         <title>Dashboard - FASHO</title>
         <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <style jsx global>{`
+          @keyframes slideInLeft {
+            0% {
+              opacity: 0;
+              transform: translateX(-20px) scale(0.95);
+            }
+            100% {
+              opacity: 1;
+              transform: translateX(0) scale(1);
+            }
+          }
+          
+          @keyframes fadeInUp {
+            0% {
+              opacity: 0;
+              transform: translateY(10px);
+            }
+            100% {
+              opacity: 1;
+              transform: translateY(0);
+            }
+          }
+          
+          @keyframes slideInScale {
+            0% {
+              opacity: 0;
+              transform: translateX(-30px) scale(0.8);
+            }
+            100% {
+              opacity: 1;
+              transform: translateX(0) scale(1);
+            }
+          }
+
+          @keyframes slideUpStats {
+            0% {
+              opacity: 0;
+              transform: translateY(40px) scale(0.95);
+            }
+            60% {
+              opacity: 0.8;
+              transform: translateY(-5px) scale(1.02);
+            }
+            100% {
+              opacity: 1;
+              transform: translateY(0) scale(1);
+            }
+          }
+
+          @keyframes slideUpFadeIn {
+            0% {
+              opacity: 0;
+              transform: translateY(25px) scale(0.96);
+            }
+            100% {
+              opacity: 1;
+              transform: translateY(0) scale(1);
+            }
+          }
+
+          @keyframes slideInCard {
+            0% {
+              opacity: 0;
+              transform: translateY(30px) scale(0.92);
+            }
+            60% {
+              opacity: 0.8;
+              transform: translateY(-3px) scale(1.01);
+            }
+            100% {
+              opacity: 1;
+              transform: translateY(0) scale(1);
+            }
+          }
+
+          .campaign-card {
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+          }
+
+          .campaign-card:hover {
+            transform: translateY(-2px) scale(1.005);
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.25);
+          }
+
+          .campaign-card:active {
+            transform: translateY(0) scale(0.998);
+            transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+          }
+          
+          .dashboard-sidebar-item {
+            animation-fill-mode: both;
+            animation-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+          }
+          
+          @keyframes glowPulse {
+            0%, 100% {
+              opacity: 1;
+              filter: drop-shadow(0 0 4px currentColor);
+            }
+            50% {
+              opacity: 0.6;
+              filter: drop-shadow(0 0 8px currentColor) drop-shadow(0 0 12px currentColor);
+            }
+          }
+          
+          .status-glow {
+            animation: glowPulse 2s ease-in-out infinite;
+          }
+        `}</style>
       </Head>
       <div className="min-h-screen dashboard-background flex lg:flex-row flex-col w-full overflow-x-hidden">
         {/* Desktop Sidebar */}
         <div className="hidden lg:flex w-64 bg-gradient-to-b from-gray-950/95 to-gray-900/95 backdrop-blur-sm border-r border-gray-800/30 flex-col">
           {/* Logo */}
           <div className="p-6 border-b border-gray-800/30">
+            <a href="/" className="block">
             <img 
               src="/fasho-logo-wide.png" 
               alt="FASHO" 
-              className="w-full h-auto max-w-[144px]"
+                className="w-full h-auto max-w-[144px] hover:opacity-80 transition-all duration-200 hover:scale-105"
+                style={{
+                  animation: 'fadeInUp 0.8s ease-out both',
+                }}
             />
-            <p className="text-sm text-gray-400 mt-2">Music Promotion</p>
+            </a>
           </div>
           
           {/* Navigation */}
           <nav className="flex-1 p-4">
             <div className="space-y-2">
-              {sidebarItems.map((item) => (
+              {sidebarItems.map((item, index) => (
                 <button
                   key={item.id}
                   onClick={() => {
                     if (item.id === 'signout') {
+                      updateUrlHash('logout')
                       setShowSignOutModal(true)
                     } else {
-                      setActiveTab(item.id)
+                      changeTab(item.id)
                     }
                   }}
-                  className={`w-full flex items-center space-x-3 px-4 py-3 rounded-xl transition-all duration-300 ${
+                  className={`dashboard-sidebar-item w-full flex items-center space-x-3 px-4 py-3 rounded-xl transition-all duration-300 transform hover:scale-[1.02] hover:-translate-y-0.5 ${
                     activeTab === item.id 
-                      ? 'bg-gradient-to-r from-green-500 to-green-600 text-white shadow-lg' 
-                      : 'text-gray-300 hover:bg-gray-800/50 hover:text-white'
+                      ? 'bg-gradient-to-r from-green-500 to-green-600 text-white shadow-lg shadow-green-500/20' 
+                      : 'text-gray-300 hover:bg-gray-800/50 hover:text-white hover:shadow-md'
                   }`}
+                  style={{
+                    animationName: 'slideInScale',
+                    animationDuration: '0.6s',
+                    animationDelay: `${index * 0.12}s`,
+                    transformOrigin: 'left center',
+                  }}
                 >
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg 
+                    className="w-5 h-5 transition-transform duration-300 hover:scale-110" 
+                    fill="none" 
+                    stroke="currentColor" 
+                    viewBox="0 0 24 24"
+                  >
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={item.icon} />
                   </svg>
                   <span className="font-medium">{item.label}</span>
@@ -4189,12 +4650,14 @@ Thank you,
               <div className="min-w-0 flex-1 flex items-center lg:block">
                 {/* Mobile Logo - vertically centered with profile */}
                 <div className="lg:hidden flex items-center mb-2" style={{ minHeight: '44px' }}>
+                  <a href="/" className="block">
                   <img 
                     src="/fasho-logo-wide.png" 
                     alt="FASHO" 
-                    className="h-8 w-auto"
+                      className="h-8 w-auto hover:opacity-80 transition-opacity duration-200"
                     style={{ minHeight: '32px' }}
                   />
+                  </a>
                 </div>
                 <div className="hidden md:block">
                   <h2 className="text-xl lg:text-2xl font-bold text-white">
@@ -4233,7 +4696,7 @@ Thank you,
         {/* Mobile Bottom Navigation */}
         <div className="lg:hidden fixed bottom-0 left-0 right-0 bg-gray-950/95 backdrop-blur-sm border-t border-gray-800/30 px-2 py-1 z-30 safe-area-inset-bottom">
           <div className="flex items-center max-w-full">
-            {mobileNavItems.map((item) => {
+            {mobileNavItems.map((item, index) => {
               // Get mobile-specific label
               const getMobileLabel = (itemId: string, originalLabel: string) => {
                 if (itemId === 'curator-connect') return 'Curators'
@@ -4258,14 +4721,17 @@ Thank you,
                     if (item.id === 'settings') {
                       setShowMobileSettingsDropdown(true)
                     } else {
-                      setActiveTab(item.id)
+                      changeTab(item.id)
                     }
                   }}
-                  className={`flex flex-col items-center space-y-1 px-1 py-2 rounded-lg transition-all duration-300 min-w-0 ${getFlexBasis(item.id)} ${
+                  className={`flex flex-col items-center space-y-1 px-1 py-2 rounded-lg transition-all duration-300 min-w-0 transform hover:scale-105 ${getFlexBasis(item.id)} ${
                     (activeTab === item.id || isSettingsActive)
                       ? 'text-green-400' 
                       : 'text-gray-400 hover:text-white'
                   } ${item.id === 'settings' ? 'active:scale-95' : ''}`}
+                  style={{
+                    animation: `fadeInUp 0.6s ease-out ${index * 0.1}s both`,
+                  }}
                 >
                   <div className={`relative ${item.id === 'settings' ? 'transition-transform duration-200' : ''}`}>
                   <svg className="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">

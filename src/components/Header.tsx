@@ -304,6 +304,23 @@ export default function Header({ transparent = false, hideSignUp = false }: Head
       <button 
         onClick={() => {
           setShowProfileDropdown(false);
+          window.location.href = '/dashboard#curator-connect';
+        }}
+        className="block w-full text-left px-4 py-3 text-gray-200 hover:bg-gradient-to-r hover:from-[#59e3a5]/10 hover:to-[#14c0ff]/10 hover:text-white transition-all duration-200"
+      >
+        <div className="flex items-center gap-3">
+          <div className="w-5 h-5 bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] rounded-md flex items-center justify-center">
+            <svg className="w-3 h-3 text-black" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+            </svg>
+          </div>
+          <span className="font-medium">Curator Connect+</span>
+        </div>
+      </button>
+      
+      <button 
+        onClick={() => {
+          setShowProfileDropdown(false);
           window.location.href = '/dashboard#contact';
         }}
         className="block w-full text-left px-4 py-3 text-gray-200 hover:bg-gradient-to-r hover:from-[#59e3a5]/10 hover:to-[#14c0ff]/10 hover:text-white transition-all duration-200"
