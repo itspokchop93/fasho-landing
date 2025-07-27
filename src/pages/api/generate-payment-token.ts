@@ -75,15 +75,27 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     // Get Authorize.net credentials from environment variables
     const apiLoginId = process.env.AUTHORIZE_NET_API_LOGIN_ID;
     const transactionKey = process.env.AUTHORIZE_NET_TRANSACTION_KEY;
-    const environment = process.env.AUTHORIZE_NET_ENVIRONMENT || 'production';
-    const baseUrl = environment === 'production' 
-      ? 'https://api.authorize.net' 
-      : 'https://apitest.authorize.net'; // Sandbox URL
+    const environment = process.env.AUTHORIZE_NET_ENVIRONMENT;
+    
+    // Production only - no sandbox fallback
+    if (!environment || environment !== 'production') {
+      console.error('AUTHORIZE_NET_ENVIRONMENT must be set to "production"');
+      return res.status(500).json({ 
+        success: false, 
+        message: 'Payment configuration error - AUTHORIZE_NET_ENVIRONMENT must be set to "production"',
+        debug: { environment, envVarExists: !!process.env.AUTHORIZE_NET_ENVIRONMENT }
+      });
+    }
+    
+    const baseUrl = 'https://api.authorize.net';
 
-    console.log('Environment check:', {
+    console.log('🔧 PRODUCTION ENVIRONMENT CHECK:', {
       hasApiLoginId: !!apiLoginId,
       hasTransactionKey: !!transactionKey,
-      apiLoginIdValue: apiLoginId?.substring(0, 4) + '...',
+      apiLoginIdLength: apiLoginId?.length,
+      transactionKeyLength: transactionKey?.length,
+      apiLoginIdValue: apiLoginId?.substring(0, 6) + '...',
+      transactionKeyValue: transactionKey?.substring(0, 6) + '...',
       environment,
       baseUrl,
       nodeEnv: process.env.NODE_ENV
@@ -94,6 +106,15 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       return res.status(500).json({ 
         success: false, 
         message: 'Payment configuration error - missing Authorize.net credentials' 
+      });
+    }
+
+    // Validate credentials format
+    if (apiLoginId.trim() !== apiLoginId || transactionKey.trim() !== transactionKey) {
+      console.error('Credentials contain leading/trailing whitespace');
+      return res.status(500).json({ 
+        success: false, 
+        message: 'Payment configuration error - credentials contain whitespace' 
       });
     }
 
@@ -354,10 +375,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       throw new Error('Invalid payment token format received from Authorize.net');
     }
 
-    // Different URLs for payment form vs API calls
-    const paymentFormUrl = environment === 'production' 
-      ? 'https://accept.authorize.net'
-      : 'https://test.authorize.net'; // Different from API URL!
+    // Production payment form URL (different from API URL)
+    const paymentFormUrl = 'https://accept.authorize.net';
 
     console.log('Token generated successfully:', token.substring(0, 20) + '...');
 
