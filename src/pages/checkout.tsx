@@ -1793,6 +1793,16 @@ export default function CheckoutPage() {
       console.log('🎯 PARENT PAGE: data.type exact value:', JSON.stringify(data?.type));
       console.log('🎯 PARENT PAGE: Checking against PAYMENT_COMPLETE:', data?.type === 'PAYMENT_COMPLETE');
       
+      // 🚨 PAYMENT FAILURE DEBUG: Check for ANY payment-related data
+      if (data && (data.responseCode || data.response || data.transactionResponse || data.authCode || data.transId)) {
+        console.log('🚨 PAYMENT DEBUG: Found potential payment data in message!');
+        console.log('🚨 PAYMENT DEBUG: data.responseCode:', data.responseCode);
+        console.log('🚨 PAYMENT DEBUG: data.response:', data.response);
+        console.log('🚨 PAYMENT DEBUG: data.transactionResponse:', data.transactionResponse);
+        console.log('🚨 PAYMENT DEBUG: data.authCode:', data.authCode);
+        console.log('🚨 PAYMENT DEBUG: data.transId:', data.transId);
+      }
+      
       switch (data.type) {
         case 'IFRAME_COMMUNICATOR_READY':
           console.log('🧪 MESSAGE: ===== IFRAME COMMUNICATOR READY TEST MESSAGE =====');
@@ -1801,6 +1811,63 @@ export default function CheckoutPage() {
           console.log('🧪 MESSAGE: Timestamp:', data.timestamp);
           console.log('🧪 MESSAGE: This proves iframe communication is working!');
           break;
+          
+        case 'PAYMENT_COMPLETE':
+          console.log('🚨 MESSAGE: ===== PAYMENT_COMPLETE MESSAGE RECEIVED =====');
+          console.log('🚨 MESSAGE: Message event origin:', event.origin);
+          console.log('🚨 MESSAGE: Message timestamp:', new Date().toISOString());
+          console.log('🚨 MESSAGE: Payment completed, processing response:', data.response);
+          console.log('🚨 MESSAGE: stableHandleSuccessfulPayment exists:', !!stableHandleSuccessfulPayment);
+          
+        // NEW: Check for iframe communicator transactResponse messages (from Authorize.net docs)
+        case 'transactResponse':
+          console.log('🔥 TRANSACT RESPONSE: ===== AUTHORIZE.NET IFRAME TRANSACT RESPONSE =====');
+          console.log('🔥 TRANSACT RESPONSE: Message event origin:', event.origin);
+          console.log('🔥 TRANSACT RESPONSE: Raw data:', data);
+          console.log('🔥 TRANSACT RESPONSE: Response data:', data.response);
+          
+          // Parse the response if it's a string
+          let parsedResponse = data.response;
+          if (typeof data.response === 'string') {
+            try {
+              parsedResponse = JSON.parse(data.response);
+              console.log('🔥 TRANSACT RESPONSE: Parsed JSON response:', parsedResponse);
+            } catch (parseError) {
+              console.error('🔥 TRANSACT RESPONSE: Error parsing response JSON:', parseError);
+              console.log('🔥 TRANSACT RESPONSE: Raw response string:', data.response);
+            }
+          }
+          
+          // Check response code (from Authorize.net docs)
+          const responseCode = parsedResponse?.responseCode || parsedResponse?.response_code;
+          console.log('🔥 TRANSACT RESPONSE: Response code:', responseCode);
+          
+          if (responseCode === '1') {
+            console.log('✅ TRANSACT RESPONSE: Payment successful');
+            // Handle successful payment
+            try {
+              const paymentPromise = stableHandleSuccessfulPayment(parsedResponse);
+              if (paymentPromise && typeof paymentPromise.then === 'function') {
+                paymentPromise.then((result) => {
+                  console.log('✅ TRANSACT RESPONSE: Payment processed successfully:', result);
+                }).catch((error) => {
+                  console.error('❌ TRANSACT RESPONSE: Error processing payment:', error);
+                });
+              }
+            } catch (error) {
+              console.error('❌ TRANSACT RESPONSE: Sync error processing payment:', error);
+            }
+          } else {
+            console.log('❌ TRANSACT RESPONSE: Payment failed/declined');
+            console.log('ℹ️  NOTE: Payment failed emails are handled via Authorize.net webhooks, not iframe communication');
+            
+            // Update UI for failed payment
+            setError(`Payment failed: ${parsedResponse?.responseReasonText || parsedResponse?.response_reason_text || 'Payment processing error'}`);
+            setIsLoading(false);
+            setShowPaymentForm(false);
+            setShowProcessingPopup(false);
+          }
+                    break;
           
         case 'PAYMENT_COMPLETE':
           console.log('🚨 MESSAGE: ===== PAYMENT_COMPLETE MESSAGE RECEIVED =====');
@@ -1831,6 +1898,7 @@ export default function CheckoutPage() {
 
           console.log('🔍 PAYMENT: Response code:', response.responseCode);
           console.log('🔍 PAYMENT: Response reason:', response.responseReasonText);
+          console.log('🔍 PAYMENT: Full response object for debugging:', JSON.stringify(response, null, 2));
 
           if (response.responseCode === '1') {
             console.log('✅ PAYMENT: Transaction approved, processing success');
@@ -1860,6 +1928,8 @@ export default function CheckoutPage() {
           }
           } else {
             console.error('🔍 PAYMENT: Transaction declined or error:', response.responseReasonText);
+            console.log('ℹ️  NOTE: Payment failed emails are handled via Authorize.net webhooks, not iframe communication');
+            
             setError(`Payment failed: ${response.responseReasonText}`);
             setIsLoading(false);
             setShowPaymentForm(false);
@@ -1920,6 +1990,33 @@ export default function CheckoutPage() {
               } catch (error) {
                 console.error('🚨 EMERGENCY: Sync error processing payment:', error);
               }
+            } else {
+              console.log('🚨 EMERGENCY: Payment failed - handled via webhooks');
+            }
+          }
+          
+          // EMERGENCY 2: Check if message directly contains payment response data (no nested response object)
+          if (data && data.responseCode && !data.response) {
+            console.log('🚨 EMERGENCY 2: Found direct payment response data!');
+            console.log('🚨 EMERGENCY 2: Direct response code:', data.responseCode);
+            console.log('🚨 EMERGENCY 2: Direct response reason:', data.responseReasonText);
+            
+            if (data.responseCode === '1') {
+              console.log('🚨 EMERGENCY 2: Direct payment success');
+              try {
+                const paymentPromise = stableHandleSuccessfulPayment(data);
+                if (paymentPromise && typeof paymentPromise.then === 'function') {
+                  paymentPromise.then((result) => {
+                    console.log('🚨 EMERGENCY 2: Payment processed successfully:', result);
+                  }).catch((error) => {
+                    console.error('🚨 EMERGENCY 2: Error processing payment:', error);
+                  });
+                }
+              } catch (error) {
+                console.error('🚨 EMERGENCY 2: Sync error processing payment:', error);
+              }
+            } else {
+              console.log('🚨 EMERGENCY 2: Direct payment failed - handled via webhooks');
             }
           }
       }

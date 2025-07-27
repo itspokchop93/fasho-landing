@@ -564,4 +564,138 @@ export async function sendAdminNewOrderEmail(
     console.error('📧 ADMIN-NEW-ORDER: ❌ Error sending admin new order email:', error);
     return false;
   }
+}
+
+/**
+ * Send payment failed notification to customer
+ */
+export async function sendPaymentFailedEmail(
+  paymentData: {
+    customer_email: string;
+    customer_name: string;
+    items: Array<{
+      track: {
+        title: string;
+        artist: string;
+      };
+      package: {
+        name: string;
+      };
+    }>;
+    addOnItems?: Array<{
+      name: string;
+    }>;
+    total: number;
+    reason?: string;
+  },
+  supabaseClient: any
+): Promise<boolean> {
+  try {
+    console.log('📧 PAYMENT-FAILED: Sending payment failed notification to customer:', paymentData.customer_email);
+
+    const emailService = new EmailService();
+    
+    // Build package names string
+    const packageNames = paymentData.items.map(item => item.package.name);
+    const addOnNames = paymentData.addOnItems?.map(item => item.name) || [];
+    const allPackageNames = [...packageNames, ...addOnNames];
+    const packageNamesString = allPackageNames.join(', ');
+    
+    // Format payment data for customer email
+    const emailData: EmailData = {
+      to: paymentData.customer_email,
+      customerName: paymentData.customer_name,
+      orderNumber: 'N/A', // No order number for failed payments
+      customer_name: paymentData.customer_name,
+      orderTotal: `$${(paymentData.total / 100).toFixed(2)}`,
+      order_total: `$${(paymentData.total / 100).toFixed(2)}`,
+      orderDate: new Date().toLocaleDateString(),
+      order_date: new Date().toLocaleDateString(),
+      packageNames: packageNamesString,
+      package_names: packageNamesString,
+      failureReason: paymentData.reason || 'Payment processing error',
+      failure_reason: paymentData.reason || 'Payment processing error'
+    };
+
+    const result = await emailService.sendNotification('payment_failed', emailData, supabaseClient);
+    
+    if (result) {
+      console.log('📧 PAYMENT-FAILED: ✅ Customer payment failed notification sent successfully');
+    } else {
+      console.log('📧 PAYMENT-FAILED: ❌ Customer payment failed notification failed or was not sent');
+    }
+
+    return result;
+  } catch (error) {
+    console.error('📧 PAYMENT-FAILED: ❌ Error sending payment failed email:', error);
+    return false;
+  }
+}
+
+/**
+ * Send admin notification for payment failure
+ */
+export async function sendAdminPaymentFailedEmail(
+  paymentData: {
+    customer_email: string;
+    customer_name: string;
+    items: Array<{
+      track: {
+        title: string;
+        artist: string;
+      };
+      package: {
+        name: string;
+      };
+    }>;
+    addOnItems?: Array<{
+      name: string;
+    }>;
+    total: number;
+    reason?: string;
+  },
+  supabaseClient: any
+): Promise<boolean> {
+  try {
+    console.log('📧 ADMIN-PAYMENT-FAILED: Sending admin notification for payment failure:', paymentData.customer_email);
+
+    const emailService = new EmailService();
+    
+    // Build package names string
+    const packageNames = paymentData.items.map(item => item.package.name);
+    const addOnNames = paymentData.addOnItems?.map(item => item.name) || [];
+    const allPackageNames = [...packageNames, ...addOnNames];
+    const packageNamesString = allPackageNames.join(', ');
+    
+    // Format payment data for admin email
+    const emailData: EmailData = {
+      to: '', // Will be replaced with admin email
+      customerName: paymentData.customer_name,
+      orderNumber: 'N/A', // No order number for failed payments
+      customer_name: paymentData.customer_name,
+      customer_email: paymentData.customer_email,
+      orderTotal: `$${(paymentData.total / 100).toFixed(2)}`,
+      order_total: `$${(paymentData.total / 100).toFixed(2)}`,
+      orderDate: new Date().toLocaleDateString(),
+      order_date: new Date().toLocaleDateString(),
+      packageNames: packageNamesString,
+      package_names: packageNamesString,
+      failureReason: paymentData.reason || 'Payment processing error',
+      failure_reason: paymentData.reason || 'Payment processing error',
+      orderDetails: `Customer: ${paymentData.customer_name} (${paymentData.customer_email}), Package(s): ${packageNamesString}, Amount: $${(paymentData.total / 100).toFixed(2)}`
+    };
+
+    const result = await emailService.sendAdminNotification('admin_payment_failed', emailData, supabaseClient);
+    
+    if (result) {
+      console.log('📧 ADMIN-PAYMENT-FAILED: ✅ Admin payment failed notification sent successfully');
+    } else {
+      console.log('📧 ADMIN-PAYMENT-FAILED: ❌ Admin payment failed notification failed or was not sent');
+    }
+
+    return result;
+  } catch (error) {
+    console.error('📧 ADMIN-PAYMENT-FAILED: ❌ Error sending admin payment failed email:', error);
+    return false;
+  }
 } 

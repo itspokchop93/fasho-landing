@@ -1907,7 +1907,7 @@ export default function Dashboard({ user }: DashboardProps) {
                           </h3>
                           
                           <div className="flex items-center justify-between text-sm mb-3">
-                            <span className="text-white/70">${Math.round(order.total)}</span>
+                            <span className="text-white/70">${order.total.toFixed(2)}</span>
                             <span className="text-white/50 text-xs">{new Date(order.createdAt).toLocaleDateString()}</span>
                           </div>
 
@@ -1972,7 +1972,7 @@ export default function Dashboard({ user }: DashboardProps) {
                           Campaign #{order.orderNumber}
                         </h3>
                         <div className="text-sm text-white/70 mb-3">
-                          ${Math.round(order.total)} • {new Date(order.createdAt).toLocaleDateString()}
+                          ${order.total.toFixed(2)} • {new Date(order.createdAt).toLocaleDateString()}
                         </div>
                         <div className={`bg-black/10 rounded-lg p-3 border border-white/10 ${expandedOrders.has(order.id) ? 'hidden' : 'block'}`}>
                         <CampaignProgressBar 
@@ -2215,7 +2215,7 @@ export default function Dashboard({ user }: DashboardProps) {
                         </h3>
                         
                         <div className="flex items-center justify-between text-sm mb-3">
-                          <span className="text-white/70">${Math.round(order.total)}</span>
+                          <span className="text-white/70">${order.total.toFixed(2)}</span>
                           <span className="text-white/50 text-xs">{new Date(order.createdAt).toLocaleDateString()}</span>
                         </div>
 
@@ -2280,7 +2280,7 @@ export default function Dashboard({ user }: DashboardProps) {
                         Campaign #{order.orderNumber}
                       </h3>
                       <div className="text-sm text-white/70 mb-3">
-                        ${Math.round(order.total)} • {new Date(order.createdAt).toLocaleDateString()}
+                        ${order.total.toFixed(2)} • {new Date(order.createdAt).toLocaleDateString()}
                       </div>
                       <div className={`bg-black/10 rounded-lg p-3 border border-white/10 ${expandedOrders.has(order.id) ? 'hidden' : 'block'}`}>
                       <CampaignProgressBar 

@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { useState, useEffect, useRef } from 'react';
+import { useRouter } from 'next/router';
 import { createClient } from '../utils/supabase/client';
 import { userProfileService, ArtistProfile } from '../utils/userProfile';
 import { useAuth } from '../utils/authContext';
@@ -18,6 +19,10 @@ export default function Header({ transparent = false, hideSignUp = false }: Head
   const [userFirstName, setUserFirstName] = useState<string>('User');
   const dropdownRef = useRef<HTMLDivElement>(null);
   const supabase = createClient();
+  const router = useRouter();
+  
+  // Check if we're on the homepage
+  const isHomepage = router.pathname === '/';
   
   // Use the auth context instead of managing our own state
   const { user: currentUser, loading: authLoading } = useAuth();
@@ -373,6 +378,11 @@ export default function Header({ transparent = false, hideSignUp = false }: Head
 
           {/* Desktop Navigation */}
           <nav className={`hidden md:flex items-center space-x-2 ${hideSignUp ? 'pr-16' : ''} animate-fade-in-up`} style={{ animationDelay: '0.4s' }}>
+            {!isHomepage && (
+              <Link href="/" className="text-white hover:text-[#59e3a5] transition-all duration-300 ease-in-out font-medium px-4 py-2 rounded-lg hover:bg-white/5 hover:scale-105 transform backdrop-blur-sm border border-transparent hover:border-white/10">
+                Start Campaign
+              </Link>
+            )}
             <Link href="/pricing" className="text-white hover:text-[#59e3a5] transition-all duration-300 ease-in-out font-medium px-4 py-2 rounded-lg hover:bg-white/5 hover:scale-105 transform backdrop-blur-sm border border-transparent hover:border-white/10">
               Pricing
             </Link>
@@ -447,7 +457,21 @@ export default function Header({ transparent = false, hideSignUp = false }: Head
             suppressHydrationWarning={true}
           >
             <div className="px-4 pt-6 pb-6 space-y-1 text-center">
-              <Link href="/pricing" className="flex items-center justify-center gap-3 px-4 py-4 mx-2 text-white hover:text-[#59e3a5] hover:bg-white/5 transition-all duration-300 ease-in-out font-medium rounded-xl backdrop-blur-sm border border-transparent hover:border-white/10 transform hover:scale-[1.02] animate-fade-in-up" style={{ animationDelay: '0.1s' }}>
+              {!isHomepage && (
+                <Link href="/" className="flex items-center justify-center gap-3 px-4 py-4 mx-2 text-white hover:text-[#59e3a5] hover:bg-white/5 transition-all duration-300 ease-in-out font-medium rounded-xl backdrop-blur-sm border border-transparent hover:border-white/10 transform hover:scale-[1.02] animate-fade-in-up" style={{ animationDelay: '0.05s' }}>
+                  <svg className="w-5 h-5" fill="none" stroke="url(#gradientStartCampaign)" viewBox="0 0 24 24">
+                    <defs>
+                      <linearGradient id="gradientStartCampaign" x1="0%" y1="0%" x2="100%" y2="0%">
+                        <stop offset="0%" stopColor="#59e3a5" />
+                        <stop offset="100%" stopColor="#14c0ff" />
+                      </linearGradient>
+                    </defs>
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 100 4m0-4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 100 4m0-4v2m0-6V4" />
+                  </svg>
+                  Start Campaign
+                </Link>
+              )}
+              <Link href="/pricing" className="flex items-center justify-center gap-3 px-4 py-4 mx-2 text-white hover:text-[#59e3a5] hover:bg-white/5 transition-all duration-300 ease-in-out font-medium rounded-xl backdrop-blur-sm border border-transparent hover:border-white/10 transform hover:scale-[1.02] animate-fade-in-up" style={{ animationDelay: !isHomepage ? '0.1s' : '0.05s' }}>
                 <svg className="w-5 h-5" fill="none" stroke="url(#gradient1)" viewBox="0 0 24 24">
                   <defs>
                     <linearGradient id="gradient1" x1="0%" y1="0%" x2="100%" y2="0%">
@@ -459,7 +483,7 @@ export default function Header({ transparent = false, hideSignUp = false }: Head
                 </svg>
                 Pricing
               </Link>
-              <Link href="/#faq" className="flex items-center justify-center gap-3 px-4 py-4 mx-2 text-white hover:text-[#59e3a5] hover:bg-white/5 transition-all duration-300 ease-in-out font-medium rounded-xl backdrop-blur-sm border border-transparent hover:border-white/10 transform hover:scale-[1.02] animate-fade-in-up" style={{ animationDelay: '0.2s' }}>
+              <Link href="/#faq" className="flex items-center justify-center gap-3 px-4 py-4 mx-2 text-white hover:text-[#59e3a5] hover:bg-white/5 transition-all duration-300 ease-in-out font-medium rounded-xl backdrop-blur-sm border border-transparent hover:border-white/10 transform hover:scale-[1.02] animate-fade-in-up" style={{ animationDelay: !isHomepage ? '0.2s' : '0.15s' }}>
                 <svg className="w-5 h-5" fill="none" stroke="url(#gradient2)" viewBox="0 0 24 24">
                   <defs>
                     <linearGradient id="gradient2" x1="0%" y1="0%" x2="100%" y2="0%">
@@ -471,7 +495,7 @@ export default function Header({ transparent = false, hideSignUp = false }: Head
                 </svg>
                 FAQ
               </Link>
-              <Link href="/about" className="flex items-center justify-center gap-3 px-4 py-4 mx-2 text-white hover:text-[#59e3a5] hover:bg-white/5 transition-all duration-300 ease-in-out font-medium rounded-xl backdrop-blur-sm border border-transparent hover:border-white/10 transform hover:scale-[1.02] animate-fade-in-up" style={{ animationDelay: '0.3s' }}>
+              <Link href="/about" className="flex items-center justify-center gap-3 px-4 py-4 mx-2 text-white hover:text-[#59e3a5] hover:bg-white/5 transition-all duration-300 ease-in-out font-medium rounded-xl backdrop-blur-sm border border-transparent hover:border-white/10 transform hover:scale-[1.02] animate-fade-in-up" style={{ animationDelay: !isHomepage ? '0.25s' : '0.2s' }}>
                 <svg className="w-5 h-5" fill="none" stroke="url(#gradient3)" viewBox="0 0 24 24">
                   <defs>
                     <linearGradient id="gradient3" x1="0%" y1="0%" x2="100%" y2="0%">
@@ -483,7 +507,7 @@ export default function Header({ transparent = false, hideSignUp = false }: Head
                 </svg>
                 About
               </Link>
-              <Link href="/contact" className="flex items-center justify-center gap-3 px-4 py-4 mx-2 text-white hover:text-[#59e3a5] hover:bg-white/5 transition-all duration-300 ease-in-out font-medium rounded-xl backdrop-blur-sm border border-transparent hover:border-white/10 transform hover:scale-[1.02] animate-fade-in-up" style={{ animationDelay: '0.4s' }}>
+              <Link href="/contact" className="flex items-center justify-center gap-3 px-4 py-4 mx-2 text-white hover:text-[#59e3a5] hover:bg-white/5 transition-all duration-300 ease-in-out font-medium rounded-xl backdrop-blur-sm border border-transparent hover:border-white/10 transform hover:scale-[1.02] animate-fade-in-up" style={{ animationDelay: !isHomepage ? '0.3s' : '0.25s' }}>
                 <svg className="w-5 h-5" fill="none" stroke="url(#gradient4)" viewBox="0 0 24 24">
                   <defs>
                     <linearGradient id="gradient4" x1="0%" y1="0%" x2="100%" y2="0%">
@@ -498,7 +522,7 @@ export default function Header({ transparent = false, hideSignUp = false }: Head
               
 
               
-              <div className="flex items-center justify-center px-4 py-3 animate-fade-in-up" style={{ animationDelay: '0.5s' }}>
+              <div className="flex items-center justify-center px-4 py-3 animate-fade-in-up" style={{ animationDelay: !isHomepage ? '0.35s' : '0.3s' }}>
                 {/* Sign Up Button or User Profile */}
                 {!hideSignUp && (
                   currentUser && !authLoading ? (

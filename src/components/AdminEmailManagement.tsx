@@ -72,6 +72,11 @@ export default function AdminEmailManagement() {
       trigger: 'order_cancellation',
       name: 'Order Cancellation',
       description: 'Sent when an order is cancelled by customer or admin'
+    },
+    {
+      trigger: 'payment_failed',
+      name: 'Payment Failed',
+      description: 'Sent when a payment fails during checkout'
     }
   ];
 
@@ -81,6 +86,11 @@ export default function AdminEmailManagement() {
       trigger: 'admin_new_order',
       name: 'Admin: New Order',
       description: 'Notify admin when a new order is created'
+    },
+    {
+      trigger: 'admin_payment_failed',
+      name: 'Admin: Payment Failed',
+      description: 'Notify admin when a payment fails during checkout'
     }
   ];
 
