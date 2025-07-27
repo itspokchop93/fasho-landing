@@ -82,14 +82,6 @@ export default function EmailEditor({ adminSession, accessDenied }: EmailEditorP
     'admin_new_order': {
       name: 'Admin: New Order',
       description: 'Notify admin when a new order is created'
-    },
-    'payment_failed': {
-      name: 'Payment Failed (Customer)',
-      description: 'Sent to customer when payment fails during checkout'
-    },
-    'admin_payment_failed': {
-      name: 'Admin: Payment Failed',
-      description: 'Notify admin when a payment fails during checkout'
     }
   };
 
@@ -359,119 +351,6 @@ export default function EmailEditor({ adminSession, accessDenied }: EmailEditorP
             <a href="{{admin_order_url}}" style="background-color: #3B82F6; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; display: inline-block;">View Order in Admin</a>
         </p>
         <p>Best regards,<br>FASHO Admin System</p>
-    </div>
-</body>
-</html>`,
-      'payment_failed': `
-<!DOCTYPE html>
-<html>
-<head>
-    <meta charset="UTF-8">
-    <title>Payment Failed - Please Try Again</title>
-</head>
-<body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
-    <div style="max-width: 600px; margin: 0 auto; background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%); color: white; padding: 40px 30px; border-radius: 16px;">
-        <div style="text-align: center; margin-bottom: 30px;">
-            <h1 style="color: #ef4444; font-size: 28px; margin: 0 0 10px 0; font-weight: bold;">⚠️ Payment Failed</h1>
-            <div style="width: 60px; height: 3px; background: linear-gradient(90deg, #ef4444 0%, #f97316 100%); margin: 0 auto; border-radius: 2px;"></div>
-        </div>
-        
-        <p style="font-size: 18px; margin-bottom: 20px;">Hi <strong>{{customerName}}</strong>,</p>
-        
-        <p style="margin-bottom: 20px;">We encountered an issue processing your payment for <strong>{{packageNames}}</strong>.</p>
-        
-        <div style="background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.3); border-radius: 12px; padding: 20px; margin: 25px 0;">
-            <h3 style="color: #ef4444; margin: 0 0 10px 0; font-size: 16px;">Payment Details:</h3>
-            <ul style="margin: 0; padding-left: 20px;">
-                <li><strong>Package(s):</strong> {{packageNames}}</li>
-                <li><strong>Amount:</strong> {{orderTotal}}</li>
-                <li><strong>Reason:</strong> {{failureReason}}</li>
-                <li><strong>Date:</strong> {{orderDate}}</li>
-            </ul>
-        </div>
-        
-        <h3 style="color: #10b981; font-size: 20px; margin: 30px 0 15px 0;">Next Steps:</h3>
-        <ol style="padding-left: 20px; margin-bottom: 30px;">
-            <li style="margin-bottom: 10px;"><strong>Check your payment information</strong> - Verify card details, expiration date, and billing address</li>
-            <li style="margin-bottom: 10px;"><strong>Try a different payment method</strong> - Use another card or payment option</li>
-            <li style="margin-bottom: 10px;"><strong>Contact your bank</strong> - Some transactions may be blocked for security</li>
-        </ol>
-        
-        <div style="text-align: center; margin: 30px 0;">
-            <a href="https://fasho.pro/checkout" style="background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%); color: white; padding: 14px 28px; text-decoration: none; border-radius: 8px; font-weight: bold; display: inline-block; box-shadow: 0 4px 15px rgba(239, 68, 68, 0.3);">Try Payment Again</a>
-        </div>
-        
-        <div style="border-top: 1px solid rgba(255, 255, 255, 0.1); padding-top: 20px; margin-top: 30px; text-align: center;">
-            <p style="color: #9ca3af; font-size: 14px; margin: 0;">Need help? Contact our support team</p>
-            <p style="color: #9ca3af; font-size: 14px; margin: 5px 0 0 0;">We're here to help you get your music promoted!</p>
-        </div>
-        
-        <p style="margin-top: 30px; font-size: 16px;">Best regards,<br><strong>The FASHO Team</strong></p>
-    </div>
-</body>
-</html>`,
-      'admin_payment_failed': `
-<!DOCTYPE html>
-<html>
-<head>
-    <meta charset="UTF-8">
-    <title>ALERT: Payment Failed</title>
-</head>
-<body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
-    <div style="max-width: 600px; margin: 0 auto; background: #f8f9fa; padding: 30px; border-radius: 12px; border-left: 5px solid #ef4444;">
-        <div style="text-align: center; margin-bottom: 25px;">
-            <h1 style="color: #ef4444; font-size: 24px; margin: 0; font-weight: bold;">🚨 PAYMENT FAILED ALERT</h1>
-        </div>
-        
-        <div style="background: white; padding: 20px; border-radius: 8px; margin-bottom: 20px; border: 1px solid #e5e7eb;">
-            <h3 style="color: #374151; margin: 0 0 15px 0; font-size: 18px;">Failed Payment Details</h3>
-            <table style="width: 100%; border-collapse: collapse;">
-                <tr style="border-bottom: 1px solid #e5e7eb;">
-                    <td style="padding: 8px 0; font-weight: bold; color: #6b7280;">Customer:</td>
-                    <td style="padding: 8px 0; color: #374151;">{{customerName}}</td>
-                </tr>
-                <tr style="border-bottom: 1px solid #e5e7eb;">
-                    <td style="padding: 8px 0; font-weight: bold; color: #6b7280;">Email:</td>
-                    <td style="padding: 8px 0; color: #374151;">{{customer_email}}</td>
-                </tr>
-                <tr style="border-bottom: 1px solid #e5e7eb;">
-                    <td style="padding: 8px 0; font-weight: bold; color: #6b7280;">Package(s):</td>
-                    <td style="padding: 8px 0; color: #374151;">{{packageNames}}</td>
-                </tr>
-                <tr style="border-bottom: 1px solid #e5e7eb;">
-                    <td style="padding: 8px 0; font-weight: bold; color: #6b7280;">Amount:</td>
-                    <td style="padding: 8px 0; color: #374151; font-weight: bold;">{{orderTotal}}</td>
-                </tr>
-                <tr style="border-bottom: 1px solid #e5e7eb;">
-                    <td style="padding: 8px 0; font-weight: bold; color: #6b7280;">Failure Reason:</td>
-                    <td style="padding: 8px 0; color: #ef4444; font-weight: bold;">{{failureReason}}</td>
-                </tr>
-                <tr>
-                    <td style="padding: 8px 0; font-weight: bold; color: #6b7280;">Failed At:</td>
-                    <td style="padding: 8px 0; color: #374151;">{{orderDate}}</td>
-                </tr>
-            </table>
-        </div>
-        
-        <div style="background: #fef3c7; border: 1px solid #f59e0b; border-radius: 8px; padding: 15px; margin-bottom: 20px;">
-            <h4 style="color: #92400e; margin: 0 0 10px 0; font-size: 16px;">⚠️ Recommended Actions:</h4>
-            <ul style="margin: 0; padding-left: 20px; color: #92400e;">
-                <li>Monitor if customer retries the payment</li>
-                <li>Check for any payment processing issues</li>
-                <li>Consider reaching out to offer assistance</li>
-                <li>Review failure reason for patterns</li>
-            </ul>
-        </div>
-        
-        <div style="text-align: center; margin: 25px 0;">
-            <a href="https://fasho.pro/admin" style="background-color: #ef4444; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold; display: inline-block;">View Admin Dashboard</a>
-        </div>
-        
-        <div style="border-top: 1px solid #e5e7eb; padding-top: 15px; margin-top: 20px; text-align: center;">
-            <p style="color: #6b7280; font-size: 12px; margin: 0;">This is an automated notification from the FASHO payment system</p>
-        </div>
-        
-        <p style="margin-top: 20px; color: #374151;">Best regards,<br><strong>FASHO Admin System</strong></p>
     </div>
 </body>
 </html>`
@@ -810,18 +689,6 @@ export default function EmailEditor({ adminSession, accessDenied }: EmailEditorP
                     <code className="bg-gray-100 px-2 py-1 rounded text-xs">{'{{order_date}}'}</code>
                     <p className="text-gray-600 mt-1">Order creation date</p>
                   </div>
-                  {(trigger === 'payment_failed' || trigger === 'admin_payment_failed') && (
-                    <>
-                      <div className="text-sm">
-                        <code className="bg-gray-100 px-2 py-1 rounded text-xs">{'{{packageNames}}'}</code>
-                        <p className="text-gray-600 mt-1">Package name(s) customer tried to purchase</p>
-                      </div>
-                      <div className="text-sm">
-                        <code className="bg-gray-100 px-2 py-1 rounded text-xs">{'{{failureReason}}'}</code>
-                        <p className="text-gray-600 mt-1">Reason why the payment failed</p>
-                      </div>
-                    </>
-                  )}
                 </div>
               </div>
 
