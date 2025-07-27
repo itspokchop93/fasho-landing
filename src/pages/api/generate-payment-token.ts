@@ -77,7 +77,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const transactionKey = process.env.AUTHORIZE_NET_TRANSACTION_KEY;
     const environment = process.env.AUTHORIZE_NET_ENVIRONMENT || 'sandbox';
     const baseUrl = environment === 'production' 
-      ? 'https://accept.authorize.net' 
+      ? 'https://api.authorize.net' 
       : 'https://apitest.authorize.net'; // Sandbox URL
 
     console.log('Environment check:', {
