@@ -186,13 +186,21 @@ const responsiveFontStyles = `
   }
 `;
 
-// Custom hook for viewport intersection
+// Custom hook for viewport intersection with hydration-safe implementation
 const useInView = (options: IntersectionObserverInit & { delay?: number } = {}) => {
   const [isInView, setIsInView] = useState(false);
+  const [hasMounted, setHasMounted] = useState(false);
   const hasAnimatedRef = useRef(false);
   const ref = useRef<HTMLDivElement>(null);
 
+  // Handle hydration mismatch by ensuring consistent server/client rendering
   useEffect(() => {
+    setHasMounted(true);
+  }, []);
+
+  useEffect(() => {
+    if (!hasMounted) return;
+
     const { delay = 500, ...observerOptions } = options;
     
     const observer = new IntersectionObserver(
@@ -216,7 +224,12 @@ const useInView = (options: IntersectionObserverInit & { delay?: number } = {}) 
         observer.unobserve(ref.current);
       }
     };
-  }, []); // Empty dependency array to prevent re-creation
+  }, [hasMounted]); // Depend on hasMounted to prevent early execution
+
+  // During SSR and initial hydration, return consistent values
+  if (!hasMounted) {
+    return [ref, false] as const;
+  }
 
   return [ref, isInView] as const;
 };
