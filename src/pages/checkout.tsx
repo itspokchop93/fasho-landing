@@ -1153,6 +1153,9 @@ export default function CheckoutPage() {
     console.log('🚨 CHECKOUT: Transaction ID:', response?.transId);
     console.log('🚨 CHECKOUT: Current orderProcessingFlag:', orderProcessingFlag.current);
     console.log('🚨 CHECKOUT: Processed transaction IDs:', Array.from(processedTransactionIdsRef.current));
+    console.log('🚨 CHECKOUT: Current user state:', { hasUser: !!currentUser, email: currentUser?.email, id: currentUser?.id });
+    console.log('🚨 CHECKOUT: Router ready:', router.isReady);
+    console.log('🚨 CHECKOUT: Auth loading:', authLoading);
     
     // AGGRESSIVE duplicate prevention using refs (not React state)
     if (orderProcessingFlag.current) {
@@ -1179,6 +1182,7 @@ export default function CheckoutPage() {
     }
     
     console.log('🚨 CHECKOUT: PROCEEDING WITH ORDER CREATION...');
+    console.log('🚨 CHECKOUT: Starting main try-catch block for order processing');
     
     try {
       console.log('🚀 CHECKOUT: handleSuccessfulPayment called with response:', response);
@@ -1365,10 +1369,25 @@ export default function CheckoutPage() {
       console.log('🚀 CHECKOUT: Processing popup hidden');
       
       // Redirect to thank you page with order number for persistence
-      router.push(`/thank-you?order=${orderResult.order.orderNumber}`);
-      console.log('🔓 CHECKOUT: Payment processing completed successfully');
+      console.log('🚀 CHECKOUT: About to redirect to thank you page with order:', orderResult.order.orderNumber);
+      
+      try {
+        await router.push(`/thank-you?order=${orderResult.order.orderNumber}`);
+        console.log('🔓 CHECKOUT: Payment processing completed successfully - redirect initiated');
+      } catch (redirectError) {
+        console.error('🔓 CHECKOUT: Router.push failed:', redirectError);
+        // Fallback to window.location if router fails
+        window.location.href = `/thank-you?order=${orderResult.order.orderNumber}`;
+        console.log('🔓 CHECKOUT: Fallback redirect using window.location');
+      }
     } catch (error) {
-      console.error('Error processing successful payment:', error);
+      console.error('🚨 CHECKOUT: ===== ERROR IN handleSuccessfulPayment =====');
+      console.error('🚨 CHECKOUT: Error details:', error);
+      console.error('🚨 CHECKOUT: Error message:', (error as Error)?.message || 'Unknown error');
+      console.error('🚨 CHECKOUT: Error stack:', (error as Error)?.stack || 'No stack trace');
+      console.error('🚨 CHECKOUT: Error name:', (error as Error)?.name || 'Unknown error type');
+      console.log('🚨 CHECKOUT: Payment was successful but order processing failed');
+      
       setError('Payment was successful but there was an error processing your order. Please contact support.');
       orderProcessingFlag.current = false; // Unlock on error using ref
       console.log('🔓 CHECKOUT: Order processing unlocked due to error (ref flag reset)');
@@ -1376,6 +1395,14 @@ export default function CheckoutPage() {
       // Hide processing popup on error
       setShowProcessingPopup(false);
       console.log('🚀 CHECKOUT: Processing popup hidden due to error');
+      
+      // Force redirect to thank you page even if order creation failed, since payment was successful
+      console.log('🚨 CHECKOUT: Attempting emergency redirect since payment was successful');
+      try {
+        window.location.href = `/thank-you?error=processing&transId=${response?.transId}`;
+      } catch (redirectError) {
+        console.error('🚨 CHECKOUT: Emergency redirect also failed:', redirectError);
+      }
     }
   };
 
@@ -1721,6 +1748,12 @@ export default function CheckoutPage() {
       console.log('🎯 PARENT PAGE: Current window location:', window.location.href);
       console.log('🎯 PARENT PAGE: Message data type:', typeof event.data);
       console.log('🎯 PARENT PAGE: Message data.type:', event.data?.type);
+      console.log('🎯 PARENT PAGE: FULL MESSAGE EVENT OBJECT:', JSON.stringify({
+        origin: event.origin,
+        data: event.data,
+        type: event.type,
+        timeStamp: event.timeStamp
+      }));
       
       // Accept messages from allowed origins
       const allowedOrigins = [
@@ -1746,8 +1779,19 @@ export default function CheckoutPage() {
       
       const data = event.data;
       console.log('🎯 PARENT PAGE: Processing message type:', data?.type, '| typeof:', typeof data, '| Full data:', data);
+      console.log('🎯 PARENT PAGE: Stringified data:', JSON.stringify(data, null, 2));
+      console.log('🎯 PARENT PAGE: data.type exact value:', JSON.stringify(data?.type));
+      console.log('🎯 PARENT PAGE: Checking against PAYMENT_COMPLETE:', data?.type === 'PAYMENT_COMPLETE');
       
       switch (data.type) {
+        case 'IFRAME_COMMUNICATOR_READY':
+          console.log('🧪 MESSAGE: ===== IFRAME COMMUNICATOR READY TEST MESSAGE =====');
+          console.log('🧪 MESSAGE: Iframe communicator is loaded and can communicate with parent page');
+          console.log('🧪 MESSAGE: Test message:', data.message);
+          console.log('🧪 MESSAGE: Timestamp:', data.timestamp);
+          console.log('🧪 MESSAGE: This proves iframe communication is working!');
+          break;
+          
         case 'PAYMENT_COMPLETE':
           console.log('🚨 MESSAGE: ===== PAYMENT_COMPLETE MESSAGE RECEIVED =====');
           console.log('🚨 MESSAGE: Message event origin:', event.origin);
@@ -1780,14 +1824,30 @@ export default function CheckoutPage() {
 
           if (response.responseCode === '1') {
             console.log('✅ PAYMENT: Transaction approved, processing success');
-            console.log('🚨 MESSAGE: ABOUT TO CALL stableHandleSuccessfulPayment WITH:', response?.transId);
-            try {
-              stableHandleSuccessfulPayment(response);
-            } catch (error) {
-              console.error('🔍 PAYMENT: Error in stableHandleSuccessfulPayment:', error);
-              setError('Payment was successful but there was an error processing your order. Please contact support.');
-              setShowProcessingPopup(false);
+                      console.log('🚨 MESSAGE: ABOUT TO CALL stableHandleSuccessfulPayment WITH:', response?.transId);
+          console.log('🚨 MESSAGE: Full response object:', response);
+          console.log('🚨 MESSAGE: stableHandleSuccessfulPayment function exists:', !!stableHandleSuccessfulPayment);
+          
+                    try {
+            console.log('🚨 MESSAGE: ===== CALLING stableHandleSuccessfulPayment =====');
+            // Call the function and handle it asynchronously 
+            const paymentPromise = stableHandleSuccessfulPayment(response);
+            if (paymentPromise && typeof paymentPromise.then === 'function') {
+              paymentPromise.then((result) => {
+                console.log('🚨 MESSAGE: stableHandleSuccessfulPayment completed successfully:', result);
+              }).catch((error) => {
+                console.error('🚨 MESSAGE: ===== ERROR in stableHandleSuccessfulPayment =====');
+                console.error('🔍 PAYMENT: Error in stableHandleSuccessfulPayment:', error);
+                setError('Payment was successful but there was an error processing your order. Please contact support.');
+                setShowProcessingPopup(false);
+              });
+            } else {
+              console.log('🚨 MESSAGE: stableHandleSuccessfulPayment returned synchronously:', paymentPromise);
             }
+          } catch (error) {
+            console.error('🚨 MESSAGE: ===== SYNC ERROR in stableHandleSuccessfulPayment =====');
+            console.error('🔍 PAYMENT: Sync Error in stableHandleSuccessfulPayment:', error);
+          }
           } else {
             console.error('🔍 PAYMENT: Transaction declined or error:', response.responseReasonText);
             setError(`Payment failed: ${response.responseReasonText}`);
@@ -1829,11 +1889,37 @@ export default function CheckoutPage() {
           break;
         default:
           console.log('❓ PARENT PAGE: Unknown message type:', data.type, '| Full data:', data);
+          
+          // EMERGENCY: Check if this unknown message contains payment data
+          if (data && data.response && data.response.responseCode) {
+            console.log('🚨 EMERGENCY: Found payment data in unknown message type!');
+            console.log('🚨 EMERGENCY: Response code:', data.response.responseCode);
+            console.log('🚨 EMERGENCY: Processing as payment complete...');
+            
+            if (data.response.responseCode === '1') {
+              console.log('🚨 EMERGENCY: Payment successful, calling handleSuccessfulPayment directly');
+              try {
+                const paymentPromise = stableHandleSuccessfulPayment(data.response);
+                if (paymentPromise && typeof paymentPromise.then === 'function') {
+                  paymentPromise.then((result) => {
+                    console.log('🚨 EMERGENCY: Payment processed successfully:', result);
+                  }).catch((error) => {
+                    console.error('🚨 EMERGENCY: Error processing payment:', error);
+                  });
+                }
+              } catch (error) {
+                console.error('🚨 EMERGENCY: Sync error processing payment:', error);
+              }
+            }
+          }
       }
     };
 
     console.log('🎯 PARENT PAGE: Setting up message listener (CORRECT POSITION)');
+    console.log('🎯 PARENT PAGE: handleMessage function exists:', !!handleMessage);
+    console.log('🎯 PARENT PAGE: typeof handleMessage:', typeof handleMessage);
     window.addEventListener('message', handleMessage);
+    console.log('🎯 PARENT PAGE: Message listener added successfully');
     
     // Test message listener after a delay
     setTimeout(() => {
@@ -3498,4 +3584,4 @@ export default function CheckoutPage() {
       )}
     </>
   );
-} 
+}

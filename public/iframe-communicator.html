@@ -11,6 +11,16 @@
         console.log('🔧 IFRAME COMMUNICATOR: window.location.href:', window.location.href);
         console.log('🔧 IFRAME COMMUNICATOR: document.referrer:', document.referrer);
         console.log('🔧 IFRAME COMMUNICATOR: window.parent === window.top:', window.parent === window.top);
+        
+        // Auto-test function to verify iframe communicator is working
+        setTimeout(() => {
+            console.log('🔧 IFRAME COMMUNICATOR: Running auto-test...');
+            sendToAllParents({
+                type: 'IFRAME_COMMUNICATOR_READY',
+                message: 'Iframe communicator loaded and ready',
+                timestamp: new Date().toISOString()
+            });
+        }, 2000);
         console.log('🔧 IFRAME COMMUNICATOR: AuthorizeNetIFrame object created:', typeof window.AuthorizeNetIFrame);
         
         // Send immediate test message to confirm iframe communicator is loaded
