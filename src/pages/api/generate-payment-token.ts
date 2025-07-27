@@ -311,7 +311,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     console.log('🚨 Transaction Key has whitespace?', transactionKey !== transactionKey.trim());
 
     // Make request to Authorize.net
-    const response = await fetch(`${baseUrl}/xml/v1/request.api`, {
+    const response = await fetch(baseUrl, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
