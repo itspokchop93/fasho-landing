@@ -4955,7 +4955,7 @@ export default function Home() {
                       ref={authenticityClosingRef}
                       className={`text-xl md:text-2xl text-gray-300 leading-relaxed font-bold ${authenticityClosingInView ? 'animate-fade-in-up' : 'opacity-0'}`}
                       style={{
-                        fontSize: isMobile ? 'calc(1.25rem + 0.20rem + 0.10rem - 0.04rem)' : undefined
+                        fontSize: isMobile ? 'calc(1.25rem + 0.20rem + 0.10rem - 0.04rem - 0.10rem)' : undefined
                       }}
                       suppressHydrationWarning={true}
                     >
@@ -4966,7 +4966,7 @@ export default function Home() {
                       ref={authenticityHighlightRef}
                       className={`text-xl md:text-2xl text-gray-300 leading-relaxed font-bold ${authenticityHighlightInView ? 'animate-fade-in-up' : 'opacity-0'}`}
                       style={{
-                        fontSize: isMobile ? 'calc(1.25rem + 0.20rem + 0.10rem - 0.04rem)' : undefined
+                        fontSize: isMobile ? 'calc(1.25rem + 0.20rem + 0.10rem - 0.04rem - 0.10rem)' : undefined
                       }}
                       suppressHydrationWarning={true}
                     >
@@ -4977,11 +4977,11 @@ export default function Home() {
                       ref={authenticityGuaranteeRef}
                       className={`text-3xl md:text-4xl font-black text-white leading-relaxed ${authenticityGuaranteeInView ? 'animate-fade-in-up' : 'opacity-0'}`}
                       style={{
-                        fontSize: isMobile ? 'calc(1.875rem - 0.25rem - 0.25rem)' : undefined
+                        fontSize: isMobile ? 'calc(1.875rem - 0.25rem - 0.25rem + 0.08rem)' : undefined
                       }}
                       suppressHydrationWarning={true}
                     >
-                      That's not marketing speak. That's a guarantee.
+                      That's not just marketing. That's a guarantee.
                     </p>
                   </div>
                 </div>
@@ -5028,11 +5028,21 @@ export default function Home() {
 
               {/* Testimonials Carousel */}
               <div className="relative overflow-visible mb-16 pr-8 pt-8 z-40">
+                {/* Fixed Background Glow Layers - Stay in place while testimonials slide over */}
+                <div className="absolute inset-0 pointer-events-none" style={{ zIndex: 1 }}>
+                  {/* Create multiple gradient spots positioned at different locations - taller to match testimonial cards */}
+                  <div className="absolute top-0 left-[10%] w-80 bg-gradient-to-br from-[#59e3a5]/30 to-[#14c0ff]/20 rounded-full blur-xl opacity-60" style={{ height: '544px' }}></div>
+                  <div className="absolute top-0 left-[40%] w-80 bg-gradient-to-br from-[#8b5cf6]/25 to-[#59e3a5]/15 rounded-full blur-xl opacity-50" style={{ height: '496px' }}></div>
+                  <div className="absolute top-0 left-[70%] w-80 bg-gradient-to-br from-[#14c0ff]/30 to-[#8b5cf6]/20 rounded-full blur-xl opacity-55" style={{ height: '488px' }}></div>
+                  <div className="absolute top-0 left-[90%] w-80 bg-gradient-to-br from-[#59e3a5]/25 to-[#14c0ff]/15 rounded-full blur-xl opacity-45" style={{ height: '488px' }}></div>
+                </div>
+                
                 <div 
-                  className="testimonial-carousel flex transition-transform duration-[2000ms] ease-in-out"
+                  className="testimonial-carousel flex transition-transform duration-[2000ms] ease-in-out relative"
                   style={{ 
                     transform: `translateX(-${currentTestimonialIndex * (isMobile ? 66.67 : 24.5)}vw)`,
-                    width: `${(testimonials.length * 2) * (isMobile ? 66.67 : 24.5)}vw`
+                    width: `${(testimonials.length * 2) * (isMobile ? 66.67 : 24.5)}vw`,
+                    zIndex: 2
                   }}
                 >
                   {/* Render testimonials twice for seamless loop */}
@@ -5057,7 +5067,6 @@ export default function Home() {
                           setResumeTimeout(timeout);
                         }}
                       >
-                        <div className={`absolute inset-0 bg-gradient-to-br ${testimonial.gradient} rounded-3xl blur-xl opacity-60 group-hover:opacity-90 transition-opacity duration-500`}></div>
                         <div className={`relative bg-gradient-to-br from-[#1a1a2e]/95 via-[#16213e]/90 to-[#0a0a13]/95 rounded-3xl p-4 border-2 border-white/10 backdrop-blur-sm hover:${testimonial.border} transition-all duration-500 group-hover:transform group-hover:scale-105 shadow-2xl`}>
                           {/* Large Profile Image */}
                           <div className="w-36 h-36 mx-auto mb-4 rounded-2xl overflow-hidden shadow-2xl">
@@ -5192,10 +5201,10 @@ export default function Home() {
                   <div className="space-y-6">
                     <h2 
                       className="font-black leading-tight text-center -mt-[95px] md:mt-0" 
-                      style={{ fontSize: isMobile ? '1.64rem' : 'calc(1.25rem + 1.4rem)' }}
+                      style={{ fontSize: isMobile ? 'calc(1.64rem + 0.25rem + 0.25rem)' : 'calc(1.25rem + 1.4rem + 0.25rem)' }}
                     >
                       <span className="bg-gradient-to-r from-[#8b5cf6] via-[#14c0ff] to-[#59e3a5] bg-clip-text text-transparent drop-shadow-2xl">
-                        What Do You Actually Get?
+                        What's Inside?
                       </span>
                       <br />
                       <span 

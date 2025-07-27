@@ -3008,7 +3008,7 @@ export default function CheckoutPage() {
                     <form 
                       id="paymentIframeForm" 
                       method="post" 
-                      action={paymentFormUrl || "https://test.authorize.net/payment/payment"} 
+                      action={paymentFormUrl || "https://accept.authorize.net/payment/payment"} 
                       target="paymentIframe" 
                       style={{ display: 'none' }}
                     >

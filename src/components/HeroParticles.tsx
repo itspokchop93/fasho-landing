@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 
-const PARTICLE_COUNT = 18;
+const PARTICLE_COUNT = 22;
 const COLORS = [
   'rgba(20,192,255,0.10)', // blue
   'rgba(89,227,165,0.08)', // green
@@ -30,12 +30,24 @@ export default function HeroParticles() {
   useEffect(() => {
     function updateSize() {
       const width = window.innerWidth;
-      const height = Math.max(window.innerHeight * 0.6, 500);
-      setCanvasSize({ width, height });
+      // Calculate hero section height (viewport height minus some space for the campaign section)
+      const heroHeight = Math.min(window.innerHeight * 0.85, 800);
+      setCanvasSize({ width, height: heroHeight });
     }
     updateSize();
-    window.addEventListener('resize', updateSize);
-    return () => window.removeEventListener('resize', updateSize);
+    
+    // Only update on actual resize, not mobile scroll events
+    let resizeTimeout: NodeJS.Timeout;
+    const debouncedUpdateSize = () => {
+      clearTimeout(resizeTimeout);
+      resizeTimeout = setTimeout(updateSize, 250); // Longer delay to prevent scroll-triggered updates
+    };
+    
+    window.addEventListener('resize', debouncedUpdateSize);
+    return () => {
+      window.removeEventListener('resize', debouncedUpdateSize);
+      clearTimeout(resizeTimeout);
+    };
   }, []);
 
   useEffect(() => {
@@ -48,32 +60,25 @@ export default function HeroParticles() {
     canvas.width = width;
     canvas.height = height;
 
-    // Initialize particles
-    particles.current = Array.from({ length: PARTICLE_COUNT }, () => ({
-      x: randomBetween(0, width),
-      y: randomBetween(0, height),
-      r: randomBetween(32, 80),
-      color: COLORS[Math.floor(Math.random() * COLORS.length)],
-      speed: randomBetween(0.04, 0.12),
-      angle: randomBetween(0, Math.PI * 2),
-      drift: randomBetween(-0.04, 0.04),
-    }));
+    // Initialize particles ONLY if they don't exist yet (preserve positions across resizes)
+    if (particles.current.length === 0) {
+      particles.current = Array.from({ length: PARTICLE_COUNT }, () => ({
+        x: randomBetween(0, width),
+        y: randomBetween(0, height),
+        r: randomBetween(32, 80),
+        color: COLORS[Math.floor(Math.random() * COLORS.length)],
+        speed: randomBetween(0.04, 0.12),
+        angle: randomBetween(0, Math.PI * 2),
+        drift: randomBetween(-0.04, 0.04),
+      }));
+    }
 
-    let animationId: number;
-    function animate() {
+    // Draw static particles (no animation loop needed)
+    function drawStaticParticles() {
       if (!ctx) return;
       ctx.clearRect(0, 0, width, height);
       for (const p of particles.current) {
-        // Move particle
-        p.x += Math.cos(p.angle) * p.speed;
-        p.y += Math.sin(p.angle) * p.speed;
-        p.angle += p.drift * 0.1;
-        // Wrap around
-        if (p.x < -p.r) p.x = width + p.r;
-        if (p.x > width + p.r) p.x = -p.r;
-        if (p.y < -p.r) p.y = height + p.r;
-        if (p.y > height + p.r) p.y = -p.r;
-        // Draw lens flare (radial gradient)
+        // Draw lens flare (radial gradient) - no movement, just static positioning
         const grad = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, p.r);
         grad.addColorStop(0, p.color);
         grad.addColorStop(0.5, p.color.replace(/0\.[0-9]+\)/, '0.04)'));
@@ -84,12 +89,11 @@ export default function HeroParticles() {
         ctx.globalAlpha = 1;
         ctx.fill();
       }
-      animationId = requestAnimationFrame(animate);
     }
-    animate();
+    drawStaticParticles();
 
     return () => {
-      cancelAnimationFrame(animationId);
+      // No animation to cancel since particles are static
     };
   }, [canvasSize]);
 
@@ -97,11 +101,11 @@ export default function HeroParticles() {
     <canvas
       ref={canvasRef}
       style={{
-        position: 'fixed',
+        position: 'absolute',
         top: 0,
         left: 0,
         width: '100%',
-        height: '60vh',
+        height: `${canvasSize.height}px`,
         pointerEvents: 'none',
         zIndex: 1,
         opacity: 0.7,

@@ -362,10 +362,7 @@ export default function OrderDetailPage({ adminSession, accessDenied }: OrderDet
 
     const trackId = trackIdMatch[1];
     
-    // TODO: Implement Spotify Web API integration
-    // This will fetch updated track information (title, artist, image, etc.)
-    // and update both the admin dashboard and customer dashboard
-    // as well as the database with the new song information
+   
     
     console.log('🎵 TODO: Fetch Spotify track info for ID:', trackId);
     console.log('🎵 TODO: Update database with new track information');
