@@ -75,7 +75,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     // Get Authorize.net credentials from environment variables
     const apiLoginId = process.env.AUTHORIZE_NET_API_LOGIN_ID;
     const transactionKey = process.env.AUTHORIZE_NET_TRANSACTION_KEY;
-    const environment = process.env.AUTHORIZE_NET_ENVIRONMENT || 'sandbox';
+    const environment = process.env.AUTHORIZE_NET_ENVIRONMENT || 'production';
     const baseUrl = environment === 'production' 
       ? 'https://api.authorize.net' 
       : 'https://apitest.authorize.net'; // Sandbox URL
