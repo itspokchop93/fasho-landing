@@ -1819,20 +1819,20 @@ export default function Home() {
           <div className="max-w-4xl mx-auto px-6 py-20 mt-5 md:mt-10">
             {/* PAS Final Draft Section - User Provided */}
             <div className="text-center mb-20">
-              <p ref={musicFireRef} className={`text-[calc(1.5rem+0.4rem)] md:text-3xl lg:text-[2.9rem] font-black text-white pb-1 lg:pb-3 text-center transition-all duration-700 ${musicFireInView ? 'animate-fade-in-up' : 'opacity-0 translate-y-8'} leading-tight lg:leading-tight`} suppressHydrationWarning={true}>
+              <p ref={musicFireRef} className={`text-[calc(1.5rem+0.4rem)] md:text-3xl lg:text-[2.9rem] font-black text-white pb-1 lg:pb-3 text-center ${musicFireInView ? 'animate-fade-in-up' : 'opacity-0'} leading-tight lg:leading-tight`} suppressHydrationWarning={true}>
                 <span className="block md:inline">Your Music Is Fire,</span>
               </p>
-              <p ref={nobodyHearingRef} className={`text-[calc(1.5rem+0.25rem)] md:text-3xl lg:text-[2.9rem] font-black text-white pb-12 lg:pb-[3.5rem] text-center transition-all duration-700 ${nobodyHearingInView ? 'animate-fade-in-up' : 'opacity-0 translate-y-8'} leading-tight lg:leading-tight`} suppressHydrationWarning={true}>
+              <p ref={nobodyHearingRef} className={`text-[calc(1.5rem+0.25rem)] md:text-3xl lg:text-[2.9rem] font-black text-white pb-12 lg:pb-[3.5rem] text-center ${nobodyHearingInView ? 'animate-fade-in-up' : 'opacity-0'} leading-tight lg:leading-tight`} suppressHydrationWarning={true}>
                 <span className="block md:inline">But <span className="bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] bg-clip-text text-transparent">Nobody's</span> Hearing It...</span>
               </p>
-              <p ref={text1Ref} className={`text-[calc(1.125rem+0.25rem)] sm:text-lg md:text-xl lg:text-[1.75rem] text-gray-300 pb-12 lg:pb-[3.5rem] font-medium text-center transition-all duration-700 ${text1InView ? 'animate-fade-in-up' : 'opacity-0 translate-y-8'} leading-relaxed lg:leading-relaxed`} suppressHydrationWarning={true}>
+              <p ref={text1Ref} className={`text-[calc(1.125rem+0.25rem)] sm:text-lg md:text-xl lg:text-[1.75rem] text-gray-300 pb-12 lg:pb-[3.5rem] font-medium text-center ${text1InView ? 'animate-fade-in-up' : 'opacity-0'} leading-relaxed lg:leading-relaxed`} suppressHydrationWarning={true}>
                 You spent days making the best song of your life. Created the dopest cover art for it. All your friends said it slaps harder than Will Smith at the Oscars....
               </p>
-              <p ref={text2Ref} className={`text-[calc(1.5rem+0.4rem)] md:text-3xl lg:text-4xl font-bold pb-12 text-center transition-all duration-700 ${text2InView ? 'animate-fade-in-up' : 'opacity-0 translate-y-8'} leading-tight`} suppressHydrationWarning={true}>
+              <p ref={text2Ref} className={`text-[calc(1.5rem+0.4rem)] md:text-3xl lg:text-4xl font-bold pb-12 text-center ${text2InView ? 'animate-fade-in-up' : 'opacity-0'} leading-tight`} suppressHydrationWarning={true}>
                 <span className="block md:inline">But your Spotify still</span>{' '}
                 <span className="block md:inline">says " <span className="bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] bg-clip-text text-transparent">&lt; 1,000</span> " plays</span>
               </p>
-              <p ref={text3Ref} className={`text-[calc(1.125rem+0.25rem)] sm:text-lg md:text-xl lg:text-[1.75rem] text-gray-300 pb-12 lg:pb-[3.5rem] font-medium text-center transition-all duration-700 ${text3InView ? 'animate-fade-in-up' : 'opacity-0 translate-y-8'} leading-relaxed lg:leading-relaxed`} suppressHydrationWarning={true}>
+              <p ref={text3Ref} className={`text-[calc(1.125rem+0.25rem)] sm:text-lg md:text-xl lg:text-[1.75rem] text-gray-300 pb-12 lg:pb-[3.5rem] font-medium text-center ${text3InView ? 'animate-fade-in-up' : 'opacity-0'} leading-relaxed lg:leading-relaxed`} suppressHydrationWarning={true}>
                 Meanwhile, some dude who recorded his whole album <b>on an iPhone</b> just hit <b>2 million</b> streams and <b>got signed.</b>
               </p>
               <p ref={text4Ref} className={`text-[calc(2.25rem+0.20rem)] sm:text-4xl md:text-5xl lg:text-[3.5rem] font-black pb-5 lg:pb-[2rem] bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] bg-clip-text text-transparent transition-all duration-700 ${text4InView ? 'animate-fade-in-up' : 'opacity-0 translate-y-8'} leading-tight mb-[11px] sm:mb-0`}>
