@@ -16,6 +16,12 @@ const nextConfig = {
       },
     ];
   },
+  async redirects() {
+    return [
+      // Redirect any non-existent paths to our custom error page
+      // This will only apply after 404 page handling
+    ];
+  },
 };
 
 module.exports = nextConfig; 

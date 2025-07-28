@@ -8,6 +8,9 @@ import Lottie from 'lottie-react'
 import CampaignProgressBar from '../components/CampaignProgressBar'
 import IntakeFormModal from '../components/IntakeFormModal'
 import { createPortal } from 'react-dom'
+import PowerToolsCarousel from '../components/PowerToolsCarousel'
+import PowerToolsTab from '../components/PowerToolsTab'
+import { GoogleSheetsService, PowerTool } from '../utils/googleSheets'
 
 interface DashboardProps {
   user: {
@@ -109,6 +112,34 @@ export default function Dashboard({ user }: DashboardProps) {
 
   // Track when component is mounted for portal
   useEffect(() => { setIsMounted(true); }, [])
+
+  // Power Tools state
+  const [powerTools, setPowerTools] = useState<PowerTool[]>([])
+  const [powerToolsLoading, setPowerToolsLoading] = useState(true)
+  const [featuredPowerTools, setFeaturedPowerTools] = useState<PowerTool[]>([])
+
+  // Fetch Power Tools data
+  useEffect(() => {
+    const fetchPowerTools = async () => {
+      try {
+        setPowerToolsLoading(true)
+        const tools = await GoogleSheetsService.fetchPowerTools()
+        setPowerTools(tools)
+        
+        // Filter featured tools for dashboard carousel
+        const featured = GoogleSheetsService.filterTools(tools, { featured: true })
+        setFeaturedPowerTools(featured)
+      } catch (error) {
+        console.error('Failed to fetch power tools:', error)
+        setPowerTools([])
+        setFeaturedPowerTools([])
+      } finally {
+        setPowerToolsLoading(false)
+      }
+    }
+
+    fetchPowerTools()
+  }, [])
 
   // Fetch user's display name from API
   const fetchUserDisplayName = async () => {
@@ -502,12 +533,14 @@ export default function Dashboard({ user }: DashboardProps) {
   useEffect(() => {
     const handleHashChange = () => {
       const hash = window.location.hash.slice(1) // Remove the '#' character
-      const validTabs = ['dashboard', 'campaigns', 'curator-connect', 'packages', 'faq', 'contact', 'settings', 'logout']
+      const validTabs = ['dashboard', 'campaigns', 'curator-connect', 'power-tools', 'packages', 'faq', 'contact', 'settings', 'logout']
       
       if (hash === 'campaigns') {
         setActiveTab('campaigns')
       } else if (hash === 'curator-connect') {
         setActiveTab('curator-connect')
+      } else if (hash === 'power-tools') {
+        setActiveTab('power-tools')
       } else if (hash === 'packages') {
         setActiveTab('packages')
       } else if (hash === 'contact') {
@@ -1057,6 +1090,7 @@ export default function Dashboard({ user }: DashboardProps) {
     { id: 'dashboard', label: 'Dashboard', icon: 'M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2H5a2 2 0 00-2-2z' },
     { id: 'campaigns', label: 'Campaigns', icon: 'M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z' },
     { id: 'curator-connect', label: 'Curator Connect+', icon: 'M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z' },
+    { id: 'power-tools', label: 'Power Tools', icon: 'M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z M15 12a3 3 0 11-6 0 3 3 0 016 0z' },
     { id: 'packages', label: 'Packages', icon: 'M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4' },
     { id: 'faq', label: 'FAQ', icon: 'M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z' },
     { id: 'contact', label: 'Contact Us', icon: 'M3 8l7.89 4.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z' },
@@ -1069,6 +1103,7 @@ export default function Dashboard({ user }: DashboardProps) {
     { id: 'dashboard', label: 'Dashboard', icon: 'M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2H5a2 2 0 00-2-2z' },
     { id: 'campaigns', label: 'Campaigns', icon: 'M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z' },
     { id: 'curator-connect', label: 'Curator Connect+', icon: 'M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z' },
+    { id: 'power-tools', label: 'Tools', icon: 'M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z M15 12a3 3 0 11-6 0 3 3 0 016 0z' },
     { id: 'packages', label: 'Packages', icon: 'M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4' },
     { id: 'settings', label: 'Settings', icon: 'M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z M15 12a3 3 0 11-6 0 3 3 0 016 0z' },
   ]
@@ -1383,6 +1418,15 @@ export default function Dashboard({ user }: DashboardProps) {
             )}
           </div>
         </div>
+      </div>
+
+      {/* Power Tools Dashboard Section - Mobile positioning */}
+      <div className="lg:hidden mb-6">
+        <PowerToolsCarousel
+          tools={featuredPowerTools}
+          onViewAll={() => changeTab('power-tools')}
+          className=""
+        />
       </div>
 
       {/* Mobile Projected Plays Chart Section */}
@@ -1731,6 +1775,15 @@ export default function Dashboard({ user }: DashboardProps) {
             )}
           </div>
         </div>
+      </div>
+
+      {/* Power Tools Dashboard Section - Desktop positioning */}
+      <div className="hidden lg:block mb-8">
+        <PowerToolsCarousel
+          tools={featuredPowerTools}
+          onViewAll={() => changeTab('power-tools')}
+          className=""
+        />
       </div>
 
       {/* Full Width Chart Section - Above Your Campaigns */}
@@ -3702,6 +3755,8 @@ export default function Dashboard({ user }: DashboardProps) {
         return renderCampaignsContent()
       case 'curator-connect':
         return renderCuratorConnectContent()
+      case 'power-tools':
+        return <PowerToolsTab />
       case 'packages':
         return renderPackagesContent()
       case 'faq':
@@ -4741,7 +4796,7 @@ Thank you,
                       <div className="absolute -top-1 -right-1 w-2 h-2 bg-gradient-to-r from-green-400 to-blue-400 rounded-full opacity-75"></div>
                     )}
                   </div>
-                  <span className="text-xs font-medium truncate w-full text-center leading-tight">{getMobileLabel(item.id, item.label)}</span>
+                  <span className="text-xs font-medium truncate w-full text-center leading-tight" style={{ fontSize: 'calc(0.75rem - 0.04rem)' }}>{getMobileLabel(item.id, item.label)}</span>
                 </button>
               )
             })}

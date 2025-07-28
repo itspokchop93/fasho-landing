@@ -1,4 +1,6 @@
 import { NextPageContext } from 'next';
+import { useEffect } from 'react';
+import { useRouter } from 'next/router';
 import Head from 'next/head';
 
 interface ErrorProps {
@@ -8,41 +10,59 @@ interface ErrorProps {
 }
 
 function Error({ statusCode, hasGetInitialPropsRun, err }: ErrorProps) {
+  const router = useRouter();
+
+  useEffect(() => {
+    // Redirect 404 errors to our custom error page
+    if (statusCode === 404) {
+      router.replace('/error');
+      return;
+    }
+  }, [statusCode, router]);
+
+  // For non-404 errors, show a generic error page
+  if (statusCode === 404) {
+    // This will only show briefly before redirect
+    return (
+      <div className="min-h-screen bg-black flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#59e3a5]"></div>
+      </div>
+    );
+  }
+
   return (
     <>
       <Head>
-        <title>Error {statusCode} - Fasho.co</title>
+        <title>Error {statusCode} - FASHO</title>
+        <meta name="description" content="An error occurred on our website." />
+        <link rel="icon" href="/fasho_ico/favicon.ico" />
       </Head>
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="max-w-md w-full bg-white shadow-lg rounded-lg p-8 text-center">
-          <div className="mb-4">
-            <h1 className="text-6xl font-bold text-gray-900 mb-2">
+      <div className="min-h-screen bg-black flex items-center justify-center px-4">
+        <div className="max-w-md w-full bg-gray-900 border border-gray-800 rounded-xl p-8 text-center">
+          <div className="mb-6">
+            <h1 className="text-6xl font-bold bg-gradient-to-r from-[#59e3a5] via-[#14c0ff] to-[#8b5cf6] bg-clip-text text-transparent mb-4">
               {statusCode}
             </h1>
-            <p className="text-xl text-gray-600 mb-4">
-              {statusCode === 404
-                ? 'Page not found'
-                : statusCode === 500
-                ? 'Internal server error'
-                : 'An error occurred'}
+            <p className="text-xl text-white mb-4">
+              {statusCode === 500
+                ? 'Internal Server Error'
+                : 'An Error Occurred'}
             </p>
-            <p className="text-gray-500 mb-6">
-              {statusCode === 404
-                ? "The page you're looking for doesn't exist."
-                : "We're experiencing some technical difficulties. Please try again later."}
+            <p className="text-gray-400 mb-6">
+              We're experiencing some technical difficulties. Please try again later.
             </p>
           </div>
           <div className="space-y-3">
             <a
               href="/"
-              className="inline-block bg-indigo-600 text-white px-6 py-3 rounded-lg hover:bg-indigo-700 transition-colors"
+              className="inline-block bg-gradient-to-r from-[#59e3a5] via-[#14c0ff] to-[#8b5cf6] text-white px-6 py-3 rounded-xl hover:shadow-lg hover:shadow-[#14c0ff]/30 transition-all duration-300 transform hover:scale-105"
             >
               Go Home
             </a>
             <br />
             <button
               onClick={() => window.history.back()}
-              className="text-indigo-600 hover:text-indigo-800 transition-colors"
+              className="text-[#14c0ff] hover:text-[#59e3a5] transition-colors duration-300"
             >
               Go Back
             </button>
