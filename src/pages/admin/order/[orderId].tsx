@@ -3,6 +3,7 @@ import { useRouter } from 'next/router';
 import { GetServerSideProps } from 'next';
 import { verifyAdminToken, getAdminTokenFromRequest } from '../../../utils/admin/auth';
 import AdminAccessDenied from '../../../components/AdminAccessDenied';
+import { calculateDeadline } from '../../../utils/deadlineUtils';
 
 interface OrderItem {
   id: string;
@@ -49,7 +50,9 @@ interface Order {
   payment_data: any;
   admin_notes: string | null;
   first_viewed_at: string | null;
+  first_saved_at: string | null;
   viewed_by_admin: boolean;
+  saved_by_admin: string | null;
   couponCode?: string | null;
   couponDiscount?: number;
   created_at: string;
@@ -456,7 +459,7 @@ export default function OrderDetailPage({ adminSession, accessDenied }: OrderDet
             <h1 className="text-3xl font-bold text-white">
               Order #{order.order_number}
             </h1>
-            {!order.viewed_by_admin && (
+            {!order.first_saved_at && (
               <span className="bg-red-500 text-white px-3 py-1 rounded-full text-sm font-medium">
                 NEW ORDER
               </span>
@@ -774,6 +777,31 @@ export default function OrderDetailPage({ adminSession, accessDenied }: OrderDet
                 </div>
               </div>
             </div>
+
+            {/* Deadline Countdown - Only show for processing orders */}
+            {(() => {
+              const deadlineInfo = calculateDeadline(order.created_at, order.status);
+              return deadlineInfo.showDeadline ? (
+                <div className="bg-white/5 rounded-xl p-6 border border-white/20">
+                  <h2 className="text-xl font-semibold text-white mb-4">Campaign Deadline</h2>
+                  <div className="space-y-3">
+                    <div 
+                      className="px-4 py-3 rounded-lg text-center font-medium"
+                      style={{
+                        backgroundColor: deadlineInfo.backgroundColor,
+                        color: deadlineInfo.textColor,
+                        border: `2px solid ${deadlineInfo.color}`
+                      }}
+                    >
+                      {deadlineInfo.message}
+                    </div>
+                    <p className="text-white/60 text-sm text-center">
+                      Campaign must start within 48 hours of order placement
+                    </p>
+                  </div>
+                </div>
+              ) : null;
+            })()}
 
             {/* Admin Notes */}
             <div className="bg-white/5 rounded-xl p-6 border border-white/20">

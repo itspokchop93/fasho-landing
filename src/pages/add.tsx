@@ -556,9 +556,25 @@ export default function AddSongsPage() {
         </div>
 
         {/* Text under button */}
-        <p className="text-sm sm:text-base md:text-lg text-gray-400 text-center mb-12 md:mb-20 max-w-3xl leading-relaxed relative z-10 px-2">
+        <p className="text-sm sm:text-base md:text-lg text-gray-400 text-center mb-6 md:mb-8 max-w-3xl leading-relaxed relative z-10 px-2">
           Think about it - while other artists drop one track and pray, you're building a whole catalog of playlist-backed hits. Every song working together to create unstoppable momentum.
         </p>
+
+        {/* Read More indicator */}
+        <div className="text-center mb-12 md:mb-20 relative z-10">
+          <p className="text-sm text-gray-500 mb-2">Read More</p>
+          <div className="flex justify-center -mb-5">
+            <svg 
+              className="w-5 h-5 text-gray-500 animate-bounce" 
+              fill="none" 
+              stroke="currentColor" 
+              viewBox="0 0 24 24"
+              style={{ animationDuration: '2s' }}
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 10l5 5 5-5" />
+            </svg>
+          </div>
+        </div>
 
         {/* Shape Divider from Homepage (homeShapeGradient) */}
         <div className="relative z-50 w-full" style={{ height: '200px', width: '110vw', left: '-5vw', transform: 'rotate(-3deg)', background: 'transparent', marginTop: '-35px' }}>
@@ -973,12 +989,32 @@ export default function AddSongsPage() {
           >
             {/* Header */}
             <div className="px-4 py-3 border-b border-white/10 bg-gradient-to-r from-[#59e3a5]/10 to-[#14c0ff]/10">
-              <h3 className="text-white font-semibold text-sm">Selected Track</h3>
+              <h3 className="text-white font-semibold text-sm">Found track</h3>
             </div>
             
-            {/* Track Preview */}
-            <div className="p-4">
-              <TrackCard track={previewTrack} onConfirm={confirmPreview} dark />
+            {/* Track Preview - Match search results styling */}
+            <div className="p-4 hover:bg-white/5 cursor-pointer transition-all duration-200 group">
+              <div className="flex items-center space-x-3">
+                <img
+                  src={previewTrack.imageUrl}
+                  alt={previewTrack.title}
+                  className="w-12 h-12 rounded-lg object-cover shadow-md border border-white/10 group-hover:scale-105 transition-transform duration-200"
+                />
+                <div className="flex-1 min-w-0">
+                  <div className="font-semibold text-white truncate group-hover:text-[#14c0ff] transition-colors duration-200">
+                    {previewTrack.title}
+                  </div>
+                  <div className="text-gray-400 text-sm truncate">
+                    {previewTrack.artist}
+                  </div>
+                </div>
+                <button
+                  onClick={confirmPreview}
+                  className="bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] text-black font-bold px-4 py-2 rounded-lg hover:shadow-lg hover:shadow-[#14c0ff]/30 transition-all duration-300 transform hover:scale-105 active:scale-95 text-sm"
+                >
+                  ADD
+                </button>
+              </div>
             </div>
           </div>,
           document.body

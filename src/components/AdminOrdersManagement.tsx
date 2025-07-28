@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/router'
+import { calculateDeadline } from '../utils/deadlineUtils'
 
 interface Order {
   id: string
@@ -15,7 +16,9 @@ interface Order {
   updatedAt: string
   isNewOrder: boolean
   firstViewedAt: string | null
+  firstSavedAt: string | null
   viewedByAdmin: string | null
+  savedByAdmin: string | null
   adminNotes: string | null
   itemCount: number
   items: any[]
@@ -177,13 +180,14 @@ export default function AdminOrdersManagement() {
 
       {/* Column Headers */}
       <div className="bg-gray-50 border-b border-gray-200 px-6 py-3">
-        <div className="grid grid-cols-12 gap-4 text-xs font-semibold text-gray-700 uppercase tracking-wide">
+        <div className="grid grid-cols-13 gap-4 text-xs font-semibold text-gray-700 uppercase tracking-wide">
           <div className="col-span-2">Order Details</div>
           <div className="col-span-2">Customer</div>
           <div className="col-span-2">Email</div>
-          <div className="col-span-2">Status</div>
-          <div className="col-span-2">Total</div>
-          <div className="col-span-2">Action</div>
+          <div className="col-span-3">Status</div>
+          <div className="col-span-1">Total</div>
+          <div className="col-span-2">Deadline</div>
+          <div className="col-span-1">Action</div>
         </div>
       </div>
 
@@ -215,7 +219,7 @@ export default function AdminOrdersManagement() {
               )}
               
               {/* Main Content Grid */}
-              <div className="grid grid-cols-12 gap-4 items-center">
+              <div className="grid grid-cols-13 gap-4 items-center">
                 {/* Order Details - Column 1 */}
                 <div className="col-span-2">
                   <div className="truncate">
@@ -248,7 +252,7 @@ export default function AdminOrdersManagement() {
                 </div>
 
                 {/* Status - Column 4 */}
-                <div className="col-span-2">
+                <div className="col-span-3">
                   <div className="flex items-center space-x-2">
                     <div className={`w-2 h-2 rounded-full animate-pulse ${getStatusBgClass(order.status)}`}></div>
                     <span className={`text-xs font-medium truncate ${getStatusTextClass(order.status)}`}>
@@ -258,7 +262,7 @@ export default function AdminOrdersManagement() {
                 </div>
 
                 {/* Total - Column 5 */}
-                <div className="col-span-2">
+                <div className="col-span-1">
                   <div className="text-left">
                     <p className="text-sm font-semibold text-gray-900">
                       {formatCurrency(order.total)}
@@ -269,8 +273,29 @@ export default function AdminOrdersManagement() {
                   </div>
                 </div>
 
-                {/* Action Button - Column 6 */}
+                {/* Deadline - Column 6 */}
                 <div className="col-span-2">
+                  {(() => {
+                    const deadlineInfo = calculateDeadline(order.createdAt, order.status);
+                    return deadlineInfo.showDeadline ? (
+                      <div 
+                        className="px-2 py-1 rounded-md text-xs font-medium text-center"
+                        style={{
+                          backgroundColor: deadlineInfo.backgroundColor,
+                          color: deadlineInfo.textColor,
+                          border: `1px solid ${deadlineInfo.color}`
+                        }}
+                      >
+                        {deadlineInfo.message}
+                      </div>
+                    ) : (
+                      <div className="text-xs text-gray-400 text-center">-</div>
+                    );
+                  })()}
+                </div>
+
+                {/* Action Button - Column 7 */}
+                <div className="col-span-1">
                   <div className="flex justify-start">
                     <button className="bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-1.5 rounded-md text-xs font-medium transition-colors">
                       OPEN

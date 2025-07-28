@@ -141,6 +141,13 @@ async function handler(req: NextApiRequest, res: NextApiResponse, adminUser: Adm
         updateData.admin_notes = admin_notes;
       }
 
+      // CRITICAL: Mark order as saved by admin for the first time to remove "NEW" flag
+      if (!currentOrder.first_saved_at) {
+        updateData.first_saved_at = new Date().toISOString();
+        updateData.saved_by_admin = adminUser.email;
+        console.log(`🔍 ADMIN-ORDER-UPDATE: Marking order ${orderId} as first saved by admin: ${adminUser.email}`);
+      }
+
       const { error: orderUpdateError } = await supabase
         .from('orders')
         .update(updateData)

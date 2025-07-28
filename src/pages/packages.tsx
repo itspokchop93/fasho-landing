@@ -1728,6 +1728,22 @@ export default function PackagesPage() {
         </div>
         </div>
 
+        {/* Read More indicator */}
+        <div className="text-center mb-12 md:mb-20 relative z-10 mt-16 md:mt-20">
+          <p className="text-sm text-gray-500 mb-2">Read More</p>
+          <div className="flex justify-center -mb-12">
+            <svg 
+              className="w-5 h-5 text-gray-500 animate-bounce" 
+              fill="none" 
+              stroke="currentColor" 
+              viewBox="0 0 24 24"
+              style={{ animationDuration: '2s' }}
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 10l5 5 5-5" />
+            </svg>
+          </div>
+        </div>
+
         {/* Shape Divider Section - Full Width */}
         <div className="w-full">
           {/* Flowing Shape Divider - Curves on Both Sides */}

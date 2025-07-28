@@ -1914,7 +1914,7 @@ export default function Dashboard({ user }: DashboardProps) {
                 }}
               >
                 {/* Modern App-Style Campaign Card */}
-                <div className="bg-white/[0.02] backdrop-blur-xl rounded-[20px] border border-white/[0.08] shadow-xl overflow-hidden hover:shadow-2xl transition-all duration-300">
+                <div className="bg-white/[0.06] backdrop-blur-xl rounded-[20px] border border-white/[0.15] shadow-xl overflow-hidden hover:shadow-2xl transition-all duration-300">
                   {/* Card Header - Mobile Optimized */}
                   <div 
                     className="p-5 cursor-pointer active:scale-[0.98] transition-transform duration-150"
@@ -1975,15 +1975,34 @@ export default function Dashboard({ user }: DashboardProps) {
                       </div>
 
                       {/* Progress Bar - Mobile shows on main card */}
-                      <div className="md:hidden mt-4">
-                        <div className="bg-black/10 rounded-xl p-3 border border-white/10">
-                          <CampaignProgressBar 
-                            orderCreatedAt={order.createdAt}
-                            orderStatus={order.status}
-                            showMessage={true}
-                            size="small"
-                            className="w-full"
-                          />
+                      <div className="md:hidden mt-4 py-1.5">
+                        <div className="relative group">
+                          {/* Outer glow effect */}
+                          <div className="absolute -inset-1 bg-gradient-to-r from-cyan-500/20 via-emerald-500/30 to-purple-500/20 rounded-xl blur-lg opacity-75 group-hover:opacity-100 transition-all duration-300 animate-pulse"></div>
+                          
+                          {/* Main container with liquid glass effect */}
+                          <div className="relative bg-gradient-to-br from-slate-900/90 via-slate-800/70 to-slate-900/90 backdrop-blur-xl rounded-xl p-4 border border-white/10 shadow-2xl overflow-hidden">
+                            {/* Dynamic gradient overlay */}
+                            <div className="absolute inset-0 bg-gradient-to-br from-cyan-500/10 via-transparent to-emerald-500/10 animate-pulse"></div>
+                            
+                            {/* Neon accent lines */}
+                            <div className="absolute top-0 left-0 w-full h-[1px] bg-gradient-to-r from-transparent via-cyan-400/50 to-transparent"></div>
+                            <div className="absolute bottom-0 left-0 w-full h-[1px] bg-gradient-to-r from-transparent via-emerald-400/50 to-transparent"></div>
+                            
+                            {/* Liquid glass refraction effect */}
+                            <div className="absolute inset-0 bg-gradient-to-tr from-white/5 via-transparent to-white/5 opacity-60"></div>
+                            
+                            {/* Content */}
+                            <div className="relative z-10">
+                              <CampaignProgressBar 
+                                orderCreatedAt={order.createdAt}
+                                orderStatus={order.status}
+                                showMessage={true}
+                                size="small"
+                                className="w-full"
+                              />
+                            </div>
+                          </div>
                         </div>
                       </div>
                     </div>
@@ -2027,15 +2046,34 @@ export default function Dashboard({ user }: DashboardProps) {
                         <div className="text-sm text-white/70 mb-3">
                           ${order.total.toFixed(2)} • {new Date(order.createdAt).toLocaleDateString()}
                         </div>
-                        <div className={`bg-black/10 rounded-lg p-3 border border-white/10 ${expandedOrders.has(order.id) ? 'hidden' : 'block'}`}>
-                        <CampaignProgressBar 
-                          orderCreatedAt={order.createdAt}
-                          orderStatus={order.status}
-                          showMessage={true}
-                          size="small"
-                          className="w-full"
-                        />
-                      </div>
+                        <div className={`relative group ${expandedOrders.has(order.id) ? 'hidden' : 'block'}`}>
+                          {/* Outer glow effect */}
+                          <div className="absolute -inset-1 bg-gradient-to-r from-cyan-500/20 via-emerald-500/30 to-purple-500/20 rounded-lg blur-lg opacity-75 group-hover:opacity-100 transition-all duration-300 animate-pulse"></div>
+                          
+                          {/* Main container with liquid glass effect */}
+                          <div className="relative bg-gradient-to-br from-slate-900/90 via-slate-800/70 to-slate-900/90 backdrop-blur-xl rounded-lg p-3 border border-white/10 shadow-2xl overflow-hidden">
+                            {/* Dynamic gradient overlay */}
+                            <div className="absolute inset-0 bg-gradient-to-br from-cyan-500/10 via-transparent to-emerald-500/10 animate-pulse"></div>
+                            
+                            {/* Neon accent lines */}
+                            <div className="absolute top-0 left-0 w-full h-[1px] bg-gradient-to-r from-transparent via-cyan-400/50 to-transparent"></div>
+                            <div className="absolute bottom-0 left-0 w-full h-[1px] bg-gradient-to-r from-transparent via-emerald-400/50 to-transparent"></div>
+                            
+                            {/* Liquid glass refraction effect */}
+                            <div className="absolute inset-0 bg-gradient-to-tr from-white/5 via-transparent to-white/5 opacity-60"></div>
+                            
+                            {/* Content */}
+                            <div className="relative z-10">
+                              <CampaignProgressBar 
+                                orderCreatedAt={order.createdAt}
+                                orderStatus={order.status}
+                                showMessage={true}
+                                size="small"
+                                className="w-full"
+                              />
+                            </div>
+                          </div>
+                        </div>
                     </div>
 
                       {/* Desktop Status & Controls */}
@@ -2084,17 +2122,36 @@ export default function Dashboard({ user }: DashboardProps) {
                 
                   {/* Expanded Order Details */}
                   {expandedOrders.has(order.id) && (
-                    <div className="border-t border-white/10 bg-white/[0.02] backdrop-blur-sm">
+                    <div className="border-t border-white/10 bg-white/[0.06] backdrop-blur-sm">
                       {/* Progress Bar for Expanded View - Mobile Hidden */}
                       <div className="hidden md:block p-5 pb-0">
-                        <div className="bg-black/20 rounded-xl p-4 border border-white/10">
-                        <CampaignProgressBar 
-                          orderCreatedAt={order.createdAt}
-                          orderStatus={order.status}
-                          showMessage={true}
-                          size="medium"
-                        />
-                      </div>
+                        <div className="relative group">
+                          {/* Outer glow effect */}
+                          <div className="absolute -inset-1 bg-gradient-to-r from-cyan-500/20 via-emerald-500/30 to-purple-500/20 rounded-xl blur-lg opacity-75 group-hover:opacity-100 transition-all duration-300 animate-pulse"></div>
+                          
+                          {/* Main container with liquid glass effect */}
+                          <div className="relative bg-gradient-to-br from-slate-900/90 via-slate-800/70 to-slate-900/90 backdrop-blur-xl rounded-xl p-5 border border-white/10 shadow-2xl overflow-hidden">
+                            {/* Dynamic gradient overlay */}
+                            <div className="absolute inset-0 bg-gradient-to-br from-cyan-500/10 via-transparent to-emerald-500/10 animate-pulse"></div>
+                            
+                            {/* Neon accent lines */}
+                            <div className="absolute top-0 left-0 w-full h-[1px] bg-gradient-to-r from-transparent via-cyan-400/50 to-transparent"></div>
+                            <div className="absolute bottom-0 left-0 w-full h-[1px] bg-gradient-to-r from-transparent via-emerald-400/50 to-transparent"></div>
+                            
+                            {/* Liquid glass refraction effect */}
+                            <div className="absolute inset-0 bg-gradient-to-tr from-white/5 via-transparent to-white/5 opacity-60"></div>
+                            
+                            {/* Content */}
+                            <div className="relative z-10">
+                              <CampaignProgressBar 
+                                orderCreatedAt={order.createdAt}
+                                orderStatus={order.status}
+                                showMessage={true}
+                                size="medium"
+                              />
+                            </div>
+                          </div>
+                        </div>
                       </div>
 
                       {/* Track Cards Grid */}
@@ -2151,7 +2208,7 @@ export default function Dashboard({ user }: DashboardProps) {
                           <h4 className="text-white font-semibold mb-4 text-lg">Add-ons</h4>
                           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                                                     {order.addOnItems.map((addon: any, idx: number) => (
-                              <div key={idx} className="flex items-center space-x-3 bg-white/[0.02] rounded-xl p-3 border border-white/10">
+                              <div key={idx} className="flex items-center space-x-3 bg-white/[0.06] rounded-xl p-3 border border-white/[0.15]">
                                 <div className="w-10 h-10 bg-gradient-to-r from-[#59e3a5]/20 to-[#14c0ff]/20 rounded-xl flex items-center justify-center border border-white/10">
                                   <span className="text-lg">{addon.emoji}</span>
                               </div>
@@ -2222,7 +2279,7 @@ export default function Dashboard({ user }: DashboardProps) {
               }}
             >
               {/* Modern App-Style Campaign Card */}
-              <div className="bg-white/[0.02] backdrop-blur-xl rounded-[20px] border border-white/[0.08] shadow-xl overflow-hidden hover:shadow-2xl transition-all duration-300">
+              <div className="bg-white/[0.06] backdrop-blur-xl rounded-[20px] border border-white/[0.15] shadow-xl overflow-hidden hover:shadow-2xl transition-all duration-300">
                 {/* Card Header - Mobile Optimized */}
                 <div 
                   className="p-5 cursor-pointer active:scale-[0.98] transition-transform duration-150"
@@ -2283,15 +2340,34 @@ export default function Dashboard({ user }: DashboardProps) {
                     </div>
 
                     {/* Progress Bar - Mobile shows on main card */}
-                    <div className="md:hidden mt-4">
-                      <div className="bg-black/10 rounded-xl p-3 border border-white/10">
-                        <CampaignProgressBar 
-                          orderCreatedAt={order.createdAt}
-                          orderStatus={order.status}
-                          showMessage={true}
-                          size="small"
-                          className="w-full"
-                        />
+                    <div className="md:hidden mt-4 py-1.5">
+                      <div className="relative group">
+                        {/* Outer glow effect */}
+                        <div className="absolute -inset-1 bg-gradient-to-r from-cyan-500/20 via-emerald-500/30 to-purple-500/20 rounded-xl blur-lg opacity-75 group-hover:opacity-100 transition-all duration-300 animate-pulse"></div>
+                        
+                                                                          {/* Main container with liquid glass effect */}
+                          <div className="relative bg-gradient-to-br from-slate-900/90 via-slate-800/70 to-slate-900/90 backdrop-blur-xl rounded-xl p-4 border border-white/10 shadow-2xl overflow-hidden">
+                          {/* Dynamic gradient overlay */}
+                          <div className="absolute inset-0 bg-gradient-to-br from-cyan-500/10 via-transparent to-emerald-500/10 animate-pulse"></div>
+                          
+                          {/* Neon accent lines */}
+                          <div className="absolute top-0 left-0 w-full h-[1px] bg-gradient-to-r from-transparent via-cyan-400/50 to-transparent"></div>
+                          <div className="absolute bottom-0 left-0 w-full h-[1px] bg-gradient-to-r from-transparent via-emerald-400/50 to-transparent"></div>
+                          
+                          {/* Liquid glass refraction effect */}
+                          <div className="absolute inset-0 bg-gradient-to-tr from-white/5 via-transparent to-white/5 opacity-60"></div>
+                          
+                          {/* Content */}
+                          <div className="relative z-10">
+                            <CampaignProgressBar 
+                              orderCreatedAt={order.createdAt}
+                              orderStatus={order.status}
+                              showMessage={true}
+                              size="small"
+                              className="w-full"
+                            />
+                          </div>
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -2335,15 +2411,34 @@ export default function Dashboard({ user }: DashboardProps) {
                       <div className="text-sm text-white/70 mb-3">
                         ${order.total.toFixed(2)} • {new Date(order.createdAt).toLocaleDateString()}
                       </div>
-                      <div className={`bg-black/10 rounded-lg p-3 border border-white/10 ${expandedOrders.has(order.id) ? 'hidden' : 'block'}`}>
-                      <CampaignProgressBar 
-                        orderCreatedAt={order.createdAt}
-                        orderStatus={order.status}
-                        showMessage={true}
-                        size="small"
-                        className="w-full"
-                      />
-                    </div>
+                      <div className={`relative group ${expandedOrders.has(order.id) ? 'hidden' : 'block'}`}>
+                        {/* Outer glow effect */}
+                        <div className="absolute -inset-1 bg-gradient-to-r from-cyan-500/20 via-emerald-500/30 to-purple-500/20 rounded-lg blur-lg opacity-75 group-hover:opacity-100 transition-all duration-300 animate-pulse"></div>
+                        
+                        {/* Main container with liquid glass effect */}
+                        <div className="relative bg-gradient-to-br from-slate-900/90 via-slate-800/70 to-slate-900/90 backdrop-blur-xl rounded-lg p-3 border border-white/10 shadow-2xl overflow-hidden">
+                          {/* Dynamic gradient overlay */}
+                          <div className="absolute inset-0 bg-gradient-to-br from-cyan-500/10 via-transparent to-emerald-500/10 animate-pulse"></div>
+                          
+                          {/* Neon accent lines */}
+                          <div className="absolute top-0 left-0 w-full h-[1px] bg-gradient-to-r from-transparent via-cyan-400/50 to-transparent"></div>
+                          <div className="absolute bottom-0 left-0 w-full h-[1px] bg-gradient-to-r from-transparent via-emerald-400/50 to-transparent"></div>
+                          
+                          {/* Liquid glass refraction effect */}
+                          <div className="absolute inset-0 bg-gradient-to-tr from-white/5 via-transparent to-white/5 opacity-60"></div>
+                          
+                          {/* Content */}
+                          <div className="relative z-10">
+                            <CampaignProgressBar 
+                              orderCreatedAt={order.createdAt}
+                              orderStatus={order.status}
+                              showMessage={true}
+                              size="small"
+                              className="w-full"
+                            />
+                          </div>
+                        </div>
+                      </div>
                   </div>
 
                     {/* Desktop Status & Controls */}
@@ -2392,17 +2487,36 @@ export default function Dashboard({ user }: DashboardProps) {
               
                 {/* Expanded Order Details */}
                 {expandedOrders.has(order.id) && (
-                  <div className="border-t border-white/10 bg-white/[0.02] backdrop-blur-sm">
+                  <div className="border-t border-white/10 bg-white/[0.06] backdrop-blur-sm">
                     {/* Progress Bar for Expanded View - Mobile Hidden */}
                     <div className="hidden md:block p-5 pb-0">
-                      <div className="bg-black/20 rounded-xl p-4 border border-white/10">
-                      <CampaignProgressBar 
-                        orderCreatedAt={order.createdAt}
-                        orderStatus={order.status}
-                        showMessage={true}
-                        size="medium"
-                      />
-                    </div>
+                      <div className="relative group">
+                        {/* Outer glow effect */}
+                        <div className="absolute -inset-1 bg-gradient-to-r from-cyan-500/20 via-emerald-500/30 to-purple-500/20 rounded-xl blur-lg opacity-75 group-hover:opacity-100 transition-all duration-300 animate-pulse"></div>
+                        
+                        {/* Main container with liquid glass effect */}
+                        <div className="relative bg-gradient-to-br from-slate-900/90 via-slate-800/70 to-slate-900/90 backdrop-blur-xl rounded-xl p-5 border border-white/10 shadow-2xl overflow-hidden">
+                          {/* Dynamic gradient overlay */}
+                          <div className="absolute inset-0 bg-gradient-to-br from-cyan-500/10 via-transparent to-emerald-500/10 animate-pulse"></div>
+                          
+                          {/* Neon accent lines */}
+                          <div className="absolute top-0 left-0 w-full h-[1px] bg-gradient-to-r from-transparent via-cyan-400/50 to-transparent"></div>
+                          <div className="absolute bottom-0 left-0 w-full h-[1px] bg-gradient-to-r from-transparent via-emerald-400/50 to-transparent"></div>
+                          
+                          {/* Liquid glass refraction effect */}
+                          <div className="absolute inset-0 bg-gradient-to-tr from-white/5 via-transparent to-white/5 opacity-60"></div>
+                          
+                          {/* Content */}
+                          <div className="relative z-10">
+                            <CampaignProgressBar 
+                              orderCreatedAt={order.createdAt}
+                              orderStatus={order.status}
+                              showMessage={true}
+                              size="medium"
+                            />
+                          </div>
+                        </div>
+                      </div>
                     </div>
 
                     {/* Track Cards Grid */}
@@ -2459,7 +2573,7 @@ export default function Dashboard({ user }: DashboardProps) {
                         <h4 className="text-white font-semibold mb-4 text-lg">Add-ons</h4>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                                                   {order.addOnItems.map((addon: any, idx: number) => (
-                            <div key={idx} className="flex items-center space-x-3 bg-white/[0.02] rounded-xl p-3 border border-white/10">
+                            <div key={idx} className="flex items-center space-x-3 bg-white/[0.06] rounded-xl p-3 border border-white/[0.15]">
                               <div className="w-10 h-10 bg-gradient-to-r from-[#59e3a5]/20 to-[#14c0ff]/20 rounded-xl flex items-center justify-center border border-white/10">
                                 <span className="text-lg">{addon.emoji}</span>
                             </div>

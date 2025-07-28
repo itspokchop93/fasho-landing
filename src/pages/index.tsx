@@ -5168,7 +5168,7 @@ export default function Home() {
                       <img 
                         src="/kendr.jpg" 
                         alt="Kendrick Lamar - FASHO Success Story" 
-                        className="w-full aspect-square object-cover object-top transition-transform duration-700 group-hover:scale-105"
+                        className="w-full aspect-square lg:aspect-[3/4] object-cover object-top transition-transform duration-700 group-hover:scale-105"
                         onError={(e) => {
                           e.currentTarget.src = "/fasho-logo-wide.png";
                         }}

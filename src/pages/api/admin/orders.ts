@@ -91,8 +91,9 @@ async function handler(req: NextApiRequest, res: NextApiResponse, adminUser: Adm
 
     // Format the response
     const formattedOrders = orders?.map((order: any) => {
-      // Determine if order is "new" (not viewed by admin yet)
-      const isNewOrder = !order.first_viewed_at;
+      // Determine if order is "new" (not saved by admin yet)
+      // An order is considered "new" if it hasn't been saved by admin yet
+      const isNewOrder = !order.first_saved_at;
 
       return {
         id: order.id,
@@ -108,7 +109,9 @@ async function handler(req: NextApiRequest, res: NextApiResponse, adminUser: Adm
         updatedAt: order.updated_at,
         isNewOrder,
         firstViewedAt: order.first_viewed_at,
+        firstSavedAt: order.first_saved_at,
         viewedByAdmin: order.viewed_by_admin,
+        savedByAdmin: order.saved_by_admin,
         adminNotes: order.admin_notes,
         billingInfo: order.billing_info,
         paymentData: order.payment_data,
