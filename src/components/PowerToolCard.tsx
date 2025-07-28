@@ -10,6 +10,11 @@ export default function PowerToolCard({ tool, className = '' }: PowerToolCardPro
   // Generate unique IDs for this card instance to avoid conflicts
   const cardId = React.useMemo(() => Math.random().toString(36).substr(2, 9), [])
   
+  // Format rating to show decimals only when needed
+  const formatRating = (rating: number) => {
+    return rating % 1 === 0 ? rating.toString() : rating.toFixed(1)
+  }
+  
   const renderStarRating = (rating: number) => {
     const stars = []
     const fullStars = Math.floor(rating)
@@ -114,7 +119,7 @@ export default function PowerToolCard({ tool, className = '' }: PowerToolCardPro
             {renderStarRating(tool.stars)}
           </div>
           <span className="text-gray-400 text-xs font-medium">
-            ({tool.stars.toFixed(1)}/5)
+            ({formatRating(tool.stars)}/5)
           </span>
         </div>
 

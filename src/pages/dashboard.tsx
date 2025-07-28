@@ -4719,6 +4719,7 @@ Thank you,
                     {activeTab === 'dashboard' && 'Dashboard'}
                     {activeTab === 'campaigns' && 'Campaigns'}
                     {activeTab === 'curator-connect' && 'Curator Connect+'}
+                    {activeTab === 'power-tools' && 'Power Tools'}
                     {activeTab === 'packages' && 'Packages'}
                     {activeTab === 'faq' && 'Frequently Asked Questions'}
                     {activeTab === 'contact' && 'Contact'}
@@ -4728,6 +4729,7 @@ Thank you,
                     {activeTab === 'dashboard' && 'Welcome back! Here\'s your campaign overview.'}
                     {activeTab === 'campaigns' && 'Manage and monitor all your music campaigns.'}
                     {activeTab === 'curator-connect' && 'Connect with Spotify playlist curators and grow your audience.'}
+                    {activeTab === 'power-tools' && 'These are the battle-tested tools that our top performing clients use. From beat making to social media growth, these are the essentials that help artists dominate every aspect of their music careers.'}
                     {activeTab === 'packages' && 'Choose the perfect plan to launch your music career.'}
                     {activeTab === 'faq' && 'Get the answers that you need, when you need them.'}
                     {activeTab === 'contact' && 'Get in touch with our support team.'}

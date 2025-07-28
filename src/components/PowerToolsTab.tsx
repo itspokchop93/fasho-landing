@@ -74,12 +74,12 @@ export default function PowerToolsTab({ className = '' }: PowerToolsTabProps) {
 
   return (
     <div className={`space-y-6 pb-8 ${className}`}>
-      {/* Header */}
-      <div className="flex items-center justify-between">
+      {/* Header - Mobile Only */}
+      <div className="flex items-center justify-between md:hidden">
         <div>
           <h2 className="text-2xl font-bold text-white mb-2">Power Tools</h2>
           <p className="text-gray-400 text-sm">
-            Battle-tested tools that our top performing clients use to dominate every aspect of their music careers.
+            These are the battle-tested tools that our top performing clients use. From beat making to social media growth, these are the essentials that help artists dominate every aspect of their music careers.
           </p>
         </div>
       </div>
