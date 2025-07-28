@@ -1,55 +1,85 @@
 const bcrypt = require('bcryptjs');
-const crypto = require('crypto');
 
-console.log('🔐 FASHO Admin Password Hasher');
-console.log('================================');
-console.log('This script will generate a secure bcrypt hash of your admin password.\n');
+const subAdminCredentials = [
+  { email: 'subadmin1@ajjak.com', password: '@Sub1!@123!' },
+  { email: 'subadmin2@ajjak.com', password: '!@SubAdmin2!123@' },
+  { email: 'subadmin3@ajjak.com', password: '@SubbAd3!@123!' },
+  { email: 'subadmin4@ajjak.com', password: 'Sub@Admin4@@!!123' },
+  { email: 'subadmin5@ajjak.com', password: 'sUbaDmin5@1!!@' }
+];
 
-// Get command line arguments
-const args = process.argv.slice(2);
-
-if (args.length < 2) {
-  console.log('Usage: node scripts/hash-password.js <email> <password>');
-  console.log('Example: node scripts/hash-password.js admin@fasho.pro mySecurePassword123');
-  console.log('\n🔒 Security Note: This is for development only. In production, use a more secure method.');
-  process.exit(1);
+async function hashAllPasswords() {
+  console.log('🔐 Generating Sub-Admin Password Hashes');
+  console.log('=====================================\n');
+  
+  let vercelEnvVars = '';
+  let localEnvVars = '';
+  
+  for (const cred of subAdminCredentials) {
+    try {
+      const hash = await bcrypt.hash(cred.password, 12);
+      const envPrefix = cred.email.split('@')[0].toUpperCase().replace(/[^A-Z0-9]/g, '_');
+      
+      console.log(`Email: ${cred.email}`);
+      console.log(`Hash: ${hash}\n`);
+      
+      // For Vercel (production)
+      vercelEnvVars += `SUBADMIN_${envPrefix}_EMAIL=${cred.email}\n`;
+      vercelEnvVars += `SUBADMIN_${envPrefix}_PASSWORD_HASH=${hash}\n`;
+      
+      // For local .env (with escaped $)
+      const escapedHash = hash.replace(/\$/g, '\\$');
+      localEnvVars += `SUBADMIN_${envPrefix}_EMAIL=${cred.email}\n`;
+      localEnvVars += `SUBADMIN_${envPrefix}_PASSWORD_HASH=${escapedHash}\n`;
+      
+    } catch (error) {
+      console.error(`Error hashing password for ${cred.email}:`, error);
+    }
+  }
+  
+  console.log('\n🚀 FOR VERCEL ENVIRONMENT VARIABLES:');
+  console.log('===================================');
+  console.log(vercelEnvVars);
+  
+  console.log('\n🏠 FOR LOCAL .ENV FILE:');
+  console.log('=======================');
+  console.log(localEnvVars);
+  
+  console.log('\n📝 ADDITIONAL REQUIRED ENV VARIABLES:');
+  console.log('=====================================');
+  console.log('JWT_SECRET=6de104ca8e007c4b295d44972332824f9e254ec270e55c540a7f6aa65dbf92e824e24494a580a37a321857b62086b3b80e00769ff50ee159c5633964fd4146ca');
 }
 
-const email = args[0];
-const password = args[1];
-
-if (!email || !password) {
-  console.log('❌ Both email and password are required.');
-  process.exit(1);
-}
-
-if (password.length < 8) {
-  console.log('❌ Password must be at least 8 characters long.');
-  process.exit(1);
-}
-
-console.log('🔄 Generating secure hash...');
-
-// Generate hash with salt rounds of 12 (industry standard)
-const saltRounds = 12;
-const hash = bcrypt.hashSync(password, saltRounds);
-
-// Generate JWT secret
-const jwtSecret = crypto.randomBytes(64).toString('hex');
-
-console.log('\n✅ Hash generated successfully!');
-console.log('\n📝 Add these lines to your .env.local file:');
-console.log('=' .repeat(60));
-console.log(`ADMIN_EMAIL=${email}`);
-console.log(`ADMIN_PASSWORD_HASH=${hash}`);
-console.log(`JWT_SECRET=${jwtSecret}`);
-console.log('=' .repeat(60));
-console.log('\n🔒 Security Notes:');
-console.log('- Never share these values');
-console.log('- Never commit .env.local to git');
-console.log('- The hash is secure even if exposed');
-console.log('- JWT_SECRET should be unique and random');
-console.log('- Delete this command from your shell history');
-
-console.log('\n🧹 Clear shell history with:');
-console.log('history -d $(history 1 | awk \'{print $1}\')'); 
+// If command line arguments are provided, use old method
+if (process.argv.length >= 4) {
+  const email = process.argv[2];
+  const password = process.argv[3];
+  
+  async function hashPassword() {
+    try {
+      const hash = await bcrypt.hash(password, 12);
+      console.log(`\nEmail: ${email}`);
+      console.log(`Password: ${password}`);
+      console.log(`Hash: ${hash}`);
+      
+      // For Vercel (production)
+      console.log(`\nFor Vercel environment variables:`);
+      console.log(`SUBADMIN_${email.split('@')[0].toUpperCase().replace(/[^A-Z0-9]/g, '_')}_EMAIL=${email}`);
+      console.log(`SUBADMIN_${email.split('@')[0].toUpperCase().replace(/[^A-Z0-9]/g, '_')}_PASSWORD_HASH=${hash}`);
+      
+      // For local .env (with escaped $)
+      const escapedHash = hash.replace(/\$/g, '\\$');
+      console.log(`\nFor local .env file:`);
+      console.log(`SUBADMIN_${email.split('@')[0].toUpperCase().replace(/[^A-Z0-9]/g, '_')}_EMAIL=${email}`);
+      console.log(`SUBADMIN_${email.split('@')[0].toUpperCase().replace(/[^A-Z0-9]/g, '_')}_PASSWORD_HASH=${escapedHash}`);
+      
+    } catch (error) {
+      console.error('Error hashing password:', error);
+    }
+  }
+  
+  hashPassword();
+} else {
+  // Hash all sub-admin passwords
+  hashAllPasswords();
+} 

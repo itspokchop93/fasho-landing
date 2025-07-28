@@ -1,6 +1,6 @@
-import type { NextApiRequest, NextApiResponse } from 'next';
+import { NextApiRequest, NextApiResponse } from 'next';
 import { createAdminClient } from '../../../utils/supabase/server';
-import { requireAdminAuth, AdminUser } from '../../../utils/admin/auth';
+import { requireAdminRole, AdminUser } from '../../../utils/admin/auth';
 
 async function handler(req: NextApiRequest, res: NextApiResponse, adminUser: AdminUser) {
   if (req.method !== 'GET') {
@@ -150,4 +150,4 @@ async function handler(req: NextApiRequest, res: NextApiResponse, adminUser: Adm
   }
 }
 
-export default requireAdminAuth(handler);
+export default requireAdminRole('admin')(handler);

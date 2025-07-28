@@ -1,6 +1,6 @@
 import { NextApiRequest, NextApiResponse } from 'next'
 import { createAdminClient } from '../../../utils/supabase/server'
-import { requireAdminAuth, AdminUser } from '../../../utils/admin/auth'
+import { requireAdminRole, AdminUser } from '../../../utils/admin/auth'
 
 async function handler(req: NextApiRequest, res: NextApiResponse, adminUser: AdminUser) {
   const supabase = createAdminClient()
@@ -161,4 +161,4 @@ async function updateEmailSettings(supabase: any, req: NextApiRequest, res: Next
   }
 }
 
-export default requireAdminAuth(handler);
+export default requireAdminRole('admin')(handler);

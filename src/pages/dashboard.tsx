@@ -1925,9 +1925,9 @@ export default function Dashboard({ user }: DashboardProps) {
                       <div className="flex items-start space-x-4 mb-4">
                         {/* Artwork - Compact size for mobile */}
                         <div className="relative flex-shrink-0">
-                          <div className="w-[80px] h-[80px] rounded-[16px] overflow-hidden bg-black/20 shadow-lg">
+                          <div className="w-[80px] h-[80px] rounded-[16px] bg-black/20 shadow-lg relative">
                             {order.items && order.items.length > 0 ? (
-                              <div className={`w-full h-full ${order.items.length === 1 ? '' : 'grid grid-cols-2 gap-[1px]'}`}> 
+                              <div className={`w-full h-full rounded-[16px] overflow-hidden ${order.items.length === 1 ? '' : 'grid grid-cols-2 gap-[1px]'}`}> 
                                 {order.items.slice(0, 4).map((item: any, idx: number) => (
                                   <div key={idx} className="bg-black/20 overflow-hidden">
                                     <img 
@@ -1939,7 +1939,7 @@ export default function Dashboard({ user }: DashboardProps) {
                                 ))}
                               </div>
                             ) : (
-                              <div className="w-full h-full bg-black/20 flex items-center justify-center">
+                              <div className="w-full h-full bg-black/20 flex items-center justify-center rounded-[16px]">
                                 <span className="text-white/60 text-lg">🎵</span>
                               </div>
                             )}
@@ -1947,7 +1947,7 @@ export default function Dashboard({ user }: DashboardProps) {
                           
                           {/* Track Count Badge */}
                           {order.items && order.items.length > 1 && (
-                            <div className="absolute -top-2 -right-2 w-6 h-6 bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] rounded-full flex items-center justify-center shadow-lg">
+                            <div className="absolute -top-2 -right-2 w-6 h-6 bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] rounded-full flex items-center justify-center shadow-lg z-20">
                               <span className="text-white text-xs font-bold">{order.items.length}</span>
                             </div>
                           )}
@@ -2011,9 +2011,9 @@ export default function Dashboard({ user }: DashboardProps) {
                     <div className="hidden md:grid md:grid-cols-12 gap-4 items-center">
                       {/* Desktop Artwork */}
                       <div className="md:col-span-2 flex justify-center">
-                        <div className="w-[110px] h-[110px] rounded-xl overflow-hidden bg-black/20 shadow-lg relative">
+                        <div className="w-[110px] h-[110px] rounded-xl bg-black/20 shadow-lg relative">
                       {order.items && order.items.length > 0 ? (
-                        <div className={`w-full h-full ${order.items.length === 1 ? '' : 'grid grid-cols-2 grid-rows-2 gap-1'}`}> 
+                        <div className={`w-full h-full rounded-xl overflow-hidden ${order.items.length === 1 ? '' : 'grid grid-cols-2 grid-rows-2 gap-1'}`}> 
                           {order.items.slice(0, 4).map((item: any, idx: number) => (
                                 <div key={idx} className={`${getArtworkSize(Math.min(order.items.length, 4))} overflow-hidden bg-black/20`}>
                               <img 
@@ -2025,13 +2025,13 @@ export default function Dashboard({ user }: DashboardProps) {
                           ))}
                         </div>
                       ) : (
-                            <div className="w-full h-full bg-black/20 flex items-center justify-center">
+                            <div className="w-full h-full bg-black/20 flex items-center justify-center rounded-xl">
                               <span className="text-white/60 text-lg">🎵</span>
                         </div>
                       )}
                       
                       {order.items && order.items.length > 4 && (
-                            <div className="absolute -top-2 -right-2 w-7 h-7 bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] rounded-full flex items-center justify-center border-2 border-gray-900 shadow-lg">
+                            <div className="absolute -top-2 -right-2 w-7 h-7 bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] rounded-full flex items-center justify-center border-2 border-gray-900 shadow-lg z-20">
                               <span className="text-white text-xs font-bold">+{order.items.length - 4}</span>
                         </div>
                       )}
@@ -2290,9 +2290,9 @@ export default function Dashboard({ user }: DashboardProps) {
                     <div className="flex items-start space-x-4 mb-4">
                       {/* Artwork - Compact size for mobile */}
                       <div className="relative flex-shrink-0">
-                        <div className="w-[80px] h-[80px] rounded-[16px] overflow-hidden bg-black/20 shadow-lg">
+                        <div className="w-[80px] h-[80px] rounded-[16px] bg-black/20 shadow-lg relative">
                           {order.items && order.items.length > 0 ? (
-                            <div className={`w-full h-full ${order.items.length === 1 ? '' : 'grid grid-cols-2 gap-[1px]'}`}> 
+                            <div className={`w-full h-full rounded-[16px] overflow-hidden ${order.items.length === 1 ? '' : 'grid grid-cols-2 gap-[1px]'}`}> 
                               {order.items.slice(0, 4).map((item: any, idx: number) => (
                                 <div key={idx} className="bg-black/20 overflow-hidden">
                                   <img 
@@ -2304,7 +2304,7 @@ export default function Dashboard({ user }: DashboardProps) {
                               ))}
                             </div>
                           ) : (
-                            <div className="w-full h-full bg-black/20 flex items-center justify-center">
+                            <div className="w-full h-full bg-black/20 flex items-center justify-center rounded-[16px]">
                               <span className="text-white/60 text-lg">🎵</span>
                             </div>
                           )}
@@ -2312,7 +2312,7 @@ export default function Dashboard({ user }: DashboardProps) {
                         
                         {/* Track Count Badge */}
                         {order.items && order.items.length > 1 && (
-                          <div className="absolute -top-2 -right-2 w-6 h-6 bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] rounded-full flex items-center justify-center shadow-lg">
+                          <div className="absolute -top-2 -right-2 w-6 h-6 bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] rounded-full flex items-center justify-center shadow-lg z-20">
                             <span className="text-white text-xs font-bold">{order.items.length}</span>
                           </div>
                         )}
@@ -2376,9 +2376,9 @@ export default function Dashboard({ user }: DashboardProps) {
                   <div className="hidden md:grid md:grid-cols-12 gap-4 items-center">
                     {/* Desktop Artwork */}
                     <div className="md:col-span-2 flex justify-center">
-                      <div className="w-[110px] h-[110px] rounded-xl overflow-hidden bg-black/20 shadow-lg relative">
+                      <div className="w-[110px] h-[110px] rounded-xl bg-black/20 shadow-lg relative">
                     {order.items && order.items.length > 0 ? (
-                      <div className={`w-full h-full ${order.items.length === 1 ? '' : 'grid grid-cols-2 grid-rows-2 gap-1'}`}> 
+                      <div className={`w-full h-full rounded-xl overflow-hidden ${order.items.length === 1 ? '' : 'grid grid-cols-2 grid-rows-2 gap-1'}`}> 
                         {order.items.slice(0, 4).map((item: any, idx: number) => (
                               <div key={idx} className={`${getArtworkSize(Math.min(order.items.length, 4))} overflow-hidden bg-black/20`}>
                             <img 
@@ -2390,13 +2390,13 @@ export default function Dashboard({ user }: DashboardProps) {
                         ))}
                       </div>
                     ) : (
-                          <div className="w-full h-full bg-black/20 flex items-center justify-center">
+                          <div className="w-full h-full bg-black/20 flex items-center justify-center rounded-xl">
                             <span className="text-white/60 text-lg">🎵</span>
                       </div>
                     )}
                     
                     {order.items && order.items.length > 4 && (
-                          <div className="absolute -top-2 -right-2 w-7 h-7 bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] rounded-full flex items-center justify-center border-2 border-gray-900 shadow-lg">
+                          <div className="absolute -top-2 -right-2 w-7 h-7 bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] rounded-full flex items-center justify-center border-2 border-gray-900 shadow-lg z-20">
                             <span className="text-white text-xs font-bold">+{order.items.length - 4}</span>
                       </div>
                     )}

@@ -1,6 +1,6 @@
 import { NextApiRequest, NextApiResponse } from 'next'
 import { createAdminClient } from '../../../utils/supabase/server'
-import { requireAdminAuth, AdminUser } from '../../../utils/admin/auth'
+import { requireAdminRole, AdminUser } from '../../../utils/admin/auth'
 
 interface CouponCode {
   id: string;
@@ -352,4 +352,4 @@ async function deleteCoupon(supabase: any, req: NextApiRequest, res: NextApiResp
   }
 }
 
-export default requireAdminAuth(handler) 
+export default requireAdminRole('admin')(handler) 

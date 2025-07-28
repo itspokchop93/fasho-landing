@@ -1,5 +1,5 @@
 import { NextApiRequest, NextApiResponse } from 'next'
-import { requireAdminAuth, AdminUser } from '../../../utils/admin/auth'
+import { requireAdminRole, AdminUser } from '../../../utils/admin/auth'
 import cache from '../../../utils/cache'
 
 async function handler(req: NextApiRequest, res: NextApiResponse, adminUser: AdminUser) {
@@ -90,4 +90,4 @@ async function clearCache(req: NextApiRequest, res: NextApiResponse) {
   }
 }
 
-export default requireAdminAuth(handler) 
+export default requireAdminRole('admin')(handler) 
