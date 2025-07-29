@@ -629,57 +629,72 @@ export default function Dashboard({ user }: DashboardProps) {
     return Math.floor(realisticNumber);
   };
 
+  // Static package values for projected streams calculation
+  const PACKAGE_PROJECTED_STREAMS = {
+    'LEGENDARY': 138229,
+    'UNSTOPPABLE': 47891,
+    'DOMINATE': 19447,
+    'MOMENTUM': 8012,
+    'BREAKTHROUGH': 3473,
+    'TEST CAMPAIGN': 100 // For testing purposes
+  };
+
   // Calculate total estimated plays from orders in the last 30 days
   const calculateTotalPlays = () => {
-    const thirtyDaysAgo = new Date()
-    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30)
+    const today = new Date()
+    today.setHours(23, 59, 59, 999) // End of today
     
+    const thirtyDaysAgo = new Date()
+    thirtyDaysAgo.setDate(today.getDate() - 30)
+    thirtyDaysAgo.setHours(0, 0, 0, 0) // Start of 30 days ago
+    
+    // Filter orders from the last 30 days only (robust date filtering)
     const recentOrders = orders.filter(order => {
       const orderDate = new Date(order.createdAt)
-      return orderDate >= thirtyDaysAgo
+      return orderDate >= thirtyDaysAgo && orderDate <= today
     })
     
     console.log('📊 PROJECTED PLAYS: Calculating total plays for', recentOrders.length, 'recent orders (last 30 days)')
+    console.log('📊 PROJECTED PLAYS: Date range:', thirtyDaysAgo.toDateString(), 'to', today.toDateString())
     
     let totalPlays = 0
+    let processedItems = 0
+    let skippedItems = 0
+    
     recentOrders.forEach(order => {
+      console.log(`📊 PROJECTED PLAYS: Processing order from ${new Date(order.createdAt).toDateString()}`)
+      
       if (order.items && order.items.length > 0) {
         order.items.forEach((item: any) => {
-          // Parse the new range format (e.g., "18,000 - 20,000 Streams")
-          const playsNumbers = item.package.plays.match(/[\d,]+/g)
+          // Robust package name extraction and matching
+          const packageName = item.package?.name?.toUpperCase()?.trim()
           
-          if (playsNumbers && playsNumbers.length >= 1) {
-            // Convert comma-separated numbers to integers
-            const minPlays = parseInt(playsNumbers[0].replace(/,/g, ''))
-            const maxPlays = playsNumbers.length > 1 ? parseInt(playsNumbers[1].replace(/,/g, '')) : minPlays
-            
-            // Generate realistic numbers for min and max, then take their average
-            const realisticMinPlays = generateRealisticNumber(minPlays)
-            const realisticMaxPlays = generateRealisticNumber(maxPlays)
-            const realisticAvgPlays = Math.round((realisticMinPlays + realisticMaxPlays) / 2)
-            
-            console.log(`📊 PROJECTED PLAYS: Package "${item.package.plays}" -> Original Range: ${minPlays.toLocaleString()} - ${maxPlays.toLocaleString()} -> Realistic Range: ${realisticMinPlays.toLocaleString()} - ${realisticMaxPlays.toLocaleString()} -> Realistic Average: ${realisticAvgPlays.toLocaleString()}`)
-            totalPlays += realisticAvgPlays
+          if (!packageName) {
+            console.warn(`📊 PROJECTED PLAYS: Invalid package name in order item:`, item)
+            skippedItems++
+            return
+          }
+          
+          const packagePlays = PACKAGE_PROJECTED_STREAMS[packageName as keyof typeof PACKAGE_PROJECTED_STREAMS]
+          
+          if (packagePlays) {
+            console.log(`📊 PROJECTED PLAYS: Package "${packageName}" -> Static Value: ${packagePlays.toLocaleString()} streams`)
+            totalPlays += packagePlays
+            processedItems++
           } else {
-            // Fallback for old format (e.g., "1k Plays")
-            const playsMatch = item.package.plays.match(/(\d+)k?\s*Plays/i)
-            if (playsMatch) {
-              let plays = parseInt(playsMatch[1])
-              if (item.package.plays.toLowerCase().includes('k')) {
-                plays *= 1000
-              }
-              const realisticPlays = generateRealisticNumber(plays)
-              console.log(`📊 PROJECTED PLAYS: Old format "${item.package.plays}" -> Original: ${plays.toLocaleString()} -> Realistic: ${realisticPlays.toLocaleString()}`)
-              totalPlays += realisticPlays
-            } else {
-              console.log(`📊 PROJECTED PLAYS: Could not parse package plays: "${item.package.plays}"`)
-            }
+            console.warn(`📊 PROJECTED PLAYS: Unknown package "${packageName}" - skipping. Available packages:`, Object.keys(PACKAGE_PROJECTED_STREAMS))
+            skippedItems++
           }
         })
       }
     })
     
-    console.log('📊 PROJECTED PLAYS: Total realistic estimated plays:', totalPlays.toLocaleString())
+    console.log('📊 PROJECTED PLAYS: CALCULATION SUMMARY:')
+    console.log(`📊 PROJECTED PLAYS: - Orders processed: ${recentOrders.length}`)
+    console.log(`📊 PROJECTED PLAYS: - Items processed: ${processedItems}`)
+    console.log(`📊 PROJECTED PLAYS: - Items skipped: ${skippedItems}`)
+    console.log(`📊 PROJECTED PLAYS: - Total projected streams: ${totalPlays.toLocaleString()}`)
+    
     return totalPlays
   }
 
@@ -932,6 +947,46 @@ export default function Dashboard({ user }: DashboardProps) {
     } else {
       return 'w-full h-full'; // Multiple images each take 1 grid square
     }
+  };
+
+  // Adaptive artwork layout helpers
+  const getArtworkContainerClass = (itemCount: number) => {
+    if (itemCount === 1) {
+      return ''; // No grid for single image
+    } else if (itemCount === 2) {
+      return 'grid grid-cols-2 gap-[1px]'; // 2 images side by side
+    } else if (itemCount === 3) {
+      return 'grid grid-rows-2 gap-[1px]'; // 2 rows layout
+    } else {
+      return 'grid grid-cols-2 grid-rows-2 gap-1'; // 2x2 grid for 4+ images
+    }
+  };
+
+  const getArtworkItemClass = (itemCount: number, itemIndex: number) => {
+    if (itemCount === 1) {
+      return 'w-full h-full'; // Single image takes full space
+    } else if (itemCount === 2) {
+      return 'w-full h-full'; // Each image takes half width
+    } else if (itemCount === 3) {
+      if (itemIndex < 2) {
+        return 'w-full h-full'; // First 2 images in row 1, each takes half
+      } else {
+        return 'w-full h-full col-span-2'; // 3rd image spans full width in row 2
+      }
+    } else {
+      return 'w-full h-full'; // 2x2 grid items
+    }
+  };
+
+  const getArtworkRowClass = (itemCount: number, itemIndex: number) => {
+    if (itemCount === 3) {
+      if (itemIndex < 2) {
+        return 'grid grid-cols-2 gap-[1px]'; // First row with 2 columns
+      } else {
+        return 'grid grid-cols-1'; // Second row with 1 column (full width)
+      }
+    }
+    return '';
   };
 
   // Get Y-axis labels for the chart with K notation
@@ -2292,16 +2347,41 @@ export default function Dashboard({ user }: DashboardProps) {
                       <div className="relative flex-shrink-0">
                         <div className="w-[80px] h-[80px] rounded-[16px] bg-black/20 shadow-lg relative">
                           {order.items && order.items.length > 0 ? (
-                            <div className={`w-full h-full rounded-[16px] overflow-hidden ${order.items.length === 1 ? '' : 'grid grid-cols-2 gap-[1px]'}`}> 
-                              {order.items.slice(0, 4).map((item: any, idx: number) => (
-                                <div key={idx} className="bg-black/20 overflow-hidden">
-                                  <img 
-                                    src={item.track.imageUrl} 
-                                    alt={item.track.title}
-                                    className="w-full h-full object-cover"
-                                  />
-                                </div>
-                              ))}
+                            <div className={`w-full h-full rounded-[16px] overflow-hidden ${getArtworkContainerClass(Math.min(order.items.length, 4))}`}> 
+                              {order.items.length === 3 ? (
+                                // Special handling for 3 items: 2 on top, 1 on bottom
+                                <>
+                                  <div className="grid grid-cols-2 gap-[1px]">
+                                    {order.items.slice(0, 2).map((item: any, idx: number) => (
+                                      <div key={idx} className="bg-black/20 overflow-hidden">
+                                        <img 
+                                          src={item.track.imageUrl} 
+                                          alt={item.track.title}
+                                          className="w-full h-full object-cover"
+                                        />
+                                      </div>
+                                    ))}
+                                  </div>
+                                  <div className="bg-black/20 overflow-hidden">
+                                    <img 
+                                      src={order.items[2].track.imageUrl} 
+                                      alt={order.items[2].track.title}
+                                      className="w-full h-full object-cover"
+                                    />
+                                  </div>
+                                </>
+                              ) : (
+                                // Standard handling for 1, 2, or 4+ items
+                                order.items.slice(0, 4).map((item: any, idx: number) => (
+                                  <div key={idx} className={`${getArtworkItemClass(Math.min(order.items.length, 4), idx)} bg-black/20 overflow-hidden`}>
+                                    <img 
+                                      src={item.track.imageUrl} 
+                                      alt={item.track.title}
+                                      className="w-full h-full object-cover"
+                                    />
+                                  </div>
+                                ))
+                              )}
                             </div>
                           ) : (
                             <div className="w-full h-full bg-black/20 flex items-center justify-center rounded-[16px]">
@@ -2378,16 +2458,41 @@ export default function Dashboard({ user }: DashboardProps) {
                     <div className="md:col-span-2 flex justify-center">
                       <div className="w-[110px] h-[110px] rounded-xl bg-black/20 shadow-lg relative">
                     {order.items && order.items.length > 0 ? (
-                      <div className={`w-full h-full rounded-xl overflow-hidden ${order.items.length === 1 ? '' : 'grid grid-cols-2 grid-rows-2 gap-1'}`}> 
-                        {order.items.slice(0, 4).map((item: any, idx: number) => (
-                              <div key={idx} className={`${getArtworkSize(Math.min(order.items.length, 4))} overflow-hidden bg-black/20`}>
-                            <img 
-                              src={item.track.imageUrl} 
-                              alt={item.track.title}
-                              className="w-full h-full object-cover"
-                            />
-                          </div>
-                        ))}
+                      <div className={`w-full h-full rounded-xl overflow-hidden ${getArtworkContainerClass(Math.min(order.items.length, 4))}`}> 
+                        {order.items.length === 3 ? (
+                          // Special handling for 3 items: 2 on top, 1 on bottom
+                          <>
+                            <div className="grid grid-cols-2 gap-1">
+                              {order.items.slice(0, 2).map((item: any, idx: number) => (
+                                <div key={idx} className="bg-black/20 overflow-hidden">
+                                  <img 
+                                    src={item.track.imageUrl} 
+                                    alt={item.track.title}
+                                    className="w-full h-full object-cover"
+                                  />
+                                </div>
+                              ))}
+                            </div>
+                            <div className="bg-black/20 overflow-hidden">
+                              <img 
+                                src={order.items[2].track.imageUrl} 
+                                alt={order.items[2].track.title}
+                                className="w-full h-full object-cover"
+                              />
+                            </div>
+                          </>
+                        ) : (
+                          // Standard handling for 1, 2, or 4+ items
+                          order.items.slice(0, 4).map((item: any, idx: number) => (
+                            <div key={idx} className={`${getArtworkItemClass(Math.min(order.items.length, 4), idx)} overflow-hidden bg-black/20`}>
+                              <img 
+                                src={item.track.imageUrl} 
+                                alt={item.track.title}
+                                className="w-full h-full object-cover"
+                              />
+                            </div>
+                          ))
+                        )}
                       </div>
                     ) : (
                           <div className="w-full h-full bg-black/20 flex items-center justify-center rounded-xl">

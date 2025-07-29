@@ -77,6 +77,58 @@ const ORDER_STATUSES = [
   { value: 'cancelled', label: 'Cancelled', color: 'bg-red-500', textColor: 'text-red-800', bgColor: 'bg-red-100' }
 ];
 
+// Available packages for admin features
+const AVAILABLE_PACKAGES = [
+  {
+    id: "test-campaign",
+    name: "TEST CAMPAIGN",
+    price: 0.10,
+    plays: "Test Package",
+    placements: "Payment Testing Only",
+    description: "For testing live payment processing"
+  },
+  {
+    id: "legendary",
+    name: "LEGENDARY",
+    price: 479,
+    plays: "125K - 150K Streams",
+    placements: "375 - 400 Playlist Pitches",
+    description: ""
+  },
+  {
+    id: "unstoppable",
+    name: "UNSTOPPABLE",
+    price: 259,
+    plays: "45K - 50K Streams",
+    placements: "150 - 170 Playlist Pitches",
+    description: ""
+  },
+  {
+    id: "dominate",
+    name: "DOMINATE",
+    price: 149,
+    plays: "18K - 20K Streams",
+    placements: "60 - 70 Playlist Pitches",
+    description: ""
+  },
+  {
+    id: "momentum",
+    name: "MOMENTUM",
+    price: 79,
+    plays: "7.5K - 8.5K Streams",
+    placements: "25 - 30 Playlist Pitches",
+    description: ""
+  },
+  {
+    id: "breakthrough",
+    name: "BREAKTHROUGH",
+    price: 39,
+    plays: "3K - 3.5K Streams",
+    placements: "10 - 12 Playlist Pitches",
+    description: ""
+  }
+];
+
 export default function OrderDetailPage({ adminSession, accessDenied }: OrderDetailPageProps) {
   const router = useRouter();
   const { orderId } = router.query;
@@ -100,6 +152,15 @@ export default function OrderDetailPage({ adminSession, accessDenied }: OrderDet
   const [validatingSpotify, setValidatingSpotify] = useState<{[key: string]: boolean}>({});
   const [copyingTrack, setCopyingTrack] = useState<string | null>(null);
   const [showCopySuccess, setShowCopySuccess] = useState<string | null>(null);
+  
+  // New state for advanced features
+  const [showAddItemModal, setShowAddItemModal] = useState(false);
+  const [addingItem, setAddingItem] = useState(false);
+  const [newItemSpotifyUrl, setNewItemSpotifyUrl] = useState('');
+  const [newItemPackageId, setNewItemPackageId] = useState('');
+  const [editingPackage, setEditingPackage] = useState<{[key: string]: boolean}>({});
+  const [packageUpdates, setPackageUpdates] = useState<{[key: string]: string}>({});
+  const [updatingPackage, setUpdatingPackage] = useState<{[key: string]: boolean}>({});
 
   useEffect(() => {
     if (orderId && typeof orderId === 'string') {
@@ -237,6 +298,21 @@ export default function OrderDetailPage({ adminSession, accessDenied }: OrderDet
       ...prev,
       [itemId]: true
     }));
+    
+    // Also enable package editing when editing track
+    setEditingPackage(prev => ({
+      ...prev,
+      [itemId]: true
+    }));
+    
+    // Initialize package dropdown with current package
+    const currentItem = order?.items.find(item => item.id === itemId);
+    if (currentItem) {
+      setPackageUpdates(prev => ({
+        ...prev,
+        [itemId]: currentItem.package_id
+      }));
+    }
   };
 
   const handleCopyTrack = async (itemId: string) => {
@@ -322,6 +398,7 @@ export default function OrderDetailPage({ adminSession, accessDenied }: OrderDet
       
       // Stop editing mode
       setEditingTrack(prev => ({ ...prev, [itemId]: false }));
+      setEditingPackage(prev => ({ ...prev, [itemId]: false }));
       
       // CRITICAL: Force complete refresh of order data with cache-busting
       if (order?.id) {
@@ -339,6 +416,34 @@ export default function OrderDetailPage({ adminSession, accessDenied }: OrderDet
         console.log('🔄 TRACK-UPDATE: Order data refresh completed');
       }
       
+      // Check if package was also changed and save it
+      const currentItem = order?.items.find(item => item.id === itemId);
+      const newPackageId = packageUpdates[itemId];
+      
+      if (currentItem && newPackageId && newPackageId !== currentItem.package_id) {
+        console.log('🔄 TRACK-UPDATE: Package also changed, updating package...');
+        try {
+          const packageResponse = await fetch('/api/admin/update-order-item-package', {
+            method: 'PUT',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              itemId,
+              packageId: newPackageId
+            }),
+          });
+
+          if (packageResponse.ok) {
+            console.log('🔄 TRACK-UPDATE: Package updated successfully alongside track');
+          } else {
+            console.warn('🔄 TRACK-UPDATE: Package update failed, but track update succeeded');
+          }
+        } catch (packageError) {
+          console.warn('🔄 TRACK-UPDATE: Package update error, but track update succeeded:', packageError);
+        }
+      }
+
       // Save any other pending changes (like status) if needed
       if (selectedStatus !== order?.status || adminNotes !== order?.admin_notes) {
         console.log('🔄 TRACK-UPDATE: Saving additional order changes...');
@@ -353,6 +458,147 @@ export default function OrderDetailPage({ adminSession, accessDenied }: OrderDet
       setError(err instanceof Error ? err.message : 'Failed to update track information');
     } finally {
       setValidatingSpotify(prev => ({ ...prev, [itemId]: false }));
+    }
+  };
+
+  // NEW FEATURE 1: Add Item to Order
+  const handleAddItem = async () => {
+    if (!order || !newItemSpotifyUrl || !newItemPackageId) {
+      setError('Please enter both Spotify URL and select a package');
+      return;
+    }
+
+    // Validate Spotify URL
+    if (!validateSpotifyUrl(newItemSpotifyUrl)) {
+      setError('Please enter a valid Spotify track URL');
+      return;
+    }
+
+    try {
+      setAddingItem(true);
+      setError('');
+      setSuccess('');
+
+      console.log('🎵 ADD-ITEM: Adding new item to order:', {
+        orderId: order.id,
+        spotifyUrl: newItemSpotifyUrl,
+        packageId: newItemPackageId
+      });
+
+      const response = await fetch('/api/admin/add-order-item', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          orderId: order.id,
+          spotifyUrl: newItemSpotifyUrl,
+          packageId: newItemPackageId
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to add item to order');
+      }
+
+      setSuccess(`✅ Item added successfully! "${data.trackInfo.title}" by ${data.trackInfo.artist} with ${data.trackInfo.package} package`);
+      
+      // Reset form
+      setNewItemSpotifyUrl('');
+      setNewItemPackageId('');
+      setShowAddItemModal(false);
+      
+      // Refresh order data
+      await fetchOrderDetails(order.id);
+      
+      // Clear success message after 5 seconds
+      setTimeout(() => setSuccess(''), 5000);
+      
+    } catch (err) {
+      console.error('🎵 ADD-ITEM: Error adding item:', err);
+      setError(err instanceof Error ? err.message : 'Failed to add item to order');
+    } finally {
+      setAddingItem(false);
+    }
+  };
+
+  // NEW FEATURE 2: Update Package
+  const handleEditPackage = (itemId: string) => {
+    setEditingPackage(prev => ({
+      ...prev,
+      [itemId]: true
+    }));
+    
+    // Initialize package dropdown with current package
+    const currentItem = order?.items.find(item => item.id === itemId);
+    if (currentItem) {
+      setPackageUpdates(prev => ({
+        ...prev,
+        [itemId]: currentItem.package_id
+      }));
+    }
+  };
+
+  const handlePackageChange = (itemId: string, packageId: string) => {
+    setPackageUpdates(prev => ({
+      ...prev,
+      [itemId]: packageId
+    }));
+  };
+
+  const handleSavePackage = async (itemId: string) => {
+    const newPackageId = packageUpdates[itemId];
+    
+    if (!newPackageId) {
+      setError('Please select a package');
+      return;
+    }
+
+    try {
+      setUpdatingPackage(prev => ({ ...prev, [itemId]: true }));
+      setError('');
+      setSuccess('');
+
+      console.log('🎵 UPDATE-PACKAGE: Updating item package:', {
+        itemId,
+        newPackageId
+      });
+
+      const response = await fetch('/api/admin/update-order-item-package', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          itemId,
+          packageId: newPackageId
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to update package');
+      }
+
+      setSuccess(`✅ Package updated successfully! Changed to ${data.packageInfo.name} (${data.orderTotals.priceDifference >= 0 ? '+' : ''}$${data.orderTotals.priceDifference.toFixed(2)})`);
+      
+      // Stop editing mode
+      setEditingPackage(prev => ({ ...prev, [itemId]: false }));
+      
+      // Refresh order data
+      await fetchOrderDetails(order?.id || '');
+      
+      // Clear success message after 5 seconds
+      setTimeout(() => setSuccess(''), 5000);
+      
+    } catch (err) {
+      console.error('🎵 UPDATE-PACKAGE: Error updating package:', err);
+      setError(err instanceof Error ? err.message : 'Failed to update package');
+    } finally {
+      setUpdatingPackage(prev => ({ ...prev, [itemId]: false }));
     }
   };
 
@@ -563,7 +809,17 @@ export default function OrderDetailPage({ adminSession, accessDenied }: OrderDet
 
             {/* Order Items */}
             <div className="bg-white/5 rounded-xl p-6 border border-white/20">
-              <h2 className="text-xl font-semibold text-white mb-6">Order Items</h2>
+              <div className="flex justify-between items-center mb-6">
+                <h2 className="text-xl font-semibold text-white">Order Items</h2>
+                <button
+                  onClick={() => setShowAddItemModal(true)}
+                  className="bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] text-black font-semibold px-4 py-2 rounded-lg text-sm hover:opacity-90 transition-opacity flex items-center space-x-2"
+                  style={{ zIndex: 10 }}
+                >
+                  <span>Add Item</span>
+                  <span className="text-lg">+</span>
+                </button>
+              </div>
               
               {/* Column Headers */}
               <div className="grid grid-cols-9 gap-0 mb-4 text-xs font-medium text-white/70 uppercase tracking-wide border-b border-white/20 pb-3">
@@ -601,11 +857,51 @@ export default function OrderDetailPage({ adminSession, accessDenied }: OrderDet
                       
                       {/* Package Details Column */}
                       <div className="col-span-2 border-r border-white/10 p-4 flex flex-col justify-center">
-                        <div className="space-y-1">
-                          <p className="text-white font-medium text-sm">{item.package_name}</p>
-                          <p className="text-white/70 text-xs">{item.package_plays}</p>
-                          <p className="text-white/60 text-xs">{item.package_placements}</p>
-                        </div>
+                        {editingPackage[item.id] ? (
+                          <div className="space-y-2">
+                            <select
+                              value={packageUpdates[item.id] || item.package_id}
+                              onChange={(e) => handlePackageChange(item.id, e.target.value)}
+                              className="w-full bg-white/10 border border-white/20 rounded text-white text-xs p-1 focus:outline-none focus:border-[#59e3a5] transition-colors"
+                              style={{ backgroundColor: 'rgba(255,255,255,0.1)' }}
+                            >
+                              {AVAILABLE_PACKAGES.map((pkg) => (
+                                <option key={pkg.id} value={pkg.id} className="bg-gray-800 text-white">
+                                  {pkg.name} - ${pkg.price}
+                                </option>
+                              ))}
+                            </select>
+                            <div className="flex space-x-1">
+                              <button
+                                onClick={() => handleSavePackage(item.id)}
+                                disabled={updatingPackage[item.id]}
+                                className="bg-green-600 hover:bg-green-700 text-white px-2 py-1 rounded text-xs font-medium transition-colors disabled:opacity-50"
+                              >
+                                {updatingPackage[item.id] ? 'Saving...' : 'Save'}
+                              </button>
+                              <button
+                                onClick={() => setEditingPackage(prev => ({ ...prev, [item.id]: false }))}
+                                className="bg-gray-600 hover:bg-gray-700 text-white px-2 py-1 rounded text-xs font-medium transition-colors"
+                              >
+                                Cancel
+                              </button>
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="space-y-1">
+                            <div className="flex items-center justify-between">
+                              <p className="text-white font-medium text-sm">{item.package_name}</p>
+                              <button
+                                onClick={() => handleEditPackage(item.id)}
+                                className="text-blue-400 hover:text-blue-300 text-xs underline ml-2"
+                              >
+                                Edit
+                              </button>
+                            </div>
+                            <p className="text-white/70 text-xs">{item.package_plays}</p>
+                            <p className="text-white/60 text-xs">{item.package_placements}</p>
+                          </div>
+                        )}
                       </div>
                       
                       {/* Pricing Column */}
@@ -831,6 +1127,81 @@ export default function OrderDetailPage({ adminSession, accessDenied }: OrderDet
           </div>
         </div>
       </div>
+
+      {/* Add Item Modal */}
+      {showAddItemModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4" style={{ zIndex: 50 }}>
+          <div className="bg-slate-800 rounded-xl p-6 w-full max-w-md border border-white/20" style={{ zIndex: 60 }}>
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-xl font-semibold text-white">Add New Item</h3>
+              <button
+                onClick={() => {
+                  setShowAddItemModal(false);
+                  setNewItemSpotifyUrl('');
+                  setNewItemPackageId('');
+                  setError('');
+                }}
+                className="text-white/70 hover:text-white transition-colors"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm text-white/70 mb-2">Spotify Track URL</label>
+                <input
+                  type="url"
+                  value={newItemSpotifyUrl}
+                  onChange={(e) => setNewItemSpotifyUrl(e.target.value)}
+                  className="w-full bg-white/10 border border-white/20 rounded-lg py-2.5 px-3 text-white text-sm placeholder-white/50 focus:outline-none focus:border-[#59e3a5] transition-colors"
+                  placeholder="https://open.spotify.com/track/..."
+                />
+                {newItemSpotifyUrl && !validateSpotifyUrl(newItemSpotifyUrl) && (
+                  <p className="text-red-400 text-sm mt-1">Invalid Spotify URL format</p>
+                )}
+              </div>
+
+              <div>
+                <label className="block text-sm text-white/70 mb-2">Package</label>
+                <select
+                  value={newItemPackageId}
+                  onChange={(e) => setNewItemPackageId(e.target.value)}
+                  className="w-full bg-white/10 border border-white/20 rounded-lg py-2.5 px-3 text-white text-sm focus:outline-none focus:border-[#59e3a5] transition-colors"
+                >
+                  <option value="" className="bg-gray-800">Select a package...</option>
+                  {AVAILABLE_PACKAGES.map((pkg) => (
+                    <option key={pkg.id} value={pkg.id} className="bg-gray-800">
+                      {pkg.name} - ${pkg.price} ({pkg.plays})
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="flex space-x-3 pt-4">
+                <button
+                  onClick={handleAddItem}
+                  disabled={addingItem || !newItemSpotifyUrl || !newItemPackageId || !validateSpotifyUrl(newItemSpotifyUrl)}
+                  className="flex-1 bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] text-black font-semibold py-2.5 px-4 rounded-lg hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {addingItem ? 'Adding Item...' : 'Add Item'}
+                </button>
+                <button
+                  onClick={() => {
+                    setShowAddItemModal(false);
+                    setNewItemSpotifyUrl('');
+                    setNewItemPackageId('');
+                    setError('');
+                  }}
+                  className="flex-1 bg-gray-600 hover:bg-gray-700 text-white font-medium py-2.5 px-4 rounded-lg transition-colors"
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
