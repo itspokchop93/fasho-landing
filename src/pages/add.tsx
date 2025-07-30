@@ -474,7 +474,7 @@ export default function AddSongsPage() {
       <Header transparent={true} />
       <main className="min-h-screen bg-black text-white py-16 md:py-24 px-4 flex flex-col items-center">
         {/* Main Heading */}
-        <h1 className="text-3xl sm:text-4xl md:text-5xl font-extrabold text-center mb-4 md:mb-6 relative z-10 leading-tight mt-[10px]">
+        <h1 className="text-2xl sm:text-4xl md:text-5xl font-extrabold text-center mb-4 md:mb-6 relative z-10 leading-tight mt-[18px] md:mt-[10px]">
           <span className="bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] bg-clip-text text-transparent">More</span> Songs = <span className="bg-gradient-to-r from-[#14c0ff] to-[#8b5cf6] bg-clip-text text-transparent">More</span> Success 🚀
         </h1>
         
@@ -561,7 +561,7 @@ export default function AddSongsPage() {
         </p>
 
         {/* Read More indicator */}
-        <div className="text-center mb-12 md:mb-20 relative z-10">
+        <div className="text-center mb-16 md:mb-20 relative z-10 mt-8">
           <button
             onClick={() => {
               const firstSection = document.querySelector('section');
@@ -708,7 +708,7 @@ export default function AddSongsPage() {
           
           <div className="relative z-10">
             {/* Section Title */}
-            <div className="text-center mb-8 md:mb-16 px-2 md:px-4 py-6 md:py-12">
+            <div className="text-center mb-2 md:mb-16 px-2 md:px-4 py-6 md:py-12">
               <h2 className="text-3xl sm:text-4xl md:text-4xl lg:text-5xl font-black mb-4 bg-gradient-to-r from-[#59e3a5] via-[#14c0ff] to-[#8b5cf6] bg-clip-text text-transparent leading-tight px-4 py-2 -mb-[20px] md:-mb-[45px]">
                 Why Artists Add Multiple Songs (And Win Big)
               </h2>
