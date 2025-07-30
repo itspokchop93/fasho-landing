@@ -821,7 +821,7 @@ export default function PackagesPage() {
         <div className="relative z-20">
         <div className="max-w-7xl mx-auto">
           <h1 className={`${isDiscountedSong ? 'text-3xl' : 'text-4xl'} md:text-5xl font-extrabold text-center mb-12`}>
-            Step 2: Choose your campaign{isDiscountedSong && <> for <span className="text-[#59e3a5]">25% OFF</span></>}
+            <span className="bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] bg-clip-text text-transparent">Step 2:</span> Choose your campaign{isDiscountedSong && <> for <span className="text-[#59e3a5]">25% OFF</span></>}
           </h1>
 
           {/* Mobile Layout */}

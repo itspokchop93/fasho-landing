@@ -474,7 +474,7 @@ export default function AddSongsPage() {
       <Header transparent={true} />
       <main className="min-h-screen bg-black text-white py-16 md:py-24 px-4 flex flex-col items-center">
         {/* Main Heading */}
-        <h1 className="text-2xl sm:text-4xl md:text-5xl font-extrabold text-center mb-4 md:mb-6 relative z-10 leading-tight mt-[18px] md:mt-[10px]">
+        <h1 className="text-2xl sm:text-4xl md:text-5xl font-extrabold text-center mb-4 md:mb-6 relative z-10 leading-tight mt-[28px] md:mt-[10px]">
           <span className="bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] bg-clip-text text-transparent">More</span> Songs = <span className="bg-gradient-to-r from-[#14c0ff] to-[#8b5cf6] bg-clip-text text-transparent">More</span> Success 🚀
         </h1>
         
@@ -530,7 +530,7 @@ export default function AddSongsPage() {
               setTimeout(() => setFocused(false), 200);
             }}
             onChange={(e) => setInput(e.target.value)}
-                className="w-full rounded-lg md:rounded-xl px-3 md:px-4 py-2.5 md:py-3 text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#14c0ff]/50 transition-all duration-300 text-sm md:text-base"
+                className="w-full rounded-lg md:rounded-xl px-3 md:px-4 py-2.5 md:py-3 text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#14c0ff]/50 transition-all duration-300 text-base md:text-base"
           />
 
         </div>
@@ -845,7 +845,7 @@ export default function AddSongsPage() {
             <div className="text-center mb-8 md:mb-16">
               <h2 className="text-3xl sm:text-4xl md:text-4xl lg:text-5xl xl:text-6xl font-black mb-6 bg-gradient-to-r from-[#8b5cf6] via-[#59e3a5] to-[#14c0ff] bg-clip-text text-transparent px-2">
                 Real Artists Know:<br />
-                <span className="text-xl sm:text-2xl md:text-3xl lg:text-4xl xl:text-5xl">Your Best Song Might Not Be Your First</span>
+                <span className="text-2xl sm:text-2xl md:text-3xl lg:text-4xl xl:text-5xl">Your Best Song Might Not Be Your First</span>
               </h2>
             </div>
 
