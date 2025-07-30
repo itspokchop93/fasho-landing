@@ -1197,7 +1197,7 @@ export default function PackagesPage() {
                 <div className="relative z-10">
                   {/* Mobile-only gradient heading */}
                   <div className="block md:hidden mb-6 text-center">
-                    <h3 className="text-lg font-black bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] bg-clip-text text-transparent inline-block" style={{letterSpacing: '0.01em', fontSize: 'calc(1.125rem + 0.25rem)'}}>
+                    <h3 className="text-lg font-black bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] bg-clip-text text-transparent block px-2" style={{letterSpacing: '0.01em', fontSize: 'calc(1.125rem + 0.25rem)'}}>
                       Inside Your Campaign 🚀
                     </h3>
                   </div>
@@ -1669,7 +1669,7 @@ export default function PackagesPage() {
                  <div className="relative z-10">
                    {/* Mobile-only gradient heading */}
                    <div className="block md:hidden mb-6 text-center">
-                     <h3 className="text-lg font-black bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] bg-clip-text text-transparent inline-block" style={{letterSpacing: '0.01em', fontSize: 'calc(1.125rem + 0.25rem)'}}>
+                     <h3 className="text-lg font-black bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] bg-clip-text text-transparent block px-2" style={{letterSpacing: '0.01em', fontSize: 'calc(1.125rem + 0.25rem)'}}>
                        Inside Your Campaign 🚀
                      </h3>
                    </div>
@@ -1719,18 +1719,28 @@ export default function PackagesPage() {
 
         {/* Read More indicator */}
         <div className="text-center mb-12 md:mb-20 relative z-10 mt-16 md:mt-20">
-          <p className="text-sm text-gray-500 mb-2">Read More</p>
-          <div className="flex justify-center -mb-12">
-            <svg 
-              className="w-5 h-5 text-gray-500 animate-bounce" 
-              fill="none" 
-              stroke="currentColor" 
-              viewBox="0 0 24 24"
-              style={{ animationDuration: '2s' }}
-            >
+          <button
+            onClick={() => {
+              const compareSection = document.querySelector('.compare-subheading-mobile');
+              if (compareSection) {
+                compareSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+              }
+            }}
+            className="cursor-pointer hover:text-gray-400 transition-colors duration-300 group"
+          >
+            <p className="text-sm text-gray-500 mb-2 group-hover:text-gray-400">Read More</p>
+            <div className="flex justify-center -mb-12">
+              <svg 
+                className="w-5 h-5 text-gray-500 animate-bounce group-hover:text-gray-400" 
+                fill="none" 
+                stroke="currentColor" 
+                viewBox="0 0 24 24"
+                style={{ animationDuration: '2s' }}
+              >
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 10l5 5 5-5" />
             </svg>
           </div>
+          </button>
         </div>
 
         {/* Shape Divider Section - Full Width */}
@@ -1843,7 +1853,7 @@ export default function PackagesPage() {
               
               {/* Mobile Swipe Indicator */}
               <div className="md:hidden flex justify-end pr-4 mt-[10px] mb-[-8px]">
-                <div className="flex items-center space-x-2 text-gray-400 text-sm" style={{ fontFamily: 'Comic Sans MS, cursive, sans-serif' }}>
+                <div className="flex items-center space-x-2 text-gray-400 text-sm font-medium">
                   <div className="animate-bounce-left animate-pulse">
                     <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
                       <path fillRule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clipRule="evenodd" />

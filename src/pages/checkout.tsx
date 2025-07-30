@@ -2358,7 +2358,7 @@ export default function CheckoutPage() {
                     )}
                   </div>
                   <p className="text-sm text-white/60 mb-6">
-                    Enter your billing address for payment verification.
+                    Enter your billing information
                   </p>
                   
                   <div className="space-y-4">
@@ -2971,7 +2971,7 @@ export default function CheckoutPage() {
 
             {/* Full-Width Payment Section */}
             <div className="mt-8">
-              <div className="bg-white/5 rounded-xl p-6 border border-white/20">
+              <div className="bg-white/5 rounded-xl px-2 py-6 md:p-6 border border-white/20">
                 
                 {!showPaymentForm ? (
                   // Account validation form (before payment)
@@ -2988,7 +2988,7 @@ export default function CheckoutPage() {
                           <button
                           type="submit"
                           disabled={isLoading}
-                          className="w-full bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] text-black font-semibold py-4 px-6 rounded-lg hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
+                          className="w-[calc(100%-1rem)] md:w-full mx-auto block bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] text-black font-semibold py-4 px-6 rounded-lg hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
                         >
                           {isLoading ? 'Processing...' : `Continue to Payment · $${total.toFixed(2)}`}
                         </button>
@@ -3026,7 +3026,7 @@ export default function CheckoutPage() {
                     </form>
                     
                     {/* Payment iframe container - Adjusted size: 85% width, 475px height */}
-                    <div className="payment-iframe-container relative w-[85%] bg-white/[0.02] rounded-xl overflow-hidden mx-auto">
+                    <div className="payment-iframe-container relative w-full md:w-[85%] bg-white/[0.02] rounded-xl overflow-hidden mx-auto">
                       <iframe 
                         name="paymentIframe" 
                         id="paymentIframe"
@@ -3145,6 +3145,7 @@ export default function CheckoutPage() {
                       </svg>
                     </div>
                   </div>
+                  <p className="text-xs text-white/40 mt-2">Securely processed by Authorize.net</p>
                 </div>
               </div>
 
