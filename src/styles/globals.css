@@ -1578,4 +1578,47 @@ input:-webkit-autofill:active {
   }
 } 
 
+/* Mobile Touch Fixes - Prevent touch event conflicts with dropdowns */
+.touch-manipulation {
+  touch-action: manipulation;
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  -khtml-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+}
+
+/* iOS Safari specific fixes for dropdown buttons */
+@media (pointer: coarse) {
+  button, [role="button"] {
+    cursor: pointer;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+    -webkit-touch-callout: none;
+  }
+  
+  /* Prevent default touch behaviors on dropdown elements */
+  .dropdown-menu button,
+  [data-dropdown] button {
+    -webkit-tap-highlight-color: transparent;
+    -webkit-touch-callout: none;
+    touch-action: manipulation;
+  }
+}
+
+/* Prevent iOS Safari from adding tap highlights to buttons */
+button, a, [role="button"] {
+  -webkit-tap-highlight-color: transparent;
+  -webkit-touch-callout: none;
+}
+
+/* Fix for mobile dropdown z-index issues */
+@media (max-width: 768px) {
+  .mobile-dropdown {
+    position: fixed !important;
+    z-index: 99999 !important;
+  }
+}
+
 

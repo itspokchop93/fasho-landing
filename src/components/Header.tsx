@@ -18,6 +18,7 @@ export default function Header({ transparent = false, hideSignUp = false }: Head
   const [showSignOutModal, setShowSignOutModal] = useState(false);
   const [userFirstName, setUserFirstName] = useState<string>('User');
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const mobileDropdownRef = useRef<HTMLDivElement>(null);
   const supabase = createClient();
   const router = useRouter();
   
@@ -171,15 +172,23 @@ export default function Header({ transparent = false, hideSignUp = false }: Head
 
   // Close dropdown when clicking outside
   useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+    const handleClickOutside = (event: MouseEvent | TouchEvent) => {
+      const target = event.target as Node;
+      
+      // Don't close if clicking inside desktop or mobile dropdown
+      const isInsideDesktopDropdown = dropdownRef.current && dropdownRef.current.contains(target);
+      const isInsideMobileDropdown = mobileDropdownRef.current && mobileDropdownRef.current.contains(target);
+      
+      if (!isInsideDesktopDropdown && !isInsideMobileDropdown) {
         setShowProfileDropdown(false);
       }
     };
 
     document.addEventListener('mousedown', handleClickOutside);
+    document.addEventListener('touchstart', handleClickOutside);
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('touchstart', handleClickOutside);
     };
   }, []);
 
@@ -479,11 +488,27 @@ export default function Header({ transparent = false, hideSignUp = false }: Head
                       <stop offset="100%" stopColor="#14c0ff" />
                     </linearGradient>
                   </defs>
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1" />
+                  <circle cx="12" cy="12" r="10" strokeWidth={2}/>
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v12M9.5 9a2.5 2.5 0 015 0M9.5 15a2.5 2.5 0 005 0"/>
                 </svg>
                 Pricing
               </Link>
-              <Link href="/#faq" className="flex items-center justify-center gap-3 px-4 py-4 mx-2 text-white hover:text-[#59e3a5] hover:bg-white/5 transition-all duration-300 ease-in-out font-medium rounded-xl backdrop-blur-sm border border-transparent hover:border-white/10 transform hover:scale-[1.02] animate-fade-in-up" style={{ animationDelay: !isHomepage ? '0.2s' : '0.15s' }}>
+              {currentUser && !authLoading && (
+                <Link href="/dashboard" className="flex items-center justify-center gap-3 px-4 py-4 mx-2 text-white hover:text-[#59e3a5] hover:bg-white/5 transition-all duration-300 ease-in-out font-medium rounded-xl backdrop-blur-sm border border-transparent hover:border-white/10 transform hover:scale-[1.02] animate-fade-in-up" style={{ animationDelay: !isHomepage ? '0.15s' : '0.1s' }}>
+                  <svg className="w-5 h-5" fill="none" stroke="url(#gradientDashboard)" viewBox="0 0 24 24">
+                    <defs>
+                      <linearGradient id="gradientDashboard" x1="0%" y1="0%" x2="100%" y2="0%">
+                        <stop offset="0%" stopColor="#59e3a5" />
+                        <stop offset="100%" stopColor="#14c0ff" />
+                      </linearGradient>
+                    </defs>
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2H5a2 2 0 00-2-2z" />
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 5a2 2 0 012-2h4a2 2 0 012 2v2H8V5z" />
+                  </svg>
+                  Dashboard
+                </Link>
+              )}
+              <Link href="/#faq" className="flex items-center justify-center gap-3 px-4 py-4 mx-2 text-white hover:text-[#59e3a5] hover:bg-white/5 transition-all duration-300 ease-in-out font-medium rounded-xl backdrop-blur-sm border border-transparent hover:border-white/10 transform hover:scale-[1.02] animate-fade-in-up" style={{ animationDelay: !isHomepage ? '0.25s' : '0.2s' }}>
                 <svg className="w-5 h-5" fill="none" stroke="url(#gradient2)" viewBox="0 0 24 24">
                   <defs>
                     <linearGradient id="gradient2" x1="0%" y1="0%" x2="100%" y2="0%">
@@ -495,7 +520,7 @@ export default function Header({ transparent = false, hideSignUp = false }: Head
                 </svg>
                 FAQ
               </Link>
-              <Link href="/about" className="flex items-center justify-center gap-3 px-4 py-4 mx-2 text-white hover:text-[#59e3a5] hover:bg-white/5 transition-all duration-300 ease-in-out font-medium rounded-xl backdrop-blur-sm border border-transparent hover:border-white/10 transform hover:scale-[1.02] animate-fade-in-up" style={{ animationDelay: !isHomepage ? '0.25s' : '0.2s' }}>
+              <Link href="/about" className="flex items-center justify-center gap-3 px-4 py-4 mx-2 text-white hover:text-[#59e3a5] hover:bg-white/5 transition-all duration-300 ease-in-out font-medium rounded-xl backdrop-blur-sm border border-transparent hover:border-white/10 transform hover:scale-[1.02] animate-fade-in-up" style={{ animationDelay: !isHomepage ? '0.3s' : '0.25s' }}>
                 <svg className="w-5 h-5" fill="none" stroke="url(#gradient3)" viewBox="0 0 24 24">
                   <defs>
                     <linearGradient id="gradient3" x1="0%" y1="0%" x2="100%" y2="0%">
@@ -507,7 +532,7 @@ export default function Header({ transparent = false, hideSignUp = false }: Head
                 </svg>
                 About
               </Link>
-              <Link href="/contact" className="flex items-center justify-center gap-3 px-4 py-4 mx-2 text-white hover:text-[#59e3a5] hover:bg-white/5 transition-all duration-300 ease-in-out font-medium rounded-xl backdrop-blur-sm border border-transparent hover:border-white/10 transform hover:scale-[1.02] animate-fade-in-up" style={{ animationDelay: !isHomepage ? '0.3s' : '0.25s' }}>
+              <Link href="/contact" className="flex items-center justify-center gap-3 px-4 py-4 mx-2 text-white hover:text-[#59e3a5] hover:bg-white/5 transition-all duration-300 ease-in-out font-medium rounded-xl backdrop-blur-sm border border-transparent hover:border-white/10 transform hover:scale-[1.02] animate-fade-in-up" style={{ animationDelay: !isHomepage ? '0.35s' : '0.3s' }}>
                 <svg className="w-5 h-5" fill="none" stroke="url(#gradient4)" viewBox="0 0 24 24">
                   <defs>
                     <linearGradient id="gradient4" x1="0%" y1="0%" x2="100%" y2="0%">
@@ -522,83 +547,106 @@ export default function Header({ transparent = false, hideSignUp = false }: Head
               
 
               
-              <div className="flex items-center justify-center px-4 py-3 animate-fade-in-up" style={{ animationDelay: !isHomepage ? '0.35s' : '0.3s' }}>
+              <div className="flex items-center justify-center px-4 py-3 animate-fade-in-up" style={{ animationDelay: !isHomepage ? '0.4s' : '0.35s' }}>
                 {/* Sign Up Button or User Profile */}
                 {!hideSignUp && (
                   currentUser && !authLoading ? (
-                    <div className="relative w-full">
-                      <div className="flex flex-col items-center gap-3 px-4 py-4 mx-2 bg-white/5 backdrop-blur-sm rounded-xl border border-white/10">
-                        <button
-                          onClick={() => setShowProfileDropdown(!showProfileDropdown)}
-                          className="text-white font-medium text-sm hover:text-[#59e3a5] transition-colors cursor-pointer"
-                        >
+                    <div className="relative w-full" ref={mobileDropdownRef}>
+                      <button
+                        onClick={() => setShowProfileDropdown(!showProfileDropdown)}
+                        className="flex flex-col items-center gap-3 px-4 py-4 mx-2 bg-white/5 backdrop-blur-sm rounded-xl border border-white/10 hover:bg-white/10 transition-all duration-300 ease-in-out transform hover:scale-[1.02] w-full"
+                        style={{ touchAction: 'manipulation', cursor: 'pointer' }}
+                      >
+                        <span className="text-white font-medium text-sm hover:text-[#59e3a5] transition-colors">
                           Hey, {userFirstName}!
-                        </button>
-                        <button
-                          onClick={() => setShowProfileDropdown(!showProfileDropdown)}
-                          className="w-12 h-12 bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] rounded-full flex items-center justify-center hover:opacity-90 hover:scale-105 transition-all duration-300 shadow-lg"
-                        >
+                        </span>
+                        <div className="w-12 h-12 bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] rounded-full flex items-center justify-center hover:opacity-90 hover:scale-105 transition-all duration-300 shadow-lg">
                           {renderProfileAvatar()}
-                        </button>
-                      </div>
+                        </div>
+                      </button>
                       {showProfileDropdown && (
-                        <div className="absolute right-0 top-full mt-2 w-48 bg-gradient-to-br from-gray-900/95 to-gray-800/95 backdrop-blur-md rounded-xl shadow-2xl border border-gray-700/50 py-3 z-[99999]">
-                          <Link 
-                            href="/dashboard" 
-                            className="block px-4 py-3 text-gray-200 hover:bg-gradient-to-r hover:from-[#59e3a5]/10 hover:to-[#14c0ff]/10 hover:text-white transition-all duration-200"
-                            onClick={() => {
-                              setShowProfileDropdown(false);
-                              setIsMobileMenuOpen(false);
-                            }}
-                          >
-                            <div className="flex items-center gap-3">
-                              <div className="w-5 h-5 bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] rounded-md flex items-center justify-center">
-                                <svg className="w-3 h-3 text-black" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <div 
+                          className="absolute left-0 right-0 top-full mt-2 mx-4 bg-gradient-to-br from-gray-900/95 to-gray-800/95 backdrop-blur-md rounded-xl shadow-2xl border border-gray-700/50 py-3 z-[99999]"
+                          style={{ 
+                            zIndex: 99999, 
+                            position: 'absolute',
+                            pointerEvents: 'auto',
+                            backgroundColor: 'rgba(17, 24, 39, 0.95)'
+                          }}
+                        >
+                          {/* 2x2 Grid for main menu items */}
+                          <div className="grid grid-cols-2 gap-2 mb-3">
+                            <button 
+                              onClick={() => {
+                                setShowProfileDropdown(false);
+                                setIsMobileMenuOpen(false);
+                                window.location.href = '/dashboard';
+                              }}
+                              className="flex flex-col items-center text-center p-3 text-gray-200 hover:bg-gradient-to-r hover:from-[#59e3a5]/10 hover:to-[#14c0ff]/10 hover:text-white transition-all duration-200 rounded-lg"
+                              style={{ touchAction: 'manipulation', cursor: 'pointer' }}
+                            >
+                              <div className="w-6 h-6 bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] rounded-md flex items-center justify-center mb-2">
+                                <svg className="w-4 h-4 text-black" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2H5a2 2 0 00-2-2z" />
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 5a2 2 0 012-2h4a2 2 0 012 2v2H8V5z" />
                               </svg>
                               </div>
-                              <span className="font-medium">Dashboard</span>
-                            </div>
-                          </Link>
-                          
-                          <Link 
-                            href="/dashboard#campaigns" 
-                            className="block px-4 py-3 text-gray-200 hover:bg-gradient-to-r hover:from-[#59e3a5]/10 hover:to-[#14c0ff]/10 hover:text-white transition-all duration-200"
-                            onClick={() => {
-                              setShowProfileDropdown(false);
-                              setIsMobileMenuOpen(false);
-                            }}
-                          >
-                            <div className="flex items-center gap-3">
-                              <div className="w-5 h-5 bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] rounded-md flex items-center justify-center">
-                                <svg className="w-3 h-3 text-black" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <span className="font-medium text-sm">Dashboard</span>
+                            </button>
+                            
+                            <button 
+                              onClick={() => {
+                                setShowProfileDropdown(false);
+                                setIsMobileMenuOpen(false);
+                                window.location.href = '/dashboard#campaigns';
+                              }}
+                              className="flex flex-col items-center text-center p-3 text-gray-200 hover:bg-gradient-to-r hover:from-[#59e3a5]/10 hover:to-[#14c0ff]/10 hover:text-white transition-all duration-200 rounded-lg"
+                              style={{ touchAction: 'manipulation', cursor: 'pointer' }}
+                            >
+                              <div className="w-6 h-6 bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] rounded-md flex items-center justify-center mb-2">
+                                <svg className="w-4 h-4 text-black" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
                               </svg>
                               </div>
-                              <span className="font-medium">My Campaigns</span>
-                            </div>
-                          </Link>
-                          
-                          <Link 
-                            href="/dashboard#help" 
-                            className="block px-4 py-3 text-gray-200 hover:bg-gradient-to-r hover:from-[#59e3a5]/10 hover:to-[#14c0ff]/10 hover:text-white transition-all duration-200"
-                            onClick={() => {
-                              setShowProfileDropdown(false);
-                              setIsMobileMenuOpen(false);
-                            }}
-                          >
-                            <div className="flex items-center gap-3">
-                              <div className="w-5 h-5 bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] rounded-md flex items-center justify-center">
-                                <svg className="w-3 h-3 text-black" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <span className="font-medium text-sm">My Campaigns</span>
+                            </button>
+                            
+                            <button 
+                              onClick={() => {
+                                setShowProfileDropdown(false);
+                                setIsMobileMenuOpen(false);
+                                window.location.href = '/dashboard#curator-connect';
+                              }}
+                              className="flex flex-col items-center text-center p-3 text-gray-200 hover:bg-gradient-to-r hover:from-[#59e3a5]/10 hover:to-[#14c0ff]/10 hover:text-white transition-all duration-200 rounded-lg"
+                              style={{ touchAction: 'manipulation', cursor: 'pointer' }}
+                            >
+                              <div className="w-6 h-6 bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] rounded-md flex items-center justify-center mb-2">
+                                <svg className="w-4 h-4 text-black" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                                </svg>
+                              </div>
+                              <span className="font-medium text-sm">Curator Connect+</span>
+                            </button>
+                            
+                            <button 
+                              onClick={() => {
+                                setShowProfileDropdown(false);
+                                setIsMobileMenuOpen(false);
+                                window.location.href = '/dashboard#contact';
+                              }}
+                              className="flex flex-col items-center text-center p-3 text-gray-200 hover:bg-gradient-to-r hover:from-[#59e3a5]/10 hover:to-[#14c0ff]/10 hover:text-white transition-all duration-200 rounded-lg"
+                              style={{ touchAction: 'manipulation', cursor: 'pointer' }}
+                            >
+                              <div className="w-6 h-6 bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] rounded-md flex items-center justify-center mb-2">
+                                <svg className="w-4 h-4 text-black" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                               </svg>
                               </div>
-                              <span className="font-medium">Get Help</span>
-                            </div>
-                    </Link>
+                              <span className="font-medium text-sm">Get Help</span>
+                            </button>
+                          </div>
                           
-                          <div className="h-px bg-gradient-to-r from-transparent via-gray-700 to-transparent my-3 mx-4"></div>
+                          <div className="h-px bg-gradient-to-r from-transparent via-gray-700 to-transparent my-2 mx-4"></div>
                           
                           <button
                             onClick={() => {
@@ -607,6 +655,7 @@ export default function Header({ transparent = false, hideSignUp = false }: Head
                               setShowSignOutModal(true);
                             }}
                             className="block w-full text-left px-4 py-3 text-red-400 hover:bg-red-500/10 hover:text-red-300 transition-all duration-200"
+                            style={{ touchAction: 'manipulation', cursor: 'pointer' }}
                           >
                             <div className="flex items-center gap-3">
                               <div className="w-5 h-5 bg-red-500/20 rounded-md flex items-center justify-center">

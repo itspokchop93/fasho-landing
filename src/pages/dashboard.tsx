@@ -4970,7 +4970,7 @@ Thank you,
         </div>
         
         {/* Mobile Bottom Navigation */}
-        <div className="lg:hidden fixed bottom-0 left-0 right-0 bg-gray-950/95 backdrop-blur-sm border-t border-gray-800/30 px-2 py-1 z-30 safe-area-inset-bottom">
+        <div className="lg:hidden fixed bottom-0 left-0 right-0 bg-gray-950/95 backdrop-blur-sm border-t border-gray-800/30 px-2 py-2 z-30 safe-area-inset-bottom">
           <div className="flex items-center max-w-full">
             {mobileNavItems.map((item, index) => {
               // Get mobile-specific label
