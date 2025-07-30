@@ -2927,7 +2927,7 @@ export default function Dashboard({ user }: DashboardProps) {
             <button
               onClick={() => {
                 setShowUserDropdown(false)
-                changeTab('dashboard')
+                changeTab('campaigns')
               }}
               className="w-full flex items-center space-x-3 px-3 py-2 rounded-lg text-gray-300 hover:bg-gray-800/50 hover:text-white transition-colors"
             >
