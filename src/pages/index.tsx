@@ -1260,7 +1260,7 @@ export default function Home() {
 
 
                 {/* Subtitle */}
-                <div className="text-xl md:text-2xl text-gray-300 mb-8 max-w-4xl mx-auto leading-relaxed break-words" style={{ paddingBottom: '20px', wordBreak: 'break-word', overflowWrap: 'break-word' }}>
+                <div className="text-xl md:text-2xl text-gray-300 mb-8 max-w-4xl mx-auto leading-relaxed break-words" style={{ paddingBottom: '10px', wordBreak: 'break-word', overflowWrap: 'break-word' }}>
                   <SplitText
                     text="Stop watching other artists blow up while your tracks collect dust. It's time to get the plays, fans, and recognition you deserve."
                     className="block"
@@ -1277,16 +1277,18 @@ export default function Home() {
                 </div>
 
                 {/* Trust Badges */}
-                <div className="flex justify-center items-center gap-10 mb-32 z-10">
+                <div className="flex justify-center items-center gap-10 mb-32 z-10" style={{ alignItems: 'center' }}>
                   <img 
                     src="/tpilot.png" 
                     alt="TrustPilot Badge" 
-                    className="h-9 md:h-11 w-auto object-contain opacity-80 hover:opacity-100 transition-opacity duration-300 z-20" 
+                    className="h-10 md:h-11 w-auto object-contain opacity-80 hover:opacity-100 transition-opacity duration-300 z-20" 
+                    style={{ verticalAlign: 'middle' }}
                   />
                   <img 
                     src="/gpart.jpg" 
                     alt="Google Partner Badge" 
-                    className="h-7 md:h-9 w-auto object-contain opacity-80 hover:opacity-100 transition-opacity duration-300 z-20" 
+                    className="h-8 md:h-9 w-auto object-contain opacity-80 hover:opacity-100 transition-opacity duration-300 z-20" 
+                    style={{ verticalAlign: 'middle', marginTop: '6.5px' }}
                   />
                 </div>
 
