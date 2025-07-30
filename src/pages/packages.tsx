@@ -2433,6 +2433,18 @@ export default function PackagesPage() {
                 </p>
               </div>
             </div>
+
+            {/* CTA Button to scroll back to package selection */}
+            <div className="text-center mt-8">
+              <button
+                onClick={() => {
+                  window.scrollTo({ top: 0, behavior: 'smooth' });
+                }}
+                className="bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] text-black font-bold px-8 py-4 rounded-md hover:opacity-90 hover:-translate-y-1 transition-all duration-300 text-lg shadow-lg"
+              >
+                CHOOSE MY PACKAGE
+              </button>
+            </div>
           </div>
         </div>
       </main>

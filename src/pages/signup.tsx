@@ -1211,7 +1211,7 @@ export default function SignUpPage() {
           ></div>
 
           {/* Form content */}
-          <div className="relative z-20 min-h-screen flex items-center justify-center p-6 pt-28">
+          <div className="relative z-20 min-h-screen flex items-center justify-center p-6 pt-28 pb-32">
             <div className="w-full max-w-sm">
               <div className="mb-8 text-center">
                 <h1 className="text-3xl font-extrabold mb-2">
@@ -1596,7 +1596,7 @@ export default function SignUpPage() {
                 <button
                   onClick={handleGoogleLogin}
                   disabled={isLoading}
-                  className="w-full hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="w-full hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed mb-20"
                 >
                   <svg width="337" height="49" viewBox="0 0 337 49" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-full h-auto">
                     <rect x="0.3" y="0.3" width="336.4" height="48.4" rx="24.2" fill="#121212" stroke="white" strokeWidth="0.6"/>
