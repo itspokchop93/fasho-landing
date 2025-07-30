@@ -22,17 +22,6 @@ interface Package {
 }
 
 const packages: Package[] = [
-  // ============ TEST PACKAGE - DELETE THIS WHEN GOING LIVE ============
-  {
-    id: "test-campaign",
-    name: "TEST CAMPAIGN",
-    price: 0.10,
-    plays: "Test Package",
-    placements: "Payment Testing Only",
-    description: "For testing live payment processing",
-    icon: "🧪"
-  },
-  // ============ END TEST PACKAGE - DELETE ABOVE WHEN GOING LIVE ============
   {
     id: "legendary",
     name: "LEGENDARY",
