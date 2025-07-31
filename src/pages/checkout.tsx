@@ -2044,6 +2044,24 @@ export default function CheckoutPage() {
       <Head>
         <title>Checkout - FASHO</title>
         <meta name="description" content="Complete your music promotion order" />
+        
+        {/* Bing Ads Enhanced Conversion - Checkout Page */}
+        {((currentUser?.email) || formData.email) && (
+          <script
+            dangerouslySetInnerHTML={{
+              __html: `
+                // Enhanced conversion for checkout page
+                window.uetq = window.uetq || [];
+                window.uetq.push('set', { 
+                  'pid': {
+                    'em': '${currentUser?.email || formData.email}',
+                    'ph': ''
+                  } 
+                });
+              `,
+            }}
+          />
+        )}
       </Head>
       <Header />
       

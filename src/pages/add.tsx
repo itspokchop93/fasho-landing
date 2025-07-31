@@ -470,6 +470,24 @@ export default function AddSongsPage() {
     <>
       <Head>
         <title>Add another song – Fasho.co</title>
+        
+        {/* Bing Ads Enhanced Conversion - Add to Cart Page (only for signed-in users) */}
+        {currentUser?.email && (
+          <script
+            dangerouslySetInnerHTML={{
+              __html: `
+                // Enhanced conversion for add to cart page (signed-in users)
+                window.uetq = window.uetq || [];
+                window.uetq.push('set', { 
+                  'pid': {
+                    'em': '${currentUser.email}',
+                    'ph': ''
+                  } 
+                });
+              `,
+            }}
+          />
+        )}
       </Head>
       <Header transparent={true} />
       <main className="min-h-screen bg-black text-white py-16 md:py-24 px-4 flex flex-col items-center">

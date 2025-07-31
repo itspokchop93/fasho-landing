@@ -474,6 +474,18 @@ export default function SignUpPage() {
 
               console.log('🎯 GOOGLE ADS: User signup tracked');
               
+              // Track Bing Ads enhanced conversion for signup
+              if (typeof window !== 'undefined' && (window as any).uetq) {
+                // Set customer data for enhanced conversion
+                (window as any).uetq.push('set', { 
+                  'pid': {
+                    'em': formData.email,
+                    'ph': ''
+                  } 
+                });
+                console.log('🔍 BING ADS: Enhanced conversion tracking set for signup');
+              }
+              
               // Sync user data to user_profiles table
               try {
                 console.log('🔄 SIGNUP: Syncing user data to user_profiles table...');
@@ -720,6 +732,24 @@ export default function SignUpPage() {
     <>
       <Head>
         <title>{isLogin ? 'Login' : 'Sign Up'} – Fasho.co</title>
+        
+        {/* Bing Ads Enhanced Conversion - Signup Page */}
+        {formData.email && (
+          <script
+            dangerouslySetInnerHTML={{
+              __html: `
+                // Enhanced conversion for signup page
+                window.uetq = window.uetq || [];
+                window.uetq.push('set', { 
+                  'pid': {
+                    'em': '${formData.email}',
+                    'ph': ''
+                  } 
+                });
+              `,
+            }}
+          />
+        )}
       </Head>
       <Header transparent hideSignUp />
       

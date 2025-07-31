@@ -405,6 +405,41 @@ export default function ThankYouPage() {
     <>
       <Head>
         <title>Thank You – Fasho.co</title>
+        
+        {/* Bing Ads Enhanced Conversion and Purchase Event Tracking */}
+        {orderData && (
+          <>
+            {/* Enhanced Conversion - Set Customer Data */}
+            <script
+              dangerouslySetInnerHTML={{
+                __html: `
+                  // Enhanced conversion - customer data
+                  window.uetq = window.uetq || [];
+                  window.uetq.push('set', { 
+                    'pid': {
+                      'em': '${orderData.customerEmail}',
+                      'ph': ''
+                    } 
+                  });
+                `,
+              }}
+            />
+            
+            {/* Purchase Event with Revenue */}
+            <script
+              dangerouslySetInnerHTML={{
+                __html: `
+                  // Purchase event tracking with revenue
+                  window.uetq = window.uetq || [];
+                  window.uetq.push('event', '', {
+                    "revenue_value": ${orderData.total},
+                    "currency": "USD"
+                  });
+                `,
+              }}
+            />
+          </>
+        )}
       </Head>
       
               <Header />
