@@ -20,6 +20,24 @@ export default function AddSongsPage() {
   const supabase = createClient();
   const { title, artist, imageUrl, id, url } = router.query;
 
+  // Logo data
+  const logos = [
+    { src: "/logos/atlantic.png", alt: "Atlantic Records" },
+    { src: "/logos/capitol.png", alt: "Capitol Records" },
+    { src: "/logos/colum.png", alt: "Columbia Records" },
+    { src: "/logos/dfjam.png", alt: "Def Jam Recordings" },
+    { src: "/logos/empire.png", alt: "Empire Distribution" },
+    { src: "/logos/intersco.png", alt: "Interscope Records" },
+    { src: "/logos/island.png", alt: "Island Records" },
+    { src: "/logos/rca.png", alt: "RCA Records" },
+    { src: "/logos/repub.png", alt: "Republic Records" },
+    { src: "/logos/roc.png", alt: "Roc Nation" },
+    { src: "/logos/sny.png", alt: "Sony Music" },
+    { src: "/logos/unversal.png", alt: "Universal Music Group" },
+    { src: "/logos/warnr.png", alt: "Warner Records" },
+    { src: "/logos/aftermath.png", alt: "Aftermath Entertainment" }
+  ];
+
   const [tracks, setTracks] = useState<Track[]>([]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
@@ -616,8 +634,89 @@ export default function AddSongsPage() {
 
         {/* Text under button */}
         <p className="text-sm sm:text-base md:text-lg text-gray-400 text-center mb-6 md:mb-8 max-w-3xl leading-relaxed relative z-10 px-2">
-          Think about it - while other artists drop one track and pray, you're building a whole catalog of playlist-backed hits. Every song working together to create unstoppable momentum.
+          You're not just launching a campaign - you're creating a wave of success that keeps getting bigger. Every song becomes fuel for the next one, turning your music into an unstoppable force that just can't be ignored.
         </p>
+
+        {/* Infinite Logo Carousel - Pure CSS Implementation - BREAK OUT TO FULL WIDTH */}
+        <div className="py-16 -mb-9" style={{ 
+          background: 'transparent',
+          width: '100vw',
+          marginLeft: 'calc(50% - 50vw)',
+          marginRight: 'calc(50% - 50vw)'
+        }}>
+          <div className="w-full" style={{ background: 'transparent' }}>
+            {/* Section Header */}
+            <div className="text-center mb-2" style={{ background: 'transparent' }}>
+              <h2 className="text-[calc(1.5rem-0.2rem)] sm:text-2xl md:text-3xl font-black text-white mb-4" style={{ background: 'transparent' }}>
+                Our Past Clients
+              </h2>
+            </div>
+
+            {/* CSS Infinite Carousel - Working Implementation */}
+            <div className="logo-carousel-container" style={{ height: '120px', background: 'transparent' }}>
+              <style jsx>{`
+                .logo-carousel-container {
+                  overflow: hidden;
+                  position: relative;
+                  width: 100%;
+                }
+                
+                .logo-carousel-track {
+                  display: flex;
+                  align-items: center;
+                  width: calc(140px * 28); /* 14 logos × 2 sets × 140px each */
+                  animation: logoScroll 30s linear infinite;
+                }
+                
+
+                
+                .logo-item {
+                  width: 120px;
+                  height: 80px;
+                  margin: 0 10px;
+                  flex-shrink: 0;
+                  display: flex;
+                  align-items: center;
+                  justify-content: center;
+                }
+                
+                @keyframes logoScroll {
+                  0% {
+                    transform: translateX(0);
+                  }
+                  100% {
+                    transform: translateX(calc(-140px * 14)); /* Move by exactly one set */
+                  }
+                }
+              `}</style>
+              
+              <div className="logo-carousel-track">
+                {/* First set of logos */}
+                {logos.map((logo, index) => (
+                  <div key={`set1-${index}`} className="logo-item">
+                    <img
+                      src={logo.src}
+                      alt={logo.alt}
+                      className="max-w-full max-h-full object-contain opacity-70 hover:opacity-100 transition-opacity duration-300 filter grayscale hover:grayscale-0"
+                      style={{ height: '60px' }}
+                    />
+                  </div>
+                ))}
+                {/* Second set of logos for seamless loop */}
+                {logos.map((logo, index) => (
+                  <div key={`set2-${index}`} className="logo-item">
+                    <img
+                      src={logo.src}
+                      alt={logo.alt}
+                      className="max-w-full max-h-full object-contain opacity-70 hover:opacity-100 transition-opacity duration-300 filter grayscale hover:grayscale-0"
+                      style={{ height: '60px' }}
+                    />
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
 
         {/* Read More indicator */}
         <div className="text-center mb-16 md:mb-20 relative z-10 mt-8">
@@ -767,9 +866,9 @@ export default function AddSongsPage() {
           
           <div className="relative z-10">
             {/* Section Title */}
-            <div className="text-center mb-2 md:mb-16 px-2 md:px-4 py-6 md:py-12">
+            <div className="text-center mb-[-10px] md:mb-16 px-2 md:px-4 py-6 md:py-12">
               <h2 className="text-3xl sm:text-4xl md:text-4xl lg:text-5xl font-black mb-4 bg-gradient-to-r from-[#59e3a5] via-[#14c0ff] to-[#8b5cf6] bg-clip-text text-transparent leading-tight px-4 py-2 -mb-[20px] md:-mb-[45px]">
-                Why Artists Add Multiple Songs (And Win Big)
+                Why Artists Add<br className="sm:hidden" /> Multiple Songs<br className="sm:hidden" /> (And Win Big)
               </h2>
             </div>
 
@@ -822,7 +921,7 @@ export default function AddSongsPage() {
           {/* Section Title */}
           <div className="text-center mb-8 md:mb-16">
             <h2 className="text-3xl sm:text-4xl md:text-4xl lg:text-5xl font-black mb-6 bg-gradient-to-r from-[#14c0ff] via-[#8b5cf6] to-[#59e3a5] bg-clip-text text-transparent -mb-[10px] md:-mb-[20px] px-2">
-              The Math Just Makes Sense
+              The Math Just<br className="sm:hidden" /> Makes Sense
             </h2>
           </div>
 

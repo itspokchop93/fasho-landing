@@ -1,4 +1,5 @@
 import React from 'react';
+import { useRouter } from 'next/router';
 
 interface StepIndicatorProps {
   currentStep: number; // 1, 2, or 3
@@ -6,11 +7,42 @@ interface StepIndicatorProps {
 }
 
 export default function StepIndicator({ currentStep, className = '' }: StepIndicatorProps) {
+  const router = useRouter();
   const steps = [
-    { number: 1, title: "TRACKS", subtitle: "Step 1 of 3" },
-    { number: 2, title: "CAMPAIGN", subtitle: "Step 2 of 3" },
-    { number: 3, title: "LAUNCH", subtitle: "Step 3 of 3" }
+    { number: 1, title: "TRACKS", subtitle: "Step 1 of 3", route: "/add" },
+    { number: 2, title: "CAMPAIGN", subtitle: "Step 2 of 3", route: "/packages" },
+    { number: 3, title: "LAUNCH", subtitle: "Step 3 of 3", route: "/checkout" }
   ];
+
+  const handleStepClick = (step: typeof steps[0]) => {
+    // Only allow navigation to completed steps or current step
+    if (step.number <= currentStep) {
+      // For step 1 (add page), just go there
+      if (step.number === 1) {
+        router.push('/add');
+        return;
+      }
+      
+      // For other steps, we need to preserve the current flow data
+      if (step.number === 2 && currentStep >= 2) {
+        // We're on packages or checkout, can go back to packages
+        const tracks = router.query.tracks || sessionStorage.getItem('selectedTracks');
+        if (tracks) {
+          router.push({
+            pathname: '/packages',
+            query: { tracks }
+          });
+        } else {
+          router.push('/add');
+        }
+      }
+      
+      if (step.number === 3 && currentStep >= 3) {
+        // We're on checkout, can stay or refresh
+        router.reload();
+      }
+    }
+  };
 
   return (
     <div className={`w-4/5 sm:w-full max-w-lg mx-auto pt-8 sm:pt-12 pb-16 sm:pb-20 ${className}`}>
@@ -23,7 +55,12 @@ export default function StepIndicator({ currentStep, className = '' }: StepIndic
           return (
             <React.Fragment key={step.number}>
               {/* Step */}
-              <div className="flex flex-col items-center text-center">
+              <div 
+                className={`flex flex-col items-center text-center ${
+                  step.number <= currentStep ? 'cursor-pointer hover:opacity-80 transition-opacity' : 'cursor-default'
+                }`}
+                onClick={() => handleStepClick(step)}
+              >
                 {/* Circle */}
                 <div className={`
                   w-5 h-5 sm:w-6 sm:h-6 rounded-full flex items-center justify-center font-semibold text-[10px] sm:text-xs mb-1 sm:mb-1.5 border

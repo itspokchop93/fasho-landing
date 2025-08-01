@@ -4,6 +4,8 @@ import Head from "next/head";
 import Image from "next/image";
 import { Track } from "../types/track";
 import Header from "../components/Header";
+import StepIndicator from "../components/StepIndicator";
+import SalesBanner from "../components/SalesBanner";
 import dynamic from 'next/dynamic';
 import { createClient } from '../utils/supabase/client';
 import * as gtag from '../utils/gtag';
@@ -786,6 +788,7 @@ export default function PackagesPage() {
           }
         }
       `}</style>
+      <SalesBanner />
       <Header />
       <main className="min-h-screen relative text-white pt-28 pb-12 px-4">
         {/* Background layers */}
@@ -819,9 +822,11 @@ export default function PackagesPage() {
           <div className="floating-particle"></div>
         </div>
         <div className="relative z-20">
+        {/* Step Indicator - Inside main content */}
+        <StepIndicator currentStep={2} />
         <div className="max-w-7xl mx-auto">
-          <h1 className={`${isDiscountedSong ? 'text-3xl' : 'text-4xl'} md:text-5xl font-extrabold text-center mb-12`}>
-            <span className="bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] bg-clip-text text-transparent">Step 2:</span> Choose your campaign{isDiscountedSong && <> for <span className="text-[#59e3a5]">25% OFF</span></>}
+          <h1 className={`${isDiscountedSong ? 'text-3xl' : 'text-4xl'} md:text-5xl font-extrabold text-center mb-12 -mt-5`}>
+            <span className="text-white">Choose Your Campaign</span>{isDiscountedSong && <> for <span className="text-[#59e3a5]">25% OFF</span></>}
           </h1>
 
           {/* Mobile Layout */}

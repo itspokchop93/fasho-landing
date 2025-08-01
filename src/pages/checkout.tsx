@@ -4,6 +4,7 @@ import Head from 'next/head';
 import Image from 'next/image';
 import { Track } from '../types/track';
 import Header from '../components/Header';
+import StepIndicator from '../components/StepIndicator';
 import SalesBanner from '../components/SalesBanner';
 import { createClient } from '../utils/supabase/client';
 import { userProfileService, UserProfileData, ArtistProfile } from '../utils/userProfile';
@@ -2077,10 +2078,12 @@ export default function CheckoutPage() {
         ></div>
         
         <div className="relative z-20">
+          {/* Step Indicator - Inside main content */}
+          <StepIndicator currentStep={3} />
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="text-center mb-8">
-                          <h1 className="text-3xl md:text-4xl font-bold mb-2 mt-2 sm:mt-[10px] bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] bg-clip-text text-transparent">🚀 Complete Your Order</h1>
-                          <p className="text-lg text-gray-300 mt-3">Get excited! It's time to take your content to the moon.</p>
+                          <h1 className="text-3xl md:text-4xl font-bold mb-2 mt-[-38px] sm:mt-[-30px] bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] bg-clip-text text-transparent">🚀 Complete Your Order</h1>
+                          <p className="text-lg text-gray-300 mt-3">This is where your career changes forever!</p>
             </div>
             
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
@@ -2088,7 +2091,7 @@ export default function CheckoutPage() {
               <div className="space-y-6">
                 {/* Account Details or Signed In Status */}
                 {currentUser && !authLoading ? (
-                  <div className="bg-white/5 rounded-xl p-6 border border-white/20">
+                  <div className="bg-white/5 rounded-xl pt-4 px-6 pb-6 sm:p-6 border border-white/20">
                     <div className="flex items-center justify-between mb-4">
                       <h2 className="text-lg font-semibold">Account</h2>
                       <button
@@ -2114,7 +2117,7 @@ export default function CheckoutPage() {
                     </div>
                   </div>
                 ) : !authLoading ? (
-                  <div className="bg-white/5 rounded-xl p-6 border border-white/20">
+                  <div className="bg-white/5 rounded-xl pt-4 px-6 pb-6 sm:p-6 border border-white/20">
                     <div className="flex items-center justify-between mb-2">
                       <h2 className="text-lg font-semibold">
                         {isLoginMode ? 'Sign In' : 'Account Details'}
