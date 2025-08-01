@@ -8,6 +8,9 @@ import { Track } from "../types/track";
 import React from "react";
 import Header from "../components/Header";
 import Footer from "../components/Footer";
+import SalesBanner from "../components/SalesBanner";
+import StepIndicator from "../components/StepIndicator";
+import LiveCounter from "../components/LiveCounter";
 import { createClient } from '../utils/supabase/client';
 import { createPortal } from 'react-dom';
 import * as gtag from '../utils/gtag';
@@ -489,39 +492,74 @@ export default function AddSongsPage() {
           />
         )}
       </Head>
+      <SalesBanner />
       <Header transparent={true} />
-      <main className="min-h-screen bg-black text-white py-16 md:py-24 px-4 flex flex-col items-center">
+      <main className="min-h-screen bg-black text-white pt-24 pb-16 md:pt-28 md:pb-24 px-4 flex flex-col items-center">
+        {/* Step Indicator - Inside main content */}
+        <StepIndicator currentStep={1} />
+        
         {/* Main Heading */}
-        <h1 className="text-2xl sm:text-4xl md:text-5xl font-extrabold text-center mb-4 md:mb-6 relative z-10 leading-tight mt-[28px] md:mt-[10px]">
+        <h1 className="text-2xl sm:text-4xl md:text-5xl font-extrabold text-center mb-4 md:mb-6 relative z-10 leading-tight mt-[-30px] sm:mt-[-30px] md:mt-[-40px]">
           <span className="bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] bg-clip-text text-transparent">More</span> Songs = <span className="bg-gradient-to-r from-[#14c0ff] to-[#8b5cf6] bg-clip-text text-transparent">More</span> Success 🚀
         </h1>
         
         {/* Secondary Heading */}
-        <h2 className="text-[2.15rem] sm:text-3xl md:text-3xl lg:text-5xl font-bold text-center mb-3 md:mb-4 relative z-10 leading-tight">
+        <h2 className="text-[2.15rem] sm:text-3xl md:text-3xl lg:text-[2.45rem] font-bold text-center mb-3 md:mb-4 relative z-10 leading-tight">
           Add additional songs<br className="sm:hidden" /> now for <span className="text-[#59e3a5] font-black">25% OFF!</span>
         </h2>
         
         {/* Subheadline */}
-        <p className="text-sm sm:text-base md:text-base text-gray-300 text-center mb-8 md:mb-12 max-w-2xl relative z-10 px-2 mt-1">
-          You're Smart. You Know One Song Won't Build A Career By Itself.
+        <p className="text-[0.995rem] sm:text-base md:text-base lg:text-[1.2rem] text-gray-300 text-center mb-8 md:mb-12 max-w-2xl relative z-10 px-2 mt-1">
+          Because Success For Your Music Deserves<br className="sm:hidden" /> To Be Multiplied.
         </p>
 
         {/* cards */}
-        <div className="flex gap-4 md:gap-6 mb-6 md:mb-10 flex-wrap justify-center items-center relative z-10" ref={tracksContainerRef}>
-          {tracks.map((t, idx) => (
-            <React.Fragment key={idx}>
-              <div data-track-card>
-                <SelectedTrackCard 
-                  track={t} 
-                  showDiscount={idx > 0} 
-                  onRemove={() => removeTrack(idx)}
-                />
-              </div>
-              <span className="text-5xl text-white/50 mx-4 flex items-center w-full sm:w-auto justify-center basis-full sm:basis-auto">+</span>
-            </React.Fragment>
-          ))}
-          {/* empty slot at end */}
-          <EmptySlotCard onClick={() => inputRef.current?.focus()} />
+        <div className="flex gap-1 sm:gap-4 md:gap-6 mb-6 md:mb-10 flex-wrap sm:flex-wrap justify-center items-center relative z-10" ref={tracksContainerRef}>
+          {tracks.map((t, idx) => {
+            const isEvenCard = (idx + 1) % 2 === 0; // Every 2nd card (2nd, 4th, 6th...)
+            const isOddCard = (idx + 1) % 2 === 1; // Every 1st card (1st, 3rd, 5th...)
+            const hasNextCard = idx < tracks.length - 1;
+            const nextCardIsOnSameRow = hasNextCard && !isEvenCard;
+            
+            return (
+              <React.Fragment key={idx}>
+                <div data-track-card className="flex-shrink-0">
+                  <SelectedTrackCard 
+                    track={t} 
+                    showDiscount={idx > 0} 
+                    onRemove={() => removeTrack(idx)}
+                  />
+                </div>
+                
+                {/* Plus sign only in middle position between two cards on same row */}
+                {nextCardIsOnSameRow && (
+                  <span className="text-2xl sm:text-5xl text-white/50 mx-1 sm:mx-4 flex items-center justify-center flex-shrink-0">+</span>
+                )}
+                
+                {/* Force wrap after every 2nd card */}
+                {isEvenCard && (
+                  <div className="w-full sm:w-auto flex-shrink-0"></div>
+                )}
+              </React.Fragment>
+            );
+          })}
+          
+          {/* Plus sign before placeholder only if there's an odd number of tracks (placeholder shares row) */}
+          {tracks.length % 2 === 1 && (
+            <span className="text-2xl sm:text-5xl text-white/50 mx-1 sm:mx-4 flex items-center justify-center flex-shrink-0">+</span>
+          )}
+          
+          {/* Force placeholder to new row if even number of tracks */}
+          {tracks.length % 2 === 0 && tracks.length > 0 && (
+            <div className="w-full sm:w-auto flex-shrink-0"></div>
+          )}
+          
+
+          
+          {/* empty slot placeholder */}
+          <div className="flex-shrink-0">
+            <EmptySlotCard onClick={() => inputRef.current?.focus()} />
+          </div>
         </div>
 
         {/* Search Container with Dark Gradient Background */}
@@ -560,6 +598,9 @@ export default function AddSongsPage() {
         >
           Promote selected songs →
         </button>
+
+        {/* Live Counter */}
+        <LiveCounter />
 
         {/* Conditional "No thanks" button - only show when user has exactly 1 song */}
         {tracks.length === 1 && (

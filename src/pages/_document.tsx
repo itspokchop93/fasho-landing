@@ -79,6 +79,9 @@ export default function Document() {
             `,
           }}
         />
+
+        {/* LuckyOrange Heatmap Tracking */}
+        <script async defer src="https://tools.luckyorange.com/core/lo.js?site-id=93a580b2"></script>
       </Head>
       <body>
         <Main />

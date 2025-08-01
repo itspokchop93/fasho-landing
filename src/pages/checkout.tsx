@@ -4,6 +4,7 @@ import Head from 'next/head';
 import Image from 'next/image';
 import { Track } from '../types/track';
 import Header from '../components/Header';
+import SalesBanner from '../components/SalesBanner';
 import { createClient } from '../utils/supabase/client';
 import { userProfileService, UserProfileData, ArtistProfile } from '../utils/userProfile';
 import LegalModal from '../components/LegalModal';
@@ -1981,9 +1982,10 @@ export default function CheckoutPage() {
           <title>{isAlreadyCompleted ? 'Payment Complete' : 'Checkout Error'} - FASHO</title>
           <meta name="description" content={isAlreadyCompleted ? 'Payment already completed' : 'Checkout session error'} />
         </Head>
+        <SalesBanner />
         <Header />
         
-        <main className="min-h-screen relative text-white pt-20 pb-12">
+        <main className="min-h-screen relative text-white pt-24 pb-12">
           {/* Background layers */}
           <div className="fixed inset-0 bg-black z-0"></div>
           <div 
@@ -2063,9 +2065,10 @@ export default function CheckoutPage() {
           />
         )}
       </Head>
+      <SalesBanner />
       <Header />
       
-      <main className="min-h-screen relative text-white pt-20 pb-12">
+      <main className="min-h-screen relative text-white pt-24 pb-12">
         {/* Background layers */}
         <div className="fixed inset-0 bg-black z-0"></div>
         <div 

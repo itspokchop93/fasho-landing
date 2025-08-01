@@ -240,13 +240,14 @@ export default function Header({ transparent = false, hideSignUp = false }: Head
   }, []);
 
   const getHeaderClasses = () => {
-    const baseClasses = 'fixed w-full top-0 z-50 transition-all duration-300';
+    const baseClasses = `fixed w-full top-[38px] z-[9998] transition-all duration-300`;
+    const borderClass = isScrolled ? 'border-b border-white/10' : 'border-b border-transparent';
     
     if (transparent) {
-      return `${baseClasses} ${isScrolled ? 'bg-[#18192a]/95 backdrop-blur-sm' : 'bg-transparent'}`;
+      return `${baseClasses} ${borderClass} ${isScrolled ? 'bg-[#18192a]/95 backdrop-blur-sm' : 'bg-transparent'}`;
     }
     
-    return `${baseClasses} bg-[#18192a]/95 backdrop-blur-sm`;
+    return `${baseClasses} ${borderClass} bg-[#18192a]/95 backdrop-blur-sm`;
   };
 
   // Render sign-out confirmation modal
@@ -371,7 +372,10 @@ export default function Header({ transparent = false, hideSignUp = false }: Head
   );
 
   return (
-    <header className={`${getHeaderClasses()} animate-slide-down`} suppressHydrationWarning={true}>
+    <header 
+      className={`${getHeaderClasses()} animate-slide-down`} 
+      suppressHydrationWarning={true}
+    >
       <div className="container mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16 animate-fade-in-up" style={{ animationDelay: '0.2s' }}>
           {/* Logo */}

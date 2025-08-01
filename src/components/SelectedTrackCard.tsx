@@ -9,7 +9,7 @@ interface Props {
 
 export default function SelectedTrackCard({ track, onRemove, showDiscount = false }: Props) {
   return (
-    <div className="relative bg-white/5 rounded-xl p-4 w-60 h-[262px] flex-shrink-0 text-center border border-white/20">
+    <div className="relative bg-white/5 rounded-xl p-2 sm:p-4 w-40 sm:w-60 h-[180px] sm:h-[262px] flex-shrink-0 text-center border border-white/20">
       {showDiscount && (
         <div className="absolute -top-3 -right-3 bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] text-black text-xs font-semibold px-2 py-1 rounded-md z-10">
           +25% OFF
@@ -27,21 +27,21 @@ export default function SelectedTrackCard({ track, onRemove, showDiscount = fals
         </button>
       )}
       
-      <div className="mb-3">
+      <div className="mb-2 sm:mb-3">
         <Image
           src={track.imageUrl}
           alt={track.title}
           width={180}
           height={180}
-          className="mx-auto rounded-lg"
+          className="mx-auto rounded-lg w-28 h-28 sm:w-[180px] sm:h-[180px] object-cover"
           unoptimized
         />
       </div>
       
-      <h3 className="font-semibold text-white truncate mt-3" title={track.title}>
+      <h3 className="font-semibold text-white truncate text-sm sm:text-base" title={track.title}>
         {track.title}
       </h3>
-      <p className="text-sm text-white/70 truncate" title={track.artist}>
+      <p className="text-xs sm:text-sm text-white/70 truncate" title={track.artist}>
         {track.artist}
       </p>
     </div>

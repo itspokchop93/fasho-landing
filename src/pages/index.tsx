@@ -13,6 +13,7 @@ import { Track } from "../types/track";
 import { createClient } from '../utils/supabase/client';
 import HeroParticles from '../components/HeroParticles';
 import GlareHover from '../components/GlareHover';
+import SalesBanner from '../components/SalesBanner';
 import Lottie from 'lottie-react';
 import * as gtag from '../utils/gtag';
 import { fetchSiteSettings, SiteSettings, defaultSiteSettings } from '../utils/siteSettings';
@@ -1181,6 +1182,9 @@ export default function Home() {
         </div>
       )}
 
+      {/* Sales Banner */}
+      <SalesBanner />
+
       {/* Header */}
       <Header transparent={true} />
 
@@ -1193,8 +1197,8 @@ export default function Home() {
 
         {/* Content Container */}
         <div className="relative z-10">
-          {/* Hero Section - Reduced padding from pt-60 to pt-40 (25px reduction) */}
-          <section className="min-h-screen flex items-center justify-center px-4 pt-40 relative overflow-hidden w-full">
+          {/* Hero Section */}
+          <section className="min-h-screen flex items-center justify-center px-4 pt-44 relative overflow-hidden w-full">
             {/* Animated lens flare particles background - covers entire hero section */}
             <div className="absolute inset-0 w-full h-full z-0 pointer-events-none">
               <HeroParticles />
