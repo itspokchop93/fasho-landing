@@ -81,7 +81,21 @@ export default function Document() {
         />
 
         {/* Lucky Orange Tracking Code */}
-        <script async defer src="https://tools.luckyorange.com/core/lo.js?site-id=93a580b2"></script>
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              window.lo_site_id = "93a580b2";
+              (function() {
+                var lo = document.createElement("script");
+                lo.type = "text/javascript";
+                lo.async = true;
+                lo.src = "https://tools.luckyorange.com/core/lo.js?site-id=" + window.lo_site_id;
+                var head = document.getElementsByTagName("head")[0];
+                head.appendChild(lo);
+              })();
+            `,
+          }}
+        />
       </Head>
       <body>
         <Main />
