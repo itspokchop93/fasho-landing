@@ -14,6 +14,7 @@ import { createClient } from '../utils/supabase/client';
 import HeroParticles from '../components/HeroParticles';
 import GlareHover from '../components/GlareHover';
 import SalesBanner from '../components/SalesBanner';
+import SalesPop from '../components/SalesPop';
 import Lottie from 'lottie-react';
 import * as gtag from '../utils/gtag';
 import { fetchSiteSettings, SiteSettings, defaultSiteSettings } from '../utils/siteSettings';
@@ -1280,6 +1281,9 @@ export default function Home() {
                   />
                 </div>
 
+                {/* Start Campaign Anchor - positioned above trust badges for optimal viewport positioning */}
+                <div id="start-campaign"></div>
+
                 {/* Trust Badges */}
                 <div className="flex justify-center items-center gap-10 mb-32 z-10" style={{ alignItems: 'center' }}>
                   <img 
@@ -1298,7 +1302,6 @@ export default function Home() {
 
                 {/* Menu Anchor for Track Input */}
                 <div id="track-input-section"></div>
-                <div id="start-campaign"></div>
 
                 {/* Track Input Section - Enhanced Design with increased bottom padding and 10px top padding */}
                 <div className="mt-16 mb-[18px] -mb-[55px] relative pb-10 pt-2.5">
@@ -5803,6 +5806,9 @@ export default function Home() {
             document.body
           )
         )}
+        
+        {/* Sales Pop Component */}
+        <SalesPop />
         </main>
     </>
   );

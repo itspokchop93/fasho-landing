@@ -11,6 +11,7 @@ import Footer from "../components/Footer";
 import SalesBanner from "../components/SalesBanner";
 import StepIndicator from "../components/StepIndicator";
 import LiveCounter from "../components/LiveCounter";
+import SalesPop from "../components/SalesPop";
 import { createClient } from '../utils/supabase/client';
 import { createPortal } from 'react-dom';
 import * as gtag from '../utils/gtag';
@@ -1188,6 +1189,9 @@ export default function AddSongsPage() {
           document.body
         )
       )}
+      
+      {/* Sales Pop Component */}
+      <SalesPop />
     </>
   );
 } 

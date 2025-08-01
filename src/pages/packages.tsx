@@ -6,6 +6,7 @@ import { Track } from "../types/track";
 import Header from "../components/Header";
 import StepIndicator from "../components/StepIndicator";
 import SalesBanner from "../components/SalesBanner";
+import SalesPop from "../components/SalesPop";
 import dynamic from 'next/dynamic';
 import { createClient } from '../utils/supabase/client';
 import * as gtag from '../utils/gtag';
@@ -2569,6 +2570,9 @@ export default function PackagesPage() {
 
 
       `}</style>
+      
+      {/* Sales Pop Component */}
+      <SalesPop />
     </>
   );
 } 

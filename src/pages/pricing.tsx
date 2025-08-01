@@ -4,6 +4,7 @@ import { createClient } from '../utils/supabase/client';
 import { User } from '@supabase/supabase-js';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
+import SalesPop from '../components/SalesPop';
 
 const PricingPage = () => {
   const router = useRouter();
@@ -418,6 +419,9 @@ const PricingPage = () => {
         </div>
       </div>
       <Footer />
+      
+      {/* Sales Pop Component */}
+      <SalesPop />
     </div>
   );
 };

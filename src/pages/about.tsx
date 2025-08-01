@@ -1,6 +1,7 @@
 import Head from 'next/head';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
+import SalesPop from '../components/SalesPop';
 
 export default function About() {
   return (
@@ -214,6 +215,9 @@ export default function About() {
         </main>
         
         <Footer />
+        
+        {/* Sales Pop Component */}
+        <SalesPop />
       </div>
     </>
   );

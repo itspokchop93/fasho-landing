@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import Head from 'next/head';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
+import SalesPop from '../components/SalesPop';
 
 const ContactPage = () => {
   // Contact form state
@@ -301,6 +302,9 @@ const ContactPage = () => {
         </div>
         
         <Footer />
+        
+        {/* Sales Pop Component */}
+        <SalesPop />
       </div>
     </>
   );

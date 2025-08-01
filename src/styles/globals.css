@@ -1626,4 +1626,272 @@ button, a, [role="button"] {
   }
 }
 
+/* ===== SALES POP STYLES ===== */
+.sales-pop-container {
+  position: fixed;
+  z-index: 9999;
+  pointer-events: auto;
+  
+  /* Desktop positioning - bottom left */
+  bottom: 20px;
+  left: 20px;
+  max-width: 320px;
+  
+  /* Base animation state - hidden by default */
+  transform: translateY(100%);
+  opacity: 0;
+  transition: all 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+
+/* Mobile positioning - bottom of viewport with minimal spacing */
+@media (max-width: 768px) {
+  .sales-pop-container {
+    bottom: 3px;
+    left: 5%;
+    right: 5%;
+    width: 90%;
+    max-width: none;
+    margin: 0 auto;
+    transform: translateY(100%);
+  }
+}
+
+/* Visible state - slide up animation */
+.sales-pop-container.sales-pop-visible {
+  transform: translateY(0);
+  opacity: 1;
+}
+
+/* Hidden state - slide down animation */
+.sales-pop-container.sales-pop-hidden {
+  transform: translateY(100%);
+  opacity: 0;
+}
+
+/* Main content container */
+.sales-pop-content {
+  background: #ffffff;
+  border-radius: 12px;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
+  padding: 16px;
+  position: relative;
+  overflow: hidden;
+  
+  /* Subtle border for definition */
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  
+  /* Ensure content is above background */
+  z-index: 2;
+}
+
+/* Gradient background accent */
+.sales-pop-content::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, #59e3a5, #14c0ff, #8b5cf6);
+  z-index: 1;
+}
+
+/* Emoji container */
+.sales-pop-emoji {
+  position: absolute;
+  top: 50%;
+  left: 16px;
+  transform: translateY(-50%);
+  font-size: 28px;
+  z-index: 3;
+}
+
+/* Main message container */
+.sales-pop-message {
+  margin-left: 48px; /* Space for emoji */
+  margin-bottom: 8px;
+}
+
+/* Message text styling */
+.sales-pop-text {
+  font-size: calc(14px + 0.05rem);
+  line-height: 1.4;
+  color: #1f2937;
+  font-weight: 500;
+}
+
+/* Customer name styling */
+.sales-pop-name {
+  font-weight: 600;
+  color: #111827;
+}
+
+/* Package name styling */
+.sales-pop-package {
+  font-weight: 600;
+  background: linear-gradient(135deg, #59e3a5, #14c0ff, #8b5cf6);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+  text-decoration: none;
+}
+
+.sales-pop-package:hover {
+  transform: scale(1.02);
+  filter: brightness(1.1);
+}
+
+/* Footer container */
+.sales-pop-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-left: 48px; /* Align with message */
+  margin-top: 8px;
+}
+
+/* Timestamp styling */
+.sales-pop-timestamp {
+  font-size: 11px;
+  color: #6b7280;
+  font-weight: 400;
+}
+
+/* Verification section */
+.sales-pop-verification {
+  display: flex;
+  align-items: center;
+  font-size: 9px;
+  color: #374151;
+  font-weight: 500;
+}
+
+/* Checkmark styling */
+.sales-pop-checkmark {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 11px;
+  height: 11px;
+  background: #14c0ff;
+  color: white;
+  border-radius: 50%;
+  margin-right: 4px;
+  font-weight: 600;
+  font-size: 7px;
+}
+
+/* Mobile responsive adjustments */
+@media (max-width: 480px) {
+  .sales-pop-content {
+    padding: 14px;
+  }
+  
+  .sales-pop-emoji {
+    font-size: 24px;
+    top: 50%;
+    left: 14px;
+    transform: translateY(-50%);
+  }
+  
+  .sales-pop-message {
+    margin-left: 40px;
+  }
+  
+  .sales-pop-footer {
+    margin-left: 40px;
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+    gap: 8px;
+  }
+  
+  .sales-pop-text {
+    font-size: calc(13px + 0.15rem);
+  }
+  
+  .sales-pop-timestamp {
+    font-size: 10px;
+  }
+  
+  .sales-pop-verification {
+    font-size: 8px;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+  
+  .sales-pop-checkmark {
+    width: 10px;
+    height: 10px;
+    font-size: 6px;
+  }
+}
+
+/* Dark mode support */
+@media (prefers-color-scheme: dark) {
+  .sales-pop-content {
+    background: #1f2937;
+    border-color: rgba(255, 255, 255, 0.1);
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+  }
+  
+  .sales-pop-text {
+    color: #f9fafb;
+  }
+  
+  .sales-pop-name {
+    color: #ffffff;
+  }
+  
+  .sales-pop-timestamp {
+    color: #9ca3af;
+  }
+  
+  .sales-pop-verification {
+    color: #d1d5db;
+  }
+}
+
+/* Hover effects for better UX */
+.sales-pop-content:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 15px 50px rgba(0, 0, 0, 0.2);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+  .sales-pop-content {
+    border: 2px solid #000000;
+  }
+  
+  .sales-pop-text {
+    color: #000000;
+  }
+  
+  .sales-pop-verification {
+    color: #000000;
+  }
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+  .sales-pop-container {
+    transition: opacity 0.3s ease;
+  }
+  
+  .sales-pop-container.sales-pop-visible {
+    transform: none;
+  }
+  
+  .sales-pop-container.sales-pop-hidden {
+    transform: none;
+  }
+  
+  .sales-pop-content:hover {
+    transform: none;
+  }
+}
+
 
