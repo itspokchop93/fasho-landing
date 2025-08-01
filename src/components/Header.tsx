@@ -376,7 +376,7 @@ export default function Header({ transparent = false, hideSignUp = false }: Head
       className={`${getHeaderClasses()} animate-slide-down`} 
       suppressHydrationWarning={true}
     >
-      <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+      <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-2">
         <div className="flex items-center justify-between h-16 animate-fade-in-up" style={{ animationDelay: '0.2s' }}>
           {/* Logo */}
           <div className="flex-shrink-0 animate-fade-in-up" style={{ animationDelay: '0.1s' }}>
@@ -391,14 +391,12 @@ export default function Header({ transparent = false, hideSignUp = false }: Head
 
           {/* Desktop Navigation */}
           <nav className={`hidden md:flex items-center space-x-2 ${hideSignUp ? 'pr-16' : ''} animate-fade-in-up`} style={{ animationDelay: '0.4s' }}>
+
             {!isHomepage && (
-              <Link href="/" className="text-white hover:text-[#59e3a5] transition-all duration-300 ease-in-out font-medium px-4 py-2 rounded-lg hover:bg-white/5 hover:scale-105 transform backdrop-blur-sm border border-transparent hover:border-white/10">
-                Start Campaign
+              <Link href="/pricing" className="text-white hover:text-[#59e3a5] transition-all duration-300 ease-in-out font-medium px-4 py-2 rounded-lg hover:bg-white/5 hover:scale-105 transform backdrop-blur-sm border border-transparent hover:border-white/10">
+                Pricing
               </Link>
             )}
-            <Link href="/pricing" className="text-white hover:text-[#59e3a5] transition-all duration-300 ease-in-out font-medium px-4 py-2 rounded-lg hover:bg-white/5 hover:scale-105 transform backdrop-blur-sm border border-transparent hover:border-white/10">
-              Pricing
-            </Link>
             <Link href="/#faq" className="text-white hover:text-[#59e3a5] transition-all duration-300 ease-in-out font-medium px-4 py-2 rounded-lg hover:bg-white/5 hover:scale-105 transform backdrop-blur-sm border border-transparent hover:border-white/10">
               FAQ
             </Link>
@@ -408,6 +406,11 @@ export default function Header({ transparent = false, hideSignUp = false }: Head
             <Link href="/contact" className="text-white hover:text-[#59e3a5] transition-all duration-300 ease-in-out font-medium px-4 py-2 rounded-lg hover:bg-white/5 hover:scale-105 transform backdrop-blur-sm border border-transparent hover:border-white/10">
               Contact
             </Link>
+            {!currentUser && !authLoading && (
+              <Link href="/signup" className="text-white hover:text-[#59e3a5] transition-all duration-300 ease-in-out font-medium px-4 py-2 rounded-lg hover:bg-white/5 hover:scale-105 transform backdrop-blur-sm border border-transparent hover:border-white/10">
+                Login
+              </Link>
+            )}
             
 
             
@@ -433,11 +436,11 @@ export default function Header({ transparent = false, hideSignUp = false }: Head
                     {showProfileDropdown && renderProfileDropdown()}
                   </div>
                 ) : !authLoading ? (
-                  <Link href="/signup" className="bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] text-black font-semibold px-6 py-3 rounded-xl hover:opacity-90 hover:scale-105 transition-all duration-300 shadow-lg backdrop-blur-sm border border-white/20">
-                    Login
+                  <Link href="/#start-campaign" className="bg-gradient-to-r from-[#8b5cf6] to-[#6366f1] text-white font-bold px-3 py-2 rounded-lg hover:opacity-90 hover:scale-105 transition-all duration-300 shadow-lg backdrop-blur-sm border border-white/20">
+                    START CAMPAIGN
                   </Link>
                 ) : (
-                  <div className="bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] text-black font-semibold px-6 py-3 rounded-xl opacity-50">
+                  <div className="bg-gradient-to-r from-[#8b5cf6] to-[#6366f1] text-white font-bold px-3 py-2 rounded-lg opacity-50">
                     Loading...
                   </div>
                 )}
@@ -469,34 +472,23 @@ export default function Header({ transparent = false, hideSignUp = false }: Head
             style={{ zIndex: 9999 }}
             suppressHydrationWarning={true}
           >
-            <div className="px-4 pt-6 pb-6 space-y-1 text-center">
+            <div className="px-4 pt-4 pb-4 space-y-1 text-center">
+
               {!isHomepage && (
-                <Link href="/" className="flex items-center justify-center gap-3 px-4 py-4 mx-2 text-white hover:text-[#59e3a5] hover:bg-white/5 transition-all duration-300 ease-in-out font-medium rounded-xl backdrop-blur-sm border border-transparent hover:border-white/10 transform hover:scale-[1.02] animate-fade-in-up" style={{ animationDelay: '0.05s' }}>
-                  <svg className="w-5 h-5" fill="none" stroke="url(#gradientStartCampaign)" viewBox="0 0 24 24">
+                <Link href="/pricing" className="flex items-center justify-center gap-3 px-4 py-4 mx-2 text-white hover:text-[#59e3a5] hover:bg-white/5 transition-all duration-300 ease-in-out font-medium rounded-xl backdrop-blur-sm border border-transparent hover:border-white/10 transform hover:scale-[1.02] animate-fade-in-up" style={{ animationDelay: !isHomepage ? '0.1s' : '0.05s' }}>
+                  <svg className="w-5 h-5" fill="none" stroke="url(#gradient1)" viewBox="0 0 24 24">
                     <defs>
-                      <linearGradient id="gradientStartCampaign" x1="0%" y1="0%" x2="100%" y2="0%">
+                      <linearGradient id="gradient1" x1="0%" y1="0%" x2="100%" y2="0%">
                         <stop offset="0%" stopColor="#59e3a5" />
                         <stop offset="100%" stopColor="#14c0ff" />
                       </linearGradient>
                     </defs>
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 100 4m0-4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 100 4m0-4v2m0-6V4" />
+                    <circle cx="12" cy="12" r="10" strokeWidth={2}/>
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v12M9.5 9a2.5 2.5 0 715 0M9.5 15a2.5 2.5 0 005 0"/>
                   </svg>
-                  Start Campaign
+                  Pricing
                 </Link>
               )}
-              <Link href="/pricing" className="flex items-center justify-center gap-3 px-4 py-4 mx-2 text-white hover:text-[#59e3a5] hover:bg-white/5 transition-all duration-300 ease-in-out font-medium rounded-xl backdrop-blur-sm border border-transparent hover:border-white/10 transform hover:scale-[1.02] animate-fade-in-up" style={{ animationDelay: !isHomepage ? '0.1s' : '0.05s' }}>
-                <svg className="w-5 h-5" fill="none" stroke="url(#gradient1)" viewBox="0 0 24 24">
-                  <defs>
-                    <linearGradient id="gradient1" x1="0%" y1="0%" x2="100%" y2="0%">
-                      <stop offset="0%" stopColor="#59e3a5" />
-                      <stop offset="100%" stopColor="#14c0ff" />
-                    </linearGradient>
-                  </defs>
-                  <circle cx="12" cy="12" r="10" strokeWidth={2}/>
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v12M9.5 9a2.5 2.5 0 015 0M9.5 15a2.5 2.5 0 005 0"/>
-                </svg>
-                Pricing
-              </Link>
               {currentUser && !authLoading && (
                 <Link href="/dashboard" className="flex items-center justify-center gap-3 px-4 py-4 mx-2 text-white hover:text-[#59e3a5] hover:bg-white/5 transition-all duration-300 ease-in-out font-medium rounded-xl backdrop-blur-sm border border-transparent hover:border-white/10 transform hover:scale-[1.02] animate-fade-in-up" style={{ animationDelay: !isHomepage ? '0.15s' : '0.1s' }}>
                   <svg className="w-5 h-5" fill="none" stroke="url(#gradientDashboard)" viewBox="0 0 24 24">
@@ -512,7 +504,12 @@ export default function Header({ transparent = false, hideSignUp = false }: Head
                   Dashboard
                 </Link>
               )}
-              <Link href="/#faq" className="flex items-center justify-center gap-3 px-4 py-4 mx-2 text-white hover:text-[#59e3a5] hover:bg-white/5 transition-all duration-300 ease-in-out font-medium rounded-xl backdrop-blur-sm border border-transparent hover:border-white/10 transform hover:scale-[1.02] animate-fade-in-up" style={{ animationDelay: !isHomepage ? '0.25s' : '0.2s' }}>
+              <Link 
+                href="/#faq" 
+                onClick={() => setIsMobileMenuOpen(false)}
+                className="flex items-center justify-center gap-3 px-4 py-4 mx-2 text-white hover:text-[#59e3a5] hover:bg-white/5 transition-all duration-300 ease-in-out font-medium rounded-xl backdrop-blur-sm border border-transparent hover:border-white/10 transform hover:scale-[1.02] animate-fade-in-up" 
+                style={{ animationDelay: !isHomepage ? '0.25s' : '0.2s' }}
+              >
                 <svg className="w-5 h-5" fill="none" stroke="url(#gradient2)" viewBox="0 0 24 24">
                   <defs>
                     <linearGradient id="gradient2" x1="0%" y1="0%" x2="100%" y2="0%">
@@ -548,10 +545,22 @@ export default function Header({ transparent = false, hideSignUp = false }: Head
                 </svg>
                 Contact
               </Link>
+              {!currentUser && !authLoading && (
+                <Link href="/signup" className="flex items-center justify-center gap-3 px-4 py-4 mx-2 text-white hover:text-[#59e3a5] hover:bg-white/5 transition-all duration-300 ease-in-out font-medium rounded-xl backdrop-blur-sm border border-transparent hover:border-white/10 transform hover:scale-[1.02] animate-fade-in-up" style={{ animationDelay: !isHomepage ? '0.4s' : '0.35s' }}>
+                  <svg className="w-5 h-5" fill="none" stroke="url(#gradient5)" viewBox="0 0 24 24">
+                    <defs>
+                      <linearGradient id="gradient5" x1="0%" y1="0%" x2="100%" y2="0%">
+                        <stop offset="0%" stopColor="#59e3a5" />
+                        <stop offset="100%" stopColor="#14c0ff" />
+                      </linearGradient>
+                    </defs>
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                  </svg>
+                  Login
+                </Link>
+              )}
               
-
-              
-              <div className="flex items-center justify-center px-4 py-3 animate-fade-in-up" style={{ animationDelay: !isHomepage ? '0.4s' : '0.35s' }}>
+              <div className="flex items-center justify-center px-4 py-3 animate-fade-in-up" style={{ animationDelay: !isHomepage ? '0.45s' : '0.4s' }}>
                 {/* Sign Up Button or User Profile */}
                 {!hideSignUp && (
                   currentUser && !authLoading ? (
@@ -674,11 +683,15 @@ export default function Header({ transparent = false, hideSignUp = false }: Head
                       )}
                     </div>
                   ) : !authLoading ? (
-                    <Link href="/signup" className="w-full mx-2 bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] text-black font-semibold px-6 py-4 rounded-xl hover:opacity-90 hover:scale-[1.02] transition-all duration-300 text-center shadow-lg">
-                      Login
+                    <Link 
+                      href="/#start-campaign" 
+                      onClick={() => setIsMobileMenuOpen(false)}
+                      className="w-full mx-2 bg-gradient-to-r from-[#8b5cf6] to-[#6366f1] text-white font-bold px-3 py-4 rounded-lg hover:opacity-90 hover:scale-[1.02] transition-all duration-300 text-center shadow-lg"
+                    >
+                      START CAMPAIGN
                     </Link>
                   ) : (
-                    <div className="w-full mx-2 bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] text-black font-semibold px-6 py-4 rounded-xl opacity-50 text-center">
+                    <div className="w-full mx-2 bg-gradient-to-r from-[#8b5cf6] to-[#6366f1] text-white font-bold px-3 py-4 rounded-lg opacity-50 text-center">
                       Loading...
                     </div>
                   )
