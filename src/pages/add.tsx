@@ -512,6 +512,10 @@ export default function AddSongsPage() {
         )}
       </Head>
       <SalesBanner />
+      
+      {/* Sales Pop Component - positioned early for fast timer initialization */}
+      <SalesPop />
+      
       <Header transparent={true} />
       <main className="min-h-screen bg-black text-white pt-24 pb-16 md:pt-28 md:pb-24 px-4 flex flex-col items-center">
         {/* Step Indicator - Inside main content */}
@@ -1189,9 +1193,6 @@ export default function AddSongsPage() {
           document.body
         )
       )}
-      
-      {/* Sales Pop Component */}
-      <SalesPop />
     </>
   );
 } 

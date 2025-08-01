@@ -790,6 +790,10 @@ export default function PackagesPage() {
         }
       `}</style>
       <SalesBanner />
+      
+      {/* Sales Pop Component - positioned early for fast timer initialization */}
+      <SalesPop />
+      
       <Header />
       <main className="min-h-screen relative text-white pt-28 pb-12 px-4">
         {/* Background layers */}
@@ -2570,9 +2574,6 @@ export default function PackagesPage() {
 
 
       `}</style>
-      
-      {/* Sales Pop Component */}
-      <SalesPop />
     </>
   );
 } 

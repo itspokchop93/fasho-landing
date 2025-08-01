@@ -185,9 +185,9 @@ const SalesPop: React.FC = () => {
       setShowPop(show);
     };
 
-    const startPopCycle = () => {
-      // Generate random delay between 12-20 seconds (12000-20000ms)
-      const randomDelay = Math.floor(Math.random() * 8000) + 12000;
+    const startPopCycle = (isFirstPop = false) => {
+      // First popup shows immediately, subsequent popups have random delay
+      const randomDelay = isFirstPop ? 0 : Math.floor(Math.random() * 8000) + 12000;
       
       currentTimer = setTimeout(() => {
         // Generate new pop data
@@ -200,13 +200,13 @@ const SalesPop: React.FC = () => {
           broadcastShowState(false);
           
           // Start next cycle after hide animation completes (500ms)
-          setTimeout(startPopCycle, 500);
+          setTimeout(() => startPopCycle(false), 500);
         }, 9000);
       }, randomDelay);
     };
 
     // Start first popup after exactly 10 seconds
-    const initialTimer = setTimeout(startPopCycle, 10000);
+    const initialTimer = setTimeout(() => startPopCycle(true), 10000);
 
     return () => {
       clearTimeout(initialTimer);

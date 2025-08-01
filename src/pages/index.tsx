@@ -1186,6 +1186,9 @@ export default function Home() {
       {/* Sales Banner */}
       <SalesBanner />
 
+      {/* Sales Pop Component - positioned early for fast timer initialization */}
+      <SalesPop />
+
       {/* Header */}
       <Header transparent={true} />
 
@@ -5806,9 +5809,6 @@ export default function Home() {
             document.body
           )
         )}
-        
-        {/* Sales Pop Component */}
-        <SalesPop />
         </main>
     </>
   );

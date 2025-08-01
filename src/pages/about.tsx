@@ -1,6 +1,7 @@
 import Head from 'next/head';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
+import SalesBanner from '../components/SalesBanner';
 import SalesPop from '../components/SalesPop';
 
 export default function About() {
@@ -13,6 +14,12 @@ export default function About() {
         <link rel="icon" href="/favicon.ico" />
       </Head>
 
+      {/* Sales Banner */}
+      <SalesBanner />
+      
+      {/* Sales Pop Component - positioned early for fast timer initialization */}
+      <SalesPop />
+      
       <div className="min-h-screen bg-gradient-to-br from-[#18192a] via-[#1a1b2e] via-[#16213e] to-[#0a0a13] relative">
         {/* Subtle overlay gradient for depth */}
         <div className="absolute inset-0 bg-gradient-to-t from-[#0a0a13]/20 via-transparent to-[#18192a]/10"></div>
@@ -215,9 +222,6 @@ export default function About() {
         </main>
         
         <Footer />
-        
-        {/* Sales Pop Component */}
-        <SalesPop />
       </div>
     </>
   );

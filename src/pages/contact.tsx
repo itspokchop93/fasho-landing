@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import Head from 'next/head';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
+import SalesBanner from '../components/SalesBanner';
 import SalesPop from '../components/SalesPop';
 
 const ContactPage = () => {
@@ -146,6 +147,12 @@ const ContactPage = () => {
         <meta name="description" content="Get in touch with FASHO support. We're here to help with your music promotion campaigns, billing questions, and technical issues." />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
       </Head>
+      
+      {/* Sales Banner */}
+      <SalesBanner />
+      
+      {/* Sales Pop Component - positioned early for fast timer initialization */}
+      <SalesPop />
       
       <div className="min-h-screen bg-gradient-to-b from-[#18192a] to-[#0a0a13]">
         <Header />
@@ -302,9 +309,6 @@ const ContactPage = () => {
         </div>
         
         <Footer />
-        
-        {/* Sales Pop Component */}
-        <SalesPop />
       </div>
     </>
   );

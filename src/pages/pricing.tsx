@@ -4,6 +4,7 @@ import { createClient } from '../utils/supabase/client';
 import { User } from '@supabase/supabase-js';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
+import SalesBanner from '../components/SalesBanner';
 import SalesPop from '../components/SalesPop';
 
 const PricingPage = () => {
@@ -186,6 +187,12 @@ const PricingPage = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-[#18192a] to-[#0a0a13]">
+      {/* Sales Banner */}
+      <SalesBanner />
+      
+      {/* Sales Pop Component - positioned early for fast timer initialization */}
+      <SalesPop />
+      
       <Header />
       
       <div className="pt-32 pb-16">
@@ -419,9 +426,6 @@ const PricingPage = () => {
         </div>
       </div>
       <Footer />
-      
-      {/* Sales Pop Component */}
-      <SalesPop />
     </div>
   );
 };
