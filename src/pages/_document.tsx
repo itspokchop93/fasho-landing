@@ -80,42 +80,8 @@ export default function Document() {
           }}
         />
 
-        {/* LuckyOrange Heatmap Tracking */}
+        {/* Lucky Orange Tracking Code */}
         <script async defer src="https://tools.luckyorange.com/core/lo.js?site-id=93a580b2"></script>
-        
-        {/* Additional LuckyOrange initialization with path exclusion */}
-        <script
-          dangerouslySetInnerHTML={{
-            __html: `
-              (function() {
-                if (typeof window === 'undefined') return;
-                
-                // Check if we should disable LuckyOrange on certain pages
-                function checkLuckyOrangeDisable() {
-                  var path = window.location.pathname;
-                  var excludePaths = ['/dashboard', '/admin'];
-                  var shouldExclude = excludePaths.some(function(excludePath) {
-                    return path.startsWith(excludePath);
-                  });
-                  
-                  if (shouldExclude && window.LuckyOrange) {
-                    // Disable LuckyOrange if it's loaded on excluded pages
-                    window.LuckyOrange.disable();
-                  }
-                }
-                
-                // Check on page load
-                if (document.readyState === 'loading') {
-                  document.addEventListener('DOMContentLoaded', function() {
-                    setTimeout(checkLuckyOrangeDisable, 1000);
-                  });
-                } else {
-                  setTimeout(checkLuckyOrangeDisable, 1000);
-                }
-              })();
-            `,
-          }}
-        />
       </Head>
       <body>
         <Main />
