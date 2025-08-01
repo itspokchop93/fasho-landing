@@ -1343,6 +1343,11 @@ input:-webkit-autofill:active {
   }
 }
 
+.glow-effect {
+  animation: glow 2s ease-in-out infinite;
+  color: #59e3a5;
+}
+
 /* Spark travel animation for album border */
 @keyframes spark-travel {
   0% { 

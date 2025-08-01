@@ -76,11 +76,11 @@ export default function LiveCounter({ className = '' }: LiveCounterProps) {
     <div className={`flex items-center justify-center mt-4 mb-5 w-full ${className}`}>
       <div className="bg-gradient-to-r from-gray-900/90 via-gray-800/80 to-gray-900/90 backdrop-blur-sm border border-gray-600/30 rounded-2xl px-4 sm:px-10 py-3 shadow-lg w-full sm:w-auto">
         <div className="flex items-center space-x-2 sm:space-x-4">
-          {/* Green checkmark icon */}
-          <div className="flex-shrink-0 w-3 h-3 sm:w-4 sm:h-4 bg-[#59e3a5] rounded-full flex items-center justify-center">
-            <svg className="w-1.5 h-1.5 sm:w-2.5 sm:h-2.5 text-black" fill="currentColor" viewBox="0 0 20 20">
-              <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-            </svg>
+          {/* Live monitoring dot with glow animation */}
+          <div className="flex-shrink-0 relative">
+            <div className="w-3 h-3 sm:w-4 sm:h-4 bg-[#59e3a5] rounded-full animate-pulse"></div>
+            <div className="absolute inset-0 w-3 h-3 sm:w-4 sm:h-4 bg-[#59e3a5] rounded-full animate-ping opacity-75"></div>
+            <div className="absolute inset-0 w-3 h-3 sm:w-4 sm:h-4 bg-[#59e3a5] rounded-full glow-effect"></div>
           </div>
           
           {/* Counter text with baseline alignment */}
