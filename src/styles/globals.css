@@ -1960,6 +1960,18 @@ button, a, [role="button"] {
   /* Default spacing for mobile - no change */
 }
 
+.rolling-stone-stars-spacing {
+  /* Default spacing for mobile - no change */
+}
+
+.rolling-stone-badge-spacing {
+  /* Default spacing for mobile - no change */
+}
+
+.rolling-stone-text-spacing {
+  margin-top: 2px;
+}
+
 @media (min-width: 641px) {
   .trustpilot-badge-spacing {
     margin-bottom: 8px; /* Increase space between Trustpilot badge and text on desktop */
@@ -1967,6 +1979,118 @@ button, a, [role="button"] {
   
   .google-badge-spacing {
     margin-bottom: 8px; /* Increase space between Google Partner text and badge on desktop */
+  }
+  
+  .rolling-stone-stars-spacing {
+    margin-bottom: 8px; /* Increase space between stars and badge on desktop */
+  }
+  
+  .rolling-stone-badge-spacing {
+    /* Default spacing for desktop - no change */
+  }
+  
+  .rolling-stone-text-spacing {
+    margin-top: 2px; /* Consistent spacing on all devices */
+  }
+}
+
+@media (max-width: 640px) {
+  .rolling-stone-text-spacing {
+    margin-top: 0px; /* Reduce spacing on mobile */
+  }
+}
+
+/* Hero CTA Buttons */
+.hero-cta-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 1rem;
+  margin: 1rem 0 2rem 0;
+  padding: 0 1rem;
+  max-width: 64rem;
+  width: 100%;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.hero-cta-button {
+  flex: 1;
+  max-width: 350px;
+  padding: 1rem 1.5rem;
+  border-radius: 1rem;
+  font-weight: 700;
+  font-size: 1rem;
+  text-align: center;
+  transition: all 0.3s ease;
+  cursor: pointer;
+  text-decoration: none;
+  display: inline-block;
+  position: relative;
+  z-index: 10;
+}
+
+/* Hero CTA Divider */
+.hero-cta-divider {
+  width: 4rem;
+  height: 1px;
+  background: linear-gradient(to right, transparent, rgba(255, 255, 255, 0.5), transparent);
+  margin: 1.5rem auto 0 auto;
+  opacity: 0.8;
+}
+
+.hero-cta-primary {
+  background: linear-gradient(135deg, #59e3a5, #8b5cf6, #7c3aed);
+  color: white;
+  border: none;
+  box-shadow: 0 8px 25px rgba(89, 227, 165, 0.3);
+}
+
+.hero-cta-primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 35px rgba(89, 227, 165, 0.4);
+  filter: brightness(1.1);
+}
+
+.hero-cta-secondary {
+  background: rgba(26, 26, 46, 0.8);
+  color: white;
+  border: 2px solid transparent;
+  position: relative;
+  backdrop-filter: blur(10px);
+}
+
+.hero-cta-secondary::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  padding: 2px;
+  background: linear-gradient(135deg, #59e3a5, #8b5cf6, #7c3aed);
+  border-radius: inherit;
+  mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  mask-composite: xor;
+  -webkit-mask-composite: xor;
+  pointer-events: none;
+}
+
+.hero-cta-secondary:hover {
+  transform: translateY(-2px);
+  background: rgba(26, 26, 46, 0.9);
+}
+
+/* Mobile adjustments for hero CTA buttons */
+@media (max-width: 640px) {
+  .hero-cta-container {
+    gap: 0.75rem;
+    margin: 0.75rem 0 2rem 0;
+    padding: 0 0.5rem;
+  }
+  
+  .hero-cta-button {
+    max-width: none;
+    padding: 0.875rem 1rem;
+    font-size: 0.875rem;
+    border-radius: 0.75rem;
   }
 }
 

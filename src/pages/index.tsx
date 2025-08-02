@@ -1343,10 +1343,10 @@ export default function Home() {
 
 
 
-                {/* Pre-headline */}
-                <div className="text-[0.62rem] md:text-[0.975rem] text-white/80 font-normal mb-[14px] md:mb-[24px] animate-fade-in-up mt-[32px] md:mt-0" style={{ animationDelay: '0.1s', animationFillMode: 'both' }}>
-                  The Industry's #1 Playlist Marketing Company Since 2016
-                </div>
+                                  {/* Pre-headline */}
+                  <div className="text-[0.62rem] md:text-[0.975rem] text-white/80 font-normal mb-[14px] md:mb-[24px] animate-fade-in-up mt-[20px] md:mt-0" style={{ animationDelay: '0.1s', animationFillMode: 'both' }}>
+                    The Industry's #1 Playlist Marketing Company Since 2016
+                  </div>
                 <div className="w-16 h-px bg-gradient-to-r from-transparent via-white/30 to-transparent mx-auto mb-[8px]"></div>
 
                 {/* Main Heading with simple slide-up animation */}
@@ -1358,11 +1358,34 @@ export default function Home() {
 
                 {/* Subtitle */}
                 <div className="text-[1rem] md:text-[1.4rem] text-gray-300 mb-6 max-w-4xl mx-auto leading-relaxed break-words animate-fade-in-up mt-[-15px] md:mt-0" style={{ paddingBottom: '10px', wordBreak: 'break-word', overflowWrap: 'break-word', animationDelay: '0.2s', animationFillMode: 'both' }}>
-                  Gain Millions Of REAL Fans With Guaranteed Placements On The World's Largest Spotify Playlists. We've Helped Over 15k+ Artists Just Like You Explode Their Careers.
+                  Gain Millions Of REAL Fans With Guaranteed Placements On The World's Largest Spotify Playlists. We've Helped Over 15k+ Artists Just Like You Rapidly Explode Their Careers.
                 </div>
 
-                {/* Stats Badges */}
-                <div className="flex justify-center items-center gap-1 md:gap-3 mb-8 animate-fade-in-up px-4" style={{ animationDelay: '0.3s', animationFillMode: 'both' }}>
+                {/* ========== HERO CTA BUTTONS - TEMPORARILY HIDDEN ==========
+                     WILL REACTIVATE THESE LATER - DO NOT DELETE
+                     Simply uncomment this section when ready to go live
+                {/* Hero CTA Buttons */}
+                {/*<div className="hero-cta-container animate-fade-in-up" style={{ animationDelay: '0.25s', animationFillMode: 'both' }}>
+                  <a 
+                    href="#start-campaign"
+                    className="hero-cta-button hero-cta-primary"
+                  >
+                    PLACE ME TODAY!
+                  </a>
+                  <a 
+                    href="#"
+                    className="hero-cta-button hero-cta-secondary"
+                  >
+                    FREE AI ANALYZER
+                  </a>
+                </div>*/}
+
+                {/* Hero CTA Divider */}
+                {/*<div className="hero-cta-divider animate-fade-in-up" style={{ animationDelay: '0.3s', animationFillMode: 'both' }}></div>*/}
+                {/* ========== END HERO CTA BUTTONS SECTION ========== */}
+
+                                  {/* Stats Badges */}
+                  <div className="flex justify-center items-center gap-3 md:gap-3 mb-8 animate-fade-in-up px-4" style={{ animationDelay: '0.3s', animationFillMode: 'both' }}>
                   <div className="bg-gradient-to-br from-white/10 to-white/5 backdrop-blur-xl rounded-xl md:rounded-2xl px-1.5 md:px-4 py-1.5 md:py-2 border border-white/20 shadow-lg flex items-center gap-1 md:gap-2 flex-shrink-0">
                     <svg className="w-2.5 h-2.5 md:w-4 md:h-4 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
@@ -1393,7 +1416,7 @@ export default function Home() {
                 <div id="start-campaign"></div>
 
                 {/* Trust Badges */}
-                <div className="flex justify-center items-center gap-8 md:gap-10 mb-32 z-10">
+                <div className="flex justify-center items-center gap-8 md:gap-12 mb-32 z-10">
                   <div className="text-center flex flex-col items-center">
                   <img 
                     src="/tpilot.png" 
@@ -1415,6 +1438,25 @@ export default function Home() {
                       className="h-8 md:h-9 w-auto object-contain opacity-90 hover:opacity-100 transition-opacity duration-300 z-20" 
                       style={{ verticalAlign: 'middle' }}
                   />
+                  </div>
+                  <div className="text-center flex flex-col items-center">
+                    {/* 5 Star Icons */}
+                    <div className="flex justify-center gap-1 mb-2 rolling-stone-stars-spacing">
+                      {[...Array(5)].map((_, i) => (
+                        <svg key={i} className="w-2 md:w-3 h-2 md:h-3" fill="#ed1c24" viewBox="0 0 20 20">
+                          <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
+                        </svg>
+                      ))}
+                    </div>
+                    <img 
+                      src="/rostoned.png" 
+                      alt="Rolling Stone Badge" 
+                      className="h-4 md:h-5 w-auto object-contain opacity-90 hover:opacity-100 transition-opacity duration-300 z-20 rolling-stone-badge-spacing" 
+                      style={{ verticalAlign: 'middle' }}
+                    />
+                    <p className="text-mobile-reduced text-gray-400 leading-tight text-center rolling-stone-text-spacing">
+                      Rated "Most Valuable<br />For Artists" of 2025
+                    </p>
                   </div>
                 </div>
 
