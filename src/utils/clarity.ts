@@ -26,11 +26,11 @@ class ClarityService {
 
       try {
         // Microsoft Clarity script injection
-        (function (c: any, l: Document, a: string, r: string, i: string, t: HTMLScriptElement, y: Element | null) {
+        (function (c: any, l: Document, a: string, r: string, i: string) {
           c[a] = c[a] || function () {
             (c[a].q = c[a].q || []).push(arguments);
           };
-          t = l.createElement(r) as HTMLScriptElement;
+          var t = l.createElement(r) as HTMLScriptElement;
           t.async = true;
           t.src = "https://www.clarity.ms/tag/" + i + "?ref=custom";
           t.id = "clarity-script";
@@ -41,11 +41,8 @@ class ClarityService {
           t.onerror = () => {
             reject('Failed to load Microsoft Clarity script');
           };
-          y = l.getElementsByTagName(r)[0];
-          if (y && y.parentNode) {
-            y.parentNode.insertBefore(t, y);
-          }
-        })(window, document, "clarity", "script", this.projectId);
+          (l.getElementsByTagName(r)[0] || l.body).parentNode?.insertBefore(t, l.getElementsByTagName(r)[0] || l.body);
+        })(window, document, "clarity", "script", process.env.NEXT_PUBLIC_CLARITY_ID!);
 
         this.isInitialized = true;
       } catch (error) {

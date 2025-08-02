@@ -52,76 +52,37 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   }
 
   try {
-    // Extract track ID from URL for artist profile lookup
-    const idMatch = url.match(/spotify\.com\/track\/([a-zA-Z0-9]+)/);
-    let artistProfileUrl = '';
-    let spotifyTrackData = null;
-
-    // If we have Spotify credentials and a track ID, get the full track data from Spotify API
-    if (idMatch && process.env.SPOTIFY_CLIENT_ID && process.env.SPOTIFY_CLIENT_SECRET) {
-      try {
-        const trackId = idMatch[1];
-        console.log(`🎵 TRACK-API: Fetching track details for track ID: ${trackId}`);
-        
-        const accessToken = await getSpotifyAccessToken();
-        spotifyTrackData = await fetchSpotifyTrackDetails(trackId, accessToken);
-        
-        // Get primary artist profile URL
-        const primaryArtist = spotifyTrackData.artists[0];
-        artistProfileUrl = primaryArtist?.external_urls?.spotify || '';
-        
-        console.log(`🎵 TRACK-API: Spotify track data fetched - Title: "${spotifyTrackData.name}", Artist: "${spotifyTrackData.artists.map((a: any) => a.name).join(', ')}"`);
-        console.log(`🎵 TRACK-API: Artist profile URL found: ${artistProfileUrl}`);
-      } catch (spotifyError) {
-        console.warn(`🎵 TRACK-API: Could not fetch Spotify track data:`, spotifyError);
-        // Continue with oEmbed fallback
-      }
+    // Replace the track ID extraction with a more robust regex:
+    const idMatch = url.match(/spotify\.com\/track\/([a-zA-Z0-9]+)(?:[?&]|$)/);
+    if (!idMatch) {
+      console.error('TRACK-API: Could not extract track ID from URL:', url);
+      return res.status(400).json({ success: false, message: 'Could not extract track ID from URL' });
+    }
+    const trackId = idMatch[1];
+    console.log(`🎵 TRACK-API: Fetching track details for track ID: ${trackId}`);
+    
+    const accessToken = await getSpotifyAccessToken();
+    const trackData = await fetchSpotifyTrackDetails(trackId, accessToken);
+    
+    // After fetching trackData from Spotify Web API:
+    if (!trackData) {
+      return res.status(404).json({ success: false, message: 'Track not found' });
     }
 
-    // Get oEmbed data for image
-    const oEmbedRes = await fetch(
-      `https://open.spotify.com/oembed?url=${encodeURIComponent(url)}`
-    );
+    const imageUrl = trackData.album?.images?.[0]?.url || '';
 
-    if (!oEmbedRes.ok) {
-      throw new Error("Spotify oEmbed request failed");
-    }
-
-    const oEmbedData = await oEmbedRes.json();
-
-    // Use Spotify API data if available, otherwise fall back to oEmbed parsing
-    let title: string;
-    let artist: string;
-
-    if (spotifyTrackData) {
-      // Use the Spotify API data for accurate title and artist
-      title = spotifyTrackData.name;
-      artist = spotifyTrackData.artists.map((a: any) => a.name).join(', ');
-    } else {
-      // Fallback to oEmbed parsing
-      const rawTitle = (oEmbedData.title as string) || "";
-      const splitRegex = /\s*[–-]\s*/;
-      const titleParts = rawTitle.split(splitRegex);
-      title = titleParts[0] || "";
-      artist = titleParts[1] || "";
-    }
-
-    console.log(`🎵 TRACK-API: Final track data - Title: "${title}", Artist: "${artist}", Artist Profile: ${artistProfileUrl || 'Not available'}`);
-
-    const result = {
-      success: true,
-      track: {
-        id: idMatch ? idMatch[1] : url,
-        title,
-        artist,
-        imageUrl: oEmbedData.thumbnail_url,
-        url,
-        artistProfileUrl: artistProfileUrl,
-      },
+    const track = {
+      id: trackData.id,
+      title: trackData.name,
+      artist: trackData.artists.map((a: any) => a.name).join(', '),
+      imageUrl,
+      url: `https://open.spotify.com/track/${trackData.id}`,
+      artistProfileUrl: trackData.artists?.[0]?.external_urls?.spotify || ''
     };
 
-    res.status(200).json(result);
+    return res.status(200).json({ success: true, track });
   } catch (error: any) {
+    console.error('TRACK-API: Error fetching track details:', error);
     res.status(500).json({ success: false, message: error.message });
   }
 } 

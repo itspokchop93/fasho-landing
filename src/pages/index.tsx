@@ -337,7 +337,6 @@ const useClientScale = (baseWidth = 1200, minScale = 0.12, maxScale = 1) => {
   }, [baseWidth, minScale, maxScale]);
   return scale;
 };
-
 export default function Home() {
   const [showSuccessBanner, setShowSuccessBanner] = useState(false);
   const [url, setUrl] = useState("");
@@ -836,7 +835,6 @@ export default function Home() {
       setIsSearching(false);
     }
   };
-
   const selectTrackFromSearch = (selectedTrack: Track) => {
     setTrack(selectedTrack);
     setPreviewTrack(selectedTrack);
@@ -1216,7 +1214,6 @@ export default function Home() {
     const scaleFactor = getScaleFactor();
     return `${scrollTransform} scale(${scaleFactor})`;
   };
-
   return (
     <>
       <Head>
@@ -1609,40 +1606,6 @@ export default function Home() {
                                 </div>
                               </div>
                             )}
-                            
-                            {/* Mobile Preview Track - positioned directly below input */}
-                            {isMobile && previewTrack && !isSpotifyUrlCheck(url) && (
-                              <div 
-                                className="absolute top-full left-0 right-0 mt-1 z-[9999] bg-gradient-to-br from-[#23272f] to-[#1a1a2e] border border-white/20 rounded-2xl shadow-2xl backdrop-blur-xl overflow-hidden"
-                              >
-                                {/* Header */}
-                                <div className="px-4 py-3 border-b border-white/10 bg-gradient-to-r from-[#59e3a5]/10 to-[#14c0ff]/10">
-                                  <h3 className="text-white font-semibold text-sm">Selected Track</h3>
-                                </div>
-                                
-                                {/* Track Preview */}
-                                <div className="p-4">
-                                  <div className="flex items-center space-x-3 mb-4">
-                                    <img
-                                      src={previewTrack.imageUrl}
-                                      alt={previewTrack.title}
-                                      className="w-16 h-16 rounded-xl object-cover shadow-md border border-white/10"
-                                    />
-                                    <div className="flex-1 min-w-0">
-                                      <div className="font-bold text-white truncate text-lg">{previewTrack.title}</div>
-                                      <div className="text-gray-300 truncate">{previewTrack.artist}</div>
-                                    </div>
-                                  </div>
-                                  
-                                  <button
-                                    onClick={handleConfirm}
-                                    className="w-full py-3 bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] text-white font-bold rounded-xl hover:shadow-lg hover:shadow-[#14c0ff]/25 transition-all duration-300 transform hover:scale-[1.02] active:scale-95"
-                                  >
-                                    Continue with this track
-                                  </button>
-                                </div>
-                              </div>
-                            )}
                           </div>
                           {/* Launch Campaign Button - Always normal color, pulse when filled */}
                           <button
@@ -1704,7 +1667,6 @@ export default function Home() {
                     </div>
                   </div>
                 </div>
-
                 {/* Infinite Logo Carousel - Pure CSS Implementation - BREAK OUT TO FULL WIDTH */}
                 <div className="relative w-screen left-1/2 right-1/2 -ml-[50vw] -mr-[50vw] py-16 -mb-9" style={{ background: 'transparent' }}>
                   <div className="w-full" style={{ background: 'transparent' }}>
@@ -2167,7 +2129,6 @@ export default function Home() {
             </p>
             </div>
           </div>
-
           {/* Shape Divider */}
           <div className="relative z-10 pb-48" style={{ height: '200px', width: '110vw', left: '-5vw', position: 'relative', transform: 'rotate(8deg)', background: 'transparent', marginTop: '-60px', marginBottom: '85px' }}>
             {/* All background elements removed for full transparency */}
@@ -2592,7 +2553,6 @@ export default function Home() {
               </div>
             </div>
           </section>
-
           {/* Step 3 Section - Left Column */}
           <section className="hidden lg:block py-20 px-4 relative z-40" style={{ background: 'transparent' }}>
             <div className="max-w-7xl mx-auto">
@@ -3052,7 +3012,6 @@ export default function Home() {
               </div>
             </div>
           </section>
-
           {/* Mobile Step 4 Section */}
           <section className="block lg:hidden py-16 px-4 relative z-20">
             <div className="max-w-4xl mx-auto">
@@ -3363,7 +3322,6 @@ export default function Home() {
                   Everything you need in one clean dashboard. Launch campaigns, track your growth, and hit us up when you need anything. All from one elite platform.
                 </p>
               </div>
-
               {/* Browser Window Mockup */}
               <div ref={dashboardRef} className="relative flex justify-center -mb-[700px] md:-mb-[25px]">
                 {/* Background Glow Effect */}
@@ -3652,8 +3610,8 @@ export default function Home() {
                               <button className="bg-white/10 hover:bg-white/20 text-white px-4 py-2 rounded-lg text-sm transition-colors duration-200">
                                 View Details
                               </button>
-                      </div>
-                    </div>
+                  </div>
+                  </div>
                   </div>
                   
                         {/* Campaign 2 */}
@@ -3715,7 +3673,6 @@ export default function Home() {
               </div>
             </div>
           </section>
-
           {/* Curator Connect+ Section */}
           <section className="py-0 md:py-24 px-4 md:px-12 lg:px-20 pb-0 md:pb-48 relative z-5 overflow-hidden" style={{ background: 'transparent' }}>
             {/* Extended gradient overlay that flows into next section */}
@@ -4195,7 +4152,6 @@ export default function Home() {
               </div>
             </div>
           </section>
-
           {/* Shape Divider - Copy of the one under Start Your Campaign */}
           <div className="relative z-30 pb-16 mt-40 md:mt-0 -mb-20 md:mb-0" style={{ height: '200px', width: '120vw', left: '-10vw', position: 'relative', transform: 'rotate(-8deg) translateY(-280px)', background: 'transparent' }}>
             {/* All background elements removed for full transparency */}
@@ -4672,7 +4628,6 @@ export default function Home() {
                             </div>
                           </div>
           </section>
-
           {/* What Playlists We Have Section */}
           <section className="py-32 px-4 pb-48 relative overflow-visible">
             {/* Animated Background Elements */}
@@ -5023,7 +4978,6 @@ export default function Home() {
               </circle>
             </svg>
           </div>
-
           {/* Authenticity Guaranteed Section */}
           <section className="py-24 px-4 relative z-20 -mt-24" style={{ background: 'transparent' }}>
             <div className="max-w-7xl mx-auto">
@@ -5325,7 +5279,6 @@ export default function Home() {
             {/* Bottom Gradient Transition Overlay */}
             <div className="absolute bottom-0 left-0 right-0 h-64 bg-gradient-to-t from-[#0a0a13] via-[#16213e]/80 to-transparent -z-10"></div>
             <div className="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-[#0a0a13] to-transparent -z-5"></div>
-            
             {/* Floating Particles and Glow Effects */}
             <div className="absolute top-20 left-20 w-96 h-96 bg-gradient-to-r from-[#8b5cf6]/30 to-[#59e3a5]/20 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '0s' }}></div>
             <div className="absolute bottom-20 right-20 w-80 h-80 bg-gradient-to-r from-[#14c0ff]/25 to-[#8b5cf6]/15 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '2s' }}></div>
@@ -5821,7 +5774,6 @@ export default function Home() {
               </div>
             </div>
           </section>
-
           {/* Final CTA Section */}
           <section className="px-4 relative z-10" style={{ marginTop: '-60px', paddingTop: '24px', paddingBottom: '24px', marginBottom: '205px' }}>
             <div className="max-w-4xl mx-auto text-center">
