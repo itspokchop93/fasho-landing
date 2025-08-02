@@ -1647,12 +1647,12 @@ button, a, [role="button"] {
 @media (max-width: 768px) {
   .sales-pop-container {
     bottom: 3px;
-    left: 5%;
-    right: 5%;
-    width: 90%;
+    left: 10%;
+    right: 10%;
+    width: 80%;
     max-width: none;
     margin: 0 auto;
-    transform: translateY(100%);
+    transform: translateY(100%) scale(0.95);
   }
 }
 
@@ -1660,6 +1660,13 @@ button, a, [role="button"] {
 .sales-pop-container.sales-pop-visible {
   transform: translateY(0);
   opacity: 1;
+}
+
+/* Mobile visible state - maintain scale */
+@media (max-width: 768px) {
+  .sales-pop-container.sales-pop-visible {
+    transform: translateY(0) scale(0.95);
+  }
 }
 
 /* Hidden state - slide down animation */
@@ -1808,7 +1815,7 @@ button, a, [role="button"] {
   }
   
   .sales-pop-text {
-    font-size: calc(13px + 0.15rem);
+    font-size: calc(12px + 0.1rem);
   }
   
   .sales-pop-timestamp {
@@ -1891,6 +1898,75 @@ button, a, [role="button"] {
   
   .sales-pop-content:hover {
     transform: none;
+  }
+}
+
+/* Mobile text size adjustments for FASHO official and artist reviews */
+.text-mobile-reduced {
+  font-size: 9px;
+}
+
+@media (max-width: 640px) {
+  .text-mobile-reduced {
+    font-size: calc(9px - 0.05rem);
+  }
+}
+
+/* Mobile spacing adjustments for specific text elements */
+.artists-reviews-spacing {
+  margin-top: 2px;
+}
+
+.fasho-official-spacing {
+  margin-bottom: 6px;
+}
+
+@media (max-width: 640px) {
+  .artists-reviews-spacing {
+    margin-top: 0px; /* 2px reduced by 2px = 0px */
+  }
+  
+  .fasho-official-spacing {
+    margin-bottom: 4px; /* 6px reduced by 2px = 4px */
+  }
+}
+
+/* Mobile adjustments for "FASHO Is Used By The Largest Labels" */
+.largest-labels-spacing {
+  /* Default spacing - no change on desktop */
+}
+
+.largest-labels-text {
+  /* Default text size - no change on desktop */
+}
+
+@media (max-width: 640px) {
+  .largest-labels-spacing {
+    margin-top: -22px; /* Reduce spacing above by 22px (12px + additional 10px) */
+    margin-bottom: 0px; /* Reduce spacing below by 12px (from 12px to 0px) */
+  }
+  
+  .largest-labels-text {
+    font-size: calc(1.5rem - 0.2rem - 0.08rem) !important; /* Scale down by 0.08rem on mobile */
+  }
+}
+
+/* Desktop-only badge spacing adjustments */
+.trustpilot-badge-spacing {
+  /* Default spacing for mobile - no change */
+}
+
+.google-badge-spacing {
+  /* Default spacing for mobile - no change */
+}
+
+@media (min-width: 641px) {
+  .trustpilot-badge-spacing {
+    margin-bottom: 8px; /* Increase space between Trustpilot badge and text on desktop */
+  }
+  
+  .google-badge-spacing {
+    margin-bottom: 8px; /* Increase space between Google Partner text and badge on desktop */
   }
 }
 

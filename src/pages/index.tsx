@@ -1310,7 +1310,7 @@ export default function Home() {
                 {/* Client Testimonial Feature */}
                 <div className="mb-6 md:mb-12 animate-fade-in-up mt-[-35px] md:mt-0" style={{ animationDelay: '0s', animationFillMode: 'both' }}>
                   {/* Stack of Client Images */}
-                  <div className="flex justify-center items-center mb-2 md:mb-4">
+                  <div className="flex justify-center items-center mb-0 md:mb-4">
                     <div className="flex -space-x-2">
                       <img src="/signup-pics/haybeeth.jpg" alt="Client" className="w-9 h-9 md:w-9 md:h-9 rounded-full border-2 border-white/20 object-cover" />
                       <img src="/signup-pics/aaronnicc.jpg" alt="Client" className="w-9 h-9 md:w-9 md:h-9 rounded-full border-2 border-white/20 object-cover" />
@@ -1319,11 +1319,11 @@ export default function Home() {
                       <img src="/signup-pics/collins.jpg" alt="Client" className="w-9 h-9 md:w-9 md:h-9 rounded-full border-2 border-white/20 object-cover" />
                       <img src="/signup-pics/eduardo.jpg" alt="Client" className="w-9 h-9 md:w-9 md:h-9 rounded-full border-2 border-white/20 object-cover" />
                       <img src="/signup-pics/jean-daniel.jpg" alt="Client" className="w-9 h-9 md:w-9 md:h-9 rounded-full border-2 border-white/20 object-cover" />
-                    </div>
+                  </div>
                   </div>
                   
                   {/* Single Rotating Testimonial */}
-                  <div className="flex items-center justify-center mt-1 md:mt-2 h-16 md:h-8 relative overflow-hidden px-4">
+                  <div className="flex items-center justify-center mt-[-8px] md:mt-2 h-16 md:h-8 relative overflow-hidden px-4">
                     <div 
                       className="flex items-center gap-2 transition-all duration-500 ease-out bg-gradient-to-r from-white/5 to-white/10 backdrop-blur-sm rounded-full px-4 py-1 md:px-3 md:py-1.5 border border-white/20 absolute max-w-[calc(100vw-2rem)] md:max-w-none"
                       id="testimonial-container"
@@ -1337,14 +1337,14 @@ export default function Home() {
                       <p className="text-[10px] md:text-xs text-gray-300 md:whitespace-nowrap max-w-[280px] md:max-w-none" id="testimonial-text">
                         <span className="font-medium">..got placed on 84 playlists in 14 days</span> <span className="text-[#59e3a5]">@LayBankz</span>
                       </p>
-                    </div>
+                  </div>
                   </div>
                 </div>
 
 
 
                 {/* Pre-headline */}
-                <div className="text-[0.62rem] md:text-[0.975rem] text-white/80 font-normal mb-[14px] md:mb-[24px] animate-fade-in-up mt-[8px] md:mt-0" style={{ animationDelay: '0.1s', animationFillMode: 'both' }}>
+                <div className="text-[0.62rem] md:text-[0.975rem] text-white/80 font-normal mb-[14px] md:mb-[24px] animate-fade-in-up mt-[32px] md:mt-0" style={{ animationDelay: '0.1s', animationFillMode: 'both' }}>
                   The Industry's #1 Playlist Marketing Company Since 2016
                 </div>
                 <div className="w-16 h-px bg-gradient-to-r from-transparent via-white/30 to-transparent mx-auto mb-[8px]"></div>
@@ -1395,26 +1395,26 @@ export default function Home() {
                 {/* Trust Badges */}
                 <div className="flex justify-center items-center gap-8 md:gap-10 mb-32 z-10">
                   <div className="text-center flex flex-col items-center">
-                    <img 
-                      src="/tpilot.png" 
-                      alt="TrustPilot Badge" 
-                      className="h-10 md:h-11 w-auto object-contain opacity-90 hover:opacity-100 transition-opacity duration-300 z-20 mb-2" 
-                      style={{ verticalAlign: 'middle' }}
-                    />
-                    <p className="text-[9px] text-gray-400 leading-tight whitespace-nowrap mt-[2px]">
+                  <img 
+                    src="/tpilot.png" 
+                    alt="TrustPilot Badge" 
+                      className="h-10 md:h-11 w-auto object-contain opacity-90 hover:opacity-100 transition-opacity duration-300 z-20 mb-2 trustpilot-badge-spacing" 
+                    style={{ verticalAlign: 'middle' }}
+                  />
+                    <p className="text-mobile-reduced text-gray-400 leading-tight whitespace-nowrap artists-reviews-spacing">
                       <span className="text-[#00D4AA]">3,725</span> Artists Reviews
                     </p>
                   </div>
                   <div className="text-center flex flex-col items-center">
-                    <p className="text-[9px] text-gray-400 mb-[6px] leading-tight whitespace-nowrap">
+                    <p className="text-mobile-reduced text-gray-400 leading-tight whitespace-nowrap fasho-official-spacing google-badge-spacing">
                       FASHO.co Is An Official
                     </p>
-                    <img 
-                      src="/gpart.jpg" 
-                      alt="Google Partner Badge" 
+                  <img 
+                    src="/gpart.jpg" 
+                    alt="Google Partner Badge" 
                       className="h-8 md:h-9 w-auto object-contain opacity-90 hover:opacity-100 transition-opacity duration-300 z-20" 
                       style={{ verticalAlign: 'middle' }}
-                    />
+                  />
                   </div>
                 </div>
 
@@ -1667,9 +1667,9 @@ export default function Home() {
                 <div className="relative w-screen left-1/2 right-1/2 -ml-[50vw] -mr-[50vw] py-16 -mb-9" style={{ background: 'transparent' }}>
                   <div className="w-full" style={{ background: 'transparent' }}>
                     {/* Section Header */}
-                    <div className="text-center mb-12" style={{ background: 'transparent' }}>
-                      <h2 className="text-[calc(1.5rem-0.2rem)] sm:text-2xl md:text-3xl font-black text-white mb-4" style={{ background: 'transparent' }}>
-                        Trusted By Major Clients
+                    <div className="text-center mb-12 largest-labels-spacing" style={{ background: 'transparent' }}>
+                      <h2 className="text-[calc(1.5rem-0.2rem)] sm:text-2xl md:text-3xl font-black text-white mb-4 largest-labels-text" style={{ background: 'transparent' }}>
+                        We're Used By The Largest Labels
                       </h2>
                     </div>
 
@@ -5245,7 +5245,7 @@ export default function Home() {
                           {/* Testimonial */}
                           <blockquote 
                             className="text-gray-300 leading-relaxed text-center italic" 
-                            style={{ fontSize: isMobile ? '0.92rem' : '1.07rem' }}
+                            style={{ fontSize: isMobile ? '0.97rem' : '1.07rem' }}
                           >
                             "{testimonial.quote}"
                           </blockquote>
