@@ -6,7 +6,9 @@ import * as gtag from "../utils/gtag";
 import LeadTracker from "../utils/leadTracking";
 import { AuthProvider } from "../utils/authContext";
 import { useActivityTracking } from "../utils/useActivityTracking";
-import clarityService from "../utils/clarity";
+import dynamic from 'next/dynamic';
+
+const Clarity = dynamic(() => import('../components/Clarity'), { ssr: false });
 
 export default function App({ Component, pageProps }: AppProps) {
   const router = useRouter();
@@ -20,16 +22,9 @@ export default function App({ Component, pageProps }: AppProps) {
   });
 
   useEffect(() => {
-    // Google Analytics and Clarity page view tracking
+    // Google Analytics page view tracking
     const handleRouteChange = (url: string) => {
       gtag.pageview(url);
-      
-      // Call Clarity identify for each page to ensure optimal tracking
-      try {
-        clarityService.identify(`user-${Date.now()}`, undefined, url);
-      } catch (error) {
-        console.error('Clarity identify failed:', error);
-      }
     };
 
     router.events.on('routeChangeComplete', handleRouteChange);
@@ -46,22 +41,6 @@ export default function App({ Component, pageProps }: AppProps) {
       } catch (error) {
         console.error('Lead tracking initialization failed:', error);
       }
-    }
-  }, []);
-
-  useEffect(() => {
-    // Initialize Microsoft Clarity
-    const initClarity = async () => {
-      try {
-        await clarityService.init();
-        console.log('Microsoft Clarity initialized successfully');
-      } catch (error) {
-        console.error('Microsoft Clarity initialization failed:', error);
-      }
-    };
-
-    if (typeof window !== 'undefined') {
-      initClarity();
     }
   }, []);
 
@@ -87,8 +66,8 @@ export default function App({ Component, pageProps }: AppProps) {
 
   return (
     <AuthProvider>
-
+      <Clarity />
       <Component {...pageProps} />
     </AuthProvider>
   );
-} 
+}
