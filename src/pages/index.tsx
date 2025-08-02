@@ -698,6 +698,91 @@ export default function Home() {
     };
   }, [showSearchResults, focused, previewTrack]);
 
+  // Testimonial animation logic
+  useEffect(() => {
+    const testimonials = [
+      {
+        image: '/signup-pics/haybeeth.jpg',
+        text: '..got placed on 84 playlists in 14 days',
+        handle: '@LayBankz'
+      },
+      {
+        image: '/signup-pics/aaronnicc.jpg',
+        text: 'I broke Spotify\'s new artist stream record',
+        handle: '@TommyRichman'
+      },
+      {
+        image: '/signup-pics/bgcortez.jpg',
+        text: 'Over 2.5M streams from their Legendary campaign',
+        handle: '@BensonBoone'
+      },
+      {
+        image: '/signup-pics/brett.jpg',
+        text: '..the best playlist marketing company I\'ve worked with, hands down...',
+        handle: '@AddisonRae'
+      },
+      {
+        image: '/signup-pics/collins.jpg',
+        text: 'FASHO has been killing it for years. I use them for everything...',
+        handle: '@FloMilli'
+      },
+      {
+        image: '/signup-pics/eduardo.jpg',
+        text: 'Broke over 32M streams and we\'re still going!',
+        handle: '@ian'
+      }
+    ];
+
+    let currentIndex = 0;
+    let isAnimating = false;
+    let timeoutId: NodeJS.Timeout;
+
+    function showTestimonial() {
+      const container = document.getElementById('testimonial-container');
+      const image = document.getElementById('testimonial-image');
+      const text = document.getElementById('testimonial-text');
+      
+      if (!container || !image || !text || isAnimating) return;
+      
+      isAnimating = true;
+      const testimonial = testimonials[currentIndex];
+      
+      // Update content while hidden
+      (image as HTMLImageElement).src = testimonial.image;
+      (image as HTMLImageElement).alt = testimonial.handle;
+      text.innerHTML = `<span class="font-medium">${testimonial.text}</span> <span class="text-[#59e3a5]">${testimonial.handle}</span>`;
+      
+      // Slide down and fade in
+      container.style.transform = 'translateY(0px)';
+      container.style.opacity = '1';
+      
+      // Show for 3 seconds, then slide back up
+      timeoutId = setTimeout(() => {
+        // Slide up and fade out
+        container.style.transform = 'translateY(-40px)';
+        container.style.opacity = '0';
+        
+        setTimeout(() => {
+          currentIndex = (currentIndex + 1) % testimonials.length;
+          isAnimating = false;
+          
+          // Schedule next testimonial after 0.01 second gap
+          timeoutId = setTimeout(showTestimonial, 10);
+        }, 500); // Wait for slide up animation to complete (matches duration-500)
+      }, 3000); // Show for 3 seconds
+    }
+
+    // Start first testimonial after 3 seconds
+    timeoutId = setTimeout(showTestimonial, 3000);
+
+    // Cleanup function
+    return () => {
+      if (timeoutId) {
+        clearTimeout(timeoutId);
+      }
+    };
+  }, []);
+
   // Simple input focus handler with immediate position update
   const handleInputFocus = () => {
     setFocused(true);
@@ -1222,85 +1307,115 @@ export default function Home() {
             </div>
             <div className="w-full max-w-7xl mx-auto relative z-10 px-4 sm:px-6 lg:px-8">
               <div className="text-center mb-20 max-w-5xl mx-auto">
-                {/* Main Heading with SplitText Animation */}
-                <h1 className="text-4xl xs:text-5xl sm:text-6xl md:text-7xl lg:text-8xl font-black mb-8 leading-none" style={{ whiteSpace: 'normal' }}>
-                  <div className="whitespace-nowrap mb-1 md:mb-0 text-[calc(1.2em+0.85rem)] md:text-[1.2em]">
-                  <SplitText
-                    text="#1 Spotify"
-                    className="block drop-shadow-[0_8px_16px_rgba(0,0,0,0.6)]"
-                    delay={80}
-                    duration={0.8}
-                    ease="power3.out"
-                    splitType="chars"
-                    from={{ opacity: 0, y: 50 }}
-                    to={{ opacity: 1, y: 0 }}
-                    threshold={0.2}
-                    rootMargin="-50px"
-                    textAlign="center"
-                    gradientFrom="#59e3a5"
-                    gradientVia="#14c0ff"
-                    gradientTo="#8b5cf6"
-                    gradientDirection="to-r"
-                  />
+                {/* Client Testimonial Feature */}
+                <div className="mb-6 md:mb-12 animate-fade-in-up mt-[-35px] md:mt-0" style={{ animationDelay: '0s', animationFillMode: 'both' }}>
+                  {/* Stack of Client Images */}
+                  <div className="flex justify-center items-center mb-2 md:mb-4">
+                    <div className="flex -space-x-2">
+                      <img src="/signup-pics/haybeeth.jpg" alt="Client" className="w-9 h-9 md:w-9 md:h-9 rounded-full border-2 border-white/20 object-cover" />
+                      <img src="/signup-pics/aaronnicc.jpg" alt="Client" className="w-9 h-9 md:w-9 md:h-9 rounded-full border-2 border-white/20 object-cover" />
+                      <img src="/signup-pics/bgcortez.jpg" alt="Client" className="w-9 h-9 md:w-9 md:h-9 rounded-full border-2 border-white/20 object-cover" />
+                      <img src="/signup-pics/brett.jpg" alt="Client" className="w-9 h-9 md:w-9 md:h-9 rounded-full border-2 border-white/20 object-cover" />
+                      <img src="/signup-pics/collins.jpg" alt="Client" className="w-9 h-9 md:w-9 md:h-9 rounded-full border-2 border-white/20 object-cover" />
+                      <img src="/signup-pics/eduardo.jpg" alt="Client" className="w-9 h-9 md:w-9 md:h-9 rounded-full border-2 border-white/20 object-cover" />
+                      <img src="/signup-pics/jean-daniel.jpg" alt="Client" className="w-9 h-9 md:w-9 md:h-9 rounded-full border-2 border-white/20 object-cover" />
+                    </div>
                   </div>
-                  <div 
-                    className="whitespace-nowrap text-[calc(1em+0.45rem)] md:text-[1em]"
-                  >
-                  <SplitText
-                    text="Music Promotion"
-                    className="block drop-shadow-[0_8px_16px_rgba(0,0,0,0.6)]"
-                    delay={80}
-                    duration={0.8}
-                    ease="power3.out"
-                    splitType="chars"
-                    from={{ opacity: 0, y: 50 }}
-                    to={{ opacity: 1, y: 0 }}
-                    threshold={0.2}
-                    rootMargin="-50px"
-                    textAlign="center"
-                    gradientFrom="#ffffff"
-                    gradientTo="#9ca3af"
-                    gradientDirection="to-b"
-                  />
+                  
+                  {/* Single Rotating Testimonial */}
+                  <div className="flex items-center justify-center mt-1 md:mt-2 h-16 md:h-8 relative overflow-hidden px-4">
+                    <div 
+                      className="flex items-center gap-2 transition-all duration-500 ease-out bg-gradient-to-r from-white/5 to-white/10 backdrop-blur-sm rounded-full px-4 py-1 md:px-3 md:py-1.5 border border-white/20 absolute max-w-[calc(100vw-2rem)] md:max-w-none"
+                      id="testimonial-container"
+                      style={{ transform: 'translateY(-40px)', opacity: '0' }}
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-2.5 w-2.5 text-[#59e3a5] flex-shrink-0">
+                        <path d="M16 3a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2 1 1 0 0 1 1 1v1a2 2 0 0 1-2 2 1 1 0 0 0-1 1v2a1 1 0 0 0 1 1 6 6 0 0 0 6-6V5a2 2 0 0 0-2-2z"></path>
+                        <path d="M5 3a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2 1 1 0 0 1 1 1v1a2 2 0 0 1-2 2 1 1 0 0 0-1 1v2a1 1 0 0 0 1 1 6 6 0 0 0 6-6V5a2 2 0 0 0-2-2z"></path>
+                      </svg>
+                      <img src="/signup-pics/haybeeth.jpg" alt="@LayBankz" className="hidden md:block h-4 w-4 rounded-full object-cover" id="testimonial-image" />
+                      <p className="text-[10px] md:text-xs text-gray-300 md:whitespace-nowrap max-w-[280px] md:max-w-none" id="testimonial-text">
+                        <span className="font-medium">..got placed on 84 playlists in 14 days</span> <span className="text-[#59e3a5]">@LayBankz</span>
+                      </p>
+                    </div>
                   </div>
+                </div>
+
+
+
+                {/* Pre-headline */}
+                <div className="text-[0.62rem] md:text-[0.975rem] text-white/80 font-normal mb-[14px] md:mb-[24px] animate-fade-in-up mt-[8px] md:mt-0" style={{ animationDelay: '0.1s', animationFillMode: 'both' }}>
+                  The Industry's #1 Playlist Marketing Company Since 2016
+                </div>
+                <div className="w-16 h-px bg-gradient-to-r from-transparent via-white/30 to-transparent mx-auto mb-[8px]"></div>
+
+                {/* Main Heading with simple slide-up animation */}
+                <h1 className="text-[2.18rem] xs:text-[2.93rem] sm:text-[3.02rem] md:text-[3.77rem] lg:text-[4.52rem] font-black mb-8 leading-tight animate-fade-in-up drop-shadow-[0_8px_16px_rgba(0,0,0,0.6)]" style={{ whiteSpace: 'normal', animationDelay: '0.1s', animationFillMode: 'both' }}>
+                  <span className="bg-gradient-to-r from-[#59e3a5] via-[#14c0ff] to-[#8b5cf6] bg-clip-text text-transparent">Bot Plays</span> and <span className="bg-gradient-to-r from-[#59e3a5] via-[#14c0ff] to-[#8b5cf6] bg-clip-text text-transparent">Fake Playlists</span><br className="hidden md:block" /> <span className="bg-gradient-to-b from-white via-gray-100 to-gray-300 bg-clip-text text-transparent">Won't Make You Famous</span>
                 </h1>
 
 
 
                 {/* Subtitle */}
-                <div className="text-xl md:text-2xl text-gray-300 mb-8 max-w-4xl mx-auto leading-relaxed break-words" style={{ paddingBottom: '10px', wordBreak: 'break-word', overflowWrap: 'break-word' }}>
-                  <SplitText
-                    text="Stop watching other artists blow up while your tracks collect dust. It's time to get the plays, fans, and recognition you deserve."
-                    className="block"
-                    delay={60}
-                    duration={0.6}
-                    ease="power2.out"
-                    splitType="words"
-                    from={{ opacity: 0, y: 30 }}
-                    to={{ opacity: 1, y: 0 }}
-                    threshold={0.3}
-                    rootMargin="-30px"
-                    textAlign="center"
-                  />
+                <div className="text-[1rem] md:text-[1.4rem] text-gray-300 mb-6 max-w-4xl mx-auto leading-relaxed break-words animate-fade-in-up mt-[-15px] md:mt-0" style={{ paddingBottom: '10px', wordBreak: 'break-word', overflowWrap: 'break-word', animationDelay: '0.2s', animationFillMode: 'both' }}>
+                  Gain Millions Of REAL Fans With Guaranteed Placements On The World's Largest Spotify Playlists. We've Helped Over 15k+ Artists Just Like You Explode Their Careers.
+                </div>
+
+                {/* Stats Badges */}
+                <div className="flex justify-center items-center gap-1 md:gap-3 mb-8 animate-fade-in-up px-4" style={{ animationDelay: '0.3s', animationFillMode: 'both' }}>
+                  <div className="bg-gradient-to-br from-white/10 to-white/5 backdrop-blur-xl rounded-xl md:rounded-2xl px-1.5 md:px-4 py-1.5 md:py-2 border border-white/20 shadow-lg flex items-center gap-1 md:gap-2 flex-shrink-0">
+                    <svg className="w-2.5 h-2.5 md:w-4 md:h-4 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                    </svg>
+                    <span className="text-white font-semibold text-[0.65rem] md:text-base whitespace-nowrap">100% Organic</span>
+                  </div>
+                  
+                  <div className="hidden md:block w-px h-6 bg-gray-600"></div>
+                  
+                  <div className="bg-gradient-to-br from-white/10 to-white/5 backdrop-blur-xl rounded-xl md:rounded-2xl px-1.5 md:px-4 py-1.5 md:py-2 border border-white/20 shadow-lg flex items-center gap-1 md:gap-2 flex-shrink-0">
+                    <svg className="w-2.5 h-2.5 md:w-4 md:h-4 text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
+                    </svg>
+                    <span className="text-white font-semibold text-[0.65rem] md:text-base whitespace-nowrap">100% Success Rate</span>
+                  </div>
+                  
+                  <div className="hidden md:block w-px h-6 bg-gray-600"></div>
+                  
+                  <div className="bg-gradient-to-br from-white/10 to-white/5 backdrop-blur-xl rounded-xl md:rounded-2xl px-1.5 md:px-4 py-1.5 md:py-2 border border-white/20 shadow-lg flex items-center gap-1 md:gap-2 flex-shrink-0">
+                    <svg className="w-2.5 h-2.5 md:w-4 md:h-4 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    <span className="text-white font-semibold text-[0.65rem] md:text-base whitespace-nowrap">Results In Only 48hrs</span>
+                  </div>
                 </div>
 
                 {/* Start Campaign Anchor - positioned above trust badges for optimal viewport positioning */}
                 <div id="start-campaign"></div>
 
                 {/* Trust Badges */}
-                <div className="flex justify-center items-center gap-10 mb-32 z-10" style={{ alignItems: 'center' }}>
-                  <img 
-                    src="/tpilot.png" 
-                    alt="TrustPilot Badge" 
-                    className="h-10 md:h-11 w-auto object-contain opacity-80 hover:opacity-100 transition-opacity duration-300 z-20" 
-                    style={{ verticalAlign: 'middle' }}
-                  />
-                  <img 
-                    src="/gpart.jpg" 
-                    alt="Google Partner Badge" 
-                    className="h-8 md:h-9 w-auto object-contain opacity-80 hover:opacity-100 transition-opacity duration-300 z-20" 
-                    style={{ verticalAlign: 'middle', marginTop: '6.5px' }}
-                  />
+                <div className="flex justify-center items-center gap-8 md:gap-10 mb-32 z-10">
+                  <div className="text-center flex flex-col items-center">
+                    <img 
+                      src="/tpilot.png" 
+                      alt="TrustPilot Badge" 
+                      className="h-10 md:h-11 w-auto object-contain opacity-90 hover:opacity-100 transition-opacity duration-300 z-20 mb-2" 
+                      style={{ verticalAlign: 'middle' }}
+                    />
+                    <p className="text-[9px] text-gray-400 leading-tight whitespace-nowrap mt-[2px]">
+                      <span className="text-[#00D4AA]">3,725</span> Artists Reviews
+                    </p>
+                  </div>
+                  <div className="text-center flex flex-col items-center">
+                    <p className="text-[9px] text-gray-400 mb-[6px] leading-tight whitespace-nowrap">
+                      FASHO.co Is An Official
+                    </p>
+                    <img 
+                      src="/gpart.jpg" 
+                      alt="Google Partner Badge" 
+                      className="h-8 md:h-9 w-auto object-contain opacity-90 hover:opacity-100 transition-opacity duration-300 z-20" 
+                      style={{ verticalAlign: 'middle' }}
+                    />
+                  </div>
                 </div>
 
                 {/* Menu Anchor for Track Input */}
