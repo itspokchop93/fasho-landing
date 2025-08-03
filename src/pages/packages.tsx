@@ -1061,13 +1061,13 @@ export default function PackagesPage() {
                 <div className="flex justify-between items-center">
                   <div>
                     <div className="text-sm text-white/70">Expected Total Plays</div>
-                    <div className="text-xl font-bold text-[#59e3a5] transition-all duration-500">
+                    <div className="text-lg font-bold text-[#59e3a5] transition-all duration-500">
                       {animatedPlays || chartData.realisticPlaysRange || "Select a package"}
                     </div>
                   </div>
-                  <div>
-                    <div className="text-sm text-white/70">Playlist Placements</div>
-                    <div className="text-xl font-bold text-[#14c0ff] transition-all duration-500">
+                  <div className="text-center">
+                    <div className="text-xs text-white/70">Playlist Placements</div>
+                    <div className="text-lg font-bold text-[#14c0ff] transition-all duration-500">
                       {animatedPlacements > 0 ? animatedPlacements.toLocaleString() : (chartData.placements || "—")}
                     </div>
                   </div>

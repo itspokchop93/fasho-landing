@@ -45,7 +45,7 @@ export default function StepIndicator({ currentStep, className = '' }: StepIndic
   };
 
   return (
-    <div className={`w-4/5 sm:w-full max-w-lg mx-auto pt-8 sm:pt-12 pb-16 sm:pb-20 ${className}`}>
+    <div className={`w-4/5 sm:w-full max-w-lg mx-auto pt-16 sm:pt-12 pb-16 sm:pb-20 ${className}`} suppressHydrationWarning={true}>
       <div className="flex items-center justify-between mb-6 sm:mb-8">
         {steps.map((step, index) => {
           const isActive = step.number === currentStep;
