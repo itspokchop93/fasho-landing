@@ -71,13 +71,45 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     const imageUrl = trackData.album?.images?.[0]?.url || '';
 
+    // Fetch artist insights for the primary artist
+    let artistInsights = null;
+    if (trackData.artists && trackData.artists.length > 0) {
+      const primaryArtist = trackData.artists[0];
+      try {
+        console.log(`🎵 TRACK-API: Fetching artist insights for: ${primaryArtist.name} (${primaryArtist.id})`);
+        
+        const artistResponse = await fetch(`https://api.spotify.com/v1/artists/${primaryArtist.id}`, {
+          headers: {
+            'Authorization': `Bearer ${accessToken}`,
+          },
+        });
+
+        if (artistResponse.ok) {
+          const artistData = await artistResponse.json();
+          artistInsights = {
+            name: artistData.name,
+            imageUrl: artistData.images?.[0]?.url || '',
+            followersCount: artistData.followers?.total || 0,
+            genres: artistData.genres || [],
+            popularity: artistData.popularity || 0,
+          };
+          console.log(`🎵 TRACK-API: Artist insights fetched - Followers: ${artistInsights.followersCount}, Genres: ${artistInsights.genres.join(', ')}`);
+        } else {
+          console.warn(`🎵 TRACK-API: Failed to fetch artist insights for ${primaryArtist.name}`);
+        }
+      } catch (error) {
+        console.error(`🎵 TRACK-API: Error fetching artist insights:`, error);
+      }
+    }
+
     const track = {
       id: trackData.id,
       title: trackData.name,
       artist: trackData.artists.map((a: any) => a.name).join(', '),
       imageUrl,
       url: `https://open.spotify.com/track/${trackData.id}`,
-      artistProfileUrl: trackData.artists?.[0]?.external_urls?.spotify || ''
+      artistProfileUrl: trackData.artists?.[0]?.external_urls?.spotify || '',
+      artistInsights: artistInsights
     };
 
     return res.status(200).json({ success: true, track });

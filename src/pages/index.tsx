@@ -5,6 +5,7 @@ import Head from "next/head";
 import Header from "../components/Header";
 import Footer from "../components/Footer";
 import TrackCard from "../components/TrackCard";
+import ArtistInsightsCard from "../components/ArtistInsightsCard";
 import ShapeDivider from "../components/ShapeDivider";
 import SplitText from "../components/SplitText";
 import ScrollFloat from "../components/ScrollFloat";
@@ -1663,6 +1664,14 @@ export default function Home() {
                             </div>
                           </div>
                         </div>
+                      )}
+
+                      {/* Artist Insights Card - shown below song preview when artist data is available */}
+                      {previewTrack && previewTrack.artistInsights && isSpotifyUrlCheck(url) && (
+                        <ArtistInsightsCard 
+                          artistData={previewTrack.artistInsights}
+                          isMobile={isMobile}
+                        />
                       )}
                     </div>
                   </div>
