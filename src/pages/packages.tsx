@@ -26,6 +26,15 @@ interface Package {
 
 const packages: Package[] = [
   {
+    id: "test-campaign",
+    name: "TEST CAMPAIGN",
+    price: 0.10,
+    plays: "Test Package",
+    placements: "Payment Testing Only",
+    description: "For testing live payment processing",
+    icon: "🧪"
+  },
+  {
     id: "legendary",
     name: "LEGENDARY",
     price: 479,

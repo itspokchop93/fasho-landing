@@ -443,8 +443,13 @@ export default function ThankYouPage() {
       </Head>
       
               <Header />
+              <style jsx global>{`
+                .thank-you-page header {
+                  top: 0px !important;
+                }
+              `}</style>
       
-      <main className="min-h-screen relative text-white pt-20 pb-12">
+      <main className="min-h-screen relative text-white pt-0 pb-12 thank-you-page">
         {/* Confetti Animation - Full Screen */}
         {showConfetti && confettiAnimationData && (
           <div className="fixed inset-0 w-full h-full pointer-events-none z-30">
@@ -486,7 +491,7 @@ export default function ThankYouPage() {
         <div className="relative z-40">{/* Increased z-index to be above confetti */}
           <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
             {/* Success Header */}
-            <div className="text-center mb-12">
+            <div className="text-center mb-12" style={{ paddingTop: '125px' }}>
               <div className="w-16 h-16 bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] rounded-full flex items-center justify-center mx-auto mb-6">
                 <svg className="w-8 h-8 text-black" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
@@ -513,6 +518,25 @@ export default function ThankYouPage() {
                 <p className="text-white mb-4">Your campaign is officially in the works, and we're excited to be part of your journey.</p>
               )}
             </div>
+
+                         {/* Check Your Spam Folder Section */}
+             <div className="bg-gradient-to-r from-yellow-500/10 to-orange-500/10 border border-yellow-500/20 rounded-xl mb-8 text-center overflow-hidden">
+               <div className="px-6 pt-6 pb-6">
+                 <h2 className="text-2xl font-bold mb-4 text-white">Check Your Spam Folder 🔑</h2>
+                 <p className="text-white/80 text-lg mb-6 leading-relaxed px-0 md:px-12">
+                   If you don't see our welcome email in your inbox, make sure to check your spam folder. If you find it in spam, <strong className="text-yellow-400">MAKE SURE</strong> to click the <strong className="text-yellow-400">"Report not spam"</strong> button so you don't miss any important updates about your campaign!
+                 </p>
+               </div>
+               <div className="max-w-xs mx-auto">
+                 <Image 
+                   src="/not-spam.png" 
+                   alt="How to mark email as not spam" 
+                   width={300} 
+                   height={225} 
+                   className="w-full h-auto"
+                 />
+               </div>
+             </div>
 
             {/* What Happens Next Section */}
             <div className="bg-white/5 rounded-xl p-6 border border-white/20 mb-8">
