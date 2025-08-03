@@ -2919,14 +2919,14 @@ export default function CheckoutPage() {
                     
                     {discount > 0 && (
                       <div className="flex justify-between text-[#59e3a5]">
-                        <span>Multi-song discount (25% off)</span>
+                        <span>Discounts</span>
                         <span>-${discount.toFixed(2)}</span>
                       </div>
                     )}
                     
                     {appliedCoupon && (
-                      <div className="flex justify-between text-[#59e3a5]">
-                        <span>Coupon discount ({appliedCoupon.code})</span>
+                      <div className="flex justify-between text-[#14c0ff]">
+                        <span>Coupon ({appliedCoupon.code})</span>
                         <span>-${appliedCoupon.calculated_discount.toFixed(2)}</span>
                       </div>
                     )}

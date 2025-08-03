@@ -2691,6 +2691,37 @@ export default function Dashboard({ user }: DashboardProps) {
                         </div>
                       </div>
                     )}
+                    
+                    {/* Order Summary */}
+                    <div className="px-5 pb-5">
+                      <h4 className="text-white font-semibold mb-4 text-lg">Order Summary</h4>
+                      <div className="bg-white/[0.06] rounded-xl p-4 border border-white/[0.15]">
+                        <div className="space-y-2">
+                          <div className="flex justify-between items-center">
+                            <span className="text-white/70">Subtotal</span>
+                            <span className="text-white">${order.subtotal ? order.subtotal.toFixed(2) : order.total.toFixed(2)}</span>
+                          </div>
+                          {order.discount > 0 && (
+                            <div className="flex justify-between">
+                              <span className="text-white/70">Discounts</span>
+                              <span className="text-green-400">-${order.discount.toFixed(2)}</span>
+                            </div>
+                          )}
+                          {order.couponCode && order.couponDiscount > 0 && (
+                            <div className="flex justify-between">
+                              <span className="text-white/70">Coupon ({order.couponCode})</span>
+                              <span className="text-green-400">-${order.couponDiscount.toFixed(2)}</span>
+                            </div>
+                          )}
+                          <div className="border-t border-white/20 pt-2">
+                            <div className="flex justify-between font-semibold">
+                              <span className="text-white">Total</span>
+                              <span className="text-white">${order.total.toFixed(2)}</span>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
                   </div>
                 )}
                 </div>

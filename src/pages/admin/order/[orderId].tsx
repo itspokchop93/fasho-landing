@@ -1031,11 +1031,11 @@ export default function OrderDetailPage({ adminSession, accessDenied }: OrderDet
                 </div>
                 {order.discount > 0 && (
                   <div className="flex justify-between">
-                    <span className="text-white/70">Multi-song discount</span>
+                    <span className="text-white/70">Discounts</span>
                     <span className="text-green-400">-{formatOrderCurrency(order.discount)}</span>
                   </div>
                 )}
-                {order.couponCode && order.couponDiscount && order.couponDiscount > 0 && (
+                {order.couponCode && order.couponDiscount > 0 && (
                   <div className="flex justify-between">
                     <span className="text-white/70">Coupon ({order.couponCode})</span>
                     <span className="text-green-400">-{formatOrderCurrency(order.couponDiscount)}</span>

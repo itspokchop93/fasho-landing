@@ -659,7 +659,7 @@ export default function ThankYouPage() {
                   
                   {orderData.discount > 0 && (
                     <div className="flex justify-between text-[#59e3a5]">
-                      <span>Multi-song discount (25% off)</span>
+                      <span>Discounts</span>
                       <span>-${Number(orderData.discount).toFixed(2)}</span>
                     </div>
                   )}

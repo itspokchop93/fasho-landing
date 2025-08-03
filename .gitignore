@@ -36,9 +36,43 @@ googleserviceaccount.json
 # TypeScript
 *.tsbuildinfo
 next-env.d.ts
+
+# Test and Debug Files
+test-*.ts
+test-*.js
+debug-*.ts
+debug-*.js
+**/test-*.ts
+**/test-*.js
+**/debug-*.ts
+**/debug-*.js
+
+# Duplicate Files (AI assistant artifacts)
+* 2.*
+* 3.*
+* 4.*
+**/\* 2.*
+**/\* 3.*
+**/\* 4.*
+
+# Temporary Files
 logo-svg.txt
 CACHE_SYSTEM.md
+cookies.txt
+*.tmp
+*.temp
+
+# Specific Test/Debug Files
+test.txt
+dev.log
+test-signup.tsx
+**/test-checkout-*.html
+**/test-iframe-*.html
+
+# Google Service Account (contains sensitive credentials)
 googleserviceaccount.json
 googleserviceaccount.json.backup
-googleserviceaccount.json
+
+# External Examples/References
 /index-apolone
+/SCROLL-MAGIC-EXAMPLE

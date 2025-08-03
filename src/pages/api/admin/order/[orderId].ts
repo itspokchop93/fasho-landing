@@ -103,7 +103,10 @@ async function handler(req: NextApiRequest, res: NextApiResponse, adminUser: Adm
         order: {
           ...order,
           items: orderItems,
-          addOnItems: transformedAddOnItems
+          addOnItems: transformedAddOnItems,
+          // Map snake_case database fields to camelCase for frontend
+          couponCode: order.coupon_code,
+          couponDiscount: order.coupon_discount
         }
       });
     } else if (req.method === 'PUT') {
