@@ -1609,20 +1609,31 @@ export default function Home() {
                             )}
                           </div>
                           {/* Launch Campaign Button - Always normal color, pulse when filled */}
-                          <button
-                            onClick={handleSubmit}
-                            disabled={loading}
-                            className={`px-8 py-4 bg-gradient-to-r from-[#59e3a5] via-[#14c0ff] to-[#8b5cf6] text-white font-bold rounded-2xl hover:shadow-2xl hover:shadow-[#14c0ff]/30 transition-all duration-300 transform hover:scale-105 active:scale-95 relative overflow-hidden group whitespace-nowrap ${url.trim() ? 'animate-pulse' : ''}`}
-                          >
-                            {/* Button content */}
-                            <span className="relative z-10 text-white">
-                              {loading ? 'Loading...' : 'Launch Campaign'}
-                            </span>
-                            {/* Shimmer effect */}
-                            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-700"></div>
-                            {/* Glow effect */}
-                            <div className="absolute inset-0 bg-gradient-to-r from-[#59e3a5] via-[#14c0ff] to-[#8b5cf6] opacity-0 group-hover:opacity-20 transition-opacity duration-300 blur-xl"></div>
-                          </button>
+                          <div className="relative">
+                            {/* Pulsing Glow Background - Only when Artist Insights are showing */}
+                            {previewTrack && previewTrack.artistInsights && (
+                              <div 
+                                className="absolute inset-0 bg-gradient-to-r from-[#59e3a5] via-[#14c0ff] to-[#8b5cf6] rounded-2xl blur-md opacity-60 animate-pulse-glow"
+                                style={{ zIndex: 100 }}
+                              ></div>
+                            )}
+                            
+                            <button
+                              onClick={handleSubmit}
+                              disabled={loading}
+                              className={`relative w-full sm:w-auto px-8 py-4 bg-gradient-to-r from-[#59e3a5] via-[#14c0ff] to-[#8b5cf6] text-white font-bold rounded-2xl hover:shadow-2xl hover:shadow-[#14c0ff]/30 transition-all duration-300 transform hover:scale-105 active:scale-95 overflow-hidden group whitespace-nowrap`}
+                              style={{ zIndex: 101 }}
+                            >
+                              {/* Button content */}
+                              <span className="relative z-10 text-white">
+                                {loading ? 'Loading...' : 'Launch Campaign'}
+                              </span>
+                              {/* Shimmer effect */}
+                              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-700"></div>
+                              {/* Glow effect */}
+                              <div className="absolute inset-0 bg-gradient-to-r from-[#59e3a5] via-[#14c0ff] to-[#8b5cf6] opacity-0 group-hover:opacity-20 transition-opacity duration-300 blur-xl"></div>
+                            </button>
+                          </div>
                         </div>
                       </div>
                       {/* Song card directly below input/button row, INSIDE the campaign container */}

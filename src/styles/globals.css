@@ -1440,6 +1440,26 @@ input:-webkit-autofill:active {
   }
 }
 
+/* Pulsing Glow Animation for Launch Campaign Button */
+@keyframes pulse-glow {
+  0% {
+    opacity: 0.4;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.8;
+    transform: scale(1.05);
+  }
+  100% {
+    opacity: 0.4;
+    transform: scale(1);
+  }
+}
+
+.animate-pulse-glow {
+  animation: pulse-glow 1.2s ease-in-out infinite;
+}
+
 /* PAS Section Responsive Font Sizing */
 .pas-text-1-6rem {
   font-size: 1.6rem;
