@@ -8,9 +8,10 @@ import { useAuth } from '../utils/authContext';
 interface HeaderProps {
   transparent?: boolean;
   hideSignUp?: boolean;
+  extraClasses?: string;
 }
 
-export default function Header({ transparent = false, hideSignUp = false }: HeaderProps = {}) {
+export default function Header({ transparent = false, hideSignUp = false, extraClasses = '' }: HeaderProps = {}) {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
   const [artistProfile, setArtistProfile] = useState<ArtistProfile | null>(null);
@@ -373,7 +374,7 @@ export default function Header({ transparent = false, hideSignUp = false }: Head
 
   return (
     <header 
-      className={`${getHeaderClasses()} animate-slide-down`} 
+      className={`${getHeaderClasses()} animate-slide-down ${extraClasses}`} 
       suppressHydrationWarning={true}
     >
       <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-2">

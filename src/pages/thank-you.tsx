@@ -442,9 +442,9 @@ export default function ThankYouPage() {
         )}
       </Head>
       
-              <Header />
+              <Header extraClasses="thank-you-page-header" />
               <style jsx global>{`
-                .thank-you-page header {
+                .thank-you-page-header {
                   top: 0px !important;
                 }
               `}</style>
