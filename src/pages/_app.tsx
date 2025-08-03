@@ -8,7 +8,7 @@ import { AuthProvider } from "../utils/authContext";
 import { useActivityTracking } from "../utils/useActivityTracking";
 import dynamic from 'next/dynamic';
 
-const ClarityTracking = dynamic(() => import('../components/Clarity'), { ssr: false });
+
 
 export default function App({ Component, pageProps }: AppProps) {
   const router = useRouter();
@@ -66,7 +66,7 @@ export default function App({ Component, pageProps }: AppProps) {
 
   return (
     <AuthProvider>
-      <ClarityTracking />
+
       <Component {...pageProps} />
     </AuthProvider>
   );

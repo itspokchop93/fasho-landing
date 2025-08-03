@@ -80,6 +80,20 @@ export default function Document() {
           }}
         />
 
+        {/* Microsoft Clarity Tracking Pixel */}
+        <script
+          type="text/javascript"
+          dangerouslySetInnerHTML={{
+            __html: `
+              (function(c,l,a,r,i,t,y){
+                  c[a]=c[a]||function(){(c[a].q=c[a].q||[]).push(arguments)};
+                  t=l.createElement(r);t.async=1;t.src="https://www.clarity.ms/tag/"+i;
+                  y=l.getElementsByTagName(r)[0];y.parentNode.insertBefore(t,y);
+              })(window, document, "clarity", "script", "songm24xjn");
+            `,
+          }}
+        />
+
         {/* Lucky Orange Tracking Code - Exact format from dashboard */}
         <script async defer src="https://tools.luckyorange.com/core/lo.js?site-id=93a580b2"></script>
       </Head>

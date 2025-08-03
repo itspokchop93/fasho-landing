@@ -74,7 +74,14 @@ export default function LiveCounter({ className = '' }: LiveCounterProps) {
 
   return (
     <div className={`flex items-center justify-center mt-4 mb-5 w-full ${className}`}>
-      <div className="bg-gradient-to-r from-gray-900/90 via-gray-800/80 to-gray-900/90 backdrop-blur-sm border border-gray-600/30 rounded-2xl px-4 sm:px-10 py-3 shadow-lg w-full sm:w-auto">
+      <div className="bg-gradient-to-r from-gray-900/90 via-gray-800/80 to-gray-900/90 backdrop-blur-sm border border-gray-600/30 rounded-2xl px-4 sm:px-10 pt-1 pb-3 shadow-lg w-full sm:w-auto">
+        {/* Small header text */}
+        <div className="text-center mb-0 mt-0.5">
+          <span className="text-gray-400/70 text-[0.55rem] sm:text-[0.65rem] font-medium tracking-wide uppercase">
+            LIVE ADD-ON TRACKER
+          </span>
+        </div>
+        
         <div className="flex items-center space-x-2 sm:space-x-4">
           {/* Live monitoring dot with glow animation */}
           <div className="flex-shrink-0 relative">
