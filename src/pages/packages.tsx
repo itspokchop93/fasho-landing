@@ -31,7 +31,7 @@ const packages: Package[] = [
     price: 479,
     plays: "125K - 150K Streams", 
     placements: "375 - 400 Playlist Pitches",
-    description: "",
+    description: "Designed for serious artists who accept nothing but total victory",
     icon: "👑"
   },
   {
@@ -40,7 +40,7 @@ const packages: Package[] = [
     price: 259,
     plays: "45K - 50K Streams", 
     placements: "150 - 170 Playlist Pitches",
-    description: "",
+    description: "The go-to campaign for creators who want massive industry impact",
     icon: "💎"
   },
   {
@@ -49,7 +49,7 @@ const packages: Package[] = [
     price: 149,
     plays: "18K - 20K Streams",
     placements: "60 - 70 Playlist Pitches",
-    description: "",
+    description: "Perfect for dominating the industry and making serious waves",
     icon: "🔥",
     popular: true
   },
@@ -59,7 +59,7 @@ const packages: Package[] = [
     price: 79,
     plays: "7.5K - 8.5K Streams",
     placements: "25 - 30 Playlist Pitches",
-    description: "",
+    description: "Made for artists ready to accelerate their growth and level up fast",
     icon: "⚡"
   },
   {
@@ -68,7 +68,7 @@ const packages: Package[] = [
     price: 39,
     plays: "3K - 3.5K Streams",
     placements: "10 - 12 Playlist Pitches",
-    description: "",
+    description: "The perfect gateway campaign to rapidly skyrocket your music career",
     icon: "🚀"
   }
 ];
@@ -915,24 +915,152 @@ export default function PackagesPage() {
                 {/* Subtle gradient glow behind mobile cards */}
                 <div className="absolute inset-0 bg-gradient-to-r from-[#59e3a5]/10 via-[#14c0ff]/10 to-[#8b5cf6]/10 rounded-2xl blur-xl -z-10"></div>
                 <div className="flex gap-4 px-4 py-6" style={{ width: 'max-content' }}>
-                  {packages.map((pkg) => (
+                  {packages.map((pkg) => {
+                    // Special mobile design for BREAKTHROUGH package
+                    if (pkg.id === 'breakthrough') {
+                      return (
                     <div
                       key={pkg.id}
                       onClick={() => handlePackageSelect(pkg.id)}
-                      className={`relative cursor-pointer rounded-xl transition-all duration-300 flex-shrink-0 hover:-translate-y-1 ${
-                        pkg.popular ? '' : 'border-2'
-                      } ${
-                        selectedPackage === pkg.id && !pkg.popular
-                          ? 'border-[#59e3a5] bg-gradient-to-br from-[#59e3a5]/20 via-gray-900/95 to-gray-800/95'
-                          : !pkg.popular
-                          ? 'border-white/20 bg-gradient-to-br from-gray-800/95 via-gray-900/95 to-gray-800/95 hover:border-white/40'
-                          : ''
+                          className={`relative cursor-pointer transition-all duration-300 flex-shrink-0 hover:-translate-y-1 hover:scale-105 group ${
+                            selectedPackage === pkg.id
+                              ? 'shadow-xl shadow-[#59e3a5]/25'
+                              : 'shadow-lg shadow-black/15 hover:shadow-xl hover:shadow-[#59e3a5]/15'
                       }`}
                       style={{ 
-                        width: '240px', 
-                        height: isDiscountedSong ? '250px' : '240px'
-                      }}
-                    >
+                            width: '220px',
+                            height: isDiscountedSong ? '320px' : '310px',
+                            zIndex: selectedPackage === pkg.id ? 20 : 10
+                          }}
+                          suppressHydrationWarning={true}
+                        >
+                          {/* Gradient Background with Border */}
+                          <div className={`absolute inset-0 rounded-xl transition-all duration-300 ${
+                            selectedPackage === pkg.id
+                              ? 'bg-gradient-to-br from-gray-800/98 via-gray-900/98 to-black/98 border-2 border-[#59e3a5]/80'
+                              : 'bg-gradient-to-br from-gray-800/95 via-gray-900/95 to-black/95 border border-white/15 group-hover:border-white/25'
+                          }`} style={{ zIndex: 2 }}></div>
+
+                          {/* Subtle outline */}
+                          <div className="absolute inset-0 rounded-xl border border-white/5" style={{ zIndex: 3 }}></div>
+
+                          {/* Subtle inner glow */}
+                          <div className="absolute inset-0 rounded-xl bg-gradient-to-br from-[#59e3a5]/5 via-transparent to-[#14c0ff]/5 opacity-50" style={{ zIndex: 4 }}></div>
+
+                          {/* Confetti Animation Overlay */}
+                          {confettiAnimation === pkg.id && confettiData && (
+                            <div 
+                              key={confettiKey}
+                              className="absolute inset-0 z-50 pointer-events-none rounded-xl overflow-hidden"
+                            >
+                              <Lottie
+                                ref={lottieRef}
+                                animationData={confettiData}
+                                loop={false}
+                                autoplay={true}
+                                style={{
+                                  width: '100%',
+                                  height: '100%',
+                                  position: 'absolute',
+                                  top: 0,
+                                  left: 0,
+                                }}
+                              />
+                            </div>
+                          )}
+                          
+                          {/* Selection checkmark */}
+                          {selectedPackage === pkg.id && (
+                            <div className="absolute -top-2 -left-2 w-6 h-6 bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] rounded-full flex items-center justify-center z-30 shadow-md">
+                              <span className="text-black text-xs font-bold">✓</span>
+                            </div>
+                          )}
+                          
+                          {/* Content container */}
+                          <div className="relative h-full px-4 pt-4 pb-4 flex flex-col" style={{ zIndex: 10 }}>
+                            {/* Top - Emoji in gradient circle */}
+                            <div className="flex flex-col items-center text-center mb-3">
+                              <div className="w-12 h-12 bg-gradient-to-br from-[#59e3a5]/20 to-[#14c0ff]/20 rounded-full flex items-center justify-center mb-3 border border-white/10 backdrop-blur-sm shadow-md">
+                                <span className="text-2xl filter drop-shadow-lg">{pkg.icon}</span>
+                              </div>
+                              
+                              {/* Price */}
+                              <div className="mb-0">
+                                {isDiscountedSong ? (
+                                  <div className="space-y-1">
+                                    <div className="text-xs text-white/40 line-through">${pkg.price}</div>
+                                    <div className="font-black text-2xl text-white filter drop-shadow-sm">
+                                      ${getDiscountedPrice(pkg.price)}
+                                    </div>
+                                  </div>
+                                ) : (
+                                  <span className="font-black text-2xl text-white filter drop-shadow-sm">${pkg.price}</span>
+                                )}
+                              </div>
+                            </div>
+                            
+                            {/* Package Name */}
+                            <div className="text-center mb-2">
+                              <h3 className="font-black text-base bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] bg-clip-text text-transparent tracking-wide filter drop-shadow-sm">{pkg.name}</h3>
+                            </div>
+
+                            {/* Hook Description */}
+                            <div className="text-center mb-3">
+                              <p className="text-xs text-white/60 leading-relaxed px-1 font-medium">{pkg.description}</p>
+                            </div>
+                            
+                            {/* Features container */}
+                            <div className="bg-gradient-to-br from-white/6 to-white/3 rounded-lg px-2 py-3 backdrop-blur-sm border border-white/15 shadow-md space-y-2">
+                              <div className="flex items-center text-white">
+                                <div className="w-3 h-3 bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] rounded-full flex items-center justify-center mr-1.5 flex-shrink-0 shadow-sm">
+                                  <span className="text-black text-xs font-black">✓</span>
+                                </div>
+                                <span className="font-bold tracking-wide" style={{fontSize: 'calc(0.75rem + 0.05rem)'}}>{pkg.plays}</span>
+                              </div>
+                              <div className="flex items-center text-white">
+                                <div className="w-3 h-3 bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] rounded-full flex items-center justify-center mr-1.5 flex-shrink-0 shadow-sm">
+                                  <span className="text-black text-xs font-black">✓</span>
+                                </div>
+                                <span className={`font-bold tracking-wide ${['legendary', 'unstoppable'].includes(pkg.id) ? 'text-xs' : 'text-xs'}`} style={['legendary', 'unstoppable'].includes(pkg.id) ? {fontSize: 'calc(0.75rem - 0.1rem)'} : {}}>{pkg.placements}</span>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    }
+
+                                        // Default mobile design for other packages (now using same styling as BREAKTHROUGH)
+                      return (
+                        <div
+                          key={pkg.id}
+                          onClick={() => handlePackageSelect(pkg.id)}
+                          className={`relative cursor-pointer transition-all duration-300 flex-shrink-0 hover:-translate-y-1 hover:scale-105 group ${
+                            selectedPackage === pkg.id
+                              ? 'shadow-xl shadow-[#59e3a5]/25'
+                              : 'shadow-lg shadow-black/15 hover:shadow-xl hover:shadow-[#59e3a5]/15'
+                          }`}
+                          style={{ 
+                            width: '220px',
+                            height: isDiscountedSong ? '320px' : '310px',
+                            zIndex: selectedPackage === pkg.id ? 20 : 10
+                          }}
+                          suppressHydrationWarning={true}
+                        >
+                          {/* Gradient Background with Border */}
+                          <div className={`absolute inset-0 rounded-xl transition-all duration-300 ${
+                            selectedPackage === pkg.id
+                              ? pkg.id === 'dominate' 
+                                ? 'bg-gray-900 border-2 border-[#59e3a5]/80'
+                                : 'bg-gradient-to-br from-gray-800/98 via-gray-900/98 to-black/98 border-2 border-[#59e3a5]/80'
+                              : 'bg-gradient-to-br from-gray-800/95 via-gray-900/95 to-black/95 border border-white/15 group-hover:border-white/25'
+                          }`} style={{ zIndex: 2 }}></div>
+
+                          {/* Subtle outline */}
+                          <div className="absolute inset-0 rounded-xl border border-white/5" style={{ zIndex: 3 }}></div>
+
+                          {/* Subtle inner glow */}
+                          <div className="absolute inset-0 rounded-xl bg-gradient-to-br from-[#59e3a5]/5 via-transparent to-[#14c0ff]/5 opacity-50" style={{ zIndex: 4 }}></div>
+
                       {/* Confetti Animation Overlay */}
                       {confettiAnimation === pkg.id && confettiData && (
                         <div 
@@ -977,65 +1105,67 @@ export default function PackagesPage() {
                         </div>
                       )}
                       
-                      {/* Selected checkmark */}
+                          {/* Selection checkmark */}
                       {selectedPackage === pkg.id && (
-                        <div className="absolute -top-2 -left-2 w-6 h-6 bg-[#59e3a5] rounded-full flex items-center justify-center z-30">
-                          <span className="text-black text-sm font-bold">✓</span>
+                            <div className="absolute -top-2 -left-2 w-6 h-6 bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] rounded-full flex items-center justify-center z-30 shadow-md">
+                              <span className="text-black text-xs font-bold">✓</span>
                         </div>
                       )}
                       
-                      {/* Content container - Vertical baseball card layout */}
-                      <div className={`h-full p-2 pb-4 flex flex-col ${pkg.popular ? 'relative z-20 bg-gradient-to-br from-gray-800/95 via-gray-900/95 to-gray-800/95 rounded-xl border' : ''} ${
-                        pkg.popular && selectedPackage === pkg.id ? 'border-[#59e3a5]' : pkg.popular ? 'border-white/20' : ''
-                      }`}>
-                        
-                        {/* Top - Icon and Price */}
-                        <div className="flex flex-col items-center text-center mb-1">
-                          <div className="w-14 h-14 flex items-center justify-center mb-1">
-                            <span className="text-3xl">{pkg.icon}</span>
+                          {/* Content container */}
+                          <div className="relative h-full px-4 pt-4 pb-4 flex flex-col" style={{ zIndex: 10 }}>
+                            {/* Top - Emoji in gradient circle */}
+                            <div className="flex flex-col items-center text-center mb-3">
+                              <div className="w-12 h-12 bg-gradient-to-br from-[#59e3a5]/20 to-[#14c0ff]/20 rounded-full flex items-center justify-center mb-3 border border-white/10 backdrop-blur-sm shadow-md">
+                                <span className="text-2xl filter drop-shadow-lg">{pkg.icon}</span>
                           </div>
-                          <div>
+                              
+                              {/* Price */}
+                              <div className="mb-0">
                             {isDiscountedSong ? (
-                              <div className="space-y-0">
-                                <div className="text-xs text-white/50 line-through">${pkg.price}</div>
-                                <div className="text-lg font-bold bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] bg-clip-text text-transparent" style={{fontSize: 'calc(1.125rem + 0.15rem + 0.25rem)'}}>
+                                  <div className="space-y-1">
+                                    <div className="text-xs text-white/40 line-through">${pkg.price}</div>
+                                    <div className="font-black text-2xl text-white filter drop-shadow-sm">
                                   ${getDiscountedPrice(pkg.price)}
                                 </div>
                               </div>
                             ) : (
-                              <span className="font-bold text-white" style={{fontSize: 'calc(1.125rem - 0.12rem + 0.15rem + 0.25rem)'}}>${pkg.price}</span>
+                                  <span className="font-black text-2xl text-white filter drop-shadow-sm">${pkg.price}</span>
                             )}
                           </div>
                         </div>
                         
-                        {/* Middle - Package name */}
-                        <div className="text-center" style={{marginBottom: '5px'}}>
-                          <h3 className="font-black bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] bg-clip-text text-transparent" 
-                              style={{fontSize: ['legendary', 'dominate', 'momentum'].includes(pkg.id) ? 'calc(0.875rem + 0.18rem + 0.12rem + 0.2rem + 0.15rem - 0.1rem)' : pkg.id === 'unstoppable' ? 'calc(0.875rem + 0.12rem + 0.12rem + 0.2rem + 0.15rem - 0.1rem)' : 'calc(0.875rem + 0.12rem + 0.2rem + 0.15rem - 0.1rem)', fontWeight: '900'}}>
-                            {pkg.name}
-                          </h3>
+                            {/* Package Name */}
+                            <div className="text-center mb-2">
+                              <h3 className="font-black text-base bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] bg-clip-text text-transparent tracking-wide filter drop-shadow-sm">{pkg.name}</h3>
                         </div>
                         
-                        {/* Bottom - Features */}
-                        <div className="flex-1 flex flex-col justify-center">
-                          <div style={{display: 'flex', flexDirection: 'column', gap: '8px'}}>
-                            <div className="flex items-center text-white/80 justify-center" style={{fontSize: 'calc(0.75rem + 0.2rem + 0.15rem - 0.08rem)', fontWeight: '700'}}>
-                              <div className="w-3 h-3 bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] rounded-full flex items-center justify-center mr-2 flex-shrink-0">
-                                <span className="text-black text-xs font-bold">✓</span>
+                            {/* Hook Description - Only for packages that have description */}
+                            {pkg.description && (
+                              <div className="text-center mb-3">
+                                <p className="text-xs text-white/60 leading-relaxed px-1 font-medium">{pkg.description}</p>
                               </div>
-                              <span>{pkg.plays}</span>
+                            )}
+                            
+                            {/* Features container */}
+                            <div className="bg-gradient-to-br from-white/6 to-white/3 rounded-lg px-2 py-3 backdrop-blur-sm border border-white/15 shadow-md space-y-2">
+                              <div className="flex items-center text-white">
+                                <div className="w-3 h-3 bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] rounded-full flex items-center justify-center mr-1.5 flex-shrink-0 shadow-sm">
+                                  <span className="text-black text-xs font-black">✓</span>
                             </div>
-                            <div className="flex items-center text-white/80 justify-center" style={{fontSize: 'calc(0.75rem + 0.2rem)', fontWeight: '700', marginBottom: '4px'}}>
-                              <div className="w-3 h-3 bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] rounded-full flex items-center justify-center mr-2 flex-shrink-0">
-                                <span className="text-black text-xs font-bold">✓</span>
+                                <span className="font-bold tracking-wide" style={{fontSize: 'calc(0.75rem + 0.05rem)'}}>{pkg.plays}</span>
                               </div>
-                              <span>{pkg.placements}</span>
+                              <div className="flex items-center text-white">
+                                <div className="w-3 h-3 bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] rounded-full flex items-center justify-center mr-1.5 flex-shrink-0 shadow-sm">
+                                  <span className="text-black text-xs font-black">✓</span>
                             </div>
+                                <span className={`font-bold tracking-wide ${['legendary', 'unstoppable'].includes(pkg.id) ? 'text-xs' : 'text-xs'}`} style={['legendary', 'unstoppable'].includes(pkg.id) ? {fontSize: 'calc(0.75rem - 0.1rem)'} : {}}>{pkg.placements}</span>
                           </div>
                         </div>
                       </div>
                     </div>
-                  ))}
+                    );
+                  })}
                 </div>
               </div>
               
@@ -1256,7 +1386,7 @@ export default function PackagesPage() {
           </div>
 
           {/* Desktop Layout */}
-          <div className="hidden md:grid grid-cols-1 lg:grid-cols-[3fr_2fr] gap-12 items-start">
+          <div className="hidden md:grid grid-cols-1 lg:grid-cols-[4fr_2fr] gap-12 items-start">
             {/* Left side - Package selection */}
             <div className="space-y-8">
               {/* Package cards - Baseball card style */}
@@ -1275,27 +1405,43 @@ export default function PackagesPage() {
                   return (
                     <>
                       {/* Top row - 3 packages */}
-                      <div className="grid grid-cols-3 gap-6">
+                      <div className="grid grid-cols-3 gap-12">
                         {packages.slice(0, 3).map((pkg) => (
                           <div
                             key={pkg.id}
                             onClick={() => handlePackageSelect(pkg.id)}
-                                                        className={`relative cursor-pointer rounded-xl transition-all duration-300 hover:-translate-y-1 ${
-                              pkg.popular ? '' : 'border-2'
-                            } ${
-                              selectedPackage === pkg.id && !pkg.popular
-                                ? 'border-[#59e3a5] bg-gradient-to-br from-[#59e3a5]/20 via-gray-900/95 to-gray-800/95'
-                                : !pkg.popular
-                                ? 'border-white/20 bg-gradient-to-br from-gray-800/95 via-gray-900/95 to-gray-800/95 hover:border-white/40'
-                                : ''
+                            className={`relative cursor-pointer transition-all duration-300 hover:-translate-y-2 hover:scale-105 w-full group ${
+                              selectedPackage === pkg.id
+                                ? 'shadow-2xl shadow-[#59e3a5]/30'
+                                : 'shadow-xl shadow-black/20 hover:shadow-2xl hover:shadow-[#59e3a5]/20'
                             }`}
-                                style={{ minHeight: isDiscountedSong ? '205px' : '200px' }}
-                              >
+                            style={{ 
+                              minHeight: '260px',
+                              width: '260px',
+                              zIndex: selectedPackage === pkg.id ? 20 : 10
+                            }}
+                            suppressHydrationWarning={true}
+                          >
+                            {/* Gradient Background with Border */}
+                            <div className={`absolute inset-0 rounded-2xl transition-all duration-300 ${
+                              selectedPackage === pkg.id
+                                ? pkg.id === 'dominate' 
+                                  ? 'bg-gray-900 border-2 border-[#59e3a5]/80'
+                                  : 'bg-gradient-to-br from-gray-800/98 via-gray-900/98 to-black/98 border-2 border-[#59e3a5]/80'
+                                : 'bg-gradient-to-br from-gray-800/95 via-gray-900/95 to-black/95 border border-white/10 group-hover:border-white/20'
+                            }`} style={{ zIndex: 2 }}></div>
+
+                            {/* Subtle outline */}
+                            <div className="absolute inset-0 rounded-2xl border border-white/5" style={{ zIndex: 3 }}></div>
+
+                            {/* Subtle inner glow */}
+                            <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-[#59e3a5]/5 via-transparent to-[#14c0ff]/5 opacity-50" style={{ zIndex: 4 }}></div>
+
                                 {/* Confetti Animation Overlay */}
                                 {confettiAnimation === pkg.id && confettiData && (
                               <div 
                                 key={confettiKey}
-                                className="absolute inset-0 z-50 pointer-events-none rounded-xl overflow-hidden"
+                                className="absolute inset-0 z-50 pointer-events-none rounded-2xl overflow-hidden"
                               >
                                 <Lottie
                                   ref={lottieRef}
@@ -1335,51 +1481,59 @@ export default function PackagesPage() {
                               </div>
                             )}
                             
+                            {/* Selection checkmark */}
                             {selectedPackage === pkg.id && (
-                              <div className="absolute -top-2 -left-2 w-6 h-6 bg-[#59e3a5] rounded-full flex items-center justify-center z-30">
+                              <div className="absolute -top-3 -left-3 w-8 h-8 bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] rounded-full flex items-center justify-center z-30 shadow-lg">
                                 <span className="text-black text-sm font-bold">✓</span>
                               </div>
                             )}
                             
                             {/* Content container */}
-                            <div className={`h-full ${pkg.popular ? `relative z-20 bg-gradient-to-br from-gray-800/95 via-gray-900/95 to-gray-800/95 rounded-xl px-3 pt-4 pb-6 border flex flex-col ${selectedPackage === pkg.id ? 'border-[#59e3a5]' : 'border-white/20'}` : 'px-3 pt-4 pb-6 flex flex-col'}`}>
-                              {/* Top - Icon and Price */}
-                              <div className="flex flex-col items-center text-center mb-2">
-                                <div className="w-18 h-18 flex items-center justify-center mb-3">
-                                  <span className="text-4xl">{pkg.icon}</span>
+                            <div className="relative h-full px-4 pt-5 pb-6 flex flex-col" style={{ zIndex: 10 }}>
+                              {/* Top - Emoji in gradient circle */}
+                              <div className="flex flex-col items-center text-center mb-4">
+                                <div className="w-12 h-12 bg-gradient-to-br from-[#59e3a5]/20 to-[#14c0ff]/20 rounded-full flex items-center justify-center mb-4 border border-white/10 backdrop-blur-sm shadow-lg">
+                                  <span className="text-xl filter drop-shadow-lg">{pkg.icon}</span>
                                 </div>
-                                <div>
+                                
+                                {/* Price */}
+                                <div className="mb-0">
                                   {isDiscountedSong ? (
-                                    <div className="space-y-0">
-                                      <div className="text-sm text-white/50 line-through">${pkg.price}</div>
-                                      <div className="font-bold bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] bg-clip-text text-transparent" style={{fontSize: 'calc(1.25rem + 0.35rem - 0.12rem)'}}>
+                                    <div className="space-y-1">
+                                      <div className="text-sm text-white/40 line-through">${pkg.price}</div>
+                                      <div className="font-black text-3xl text-white filter drop-shadow-sm">
                                         ${getDiscountedPrice(pkg.price)}
                                       </div>
                                     </div>
                                   ) : (
-                                    <span className="font-bold" style={{fontSize: 'calc(1.25rem + 0.35rem - 0.12rem)'}}>${pkg.price}</span>
+                                    <span className="font-black text-3xl text-white filter drop-shadow-sm">${pkg.price}</span>
                                   )}
                                 </div>
                               </div>
                               
-                              {/* Middle - Package Name */}
-                              <div className="text-center mb-2">
-                                <h3 className="font-bold bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] bg-clip-text text-transparent" style={{fontSize: ['legendary', 'dominate', 'momentum'].includes(pkg.id) ? 'calc(1rem + 0.2rem + 0.18rem)' : pkg.id === 'unstoppable' ? 'calc(1rem + 0.2rem + 0.12rem)' : 'calc(1rem + 0.2rem)'}}>{pkg.name}</h3>
+                              {/* Package Name */}
+                              <div className="text-center mb-3">
+                                <h3 className="font-black text-xl bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] bg-clip-text text-transparent tracking-wide filter drop-shadow-sm">{pkg.name}</h3>
                               </div>
                               
-                                                             {/* Bottom - Features with checkmarks */}
-                               <div className="space-y-2">
-                                 <div className="flex items-center justify-center text-sm text-white/90">
-                                   <div className="w-4 h-4 bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] rounded-full flex items-center justify-center mr-2 flex-shrink-0">
-                                     <span className="text-black text-xs font-bold">✓</span>
+                              {/* Hook Description */}
+                              <div className="text-center mb-4">
+                                <p className="text-xs text-white/70 leading-relaxed px-2 font-medium">{pkg.description}</p>
                                    </div>
-                                   <span>{formatStreamsForDisplay(pkg.plays)}</span>
+                              
+                                                            {/* Features container */}
+                              <div className="bg-gradient-to-br from-white/8 to-white/4 rounded-xl px-4 py-4 backdrop-blur-sm border border-white/20 shadow-lg space-y-3">
+                                <div className="flex items-center text-white">
+                                  <div className="w-3 h-3 bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] rounded-full flex items-center justify-center mr-2 flex-shrink-0 shadow-md">
+                                    <span className="text-black text-xs font-black">✓</span>
                                  </div>
-                                 <div className={`flex items-center justify-center text-sm text-white/90 ${['unstoppable', 'dominate'].includes(pkg.id) ? '' : 'mb-1'}`}>
-                                   <div className="w-4 h-4 bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] rounded-full flex items-center justify-center mr-2 flex-shrink-0">
-                                     <span className="text-black text-xs font-bold">✓</span>
+                                  <span className="font-bold tracking-wide text-sm">{formatStreamsForDisplay(pkg.plays)}</span>
                                    </div>
-                                   <span>{pkg.placements}</span>
+                                <div className="flex items-center text-white">
+                                  <div className="w-3 h-3 bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] rounded-full flex items-center justify-center mr-2 flex-shrink-0 shadow-md">
+                                    <span className="text-black text-xs font-black">✓</span>
+                                  </div>
+                                  <span className="font-bold tracking-wide text-xs">{pkg.placements}</span>
                                  </div>
                                </div>
                             </div>
@@ -1388,23 +1542,44 @@ export default function PackagesPage() {
                       </div>
                       
                       {/* Bottom row - 2 packages centered */}
-                      <div className="flex justify-center gap-6">
-                                                      {packages.slice(3, 5).map((pkg) => (
+                      <div className="flex justify-center gap-8">
+                        {packages.slice(3, 5).map((pkg) => {
+                                                    // Special design for BREAKTHROUGH package
+                          if (pkg.id === 'breakthrough') {
+                            return (
                             <div
                               key={pkg.id}
                               onClick={() => handlePackageSelect(pkg.id)}
-                              className={`relative cursor-pointer rounded-xl transition-all duration-300 hover:-translate-y-1 border-2 w-[240px] ${
+                                className={`relative cursor-pointer transition-all duration-300 hover:-translate-y-2 hover:scale-105 group ${
                                 selectedPackage === pkg.id
-                                  ? 'border-[#59e3a5] bg-gradient-to-br from-[#59e3a5]/20 via-gray-900/95 to-gray-800/95'
-                                  : 'border-white/20 bg-gradient-to-br from-gray-800/95 via-gray-900/95 to-gray-800/95 hover:border-white/40'
-                              }`}
-                              style={{ minHeight: isDiscountedSong ? '205px' : '200px' }}
-                            >
+                                    ? 'shadow-2xl shadow-[#59e3a5]/30'
+                                    : 'shadow-xl shadow-black/20 hover:shadow-2xl hover:shadow-[#59e3a5]/20'
+                                }`}
+                                style={{ 
+                                  minHeight: '260px',
+                                  width: '260px',
+                                  zIndex: selectedPackage === pkg.id ? 20 : 10
+                                }}
+                                suppressHydrationWarning={true}
+                              >
+                                {/* Gradient Background with Border */}
+                                <div className={`absolute inset-0 rounded-2xl transition-all duration-300 ${
+                                  selectedPackage === pkg.id
+                                    ? 'bg-gradient-to-br from-gray-800/98 via-gray-900/98 to-black/98 border-2 border-[#59e3a5]/80'
+                                    : 'bg-gradient-to-br from-gray-800/95 via-gray-900/95 to-black/95 border border-white/10 group-hover:border-white/20'
+                                }`} style={{ zIndex: 2 }}></div>
+
+                                {/* Subtle outline */}
+                                <div className="absolute inset-0 rounded-2xl border border-white/5" style={{ zIndex: 3 }}></div>
+
+                                {/* Subtle inner glow */}
+                                <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-[#59e3a5]/5 via-transparent to-[#14c0ff]/5 opacity-50" style={{ zIndex: 4 }}></div>
+
                               {/* Confetti Animation Overlay */}
                               {confettiAnimation === pkg.id && confettiData && (
                                 <div 
                                   key={confettiKey}
-                                  className="absolute inset-0 z-50 pointer-events-none rounded-xl overflow-hidden"
+                                    className="absolute inset-0 z-50 pointer-events-none rounded-2xl overflow-hidden"
                                 >
                                   <Lottie
                                     ref={lottieRef}
@@ -1422,56 +1597,177 @@ export default function PackagesPage() {
                                 </div>
                               )}
                               
+                                {/* Selection checkmark */}
                               {selectedPackage === pkg.id && (
-                                <div className="absolute -top-2 -left-2 w-6 h-6 bg-[#59e3a5] rounded-full flex items-center justify-center z-30">
+                                  <div className="absolute -top-3 -left-3 w-8 h-8 bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] rounded-full flex items-center justify-center z-30 shadow-lg">
                                   <span className="text-black text-sm font-bold">✓</span>
                                 </div>
                               )}
                               
                               {/* Content container */}
-                              <div className="h-full px-3 pt-4 pb-6 flex flex-col">
-                                {/* Top - Icon and Price */}
-                                <div className="flex flex-col items-center text-center mb-2">
-                                  <div className="w-18 h-18 flex items-center justify-center mb-3">
-                                    <span className="text-4xl">{pkg.icon}</span>
+                                <div className="relative h-full px-4 pt-5 pb-6 flex flex-col" style={{ zIndex: 10 }}>
+                                  {/* Top - Emoji in gradient circle */}
+                                  <div className="flex flex-col items-center text-center mb-4">
+                                                                    <div className="w-12 h-12 bg-gradient-to-br from-[#59e3a5]/20 to-[#14c0ff]/20 rounded-full flex items-center justify-center mb-4 border border-white/10 backdrop-blur-sm shadow-lg">
+                                  <span className="text-2xl filter drop-shadow-lg">{pkg.icon}</span>
                                   </div>
-                                  <div>
+                                    
+                                    {/* Price */}
+                                    <div className="mb-0">
                                     {isDiscountedSong ? (
-                                      <div className="space-y-0">
-                                        <div className="text-sm text-white/50 line-through">${pkg.price}</div>
-                                        <div className="font-bold bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] bg-clip-text text-transparent" style={{fontSize: 'calc(1.25rem + 0.35rem)'}}>
+                                        <div className="space-y-1">
+                                          <div className="text-sm text-white/40 line-through">${pkg.price}</div>
+                                          <div className="font-black text-3xl text-white filter drop-shadow-sm">
                                           ${getDiscountedPrice(pkg.price)}
                                         </div>
                                       </div>
                                                                           ) : (
-                                      <span className="font-bold" style={{fontSize: 'calc(1.25rem + 0.35rem - 0.12rem)'}}>${pkg.price}</span>
+                                        <span className="font-black text-3xl text-white filter drop-shadow-sm">${pkg.price}</span>
                                     )}
                                   </div>
                                 </div>
                                 
-                                {/* Middle - Package Name */}
-                                <div className="text-center mb-2">
-                                  <h3 className="font-bold bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] bg-clip-text text-transparent" style={{fontSize: ['legendary', 'dominate', 'momentum'].includes(pkg.id) ? 'calc(1rem + 0.2rem + 0.18rem)' : pkg.id === 'unstoppable' ? 'calc(1rem + 0.2rem + 0.12rem)' : 'calc(1rem + 0.2rem)'}}>{pkg.name}</h3>
+                                  {/* Package Name */}
+                                  <div className="text-center mb-3">
+                                    <h3 className="font-black text-xl bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] bg-clip-text text-transparent tracking-wide filter drop-shadow-sm">{pkg.name}</h3>
                                 </div>
                                 
-                                                                 {/* Bottom - Features with checkmarks */}
-                                 <div className="space-y-2">
-                                   <div className="flex items-center justify-center text-sm text-white/90">
-                                     <div className="w-4 h-4 bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] rounded-full flex items-center justify-center mr-2 flex-shrink-0">
-                                       <span className="text-black text-xs font-bold">✓</span>
+                                  {/* Hook Description */}
+                                  <div className="text-center mb-4">
+                                    <p className="text-xs text-white/70 leading-relaxed px-2 font-medium">{pkg.description}</p>
                                      </div>
-                                     <span>{formatStreamsForDisplay(pkg.plays)}</span>
+                                  
+                                  {/* Features container */}
+                                  <div className="bg-gradient-to-br from-white/8 to-white/4 rounded-xl px-4 py-4 backdrop-blur-sm border border-white/20 shadow-lg space-y-3">
+                                                                        <div className="flex items-center text-white">
+                                      <div className="w-3 h-3 bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] rounded-full flex items-center justify-center mr-2 flex-shrink-0 shadow-md">
+                                        <span className="text-black text-xs font-black">✓</span>
                                    </div>
-                                   <div className={`flex items-center justify-center text-sm text-white/90 ${['unstoppable', 'dominate'].includes(pkg.id) ? '' : 'mb-1'}`}>
-                                     <div className="w-4 h-4 bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] rounded-full flex items-center justify-center mr-2 flex-shrink-0">
-                                       <span className="text-black text-xs font-bold">✓</span>
+                                      <span className="font-bold tracking-wide text-sm">{formatStreamsForDisplay(pkg.plays)}</span>
                                      </div>
-                                     <span>{pkg.placements}</span>
+                                    <div className="flex items-center text-white">
+                                      <div className="w-3 h-3 bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] rounded-full flex items-center justify-center mr-2 flex-shrink-0 shadow-md">
+                                        <span className="text-black text-xs font-black">✓</span>
                                    </div>
+                                      <span className="font-bold tracking-wide text-xs">{pkg.placements}</span>
                                  </div>
                                </div>
                              </div>
-                           ))}
+                              </div>
+                            );
+                          }
+
+                          // MOMENTUM package now using same modern design
+                          return (
+                            <div
+                              key={pkg.id}
+                              onClick={() => handlePackageSelect(pkg.id)}
+                              className={`relative cursor-pointer transition-all duration-300 hover:-translate-y-2 hover:scale-105 group ${
+                                selectedPackage === pkg.id
+                                  ? 'shadow-2xl shadow-[#59e3a5]/30'
+                                  : 'shadow-xl shadow-black/20 hover:shadow-2xl hover:shadow-[#59e3a5]/20'
+                              }`}
+                              style={{ 
+                                minHeight: '260px',
+                                width: '260px',
+                                zIndex: selectedPackage === pkg.id ? 20 : 10
+                              }}
+                              suppressHydrationWarning={true}
+                            >
+                              {/* Gradient Background with Border */}
+                              <div className={`absolute inset-0 rounded-2xl transition-all duration-300 ${
+                                selectedPackage === pkg.id
+                                  ? 'bg-gradient-to-br from-gray-800/98 via-gray-900/98 to-black/98 border-2 border-[#59e3a5]/80'
+                                  : 'bg-gradient-to-br from-gray-800/95 via-gray-900/95 to-black/95 border border-white/10 group-hover:border-white/20'
+                              }`} style={{ zIndex: 2 }}></div>
+
+                              {/* Subtle outline */}
+                              <div className="absolute inset-0 rounded-2xl border border-white/5" style={{ zIndex: 3 }}></div>
+
+                              {/* Subtle inner glow */}
+                              <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-[#59e3a5]/5 via-transparent to-[#14c0ff]/5 opacity-50" style={{ zIndex: 4 }}></div>
+
+                              {/* Confetti Animation Overlay */}
+                              {confettiAnimation === pkg.id && confettiData && (
+                                <div 
+                                  key={confettiKey}
+                                  className="absolute inset-0 z-50 pointer-events-none rounded-2xl overflow-hidden"
+                                >
+                                  <Lottie
+                                    ref={lottieRef}
+                                    animationData={confettiData}
+                                    loop={false}
+                                    autoplay={true}
+                                    style={{
+                                      width: '100%',
+                                      height: '100%',
+                                      position: 'absolute',
+                                      top: 0,
+                                      left: 0,
+                                    }}
+                                  />
+                                </div>
+                              )}
+                              
+                              {/* Selection checkmark */}
+                              {selectedPackage === pkg.id && (
+                                <div className="absolute -top-3 -left-3 w-8 h-8 bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] rounded-full flex items-center justify-center z-30 shadow-lg">
+                                  <span className="text-black text-sm font-bold">✓</span>
+                                </div>
+                              )}
+                              
+                              {/* Content container */}
+                              <div className="relative h-full px-4 pt-5 pb-6 flex flex-col" style={{ zIndex: 10 }}>
+                                {/* Top - Emoji in gradient circle */}
+                                <div className="flex flex-col items-center text-center mb-4">
+                                                                  <div className="w-12 h-12 bg-gradient-to-br from-[#59e3a5]/20 to-[#14c0ff]/20 rounded-full flex items-center justify-center mb-4 border border-white/10 backdrop-blur-sm shadow-lg">
+                                  <span className="text-2xl filter drop-shadow-lg">{pkg.icon}</span>
+                                  </div>
+                                  
+                                  {/* Price */}
+                                  <div className="mb-0">
+                                    {isDiscountedSong ? (
+                                      <div className="space-y-1">
+                                        <div className="text-sm text-white/40 line-through">${pkg.price}</div>
+                                        <div className="font-black text-3xl text-white filter drop-shadow-sm">
+                                          ${getDiscountedPrice(pkg.price)}
+                                        </div>
+                                      </div>
+                                    ) : (
+                                      <span className="font-black text-3xl text-white filter drop-shadow-sm">${pkg.price}</span>
+                                    )}
+                                  </div>
+                                </div>
+                                
+                                {/* Package Name */}
+                                <div className="text-center mb-3">
+                                  <h3 className="font-black text-xl bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] bg-clip-text text-transparent tracking-wide filter drop-shadow-sm">{pkg.name}</h3>
+                                </div>
+
+                                {/* Hook Description */}
+                                <div className="text-center mb-4">
+                                  <p className="text-xs text-white/70 leading-relaxed px-2 font-medium">{pkg.description}</p>
+                                </div>
+                                
+                                {/* Features container */}
+                                <div className="bg-gradient-to-br from-white/8 to-white/4 rounded-xl px-4 py-4 backdrop-blur-sm border border-white/20 shadow-lg space-y-3">
+                                                                      <div className="flex items-center text-white">
+                                      <div className="w-3 h-3 bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] rounded-full flex items-center justify-center mr-2 flex-shrink-0 shadow-md">
+                                        <span className="text-black text-xs font-black">✓</span>
+                                      </div>
+                                      <span className="font-bold tracking-wide text-sm">{formatStreamsForDisplay(pkg.plays)}</span>
+                                    </div>
+                                    <div className="flex items-center text-white">
+                                      <div className="w-3 h-3 bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] rounded-full flex items-center justify-center mr-2 flex-shrink-0 shadow-md">
+                                        <span className="text-black text-xs font-black">✓</span>
+                                      </div>
+                                      <span className="font-bold tracking-wide text-xs">{pkg.placements}</span>
+                                    </div>
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        })}
                        </div>
                     </>
                   );
