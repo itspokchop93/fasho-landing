@@ -1460,6 +1460,29 @@ input:-webkit-autofill:active {
   animation: pulse-glow 1.2s ease-in-out infinite;
 }
 
+/* Smooth Pulsing Gradient Glow Animation for Next Step Button */
+@keyframes smooth-pulse-gradient-glow {
+  0% {
+    opacity: 0.5;
+    transform: scale(1);
+    filter: blur(8px);
+  }
+  50% {
+    opacity: 0.9;
+    transform: scale(1.06);
+    filter: blur(14px);
+  }
+  100% {
+    opacity: 0.5;
+    transform: scale(1);
+    filter: blur(8px);
+  }
+}
+
+.animate-fast-pulse-glow {
+  animation: smooth-pulse-gradient-glow 2.5s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
 /* PAS Section Responsive Font Sizing */
 .pas-text-1-6rem {
   font-size: 1.6rem;

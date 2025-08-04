@@ -1294,22 +1294,35 @@ export default function PackagesPage() {
 
             {/* Mobile: Action buttons */}
             <div className="md:hidden space-y-4">
-              <button
-                onClick={handleNext}
-                disabled={!selectedPackage || isAuthLoading}
-                className="w-full bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] text-black font-semibold px-8 py-4 rounded-md disabled:opacity-50 hover:opacity-90 hover:-translate-y-1 transition-all duration-300 text-lg flex items-center justify-center gap-2"
-              >
-                {isAuthLoading ? (
-                  <>
-                    <div className="w-5 h-5 border-2 border-black border-t-transparent rounded-full animate-spin"></div>
-                    Checking account...
-                  </>
-                ) : (
-                  <>
-                    {isLastSong || isOnlySong ? 'Next Step' : 'Next Song'} →
-                  </>
+              <div className="relative">
+                {/* Pulsing gradient glow background - only when button is active */}
+                {selectedPackage && !isAuthLoading && (
+                  <div 
+                    className="absolute inset-0 bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] rounded-md animate-fast-pulse-glow"
+                    style={{ zIndex: 1 }}
+                    suppressHydrationWarning={true}
+                  ></div>
                 )}
-              </button>
+                
+                <button
+                  onClick={handleNext}
+                  disabled={!selectedPackage || isAuthLoading}
+                  className="relative w-full bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] text-black font-semibold px-8 py-4 rounded-md disabled:opacity-50 hover:opacity-90 hover:-translate-y-1 transition-all duration-300 text-lg flex items-center justify-center gap-2"
+                  style={{ zIndex: 2 }}
+                  suppressHydrationWarning={true}
+                >
+                  {isAuthLoading ? (
+                    <>
+                      <div className="w-5 h-5 border-2 border-black border-t-transparent rounded-full animate-spin"></div>
+                      Checking account...
+                    </>
+                  ) : (
+                    <>
+                      {isLastSong || isOnlySong ? 'Next Step' : 'Next Song'} →
+                    </>
+                  )}
+                </button>
+              </div>
               <button
                 onClick={handleChangeSong}
                 className="w-full bg-white/10 border border-white/20 text-white font-semibold px-8 py-4 rounded-md hover:bg-white/20 hover:-translate-y-1 transition-all duration-300 text-lg"
@@ -1931,22 +1944,35 @@ export default function PackagesPage() {
 
                {/* Action buttons */}
                <div className="space-y-4">
-                 <button
-                   onClick={handleNext}
-                   disabled={!selectedPackage || isAuthLoading}
-                   className="w-full bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] text-black font-semibold px-8 py-4 rounded-md disabled:opacity-50 hover:opacity-90 hover:-translate-y-1 transition-all duration-300 text-lg flex items-center justify-center gap-2"
-                 >
-                   {isAuthLoading ? (
-                     <>
-                       <div className="w-5 h-5 border-2 border-black border-t-transparent rounded-full animate-spin"></div>
-                       Checking account...
-                     </>
-                   ) : (
-                     <>
-                       {isLastSong || isOnlySong ? 'Next Step' : 'Next Song'} →
-                     </>
+                 <div className="relative">
+                   {/* Pulsing gradient glow background - only when button is active */}
+                   {selectedPackage && !isAuthLoading && (
+                     <div 
+                       className="absolute inset-0 bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] rounded-md animate-fast-pulse-glow"
+                       style={{ zIndex: 1 }}
+                       suppressHydrationWarning={true}
+                     ></div>
                    )}
-                 </button>
+                   
+                   <button
+                     onClick={handleNext}
+                     disabled={!selectedPackage || isAuthLoading}
+                     className="relative w-full bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] text-black font-semibold px-8 py-4 rounded-md disabled:opacity-50 hover:opacity-90 hover:-translate-y-1 transition-all duration-300 text-lg flex items-center justify-center gap-2"
+                     style={{ zIndex: 2 }}
+                     suppressHydrationWarning={true}
+                   >
+                     {isAuthLoading ? (
+                       <>
+                         <div className="w-5 h-5 border-2 border-black border-t-transparent rounded-full animate-spin"></div>
+                         Checking account...
+                       </>
+                     ) : (
+                       <>
+                         {isLastSong || isOnlySong ? 'Next Step' : 'Next Song'} →
+                       </>
+                     )}
+                   </button>
+                 </div>
                  <button
                    onClick={handleChangeSong}
                    className="w-full bg-white/10 border border-white/20 text-white font-semibold px-8 py-4 rounded-md hover:bg-white/20 hover:-translate-y-1 transition-all duration-300 text-lg"
