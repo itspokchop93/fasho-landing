@@ -9,8 +9,8 @@ interface Props {
 
 export default function SelectedTrackCard({ track, onRemove, showDiscount = false }: Props) {
   return (
-    <div className="relative w-40 sm:w-60 h-[180px] sm:h-[262px] flex-shrink-0 text-center rounded-xl bg-gradient-to-r from-[#59e3a5] via-[#14c0ff] to-[#8b5cf6] p-[1px]">
-      <div className="bg-gray-900 rounded-xl p-2 sm:p-4 w-full h-full relative">
+    <div className="relative w-40 sm:w-60 h-[180px] sm:h-[262px] flex-shrink-0 text-center rounded-xl bg-gradient-to-r from-[#59e3a5] via-[#14c0ff] to-[#8b5cf6] p-[1px] mx-1">
+      <div className="bg-gray-900 rounded-xl p-2 sm:p-4 w-full h-full relative overflow-visible">
         {showDiscount && (
           <div className="absolute -top-3 -right-3 bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] text-black text-xs font-semibold px-2 py-1 rounded-md z-10">
             +25% OFF

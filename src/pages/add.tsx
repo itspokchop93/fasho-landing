@@ -537,7 +537,7 @@ export default function AddSongsPage() {
         </p>
 
         {/* cards */}
-        <div className="flex gap-1 sm:gap-4 md:gap-6 mb-6 md:mb-10 flex-wrap sm:flex-wrap justify-center items-center relative z-10" ref={tracksContainerRef}>
+        <div className="flex gap-1 sm:gap-4 md:gap-6 mb-6 md:mb-10 flex-wrap sm:flex-wrap justify-center items-center relative z-10 px-2" ref={tracksContainerRef}>
           {tracks.map((t, idx) => {
             const isEvenCard = (idx + 1) % 2 === 0; // Every 2nd card (2nd, 4th, 6th...)
             const isOddCard = (idx + 1) % 2 === 1; // Every 1st card (1st, 3rd, 5th...)

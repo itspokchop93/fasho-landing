@@ -107,9 +107,9 @@ export default function ArtistInsightsCard({ artistData, isMobile = false }: Pro
   };
 
   return (
-    <div className="mb-2 animate-popdown w-full" style={{ zIndex: 50 }}>
+    <div className="mb-2 animate-popdown w-full px-1" style={{ zIndex: 50 }}>
       <div className="bg-gradient-to-r from-[#59e3a5] via-[#14c0ff] to-[#8b5cf6] p-[1px] rounded-2xl shadow-[0_8px_32px_0_rgba(20,192,255,0.35)]">
-        <div className="bg-gradient-to-r from-[#23272f] to-[#1a1a2e] rounded-2xl p-6 w-full overflow-hidden" style={{ zIndex: 51 }}>
+        <div className="bg-gradient-to-r from-[#23272f] to-[#1a1a2e] rounded-2xl p-6 w-full overflow-visible" style={{ zIndex: 51 }}>
           {/* Header */}
           <div className="flex items-center mb-6">
             <div className="w-2 h-8 bg-gradient-to-b from-[#59e3a5] to-[#14c0ff] rounded-full mr-3" style={{ zIndex: 52 }}></div>

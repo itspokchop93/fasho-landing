@@ -17,9 +17,20 @@ export default function StepIndicator({ currentStep, className = '' }: StepIndic
   const handleStepClick = (step: typeof steps[0]) => {
     // Only allow navigation to completed steps or current step
     if (step.number <= currentStep) {
-      // For step 1 (add page), just go there
+      // For step 1 (add page), preserve current tracks
       if (step.number === 1) {
-        router.push('/add');
+        // Get tracks from current router query
+        const tracks = router.query.tracks;
+        if (tracks) {
+          // If we have tracks, redirect to add page with them preserved
+          router.push({
+            pathname: '/add',
+            query: { tracks }
+          });
+        } else {
+          // No tracks available, just go to add page
+          router.push('/add');
+        }
         return;
       }
       

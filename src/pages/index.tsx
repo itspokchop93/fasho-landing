@@ -1638,9 +1638,9 @@ export default function Home() {
                       </div>
                       {/* Song card directly below input/button row, INSIDE the campaign container */}
                       {previewTrack && isSpotifyUrlCheck(url) && (
-                        <div className="mb-2 animate-popdown w-full">
+                        <div className="mb-2 animate-popdown w-full px-1">
                           <div className="bg-gradient-to-r from-[#59e3a5] via-[#14c0ff] to-[#8b5cf6] p-[1px] rounded-2xl shadow-[0_8px_32px_0_rgba(20,192,255,0.35)]">
-                            <div className="flex items-center bg-gradient-to-r from-[#23272f] to-[#1a1a2e] rounded-2xl p-4 gap-4 w-full overflow-hidden">
+                            <div className="flex items-center bg-gradient-to-r from-[#23272f] to-[#1a1a2e] rounded-2xl p-4 gap-4 w-full overflow-visible">
                               <img
                                 src={previewTrack.imageUrl}
                                 alt={previewTrack.title}
