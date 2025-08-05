@@ -73,19 +73,19 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     console.log('🔍 GET-ORDER-DETAILS: Order found:', order.id);
 
-    // Check if order is within 10-minute window
+    // Check if order is within 30-minute window
     const orderCreatedAt = new Date(order.created_at);
     const now = new Date();
-    const tenMinutesInMs = 10 * 60 * 1000; // 10 minutes
+    const thirtyMinutesInMs = 30 * 60 * 1000; // 30 minutes
     const timeDifference = now.getTime() - orderCreatedAt.getTime();
 
     console.log('🔍 GET-ORDER-DETAILS: Order created:', orderCreatedAt.toISOString());
     console.log('🔍 GET-ORDER-DETAILS: Current time:', now.toISOString());
     console.log('🔍 GET-ORDER-DETAILS: Time difference (ms):', timeDifference);
-    console.log('🔍 GET-ORDER-DETAILS: 10-minute limit (ms):', tenMinutesInMs);
+    console.log('🔍 GET-ORDER-DETAILS: 30-minute limit (ms):', thirtyMinutesInMs);
 
-    if (timeDifference > tenMinutesInMs) {
-      console.log('🔍 GET-ORDER-DETAILS: Order has expired (> 10 minutes)');
+    if (timeDifference > thirtyMinutesInMs) {
+      console.log('🔍 GET-ORDER-DETAILS: Order has expired (> 30 minutes)');
       return res.status(410).json({ 
         success: false, 
         message: 'Order thank you page has expired',
@@ -171,7 +171,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     return res.status(200).json({
       success: true,
       orderDetails,
-      timeRemaining: Math.max(0, tenMinutesInMs - timeDifference)
+      timeRemaining: Math.max(0, thirtyMinutesInMs - timeDifference)
     });
 
   } catch (error) {

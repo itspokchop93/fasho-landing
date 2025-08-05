@@ -157,8 +157,8 @@ export default function ThankYouPage() {
             setIsLoading(false);
             return;
           } else if (response.status === 410 || data.expired) {
-            console.log('🔍 THANK YOU PAGE: Order has expired (> 10 minutes)');
-            setError('This thank you page has expired. Order details are only available for 10 minutes after completion.');
+            console.log('🔍 THANK YOU PAGE: Order has expired (> 30 minutes)');
+            setError('This thank you page has expired. Order details are only available for 30 minutes after completion.');
             setIsLoading(false);
             return;
           } else if (response.status === 404) {
@@ -356,7 +356,7 @@ export default function ThankYouPage() {
                   <div className="bg-yellow-500/10 border border-yellow-500/20 rounded-lg p-6 mb-8 max-w-2xl mx-auto">
                     <h3 className="text-yellow-400 font-semibold mb-2">⏰ What happened?</h3>
                     <p className="text-white/70 text-sm mb-4">
-                      For security reasons, order thank you pages are only available for 10 minutes after completion.
+                      For security reasons, order thank you pages are only available for 30 minutes after completion.
                       Your order was successfully processed and you should have received a confirmation email.
                     </p>
                     <p className="text-white/70 text-sm">
