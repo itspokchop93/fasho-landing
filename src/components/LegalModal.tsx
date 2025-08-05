@@ -11,7 +11,7 @@ export default function LegalModal({ isOpen, onClose, title, children }: LegalMo
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+    <div className="fixed inset-0 z-50 flex items-start sm:items-center justify-center p-4 pt-32 sm:pt-4">
       {/* Backdrop */}
       <div 
         className="absolute inset-0 bg-black/80 backdrop-blur-sm"
@@ -19,7 +19,7 @@ export default function LegalModal({ isOpen, onClose, title, children }: LegalMo
       />
       
       {/* Modal */}
-      <div className="relative bg-black border border-white/20 rounded-2xl w-full max-w-4xl max-h-[90vh] overflow-hidden">
+      <div className="relative bg-black border border-white/20 rounded-2xl w-full max-w-4xl max-h-[80vh] sm:max-h-[90vh] overflow-hidden" style={{ zIndex: 60 }}>
         {/* Header */}
         <div className="sticky top-0 bg-black/95 backdrop-blur-sm border-b border-white/20 p-6 flex items-center justify-between">
           <h2 className="text-2xl font-bold bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] bg-clip-text text-transparent">
@@ -41,7 +41,7 @@ export default function LegalModal({ isOpen, onClose, title, children }: LegalMo
         </div>
         
         {/* Content */}
-        <div className="overflow-y-auto max-h-[calc(90vh-120px)] p-6">
+        <div className="overflow-y-auto max-h-[calc(80vh-120px)] sm:max-h-[calc(90vh-120px)] p-6">
           <div className="prose prose-invert prose-lg max-w-none">
             {children}
           </div>

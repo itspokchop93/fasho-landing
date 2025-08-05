@@ -14,6 +14,7 @@ interface SyncUserProfileRequest {
   billing_zip?: string;
   billing_country?: string;
   billing_phone?: string;
+  music_genre?: string;
   source?: 'signup' | 'checkout' | 'manual';
 }
 
@@ -37,6 +38,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       billing_zip,
       billing_country,
       billing_phone,
+      music_genre,
       source = 'manual'
     }: SyncUserProfileRequest = req.body;
 
@@ -106,6 +108,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     if (billing_zip) updateData.billing_zip = billing_zip;
     if (billing_country) updateData.billing_country = billing_country;
     if (billing_phone) updateData.billing_phone = billing_phone;
+    if (music_genre) updateData.music_genre = music_genre;
 
     let result;
     if (existingProfile) {
@@ -144,6 +147,46 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     if (result.error) {
       console.error('🔄 SYNC-USER-PROFILE: ❌ Database error:', result.error);
+      
+      // Check if the error is due to missing music_genre column
+      if (result.error.message && result.error.message.includes('music_genre')) {
+        console.log('🔄 SYNC-USER-PROFILE: ⚠️ music_genre column not found, retrying without it...');
+        
+        // Retry without the music_genre field
+        const updateDataWithoutGenre = { ...updateData };
+        delete updateDataWithoutGenre.music_genre;
+        
+        let retryResult;
+        if (existingProfile) {
+          const { data, error } = await supabase
+            .from('user_profiles')
+            .update(updateDataWithoutGenre)
+            .eq('user_id', targetUserId)
+            .select()
+            .single();
+          retryResult = { data, error };
+        } else {
+          const { data, error } = await supabase
+            .from('user_profiles')
+            .insert(updateDataWithoutGenre)
+            .select()
+            .single();
+          retryResult = { data, error };
+        }
+        
+        if (retryResult.error) {
+          return res.status(500).json({ error: 'Failed to sync user profile', details: retryResult.error });
+        }
+        
+        return res.status(200).json({
+          success: true,
+          profile: retryResult.data,
+          warning: 'Profile synced successfully, but music_genre field needs database migration',
+          migrationRequired: true,
+          source: source
+        });
+      }
+      
       return res.status(500).json({ error: 'Failed to sync user profile', details: result.error });
     }
 

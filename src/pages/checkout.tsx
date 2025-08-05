@@ -193,7 +193,8 @@ export default function CheckoutPage() {
     zip: '',
     country: 'US', // 2-letter code only
     countryCode: '+1', // Default to US country code
-    phoneNumber: ''
+    phoneNumber: '',
+    musicGenre: '' // User's preferred music genre
   });
 
   // Terms agreement state
@@ -842,7 +843,7 @@ export default function CheckoutPage() {
 
   // Validate if form is ready for payment
   const isFormValid = () => {
-    // If user is logged in, only need billing info + terms agreement
+    // If user is logged in, only need billing info + music genre + terms agreement
     if (currentUser) {
       return billingData.firstName && 
              billingData.lastName && 
@@ -851,12 +852,13 @@ export default function CheckoutPage() {
              billingData.state && 
              billingData.zip &&
              billingData.phoneNumber &&
+             billingData.musicGenre &&
              termsAgreed;
     }
     
     // If not logged in, need account info + billing info + terms agreement
     if (isLoginMode) {
-      // Login mode - need email and password
+      // Login mode - need email and password + billing info + music genre
       return formData.email && 
              formData.password &&
              billingData.firstName && 
@@ -865,9 +867,11 @@ export default function CheckoutPage() {
              billingData.city && 
              billingData.state && 
              billingData.zip &&
+             billingData.phoneNumber &&
+             billingData.musicGenre &&
              termsAgreed;
     } else {
-      // Signup mode - need all account fields + billing + terms agreement + no field errors
+      // Signup mode - need all account fields + billing + music genre + terms agreement + no field errors
       return formData.email && 
              formData.password && 
              formData.confirmPassword &&
@@ -880,6 +884,8 @@ export default function CheckoutPage() {
              billingData.city && 
              billingData.state && 
              billingData.zip &&
+             billingData.phoneNumber &&
+             billingData.musicGenre &&
              termsAgreed &&
              (emailStatus === 'available') &&
              !fieldErrors.password &&
@@ -911,6 +917,7 @@ export default function CheckoutPage() {
     if (!billingData.state) return 'state';
     if (!billingData.zip) return 'zip';
     if (!billingData.phoneNumber) return 'phoneNumber';
+    if (!billingData.musicGenre) return 'musicGenre';
     
     // Terms agreement validation
     if (!termsAgreed) return 'termsAgreed';
@@ -962,6 +969,8 @@ export default function CheckoutPage() {
           errorMessage = 'Please complete your account information before continuing.';
         } else if (firstMissingField === 'termsAgreed') {
           errorMessage = 'Please agree to the Terms & Conditions, Privacy Policy, Disclaimer, and Refund Policy before continuing.';
+        } else if (firstMissingField === 'musicGenre') {
+          errorMessage = 'Please select your music genre before continuing.';
         } else {
           errorMessage = 'Please complete your billing information before continuing.';
         }
@@ -1263,6 +1272,7 @@ export default function CheckoutPage() {
                 billing_zip: billingData.zip,
                 billing_country: billingData.country,
                 billing_phone: billingData.phoneNumber,
+                music_genre: billingData.musicGenre,
               }),
             });
             console.log('🔄 CHECKOUT: User profile sync response:', syncResponse);
@@ -1624,6 +1634,7 @@ export default function CheckoutPage() {
                   billing_zip: billingData.zip,
                   billing_country: billingData.country,
                   billing_phone: billingData.phoneNumber,
+                  music_genre: billingData.musicGenre,
                   source: 'checkout'
                 })
               });
@@ -2373,7 +2384,8 @@ export default function CheckoutPage() {
                           zip: '',
                           country: 'US',
                           countryCode: '+1',
-                          phoneNumber: ''
+                          phoneNumber: '',
+                          musicGenre: ''
                         })}
                         className="text-red-400 hover:text-red-300 text-sm transition-colors"
                       >
@@ -2693,53 +2705,96 @@ export default function CheckoutPage() {
                   </div>
                 </div>
 
-                {/* Terms Agreement */}
-                <div className="bg-white/5 rounded-xl p-6 border border-white/20">
-                  <div className="flex items-start space-x-3">
-                    <input
-                      type="checkbox"
-                      id="termsAgreed"
-                      name="termsAgreed"
-                      checked={termsAgreed}
-                      onChange={(e) => setTermsAgreed(e.target.checked)}
-                      required
-                      className="mt-1 w-4 h-4 bg-white/10 border border-white/20 rounded focus:ring-[#59e3a5] focus:ring-2 text-[#59e3a5] transition-colors"
-                    />
-                    <label htmlFor="termsAgreed" className="text-sm text-white/70 leading-relaxed">
-                      I have read and understand the{' '}
-                      <button 
-                        type="button"
-                        onClick={() => setShowTermsModal(true)}
-                        className="text-[#59e3a5] hover:text-[#4bc995] underline transition-colors"
+                {/* Genre Selection & Terms Agreement Row - Desktop: Side by side, Mobile: Stacked */}
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                  {/* Music Genre Selection */}
+                  <div className="bg-white/5 rounded-xl p-6 border border-white/20">
+                    <h2 className="text-lg font-semibold mb-2">Your Genre <span className="text-red-400">*</span></h2>
+                    <p className="text-sm text-white/60 mb-4">
+                      Select the genre that best describes your music style
+                    </p>
+                    
+                    <div>
+                      <select
+                        id="musicGenre"
+                        name="musicGenre"
+                        value={billingData.musicGenre}
+                        onChange={handleBillingChange}
+                        required
+                        className="w-full bg-white/10 border border-white/20 rounded-lg py-3 px-4 text-white focus:outline-none focus:border-[#59e3a5] transition-colors"
+                        style={{ zIndex: 10 }}
+                        suppressHydrationWarning={true}
                       >
-                        Terms & Conditions
-                      </button>
-                      ,{' '}
-                      <button 
-                        type="button"
-                        onClick={() => setShowPrivacyModal(true)}
-                        className="text-[#59e3a5] hover:text-[#4bc995] underline transition-colors"
-                      >
-                        Privacy Policy
-                      </button>
-                      ,{' '}
-                      <button 
-                        type="button"
-                        onClick={() => setShowDisclaimerModal(true)}
-                        className="text-[#59e3a5] hover:text-[#4bc995] underline transition-colors"
-                      >
-                        Disclaimer
-                      </button>
-                      , and{' '}
-                      <button 
-                        type="button"
-                        onClick={() => setShowRefundModal(true)}
-                        className="text-[#59e3a5] hover:text-[#4bc995] underline transition-colors"
-                      >
-                        Refund Policy
-                      </button>
-                      . <span className="text-red-400">*</span>
-                    </label>
+                        <option value="" className="bg-gray-800 text-white">Select a genre...</option>
+                        <option value="Rock" className="bg-gray-800 text-white">Rock</option>
+                        <option value="Pop" className="bg-gray-800 text-white">Pop</option>
+                        <option value="Hip-Hop/Rap" className="bg-gray-800 text-white">Hip-Hop/Rap</option>
+                        <option value="Electronic/Dance (EDM)" className="bg-gray-800 text-white">Electronic/Dance (EDM)</option>
+                        <option value="Jazz" className="bg-gray-800 text-white">Jazz</option>
+                        <option value="Blues" className="bg-gray-800 text-white">Blues</option>
+                        <option value="Country" className="bg-gray-800 text-white">Country</option>
+                        <option value="Folk" className="bg-gray-800 text-white">Folk</option>
+                        <option value="Classical" className="bg-gray-800 text-white">Classical</option>
+                        <option value="Reggae" className="bg-gray-800 text-white">Reggae</option>
+                        <option value="R&B/Soul" className="bg-gray-800 text-white">R&B/Soul</option>
+                        <option value="Metal" className="bg-gray-800 text-white">Metal</option>
+                        <option value="Latin" className="bg-gray-800 text-white">Latin</option>
+                        <option value="World" className="bg-gray-800 text-white">World</option>
+                        <option value="Gospel/Religious" className="bg-gray-800 text-white">Gospel/Religious</option>
+                        <option value="Podcast" className="bg-gray-800 text-white">Podcast</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  {/* Terms Agreement */}
+                  <div className="bg-white/5 rounded-xl p-6 border border-white/20">
+                    <h2 className="text-lg font-semibold mb-2">Agreement</h2>
+                    <div className="flex items-start space-x-3">
+                      <input
+                        type="checkbox"
+                        id="termsAgreed"
+                        name="termsAgreed"
+                        checked={termsAgreed}
+                        onChange={(e) => setTermsAgreed(e.target.checked)}
+                        required
+                        className="mt-1 w-4 h-4 bg-white/10 border border-white/20 rounded focus:ring-[#59e3a5] focus:ring-2 text-[#59e3a5] transition-colors"
+                      />
+                      <label htmlFor="termsAgreed" className="text-sm text-white/70 leading-relaxed">
+                        I have read and understand the{' '}
+                        <button 
+                          type="button"
+                          onClick={() => setShowTermsModal(true)}
+                          className="text-[#59e3a5] hover:text-[#4bc995] underline transition-colors"
+                        >
+                          Terms & Conditions
+                        </button>
+                        ,{' '}
+                        <button 
+                          type="button"
+                          onClick={() => setShowPrivacyModal(true)}
+                          className="text-[#59e3a5] hover:text-[#4bc995] underline transition-colors"
+                        >
+                          Privacy Policy
+                        </button>
+                        ,{' '}
+                        <button 
+                          type="button"
+                          onClick={() => setShowDisclaimerModal(true)}
+                          className="text-[#59e3a5] hover:text-[#4bc995] underline transition-colors"
+                        >
+                          Disclaimer
+                        </button>
+                        , and{' '}
+                        <button 
+                          type="button"
+                          onClick={() => setShowRefundModal(true)}
+                          className="text-[#59e3a5] hover:text-[#4bc995] underline transition-colors"
+                        >
+                          Refund Policy
+                        </button>
+                        . <span className="text-red-400">*</span>
+                      </label>
+                    </div>
                   </div>
                 </div>
 
