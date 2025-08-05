@@ -161,12 +161,29 @@ export default function OrderDetailPage({ adminSession, accessDenied }: OrderDet
   const [editingPackage, setEditingPackage] = useState<{[key: string]: boolean}>({});
   const [packageUpdates, setPackageUpdates] = useState<{[key: string]: string}>({});
   const [updatingPackage, setUpdatingPackage] = useState<{[key: string]: boolean}>({});
+  
+  // User Genres state
+  const [userProfileGenre, setUserProfileGenre] = useState<string | null>(null);
+  const [spotifyArtistGenre, setSpotifyArtistGenre] = useState<string | null>(null);
+  const [loadingGenres, setLoadingGenres] = useState(false);
+  const [artistProfileUrls, setArtistProfileUrls] = useState<{[itemId: string]: string}>({});
+  const [loadingArtistUrls, setLoadingArtistUrls] = useState<{[itemId: string]: boolean}>({});
+  const [copyingProfile, setCopyingProfile] = useState<string | null>(null);
+  const [showProfileCopySuccess, setShowProfileCopySuccess] = useState<string | null>(null);
 
   useEffect(() => {
     if (orderId && typeof orderId === 'string') {
       fetchOrderDetails(orderId);
     }
   }, [orderId]);
+
+  // Fetch user genres when order is loaded
+  useEffect(() => {
+    if (order?.user_id && order?.items) {
+      fetchUserGenres(order.user_id, order.items);
+      fetchArtistProfileUrls(order.items);
+    }
+  }, [order?.user_id, order?.items]);
 
   const fetchOrderDetails = async (orderIdParam: string) => {
     try {
@@ -223,6 +240,173 @@ export default function OrderDetailPage({ adminSession, accessDenied }: OrderDet
       console.error('🔄 FETCH-ORDER: Error fetching order details:', err);
       setError(err instanceof Error ? err.message : 'Failed to load order details');
       setLoading(false);
+    }
+  };
+
+  // Function to extract Spotify track ID from URL
+  const extractTrackIdFromUrl = (url: string): string | null => {
+    const trackUrlPattern = /https:\/\/open\.spotify\.com\/track\/([a-zA-Z0-9]+)/;
+    const match = url.match(trackUrlPattern);
+    return match ? match[1] : null;
+  };
+
+  // Function to fetch user genres (both profile and Spotify)
+  const fetchUserGenres = async (userId: string, orderItems?: OrderItem[]) => {
+    setLoadingGenres(true);
+    console.log('🎵 ADMIN-GENRES: Fetching user genres for user:', userId);
+
+    try {
+      // Fetch user profile genre
+      const profileResponse = await fetch(`/api/user-profile?user_id=${userId}`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (profileResponse.ok) {
+        const profileData = await profileResponse.json();
+        const profileGenre = profileData.profile?.music_genre;
+        setUserProfileGenre(profileGenre || null);
+        console.log('🎵 ADMIN-GENRES: User profile genre:', profileGenre || 'None Selected');
+      } else {
+        console.warn('🎵 ADMIN-GENRES: Failed to fetch user profile');
+        setUserProfileGenre(null);
+      }
+
+      // Fetch Spotify artist genre - check all tracks in the order
+      if (orderItems && orderItems.length > 0) {
+        console.log(`🎵 ADMIN-GENRES: Checking ${orderItems.length} tracks for Spotify artist genres`);
+        
+        let foundGenre = null;
+        let foundTrackInfo = null;
+
+        // Iterate through all tracks to find one with genre information
+        for (let i = 0; i < orderItems.length; i++) {
+          const item = orderItems[i];
+          const trackUrl = item.track_url;
+          
+          if (trackUrl) {
+            console.log(`🎵 ADMIN-GENRES: Checking track ${i + 1}/${orderItems.length} - "${item.track_title}" by ${item.track_artist} (URL: ${trackUrl})`);
+            
+            try {
+              const trackResponse = await fetch('/api/track', {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                  url: trackUrl
+                })
+              });
+              if (trackResponse.ok) {
+                const trackData = await trackResponse.json();
+                const artistGenres = trackData.track?.artistInsights?.genres;
+                
+                if (artistGenres && artistGenres.length > 0) {
+                  // Found a track with genre information!
+                  const genreText = artistGenres.length === 1 ? artistGenres[0] : artistGenres.slice(0, 2).join(', ');
+                  foundGenre = genreText;
+                  foundTrackInfo = {
+                    title: item.track_title,
+                    artist: item.track_artist,
+                    genres: artistGenres
+                  };
+                  console.log(`🎵 ADMIN-GENRES: ✅ Found genres for "${item.track_title}" by ${item.track_artist}: ${genreText}`);
+                  break; // Stop searching once we find a track with genres
+                } else {
+                  console.log(`🎵 ADMIN-GENRES: ❌ No genres found for "${item.track_title}" by ${item.track_artist}`);
+                }
+              } else {
+                console.warn(`🎵 ADMIN-GENRES: Failed to fetch track data for "${item.track_title}"`);
+              }
+            } catch (trackError) {
+              console.error(`🎵 ADMIN-GENRES: Error fetching track "${item.track_title}":`, trackError);
+            }
+          } else {
+            console.warn(`🎵 ADMIN-GENRES: No track URL for item: ${item.track_title}`);
+          }
+        }
+
+        if (foundGenre && foundTrackInfo) {
+          setSpotifyArtistGenre(foundGenre);
+          console.log(`🎵 ADMIN-GENRES: 🎯 Final result: Using genres from "${foundTrackInfo.title}" by ${foundTrackInfo.artist}: ${foundGenre}`);
+        } else {
+          setSpotifyArtistGenre(null);
+          console.log('🎵 ADMIN-GENRES: 🚫 No Spotify artist genres found in any of the order tracks');
+        }
+      } else {
+        console.log('🎵 ADMIN-GENRES: No order items available for Spotify genre lookup');
+        setSpotifyArtistGenre(null);
+      }
+    } catch (error) {
+      console.error('🎵 ADMIN-GENRES: Error fetching user genres:', error);
+      setUserProfileGenre(null);
+      setSpotifyArtistGenre(null);
+    } finally {
+      setLoadingGenres(false);
+    }
+  };
+
+  // Function to fetch artist profile URLs for all tracks
+  const fetchArtistProfileUrls = async (orderItems: OrderItem[]) => {
+    console.log('🎵 ADMIN-PROFILES: Fetching artist profile URLs for all tracks');
+
+    for (const item of orderItems) {
+      if (item.track_url) {
+        setLoadingArtistUrls(prev => ({ ...prev, [item.id]: true }));
+        
+        try {
+          console.log(`🎵 ADMIN-PROFILES: Fetching profile URL for "${item.track_title}" by ${item.track_artist}`);
+          
+          const trackResponse = await fetch('/api/track', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              url: item.track_url
+            })
+          });
+
+          if (trackResponse.ok) {
+            const trackData = await trackResponse.json();
+            const artistProfileUrl = trackData.track?.artistProfileUrl;
+            
+            if (artistProfileUrl) {
+              setArtistProfileUrls(prev => ({
+                ...prev,
+                [item.id]: artistProfileUrl
+              }));
+              console.log(`🎵 ADMIN-PROFILES: ✅ Found profile URL for "${item.track_title}": ${artistProfileUrl}`);
+            } else {
+              console.log(`🎵 ADMIN-PROFILES: ❌ No profile URL found for "${item.track_title}"`);
+            }
+          } else {
+            console.warn(`🎵 ADMIN-PROFILES: Failed to fetch track data for "${item.track_title}"`);
+          }
+        } catch (error) {
+          console.error(`🎵 ADMIN-PROFILES: Error fetching profile URL for "${item.track_title}":`, error);
+        } finally {
+          setLoadingArtistUrls(prev => ({ ...prev, [item.id]: false }));
+        }
+      }
+    }
+  };
+
+  const handleCopyProfile = async (itemId: string) => {
+    const url = artistProfileUrls[itemId];
+    if (!url) return;
+
+    setCopyingProfile(itemId);
+    try {
+      await navigator.clipboard.writeText(url);
+      setShowProfileCopySuccess(itemId);
+      setTimeout(() => setShowProfileCopySuccess(null), 2000);
+    } catch (error) {
+      console.error('Failed to copy profile URL:', error);
+    } finally {
+      setCopyingProfile(null);
     }
   };
 
@@ -414,6 +598,26 @@ export default function OrderDetailPage({ adminSession, accessDenied }: OrderDet
         await fetchOrderDetails(order.id);
         
         console.log('🔄 TRACK-UPDATE: Order data refresh completed');
+        
+        // Also refresh artist profile URL for this specific item
+        const updatedOrder = await new Promise<Order | null>((resolve) => {
+          const checkOrder = () => {
+            if (order?.items) {
+              resolve(order);
+            } else {
+              setTimeout(checkOrder, 50);
+            }
+          };
+          checkOrder();
+        });
+        
+        if (updatedOrder?.items) {
+          const updatedItem = updatedOrder.items.find(item => item.id === itemId);
+          if (updatedItem?.track_url) {
+            console.log('🔄 TRACK-UPDATE: Refreshing artist profile URL for updated track');
+            fetchArtistProfileUrls([updatedItem]);
+          }
+        }
       }
       
       // Check if package was also changed and save it
@@ -807,6 +1011,47 @@ export default function OrderDetailPage({ adminSession, accessDenied }: OrderDet
               </div>
             )}
 
+            {/* User Genres */}
+            <div className="bg-white/5 rounded-xl p-6 border border-white/20">
+              <h2 className="text-xl font-semibold text-white mb-4">User Genres</h2>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <label className="block text-sm text-white/70 mb-2">Genre from Spotify Artist Profile:</label>
+                  <div className="bg-white/5 rounded-lg p-3 border border-white/10">
+                    {loadingGenres ? (
+                      <div className="flex items-center space-x-2">
+                        <div className="w-4 h-4 border-2 border-[#59e3a5] border-t-transparent rounded-full animate-spin"></div>
+                        <span className="text-white/60 text-sm">Loading...</span>
+                      </div>
+                    ) : (
+                      <p className="text-white text-sm">
+                        {spotifyArtistGenre || (
+                          <span className="text-white/50 italic">None Found</span>
+                        )}
+                      </p>
+                    )}
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-sm text-white/70 mb-2">Genre selected during checkout:</label>
+                  <div className="bg-white/5 rounded-lg p-3 border border-white/10">
+                    {loadingGenres ? (
+                      <div className="flex items-center space-x-2">
+                        <div className="w-4 h-4 border-2 border-[#59e3a5] border-t-transparent rounded-full animate-spin"></div>
+                        <span className="text-white/60 text-sm">Loading...</span>
+                      </div>
+                    ) : (
+                      <p className="text-white text-sm">
+                        {userProfileGenre || (
+                          <span className="text-white/50 italic">None Selected</span>
+                        )}
+                      </p>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
+
             {/* Order Items */}
             <div className="bg-white/5 rounded-xl p-6 border border-white/20">
               <div className="flex justify-between items-center mb-6">
@@ -923,7 +1168,7 @@ export default function OrderDetailPage({ adminSession, accessDenied }: OrderDet
                     {/* Spotify URL - Full Width Section */}
                     <div className="border-t border-white/10 bg-white/3 p-4">
                       <div className="space-y-2">
-                        <label className="block text-xs font-medium text-white/70 uppercase tracking-wide">Spotify Track URL</label>
+                        <label className="block text-xs font-medium text-[#59e3a5] uppercase tracking-wide">Spotify Track URL</label>
                         <div className="flex space-x-3">
                           {editingTrack[item.id] ? (
                             <>
@@ -957,7 +1202,7 @@ export default function OrderDetailPage({ adminSession, accessDenied }: OrderDet
                                 }`}
                                 disabled={copyingTrack === item.id}
                               >
-                                {copyingTrack === item.id ? 'Copying...' : 'Copy'}
+                                {copyingTrack === item.id ? 'Copying...' : 'COPY TRACK URL'}
                                 {/* Green checkmark overlay */}
                                 {showCopySuccess === item.id && (
                                   <div className="absolute inset-0 bg-green-500 rounded-lg flex items-center justify-center animate-pulse">
@@ -979,6 +1224,47 @@ export default function OrderDetailPage({ adminSession, accessDenied }: OrderDet
                         {editingTrack[item.id] && trackUpdates[item.id] && !validateSpotifyUrl(trackUpdates[item.id]) && (
                           <p className="text-red-400 text-sm">Invalid Spotify URL format</p>
                         )}
+                      </div>
+                    </div>
+
+                    {/* Artist Profile URL - Full Width Section */}
+                    <div className="border-t border-white/10 bg-white/3 p-4">
+                      <div className="space-y-2">
+                        <label className="block text-xs font-medium text-white/70 uppercase tracking-wide">Artist Profile URL</label>
+                        <div className="flex space-x-3">
+                          <input
+                            type="url"
+                            value={artistProfileUrls[item.id] || ''}
+                            readOnly
+                            className="flex-1 bg-white/5 border border-white/10 rounded-lg py-2.5 px-3 text-white/50 text-sm cursor-not-allowed"
+                            placeholder={loadingArtistUrls[item.id] ? "Loading artist profile..." : "No artist profile found"}
+                          />
+                          {artistProfileUrls[item.id] && (
+                            <button
+                              onClick={() => handleCopyProfile(item.id)}
+                              className={`relative bg-blue-800 hover:bg-blue-900 text-white px-6 py-2.5 rounded-lg text-sm font-medium whitespace-nowrap transition-all duration-200 ${
+                                copyingProfile === item.id ? 'scale-95 bg-blue-900' : ''
+                              }`}
+                              disabled={copyingProfile === item.id}
+                            >
+                              {copyingProfile === item.id ? 'Copying...' : 'COPY PROFILE URL'}
+                              {/* Blue checkmark overlay */}
+                              {showProfileCopySuccess === item.id && (
+                                <div className="absolute inset-0 bg-blue-600 rounded-lg flex items-center justify-center animate-pulse">
+                                  <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                                  </svg>
+                                </div>
+                              )}
+                            </button>
+                          )}
+                          {loadingArtistUrls[item.id] && (
+                            <div className="flex items-center px-6 py-2.5">
+                              <div className="w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+                              <span className="ml-2 text-white/60 text-sm">Loading...</span>
+                            </div>
+                          )}
+                        </div>
                       </div>
                     </div>
                   </div>
