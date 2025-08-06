@@ -256,8 +256,10 @@ export default function OrderDetailPage({ adminSession, accessDenied }: OrderDet
     console.log('🎵 ADMIN-GENRES: Fetching user genres for user:', userId);
 
     try {
-      // Fetch user profile genre
-      const profileResponse = await fetch(`/api/user-profile?user_id=${userId}`, {
+      let profileGenre = null;
+
+      // First, try to fetch genre from user profile
+      const profileResponse = await fetch(`/api/admin/user-profile?user_id=${userId}`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
@@ -266,13 +268,28 @@ export default function OrderDetailPage({ adminSession, accessDenied }: OrderDet
 
       if (profileResponse.ok) {
         const profileData = await profileResponse.json();
-        const profileGenre = profileData.profile?.music_genre;
-        setUserProfileGenre(profileGenre || null);
-        console.log('🎵 ADMIN-GENRES: User profile genre:', profileGenre || 'None Selected');
+        profileGenre = profileData.profile?.music_genre;
+        if (profileGenre) {
+          console.log('🎵 ADMIN-GENRES: User profile genre:', profileGenre);
+        } else {
+          console.log('🎵 ADMIN-GENRES: None found in profile');
+        }
       } else {
         console.warn('🎵 ADMIN-GENRES: Failed to fetch user profile');
-        setUserProfileGenre(null);
       }
+
+      // If no genre found in profile, check the order's billing_info as fallback (for existing orders)
+      if (!profileGenre && order?.billing_info) {
+        const billingGenre = order.billing_info?.musicGenre;
+        if (billingGenre) {
+          profileGenre = billingGenre;
+          console.log('🎵 ADMIN-GENRES: ✅ Found genre in order billing_info:', billingGenre);
+        } else {
+          console.log('🎵 ADMIN-GENRES: No genre found in order billing_info either');
+        }
+      }
+
+      setUserProfileGenre(profileGenre || null);
 
       // Fetch Spotify artist genre - check all tracks in the order
       if (orderItems && orderItems.length > 0) {
@@ -1193,7 +1210,7 @@ export default function OrderDetailPage({ adminSession, accessDenied }: OrderDet
                                 type="url"
                                 value={trackUpdates[item.id] || item.track_url || ''}
                                 readOnly
-                                className="flex-1 bg-white/5 border border-white/10 rounded-lg py-2.5 px-3 text-white/70 text-sm cursor-not-allowed"
+                                className="flex-1 bg-green-500/20 border border-green-400/30 rounded-lg py-2.5 px-3 text-white text-sm cursor-not-allowed"
                               />
                               <button
                                 onClick={() => handleCopyTrack(item.id)}

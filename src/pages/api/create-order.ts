@@ -52,6 +52,7 @@ interface CreateOrderRequest {
     country: string;
     countryCode?: string;
     phoneNumber?: string;
+    musicGenre?: string;
   };
   paymentData: {
     transactionId: string;
@@ -363,7 +364,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             billing_state: billingInfo.state,
             billing_zip: billingInfo.zip,
             billing_country: billingInfo.country,
-                         billing_phone: billingInfo.phoneNumber,
+            billing_phone: billingInfo.phoneNumber,
+            music_genre: billingInfo.musicGenre,
             source: 'checkout'
           })
         });
