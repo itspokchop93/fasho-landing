@@ -1,6 +1,6 @@
 import { NextApiRequest, NextApiResponse } from 'next';
 import { createAdminClient } from '../../../utils/supabase/server';
-import { withAdminAuth, AdminUser } from '../../../utils/admin/auth';
+import { requireAdminAuth, AdminUser } from '../../../utils/admin/auth';
 
 interface UserProfile {
   id: string;
@@ -72,4 +72,4 @@ async function handler(req: NextApiRequest, res: NextApiResponse, adminUser: Adm
   }
 }
 
-export default withAdminAuth(handler);
+export default requireAdminAuth(handler);
