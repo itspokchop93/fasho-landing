@@ -442,7 +442,7 @@ export default function EmailEditor({ adminSession, accessDenied }: EmailEditorP
       setIsTestingEmail(true);
       setError(null);
 
-      const response = await fetch('/api/admin/test-email-template', {
+      const response = await fetch('/api/admin/tezting-email-template', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

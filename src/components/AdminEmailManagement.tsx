@@ -282,7 +282,7 @@ export default function AdminEmailManagement() {
       setTestingEmails(prev => ({ ...prev, [triggerType]: true }));
       setError(null);
 
-      const response = await fetch('/api/admin/test-email-template', {
+      const response = await fetch('/api/admin/tezting-email-template', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
