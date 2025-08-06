@@ -51,16 +51,14 @@ interface AddOnOrderItem {
 }
 
 const packages: Package[] = [
-  // ============ TEST PACKAGE - DELETE THIS WHEN GOING LIVE ============
   {
-    id: "test-campaign",
+    id: "test",
     name: "TEST CAMPAIGN",
     price: 0.10,
-    plays: "Test Package",
-    placements: "Payment Testing Only",
-    description: "For testing live payment processing"
+    plays: "Test Campaign Only",
+    placements: "Testing Purposes",
+    description: "Test campaign for development and testing purposes only"
   },
-  // ============ END TEST PACKAGE - DELETE ABOVE WHEN GOING LIVE ============
   {
     id: "legendary",
     name: "LEGENDARY",

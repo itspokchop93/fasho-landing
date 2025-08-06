@@ -440,6 +440,36 @@ export default function ThankYouPage() {
             />
           </>
         )}
+
+        {/* Google Ads FASHO - Purchase v2 Conversion Pixel */}
+        {orderData && (
+          <script
+            dangerouslySetInnerHTML={{
+              __html: `
+                // Google Ads Purchase Conversion v2 - Enhanced Ecommerce
+                if (typeof gtag !== 'undefined') {
+                  gtag('event', 'conversion', {
+                    'send_to': 'AW-17096610863/iwXJCMeWxIAbEK-optg_',
+                    'value': ${orderData.total},
+                    'currency': 'USD',
+                    'transaction_id': '${orderData.orderNumber || orderData.orderId || `order_${Date.now()}`}',
+                    'items': [{
+                      'item_id': 'agency_campaign',
+                      'item_name': 'Agency Campaign',
+                      'category': 'Music Promotion Services',
+                      'quantity': 1,
+                      'price': ${orderData.total}
+                    }]
+                  });
+                  
+                  console.log('🎯 GOOGLE ADS v2: Purchase conversion tracked with transaction ID: ${orderData.orderNumber || orderData.orderId || `order_${Date.now()}`}');
+                } else {
+                  console.error('🎯 GOOGLE ADS v2: gtag not available for conversion tracking');
+                }
+              `,
+            }}
+          />
+        )}
       </Head>
       
               <Header extraClasses="thank-you-page-header" />
