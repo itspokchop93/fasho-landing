@@ -1,9 +1,6 @@
 import { NextApiRequest, NextApiResponse } from 'next';
-
-// Access the same global storage
-declare global {
-  var checkoutSessions: Map<string, any> | undefined;
-}
+import { createClient } from '../../utils/supabase/server';
+import { createClient as createServiceClient } from '@supabase/supabase-js';
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== 'POST') {
@@ -12,6 +9,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
   try {
     const { sessionId } = req.body;
+    const supabase = createClient(req, res);
 
     if (!sessionId) {
       return res.status(400).json({ error: 'Session ID is required' });
@@ -19,30 +17,37 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     console.log('Completing checkout session:', sessionId);
 
-    // Get session data from global storage
-    const sessionData = (globalThis as any).checkoutSessions?.get(sessionId);
+    // Update session in database using service role to access all sessions
+    const serviceClient = createServiceClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!
+    );
     
-    if (sessionData) {
-      // Mark session as used
-      sessionData.isUsed = true;
-      sessionData.status = 'completed';
-      sessionData.completedAt = new Date();
-      
-      // Update the session in global storage
-      (globalThis as any).checkoutSessions!.set(sessionId, sessionData);
-      
-      console.log('Successfully marked session as completed:', sessionId);
-      
-      res.status(200).json({ 
-        success: true,
-        message: 'Session completed successfully'
-      });
-    } else {
-      res.status(400).json({ 
+    const { data: sessionData, error: updateError } = await serviceClient
+      .from('checkout_sessions')
+      .update({ 
+        is_used: true, 
+        status: 'completed',
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', sessionId)
+      .select()
+      .single();
+    
+    if (updateError || !sessionData) {
+      console.error('Error updating session or session not found:', updateError);
+      return res.status(400).json({ 
         error: 'Session not found',
         reason: 'session_not_found'
       });
     }
+    
+    console.log('Successfully marked session as completed:', sessionId);
+    
+    res.status(200).json({ 
+      success: true,
+      message: 'Session completed successfully'
+    });
 
   } catch (error) {
     console.error('Error completing checkout session:', error);

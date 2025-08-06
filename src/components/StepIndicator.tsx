@@ -19,8 +19,9 @@ export default function StepIndicator({ currentStep, className = '' }: StepIndic
     if (step.number <= currentStep) {
       // For step 1 (add page), preserve current tracks
       if (step.number === 1) {
-        // Get tracks from current router query
-        const tracks = router.query.tracks;
+        // Get tracks from multiple sources: router query, sessionStorage, or current session
+        const tracks = router.query.tracks || sessionStorage.getItem('selectedTracks');
+        
         if (tracks) {
           // If we have tracks, redirect to add page with them preserved
           router.push({
@@ -28,6 +29,25 @@ export default function StepIndicator({ currentStep, className = '' }: StepIndic
             query: { tracks }
           });
         } else {
+          // For checkout page (step 3), we need to extract tracks from current session data
+          if (currentStep === 3) {
+            // If we're on checkout and have no tracks in query/storage, try to maintain current state
+            // This will be handled by sessionStorage fallback in add page
+            const checkoutCart = typeof window !== 'undefined' ? localStorage.getItem('checkoutCart') : null;
+            if (checkoutCart) {
+              try {
+                const cartData = JSON.parse(checkoutCart);
+                router.push({
+                  pathname: '/add',
+                  query: { tracks: cartData.tracks }
+                });
+                return;
+              } catch (error) {
+                console.error('Failed to parse checkout cart data:', error);
+              }
+            }
+          }
+          
           // No tracks available, just go to add page
           router.push('/add');
         }
@@ -38,10 +58,18 @@ export default function StepIndicator({ currentStep, className = '' }: StepIndic
       if (step.number === 2 && currentStep >= 2) {
         // We're on packages or checkout, can go back to packages
         const tracks = router.query.tracks || sessionStorage.getItem('selectedTracks');
+        const sessionId = router.query.sessionId; // Get current session ID for renewal
+        
         if (tracks) {
+          const query: any = { tracks };
+          // If we have a session ID and we're coming from checkout, pass it for renewal
+          if (sessionId && currentStep === 3) {
+            query.sessionId = sessionId;
+          }
+          
           router.push({
             pathname: '/packages',
-            query: { tracks }
+            query
           });
         } else {
           router.push('/add');

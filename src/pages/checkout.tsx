@@ -559,20 +559,57 @@ export default function CheckoutPage() {
           
           if (errorData.reason === 'already_used') {
             setError('already_completed');
-          } else if (errorData.reason === 'expired') {
-            setError('This checkout session has expired. Please start a new checkout.');
-          } else {
-            setError('Invalid checkout session. Please start a new checkout.');
+            // Redirect after appropriate time
+            setTimeout(() => {
+              router.push('/dashboard');
+            }, 2500);
+            return;
+          } 
+          
+          // For expired or invalid sessions, try to recover automatically
+          if (errorData.reason === 'expired' || errorData.reason === 'session_not_found') {
+            console.log('🔄 CHECKOUT: Attempting automatic session recovery...');
+            
+            try {
+              const recoveryResponse = await fetch('/api/recover-checkout-session', {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                  userId: currentUser?.id,
+                  expiredSessionId: sessionIdParam
+                }),
+              });
+
+              if (recoveryResponse.ok) {
+                const { sessionId: newSessionId } = await recoveryResponse.json();
+                console.log('🔄 CHECKOUT: Session recovered successfully, redirecting to new session:', newSessionId);
+                
+                // Redirect to checkout with new session ID
+                router.push({
+                  pathname: '/checkout',
+                  query: { sessionId: newSessionId }
+                });
+                return;
+              }
+            } catch (recoveryError) {
+              console.error('🔄 CHECKOUT: Session recovery failed:', recoveryError);
+            }
+            
+            // If recovery fails, show user-friendly error and redirect
+            setError('Your checkout session has expired. Redirecting you to start a new checkout...');
+            setTimeout(() => {
+              router.push('/add');
+            }, 3000);
+            return;
           }
           
-          // Redirect after appropriate time
+          // For other errors, show generic message
+          setError('Invalid checkout session. Please start a new checkout.');
           setTimeout(() => {
-            if (errorData.reason === 'already_used') {
-              router.push('/dashboard');
-            } else {
-              router.push('/add');
-            }
-          }, errorData.reason === 'already_used' ? 2500 : 3000);
+            router.push('/add');
+          }, 3000);
           return;
         }
 
@@ -597,6 +634,13 @@ export default function CheckoutPage() {
         
         setTracks(sessionTracks);
         setSelectedPackages(sessionPackages);
+        
+        // Store cart data in localStorage for step navigation
+        const cartData = {
+          tracks: JSON.stringify(sessionTracks),
+          selectedPackages: JSON.stringify(sessionPackages)
+        };
+        localStorage.setItem('checkoutCart', JSON.stringify(cartData));
         
         // Store session ID for later use
         setSessionId(sessionIdParam as string);

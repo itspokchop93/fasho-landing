@@ -97,11 +97,19 @@ export default function PackagesPage() {
   const [confettiData, setConfettiData] = useState<any>(null); // Store the Lottie animation data
   const [currentUser, setCurrentUser] = useState<any>(null); // Track authentication state
   const [isAuthLoading, setIsAuthLoading] = useState(true); // Track if auth is still loading
+  const [existingSessionId, setExistingSessionId] = useState<string | null>(null); // Track existing session for renewal
   const carouselRef = useRef<HTMLDivElement>(null);
   const lottieRef = useRef<any>(null);
 
   useEffect(() => {
     if (!router.isReady) return;
+    
+    // Check if we have an existing session ID from checkout navigation
+    const sessionId = router.query.sessionId as string;
+    if (sessionId) {
+      setExistingSessionId(sessionId);
+      console.log('🔄 PACKAGES: Coming from checkout with existing session:', sessionId);
+    }
     
     if (tracksParam && typeof tracksParam === 'string') {
       try {
@@ -116,7 +124,7 @@ export default function PackagesPage() {
     } else {
       router.push('/add');
     }
-  }, [router.isReady, tracksParam]);
+  }, [router.isReady, tracksParam, router.query.sessionId]);
 
   // Check for authentication state
   useEffect(() => {
@@ -460,6 +468,7 @@ export default function PackagesPage() {
         });
 
         // Create secure checkout session with user ID if logged in
+        // Pass existing session ID for renewal if we have one
         const response = await fetch('/api/create-checkout-session', {
           method: 'POST',
           headers: {
@@ -468,7 +477,8 @@ export default function PackagesPage() {
           body: JSON.stringify({
             tracks,
             selectedPackages,
-            userId: finalUserId // Use the final verified user ID
+            userId: finalUserId, // Use the final verified user ID
+            existingSessionId: existingSessionId // Pass existing session for invalidation
           }),
         });
 
