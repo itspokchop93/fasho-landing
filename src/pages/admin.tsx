@@ -7,6 +7,7 @@ import AdminOrdersManagement from '../components/AdminOrdersManagement'
 import AdminEmailManagement from '../components/AdminEmailManagement'
 import AdminCouponsManagement from '../components/AdminCouponsManagement'
 import AdminSettingsManagement from '../components/AdminSettingsManagement'
+import MarketingManager from '../components/MarketingManager'
 import MonthlyOrdersChart from '../components/MonthlyOrdersChart'
 import ActiveUsersSection from '../components/ActiveUsersSection'
 import AdminAccessDenied from '../components/AdminAccessDenied'
@@ -365,11 +366,20 @@ export default function AdminDashboard({ adminUser, authError }: AdminDashboardP
     )
   }
 
+  const renderMarketingManagerContent = () => {
+    console.log('🔄 ADMIN-RENDER: Rendering marketing manager content...');
+    return (
+      <div className="space-y-6">
+        <MarketingManager />
+      </div>
+    )
+  }
+
   const renderContent = () => {
     console.log('🔄 ADMIN-RENDER: Rendering content for tab:', activeTab);
     
-    // Sub-admins can only access orders
-    if (adminUser.role === 'sub_admin' && activeTab !== 'orders') {
+    // Sub-admins can only access orders and marketing manager
+    if (adminUser.role === 'sub_admin' && activeTab !== 'orders' && activeTab !== 'marketing-manager') {
       return renderOrdersContent()
     }
     
@@ -378,6 +388,8 @@ export default function AdminDashboard({ adminUser, authError }: AdminDashboardP
         return adminUser.role === 'admin' ? renderDashboardContent() : renderOrdersContent()
       case 'orders':
         return renderOrdersContent()
+      case 'marketing-manager':
+        return renderMarketingManagerContent()
       case 'emails':
         return adminUser.role === 'admin' ? renderEmailsContent() : renderOrdersContent()
       case 'coupons':
@@ -438,6 +450,21 @@ export default function AdminDashboard({ adminUser, authError }: AdminDashboardP
                     }`}
                   >
                     Orders
+                  </button>
+                  
+                  {/* Marketing Manager Tab - Available to all admin roles */}
+                  <button
+                    onClick={() => {
+                      setActiveTab('marketing-manager')
+                      window.location.hash = '#marketing-manager'
+                    }}
+                    className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                      activeTab === 'marketing-manager'
+                        ? 'bg-indigo-100 text-indigo-700'
+                        : 'text-gray-500 hover:text-gray-700'
+                    }`}
+                  >
+                    Marketing Manager
                   </button>
                   
                   {/* Emails Tab - Only for full admins */}
@@ -512,7 +539,7 @@ export default function AdminDashboard({ adminUser, authError }: AdminDashboardP
         </nav>
 
         {/* Main Content */}
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className={`mx-auto px-4 sm:px-6 lg:px-8 py-8 ${activeTab === 'marketing-manager' ? 'max-w-[88vw]' : 'max-w-7xl'}`}>
           {renderContent()}
         </div>
       </main>

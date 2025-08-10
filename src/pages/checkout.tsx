@@ -8,6 +8,7 @@ import StepIndicator from '../components/StepIndicator';
 import SalesBanner from '../components/SalesBanner';
 import { createClient } from '../utils/supabase/client';
 import { userProfileService, UserProfileData, ArtistProfile } from '../utils/userProfile';
+import { MUSIC_GENRES } from '../constants/genres';
 import LegalModal from '../components/LegalModal';
 import SpotlightCard from '../components/SpotlightCard';
 import { useAuth } from '../utils/authContext';
@@ -2768,22 +2769,11 @@ export default function CheckoutPage() {
                         suppressHydrationWarning={true}
                       >
                         <option value="" className="bg-gray-800 text-white">Select a genre...</option>
-                        <option value="Rock" className="bg-gray-800 text-white">Rock</option>
-                        <option value="Pop" className="bg-gray-800 text-white">Pop</option>
-                        <option value="Hip-Hop/Rap" className="bg-gray-800 text-white">Hip-Hop/Rap</option>
-                        <option value="Electronic/Dance (EDM)" className="bg-gray-800 text-white">Electronic/Dance (EDM)</option>
-                        <option value="Jazz" className="bg-gray-800 text-white">Jazz</option>
-                        <option value="Blues" className="bg-gray-800 text-white">Blues</option>
-                        <option value="Country" className="bg-gray-800 text-white">Country</option>
-                        <option value="Folk" className="bg-gray-800 text-white">Folk</option>
-                        <option value="Classical" className="bg-gray-800 text-white">Classical</option>
-                        <option value="Reggae" className="bg-gray-800 text-white">Reggae</option>
-                        <option value="R&B/Soul" className="bg-gray-800 text-white">R&B/Soul</option>
-                        <option value="Metal" className="bg-gray-800 text-white">Metal</option>
-                        <option value="Latin" className="bg-gray-800 text-white">Latin</option>
-                        <option value="World" className="bg-gray-800 text-white">World</option>
-                        <option value="Gospel/Religious" className="bg-gray-800 text-white">Gospel/Religious</option>
-                        <option value="Podcast" className="bg-gray-800 text-white">Podcast</option>
+                        {MUSIC_GENRES.map(genre => (
+                          <option key={genre} value={genre} className="bg-gray-800 text-white">
+                            {genre}
+                          </option>
+                        ))}
                       </select>
                     </div>
                   </div>

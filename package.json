@@ -21,6 +21,7 @@
     "@types/jsonwebtoken": "^9.0.10",
     "@types/nodemailer": "^6.4.17",
     "airtable": "^0.12.2",
+    "apify-client": "^2.13.0",
     "bcrypt": "^6.0.0",
     "bcryptjs": "^3.0.2",
     "caniuse-lite": "^1.0.30001727",
