@@ -2,6 +2,7 @@
 // This ensures consistency between checkout page and admin playlist management
 
 export const MUSIC_GENRES = [
+  'General',
   'Rock',
   'Pop', 
   'Hip-Hop/Rap',

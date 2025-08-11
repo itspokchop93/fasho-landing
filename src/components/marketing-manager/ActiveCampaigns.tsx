@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/router';
+import { MUSIC_GENRES } from '../../constants/genres';
 import { formatProgressDisplay } from '../../utils/numberFormatter';
 
 interface PlaylistAssignment {
@@ -17,6 +18,7 @@ interface Campaign {
   songName: string;
   songLink: string;
   packageName: string;
+  userGenre: string;
   directStreams: number;
   playlistStreams: number;
   playlistAssignments: PlaylistAssignment[];
@@ -47,6 +49,9 @@ const ActiveCampaigns: React.FC = () => {
   const [editingPlaylist, setEditingPlaylist] = useState<{
     campaignId: string;
     playlistIndex: number;
+  } | null>(null);
+  const [editingGenre, setEditingGenre] = useState<{
+    campaignId: string;
   } | null>(null);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
   
@@ -143,7 +148,7 @@ const ActiveCampaigns: React.FC = () => {
   };
 
   const handleOrderNumberClick = (orderId: string) => {
-    router.push(`/admin/order/${orderId}`);
+    window.open(`/admin/order/${orderId}`, '_blank');
   };
 
   const confirmAction = async (campaignId: string, action: 'direct-streams' | 'playlists-added' | 'de-playlisted') => {
@@ -175,6 +180,30 @@ const ActiveCampaigns: React.FC = () => {
     }
   };
 
+  const updateGenre = async (campaignId: string, newGenre: string) => {
+    try {
+      const response = await fetch('/api/marketing-manager/update-genre', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ campaignId, newGenre }),
+      });
+
+      if (response.ok) {
+        setEditingGenre(null);
+        // Refresh campaigns data to show the updated genre and regenerated playlist assignments
+        fetchCampaigns();
+      } else {
+        console.error('Failed to update genre:', response.statusText);
+        alert('Failed to update genre');
+      }
+    } catch (error) {
+      console.error('Error updating genre:', error);
+      alert('Error updating genre');
+    }
+  };
+
   const updatePlaylistAssignment = async (campaignId: string, playlistIndex: number, newPlaylistId: string) => {
     try {
       const response = await fetch('/api/marketing-manager/update-playlist-assignment', {
@@ -196,6 +225,8 @@ const ActiveCampaigns: React.FC = () => {
       console.error('Error updating playlist assignment:', error);
     }
   };
+
+
 
   const populateExistingOrders = async () => {
     if (!window.confirm('This will import all existing orders into the Marketing Manager. Continue?')) {
@@ -322,6 +353,44 @@ const ActiveCampaigns: React.FC = () => {
           </button>
           <button
             onClick={async () => {
+              const orderNumber = prompt('Enter order number to clear and regenerate assignments (e.g., 3424):');
+              if (orderNumber) {
+                try {
+                  const response = await fetch('/api/marketing-manager/debug-clear-assignments', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ orderNumber })
+                  });
+                  const result = await response.json();
+                  alert(result.message);
+                  fetchCampaigns(); // Refresh to trigger regeneration
+                } catch (error) {
+                  alert('Error clearing assignments');
+                }
+              }
+            }}
+            className="px-4 py-2 bg-orange-600 hover:bg-orange-700 text-white rounded-lg font-medium mr-2"
+          >
+            Debug Clear Order
+          </button>
+          <button
+            onClick={async () => {
+              try {
+                const response = await fetch('/api/marketing-manager/debug-playlist-genres');
+                const result = await response.json();
+                console.log('🎵 ALL PLAYLISTS BY GENRE:', result.byGenre);
+                alert('Playlist genres logged to console. Check console for details.');
+              } catch (error) {
+                alert('Error fetching playlist genres');
+              }
+            }}
+            className="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg font-medium mr-2"
+          >
+            Debug Playlist Genres
+          </button>
+
+          <button
+            onClick={async () => {
               if (confirm('This will remove duplicate campaigns and keep only the oldest one per order. Continue?')) {
                 try {
                   const response = await fetch('/api/marketing-manager/cleanup-duplicates', { method: 'POST' });
@@ -333,9 +402,49 @@ const ActiveCampaigns: React.FC = () => {
                 }
               }
             }}
-            className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg font-medium"
+            className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg font-medium mr-2"
           >
             Fix Duplicates
+          </button>
+          <button
+            onClick={async () => {
+              if (confirm('⚠️ WARNING: This will reset ALL playlist assignments for ALL orders and regenerate them with the correct genre mapping. This cannot be undone. Continue?')) {
+                try {
+                  const resetResponse = await fetch('/api/marketing-manager/reset-all-assignments', { method: 'POST' });
+                  const resetResult = await resetResponse.json();
+                  if (resetResponse.ok) {
+                    alert(`✅ Reset complete! Cleared assignments for ${resetResult.resetCount} campaigns. Now refreshing to regenerate assignments...`);
+                    fetchCampaigns(); // This will trigger regeneration for all campaigns with empty assignments
+                  } else {
+                    alert('Error resetting assignments: ' + resetResult.error);
+                  }
+                } catch (error) {
+                  alert('Error resetting all assignments');
+                }
+              }
+            }}
+            className="px-4 py-2 bg-yellow-600 hover:bg-yellow-700 text-white rounded-lg font-medium"
+          >
+            🔄 Reset All Assignments
+          </button>
+          <button
+            onClick={async () => {
+              const genre = prompt('Enter genre to debug (e.g., Hip-Hop):');
+              if (!genre) return;
+              
+              try {
+                const response = await fetch(`/api/marketing-manager/debug-genre-playlists?genre=${encodeURIComponent(genre)}`);
+                const result = await response.json();
+                console.log('🔍 GENRE DEBUG RESULT:', result);
+                alert(`Genre "${genre}": ${result.total} total, ${result.active} active, ${result.available} available playlists. Check console for details.`);
+              } catch (error) {
+                console.error('Debug error:', error);
+                alert('Debug failed');
+              }
+            }}
+            className="px-3 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg font-medium text-sm"
+          >
+            🔍 Debug Genre
           </button>
         </div>
       </div>
@@ -358,19 +467,20 @@ const ActiveCampaigns: React.FC = () => {
             className="overflow-x-auto overflow-y-auto"
             style={{ maxHeight: '600px' }} // Height for approximately 8 rows
           >
-            <table className="min-w-full divide-y divide-gray-200">
+            <table className="min-w-max divide-y divide-gray-200">
             <thead className="bg-gray-50 sticky top-0 z-10">
               <tr>
                 <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-20">Order #</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Order Date</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Song</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Package</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Playlist Assignments</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Direct Progress</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Playlist Progress</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Removal Date</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-28">Order Date</th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" style={{ width: '16ch' }}>Song</th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-24">Genre</th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-32">Package</th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-64">Playlist Assignments</th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-36">Direct Progress</th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-36">Playlist Progress</th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-28">Removal Date</th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-24">Status</th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-36">Actions</th>
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
@@ -384,81 +494,127 @@ const ActiveCampaigns: React.FC = () => {
                       {campaign.orderNumber}
                     </button>
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                  <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-900 w-28">
                     {new Date(campaign.orderDate).toLocaleDateString()}
                   </td>
-                  <td className="px-6 py-4">
-                    <div className="flex items-center space-x-2">
-                      <span className="text-sm text-gray-900">{campaign.songName}</span>
+                  <td className="px-4 py-4" style={{ width: '16ch' }}>
+                    <div className="space-y-1">
+                      <div 
+                        className="text-sm text-gray-900 overflow-hidden" 
+                        style={{
+                          display: '-webkit-box',
+                          WebkitLineClamp: 2,
+                          WebkitBoxOrient: 'vertical',
+                          lineHeight: '1.2',
+                          maxHeight: '2.4em'
+                        }}
+                        title={campaign.songName}
+                      >
+                        {campaign.songName}
+                      </div>
                       <button
                         onClick={() => copyToClipboard(campaign.songLink)}
-                        className="text-xs text-indigo-600 hover:text-indigo-800 bg-indigo-50 px-2 py-1 rounded"
+                        className="text-xs text-indigo-600 hover:text-indigo-800 bg-indigo-50 px-1 py-0.5 rounded text-xs"
                         title="Copy link to clipboard"
                       >
-                        [copy link]
+                        copy link
                       </button>
                     </div>
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                  <td className="px-4 py-4 whitespace-nowrap text-xs text-gray-900 w-24">
+                    {editingGenre?.campaignId === campaign.id ? (
+                      <div className="flex items-center space-x-1 w-full">
+                        <select
+                          defaultValue={campaign.userGenre || 'General'}
+                          onChange={(e) => updateGenre(campaign.id, e.target.value)}
+                          className="text-xs border border-gray-300 rounded px-1 py-1 flex-1 min-w-0"
+                        >
+                          {MUSIC_GENRES.map(genre => (
+                            <option key={genre} value={genre}>{genre}</option>
+                          ))}
+                        </select>
+                        <button
+                          onClick={() => setEditingGenre(null)}
+                          className="text-xs text-gray-500 hover:text-gray-700 px-1"
+                        >
+                          ✕
+                        </button>
+                      </div>
+                    ) : (
+                      <button
+                        onClick={() => setEditingGenre({ campaignId: campaign.id })}
+                        className="text-xs text-blue-600 hover:text-blue-800 bg-blue-50 px-2 py-1 rounded truncate w-full text-left"
+                        title="Click to edit genre"
+                      >
+                        {campaign.userGenre || 'Unknown'}
+                      </button>
+                    )}
+                  </td>
+                  <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-900 w-32">
                     {campaign.packageName}
                   </td>
-                  <td className="px-6 py-4">
+                  <td className="px-4 py-4 w-64">
                     <div className="space-y-1">
-                      {campaign.playlistAssignments.map((playlist, index) => (
-                        <div key={index} className="flex items-center space-x-2">
-                          {editingPlaylist?.campaignId === campaign.id && editingPlaylist?.playlistIndex === index ? (
-                            <div className="flex items-center space-x-2">
-                              <select
-                                defaultValue={playlist.id}
-                                onChange={(e) => updatePlaylistAssignment(campaign.id, index, e.target.value)}
-                                className="text-xs border border-gray-300 rounded px-2 py-1"
-                              >
-                                {availablePlaylists.map(p => (
-                                  <option key={p.id} value={p.id}>{p.name}</option>
-                                ))}
-                              </select>
+                      {campaign.playlistAssignments && campaign.playlistAssignments.length > 0 ? (
+                        campaign.playlistAssignments.map((playlist, index) => (
+                          <div key={index} className="flex items-center space-x-1">
+                            {editingPlaylist?.campaignId === campaign.id && editingPlaylist?.playlistIndex === index ? (
+                              <div className="flex items-center space-x-1 w-full">
+                                <select
+                                  defaultValue={playlist.id}
+                                  onChange={(e) => updatePlaylistAssignment(campaign.id, index, e.target.value)}
+                                  className="text-xs border border-gray-300 rounded px-1 py-1 flex-1 min-w-0"
+                                >
+                                  {availablePlaylists.map(p => (
+                                    <option key={p.id} value={p.id}>{p.name}</option>
+                                  ))}
+                                </select>
+                                <button
+                                  onClick={() => setEditingPlaylist(null)}
+                                  className="text-xs text-gray-500 hover:text-gray-700 px-1"
+                                >
+                                  ✕
+                                </button>
+                              </div>
+                            ) : (
                               <button
-                                onClick={() => setEditingPlaylist(null)}
-                                className="text-xs text-gray-500 hover:text-gray-700"
+                                onClick={() => setEditingPlaylist({ campaignId: campaign.id, playlistIndex: index })}
+                                className="text-xs text-indigo-600 hover:text-indigo-800 bg-indigo-50 px-2 py-1 rounded truncate w-full text-left"
+                                title={playlist.name}
                               >
-                                Cancel
+                                {playlist.name}
                               </button>
-                            </div>
-                          ) : (
-                            <button
-                              onClick={() => setEditingPlaylist({ campaignId: campaign.id, playlistIndex: index })}
-                              className="text-xs text-indigo-600 hover:text-indigo-800 bg-indigo-50 px-2 py-1 rounded"
-                            >
-                              {playlist.name}
-                            </button>
-                          )}
-                        </div>
-                      ))}
+                            )}
+                          </div>
+                        ))
+                      ) : (
+                        <div className="text-xs text-gray-400 italic">No assignments</div>
+                      )}
                     </div>
                   </td>
-                  <td className="px-6 py-4">
+                  <td className="px-4 py-4 w-36">
                     <ProgressBar
                       current={campaign.directStreamsProgress}
                       total={campaign.directStreams}
                       color="bg-blue-500"
                     />
                   </td>
-                  <td className="px-6 py-4">
+                  <td className="px-4 py-4 w-36">
                     <ProgressBar
                       current={campaign.playlistStreamsProgress}
                       total={campaign.playlistStreams}
                       color="bg-green-500"
                     />
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                  <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-900 w-28">
                     {campaign.removalDate ? new Date(campaign.removalDate).toLocaleDateString() : '-'}
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
+                  <td className="px-4 py-4 whitespace-nowrap w-24">
                     <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full border ${getStatusColor(campaign.status)}`}>
                       {campaign.status}
                     </span>
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                  <td className="px-4 py-4 whitespace-nowrap text-right text-sm font-medium w-36">
                     <div className="flex flex-col space-y-2">
                       {campaign.status === 'Removal Needed' ? (
                         <button

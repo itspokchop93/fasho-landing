@@ -35,7 +35,7 @@ const SystemSettings: React.FC = () => {
     genre: '',
     accountEmail: '',
     playlistLink: '',
-    maxSongs: 50
+    maxSongs: 25
   });
 
   useEffect(() => {
@@ -126,7 +126,7 @@ const SystemSettings: React.FC = () => {
           genre: '',
           accountEmail: '',
           playlistLink: '',
-          maxSongs: 50
+          maxSongs: 25
         });
         setShowAddForm(false);
         fetchPlaylists();
@@ -168,6 +168,8 @@ const SystemSettings: React.FC = () => {
   const deletePlaylist = async (playlistId: string, playlistName: string) => {
     if (window.confirm(`Are you sure you want to delete "${playlistName}"? This action cannot be undone.`)) {
       try {
+        console.log(`🗑️ FRONTEND: Attempting to delete playlist "${playlistName}" (ID: ${playlistId})`);
+        
         const response = await fetch('/api/marketing-manager/system-settings/delete-playlist', {
           method: 'DELETE',
           headers: {
@@ -176,13 +178,19 @@ const SystemSettings: React.FC = () => {
           body: JSON.stringify({ playlistId }),
         });
 
+        const result = await response.json();
+        console.log(`🗑️ FRONTEND: Delete response:`, result);
+
         if (response.ok) {
+          alert(`✅ Successfully deleted "${playlistName}"`);
           fetchPlaylists();
         } else {
-          console.error('Failed to delete playlist:', response.statusText);
+          alert(`❌ Failed to delete playlist: ${result.error || response.statusText}`);
+          console.error('Failed to delete playlist:', result);
         }
       } catch (error) {
         console.error('Error deleting playlist:', error);
+        alert('❌ Error occurred while deleting playlist');
       }
     }
   };
@@ -314,7 +322,7 @@ const SystemSettings: React.FC = () => {
                     min="1"
                     max="10000"
                     value={newPlaylist.maxSongs}
-                    onChange={(e) => handleInputChange('maxSongs', parseInt(e.target.value) || 50)}
+                    onChange={(e) => handleInputChange('maxSongs', parseInt(e.target.value) || 25)}
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
                   />
                 </div>

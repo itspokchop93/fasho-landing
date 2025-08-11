@@ -16,27 +16,24 @@ async function handler(req: NextApiRequest, res: NextApiResponse, adminUser: Adm
   try {
     const supabase = createAdminClient();
 
-    // Hide the item for 8 hours
-    const hideUntil = new Date();
-    hideUntil.setHours(hideUntil.getHours() + 8);
-
+    // Unhide the item by clearing the hidden_until field
     const { error } = await supabase
       .from('marketing_campaigns')
       .update({ 
-        hidden_until: hideUntil.toISOString(),
+        hidden_until: null,
         updated_at: new Date().toISOString()
       })
       .eq('id', itemId);
 
     if (error) {
-      console.error('Error hiding action item:', error);
-      return res.status(500).json({ error: 'Failed to hide action item' });
+      console.error('Error unhiding action item:', error);
+      return res.status(500).json({ error: 'Failed to unhide action item' });
     }
 
-    console.log(`🔄 ACTION-QUEUE: Hid action item ${itemId} for 8 hours`);
-    res.status(200).json({ success: true, message: 'Action item hidden for 8 hours' });
+    console.log(`🔄 ACTION-QUEUE: Unhid action item ${itemId}`);
+    res.status(200).json({ success: true, message: 'Action item unhidden successfully' });
   } catch (error) {
-    console.error('Error in hide-action-item API:', error);
+    console.error('Error in unhide-action-item API:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
 }

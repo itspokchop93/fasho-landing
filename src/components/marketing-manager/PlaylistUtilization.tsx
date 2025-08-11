@@ -14,11 +14,16 @@ interface PlaylistUtilizationData {
   imageUrl?: string;
 }
 
+type SortField = 'playlistName' | 'genre' | 'accountEmail' | 'songCount' | 'occupancy' | 'nextAvailSlot';
+type SortDirection = 'asc' | 'desc';
+
 const PlaylistUtilization: React.FC = () => {
   const [playlists, setPlaylists] = useState<PlaylistUtilizationData[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [sortField, setSortField] = useState<SortField>('playlistName');
+  const [sortDirection, setSortDirection] = useState<SortDirection>('asc');
 
   useEffect(() => {
     fetchPlaylistUtilization();
@@ -78,6 +83,71 @@ const PlaylistUtilization: React.FC = () => {
     window.open(playlistLink, '_blank');
   };
 
+  const handleSort = (field: SortField) => {
+    if (sortField === field) {
+      // Toggle direction if same field
+      setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
+    } else {
+      // New field, default to ascending
+      setSortField(field);
+      setSortDirection('asc');
+    }
+  };
+
+  const sortPlaylists = (playlistList: PlaylistUtilizationData[]): PlaylistUtilizationData[] => {
+    return [...playlistList].sort((a, b) => {
+      let aValue: any = a[sortField];
+      let bValue: any = b[sortField];
+
+      // Handle special cases
+      if (sortField === 'nextAvailSlot') {
+        // 'Open' should come first when ascending, last when descending
+        if (aValue === 'Open' && bValue !== 'Open') return sortDirection === 'asc' ? -1 : 1;
+        if (bValue === 'Open' && aValue !== 'Open') return sortDirection === 'asc' ? 1 : -1;
+        if (aValue === 'Open' && bValue === 'Open') return 0;
+        
+        // For date strings, convert to Date objects for comparison
+        if (aValue !== 'Open' && bValue !== 'Open') {
+          aValue = new Date(aValue);
+          bValue = new Date(bValue);
+        }
+      }
+
+      // Compare values
+      let comparison = 0;
+      if (aValue < bValue) {
+        comparison = -1;
+      } else if (aValue > bValue) {
+        comparison = 1;
+      }
+
+      return sortDirection === 'desc' ? -comparison : comparison;
+    });
+  };
+
+  // Get sorted playlists
+  const sortedPlaylists = sortPlaylists(playlists);
+
+  const getSortIcon = (field: SortField) => {
+    if (sortField !== field) {
+      return (
+        <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4" />
+        </svg>
+      );
+    }
+    
+    return sortDirection === 'asc' ? (
+      <svg className="w-4 h-4 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
+      </svg>
+    ) : (
+      <svg className="w-4 h-4 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+      </svg>
+    );
+  };
+
   const ProgressBar: React.FC<{ current: number; total: number; occupancy: number }> = ({ 
     current, 
     total, 
@@ -116,7 +186,7 @@ const PlaylistUtilization: React.FC = () => {
         <div>
           <h2 className="text-lg font-semibold text-gray-900">Playlist Utilization</h2>
           <p className="text-sm text-gray-500 mt-1">
-            Live data from Spotify API • {playlists.length} playlists in network
+            Live data from Spotify Web API • {playlists.length} playlists in network
           </p>
         </div>
         <div className="flex items-center space-x-4">
@@ -178,33 +248,72 @@ const PlaylistUtilization: React.FC = () => {
           <p className="mt-1 text-sm text-gray-500">Add playlists in System Settings to get started.</p>
         </div>
       ) : (
-        <div className="overflow-x-auto">
+        <div 
+          className="overflow-x-auto overflow-y-auto"
+          style={{ maxHeight: '600px' }} // Height for approximately 8 rows
+        >
           <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
+            <thead className="bg-gray-50 sticky top-0 z-10">
               <tr>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Image
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Playlist Name
+                <th 
+                  className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 select-none"
+                  onClick={() => handleSort('playlistName')}
+                >
+                  <div className="flex items-center space-x-1">
+                    <span>Playlist Name</span>
+                    {getSortIcon('playlistName')}
+                  </div>
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Genre
+                <th 
+                  className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 select-none"
+                  onClick={() => handleSort('genre')}
+                >
+                  <div className="flex items-center space-x-1">
+                    <span>Genre</span>
+                    {getSortIcon('genre')}
+                  </div>
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Account Email
+                <th 
+                  className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 select-none"
+                  onClick={() => handleSort('accountEmail')}
+                >
+                  <div className="flex items-center space-x-1">
+                    <span>Account Email</span>
+                    {getSortIcon('accountEmail')}
+                  </div>
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Song Count
+                <th 
+                  className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 select-none"
+                  onClick={() => handleSort('songCount')}
+                >
+                  <div className="flex items-center space-x-1">
+                    <span>Song Count</span>
+                    {getSortIcon('songCount')}
+                  </div>
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Max Songs
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Occupancy
+                <th 
+                  className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 select-none"
+                  onClick={() => handleSort('occupancy')}
+                >
+                  <div className="flex items-center space-x-1">
+                    <span>Occupancy</span>
+                    {getSortIcon('occupancy')}
+                  </div>
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Next Avail. Slot
+                <th 
+                  className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 select-none"
+                  onClick={() => handleSort('nextAvailSlot')}
+                >
+                  <div className="flex items-center space-x-1">
+                    <span>Next Avail. Slot</span>
+                    {getSortIcon('nextAvailSlot')}
+                  </div>
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Actions
@@ -212,7 +321,7 @@ const PlaylistUtilization: React.FC = () => {
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
-              {playlists.map((playlist) => (
+              {sortedPlaylists.map((playlist) => (
                 <tr key={playlist.id} className="hover:bg-gray-50">
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="flex-shrink-0 h-10 w-10">

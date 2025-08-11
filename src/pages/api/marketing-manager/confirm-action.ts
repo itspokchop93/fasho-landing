@@ -1,6 +1,7 @@
 import { NextApiRequest, NextApiResponse } from 'next';
 import { createAdminClient } from '../../../utils/supabase/server';
 import { requireAdminAuth, AdminUser } from '../../../utils/admin/auth';
+import { sendOrderStatusChangeEmail } from '../../../utils/email/emailService';
 
 async function handler(req: NextApiRequest, res: NextApiResponse, adminUser: AdminUser) {
   if (req.method !== 'POST') {
@@ -92,22 +93,75 @@ async function handler(req: NextApiRequest, res: NextApiResponse, adminUser: Adm
       return res.status(500).json({ error: 'Failed to update campaign' });
     }
 
-    // If both actions are now confirmed, update the order status to "Marketing Campaign Running"
-    if ((action === 'direct-streams' && campaignData.playlists_added_confirmed) ||
-        (action === 'playlists-added' && campaignData.direct_streams_confirmed)) {
+    // Update order status to "Marketing Campaign Running" when EITHER action is confirmed
+    // Only update if current status allows it (not cancelled or order issue)
+    if (action === 'direct-streams' || action === 'playlists-added') {
+      console.log(`🔄 ORDER STATUS: Checking if order ${campaignData.order_id} status should be updated to Marketing Campaign Running`);
       
-      const { error: orderUpdateError } = await supabase
+      // First, get current order status
+      const { data: currentOrder, error: fetchOrderError } = await supabase
         .from('orders')
-        .update({ 
-          status: 'Marketing Campaign Running',
-          updated_at: new Date().toISOString()
-        })
+        .select('status')
         .eq('id', campaignData.order_id)
-        .neq('status', 'Marketing Campaign Running'); // Only update if not already set
+        .single();
 
-      if (orderUpdateError) {
-        console.error('Error updating order status:', orderUpdateError);
-        // Don't fail the request for this, just log the error
+      if (fetchOrderError) {
+        console.error('Error fetching current order status:', fetchOrderError);
+      } else {
+        const currentStatus = currentOrder.status;
+        console.log(`🔄 ORDER STATUS: Current order status is "${currentStatus}"`);
+        
+        // Only update if status is not one of the protected statuses
+        const protectedStatuses = ['cancelled', 'order_issue'];
+        const shouldUpdate = !protectedStatuses.includes(currentStatus) && currentStatus !== 'marketing_campaign_running';
+        
+        if (shouldUpdate) {
+          console.log(`🔄 ORDER STATUS: Updating order status from "${currentStatus}" to "marketing_campaign_running"`);
+          
+          const { error: orderUpdateError } = await supabase
+            .from('orders')
+            .update({ 
+              status: 'marketing_campaign_running',
+              updated_at: new Date().toISOString()
+            })
+            .eq('id', campaignData.order_id);
+
+          if (orderUpdateError) {
+            console.error('Error updating order status:', orderUpdateError);
+            // Don't fail the request for this, just log the error
+          } else {
+            console.log(`✅ ORDER STATUS: Successfully updated order ${campaignData.order_id} to Marketing Campaign Running`);
+            
+            // CRITICAL: Send transactional email notification when status changes to Marketing Campaign Running
+            console.log(`📧 MARKETING-MANAGER-CONFIRM: Status changed to marketing_campaign_running, sending email notification...`);
+            
+            try {
+              // Get the full order data needed for the email
+              const { data: fullOrderData, error: orderFetchError } = await supabase
+                .from('orders')
+                .select('*')
+                .eq('id', campaignData.order_id)
+                .single();
+
+              if (orderFetchError || !fullOrderData) {
+                console.error('📧 MARKETING-MANAGER-CONFIRM: Error fetching order data for email:', orderFetchError);
+              } else {
+                const emailSent = await sendOrderStatusChangeEmail(fullOrderData, 'marketing_campaign_running', supabase);
+                
+                if (emailSent) {
+                  console.log(`📧 MARKETING-MANAGER-CONFIRM: ✅ Email notification sent successfully for order ${campaignData.order_id}`);
+                } else {
+                  console.log(`📧 MARKETING-MANAGER-CONFIRM: ❌ Email notification failed for order ${campaignData.order_id}`);
+                }
+              }
+            } catch (emailError) {
+              console.error(`📧 MARKETING-MANAGER-CONFIRM: ❌ Error sending email notification for order ${campaignData.order_id}:`, emailError);
+              // Don't fail the entire request if email fails
+            }
+          }
+        } else {
+          console.log(`⏭️ ORDER STATUS: Skipping update - current status "${currentStatus}" is protected or already correct`);
+        }
       }
     }
 
@@ -124,6 +178,35 @@ async function handler(req: NextApiRequest, res: NextApiResponse, adminUser: Adm
       if (orderCompleteError) {
         console.error('Error completing order:', orderCompleteError);
         // Don't fail the request for this, just log the error
+      } else {
+        console.log(`✅ ORDER STATUS: Successfully updated order ${campaignData.order_id} to Completed`);
+        
+        // CRITICAL: Send transactional email notification when status changes to Completed
+        console.log(`📧 MARKETING-MANAGER-CONFIRM: Status changed to completed, sending email notification...`);
+        
+        try {
+          // Get the full order data needed for the email
+          const { data: fullOrderData, error: orderFetchError } = await supabase
+            .from('orders')
+            .select('*')
+            .eq('id', campaignData.order_id)
+            .single();
+
+          if (orderFetchError || !fullOrderData) {
+            console.error('📧 MARKETING-MANAGER-CONFIRM: Error fetching order data for completion email:', orderFetchError);
+          } else {
+            const emailSent = await sendOrderStatusChangeEmail(fullOrderData, 'completed', supabase);
+            
+            if (emailSent) {
+              console.log(`📧 MARKETING-MANAGER-CONFIRM: ✅ Completion email notification sent successfully for order ${campaignData.order_id}`);
+            } else {
+              console.log(`📧 MARKETING-MANAGER-CONFIRM: ❌ Completion email notification failed for order ${campaignData.order_id}`);
+            }
+          }
+        } catch (emailError) {
+          console.error(`📧 MARKETING-MANAGER-CONFIRM: ❌ Error sending completion email notification for order ${campaignData.order_id}:`, emailError);
+          // Don't fail the entire request if email fails
+        }
       }
     }
 

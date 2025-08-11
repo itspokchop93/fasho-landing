@@ -28,6 +28,7 @@ async function handler(req: NextApiRequest, res: NextApiResponse, adminUser: Adm
         playlist_streams,
         hidden_until,
         created_at,
+        updated_at,
         orders!inner(created_at, status)
       `)
       .neq('campaign_status', 'Completed')
@@ -41,9 +42,11 @@ async function handler(req: NextApiRequest, res: NextApiResponse, adminUser: Adm
     const now = new Date();
     const actionItems = campaignsData
       ?.filter(campaign => {
-        // Filter out hidden items (hidden until a future date)
-        if (campaign.hidden_until && new Date(campaign.hidden_until) > now) {
-          return false;
+        // Auto-cleanup: If hidden_until is in the past, clear it
+        if (campaign.hidden_until && new Date(campaign.hidden_until) <= now) {
+          console.log(`🧹 AUTO-CLEANUP: Order ${campaign.order_number} had expired hidden_until, clearing it`);
+          // We should clear this in the database, but for now just treat as not hidden
+          campaign.hidden_until = null;
         }
         
         // Check if both initial actions are completed
@@ -84,6 +87,25 @@ async function handler(req: NextApiRequest, res: NextApiResponse, adminUser: Adm
           status = 'Completed';
         }
 
+        // Check if item is currently hidden
+        const isHidden = campaign.hidden_until && new Date(campaign.hidden_until) > now;
+
+        // Calculate completion timestamp (when both initial actions were completed)
+        let completedAt = null;
+        if (initialActionsCompleted) {
+          // Use updated_at as completion timestamp for completed items
+          completedAt = campaign.updated_at;
+        }
+
+        // Debug logging for hidden items
+        if (campaign.hidden_until || isHidden) {
+          console.log(`🔍 ACTION-QUEUE DEBUG: Order ${campaign.order_number}`);
+          console.log(`  - hidden_until: ${campaign.hidden_until}`);
+          console.log(`  - isHidden: ${isHidden}`);
+          console.log(`  - now: ${now.toISOString()}`);
+          console.log(`  - status: ${status}`);
+        }
+
         return {
           id: campaign.id,
           orderNumber: campaign.order_number,
@@ -99,8 +121,10 @@ async function handler(req: NextApiRequest, res: NextApiResponse, adminUser: Adm
           dueBy: dueByString,
           dueByTimestamp,
           status,
-          isHidden: false,
-          createdAt: campaign.created_at
+          isHidden: isHidden,
+          createdAt: campaign.created_at,
+          hiddenUntil: campaign.hidden_until,
+          completedAt: completedAt
         };
       })
       .sort((a, b) => {

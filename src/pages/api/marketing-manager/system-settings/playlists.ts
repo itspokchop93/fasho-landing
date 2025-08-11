@@ -2,7 +2,7 @@ import { NextApiRequest, NextApiResponse } from 'next';
 import { createAdminClient } from '../../../../utils/supabase/server';
 import { requireAdminAuth, AdminUser } from '../../../../utils/admin/auth';
 
-import { scrapeSpotifyPlaylistData, extractSpotifyPlaylistId } from '../../../../utils/apify-spotify-playlist';
+import { getSpotifyPlaylistData, extractSpotifyPlaylistId } from '../../../../utils/spotify-api';
 
 async function handler(req: NextApiRequest, res: NextApiResponse, adminUser: AdminUser) {
   if (req.method !== 'GET') {
@@ -45,11 +45,11 @@ async function handler(req: NextApiRequest, res: NextApiResponse, adminUser: Adm
         let songCount = playlist.cached_song_count || 0;
         let imageUrl = playlist.cached_image_url || '';
         
-        // Only call Apify if refresh is explicitly requested
+        // Only call Spotify API if refresh is explicitly requested
         if (forceRefresh) {
           try {
             console.log(`🔄 REFRESH: Fetching fresh data for ${playlist.playlist_name}`);
-            const playlistData = await scrapeSpotifyPlaylistData(playlist.playlist_link, false);
+            const playlistData = await getSpotifyPlaylistData(playlist.playlist_link);
             if (playlistData) {
               songCount = playlistData.trackCount;
               imageUrl = playlistData.imageUrl;

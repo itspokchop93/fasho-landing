@@ -54,14 +54,14 @@ async function handler(req: NextApiRequest, res: NextApiResponse, adminUser: Adm
       });
     }
 
-    // Get initial data from Apify when adding new playlist
+    // Get initial data from Spotify API when adding new playlist
     let initialSongCount = 0;
     let initialImageUrl = '';
     
     try {
       console.log('🎵 FETCH: Getting initial data for new playlist...');
-      const { scrapeSpotifyPlaylistData } = await import('../../../../utils/apify-spotify-playlist');
-      const playlistData = await scrapeSpotifyPlaylistData(playlistLink.trim(), false);
+      const { getSpotifyPlaylistData } = await import('../../../../utils/spotify-api');
+      const playlistData = await getSpotifyPlaylistData(playlistLink.trim());
       if (playlistData) {
         initialSongCount = playlistData.trackCount;
         initialImageUrl = playlistData.imageUrl;
@@ -82,7 +82,7 @@ async function handler(req: NextApiRequest, res: NextApiResponse, adminUser: Adm
           account_email: accountEmail.trim().toLowerCase(),
           playlist_link: playlistLink.trim(),
           spotify_playlist_id: extractedId,
-          max_songs: maxSongs || 50,
+          max_songs: maxSongs || 25,
           cached_song_count: initialSongCount,
           cached_image_url: initialImageUrl,
           last_scraped_at: new Date().toISOString(),
