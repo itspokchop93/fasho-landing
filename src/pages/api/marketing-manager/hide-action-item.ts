@@ -16,6 +16,15 @@ async function handler(req: NextApiRequest, res: NextApiResponse, adminUser: Adm
   try {
     const supabase = createAdminClient();
 
+    // Extract the actual campaign ID from the action item ID
+    // Action item IDs are in format: ${campaign.id}-initial or ${campaign.id}-removal
+    // Since campaign IDs are UUIDs (which contain dashes), we need to remove the suffix properly
+    const campaignId = itemId.endsWith('-initial') 
+      ? itemId.slice(0, -8) // Remove '-initial'
+      : itemId.endsWith('-removal') 
+      ? itemId.slice(0, -8) // Remove '-removal'  
+      : itemId; // Fallback for old format
+
     // Hide the item for 8 hours
     const hideUntil = new Date();
     hideUntil.setHours(hideUntil.getHours() + 8);
@@ -26,14 +35,14 @@ async function handler(req: NextApiRequest, res: NextApiResponse, adminUser: Adm
         hidden_until: hideUntil.toISOString(),
         updated_at: new Date().toISOString()
       })
-      .eq('id', itemId);
+      .eq('id', campaignId);
 
     if (error) {
       console.error('Error hiding action item:', error);
       return res.status(500).json({ error: 'Failed to hide action item' });
     }
 
-    console.log(`🔄 ACTION-QUEUE: Hid action item ${itemId} for 8 hours`);
+    console.log(`🔄 ACTION-QUEUE: Hid action item ${itemId} (campaign ${campaignId}) for 8 hours`);
     res.status(200).json({ success: true, message: 'Action item hidden for 8 hours' });
   } catch (error) {
     console.error('Error in hide-action-item API:', error);

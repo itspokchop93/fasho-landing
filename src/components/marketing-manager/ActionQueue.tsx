@@ -1,12 +1,76 @@
 import React, { useState, useEffect, useRef } from 'react';
 
+// CSS animation styles
+const animationStyles = `
+  @keyframes blink-hide {
+    0%, 50%, 100% { opacity: 1; background-color: transparent; }
+    25%, 75% { opacity: 0.3; background-color: rgba(239, 68, 68, 0.1); }
+  }
+  
+  @keyframes slide-down-hide {
+    0% { transform: translateY(0); opacity: 1; max-height: 100px; }
+    100% { transform: translateY(20px); opacity: 0; max-height: 0; padding: 0; margin: 0; }
+  }
+  
+  @keyframes blink-unhide {
+    0%, 50%, 100% { opacity: 1; background-color: transparent; }
+    25%, 75% { opacity: 0.3; background-color: rgba(59, 130, 246, 0.1); }
+  }
+  
+  @keyframes slide-up-unhide {
+    0% { transform: translateY(20px); opacity: 0; }
+    100% { transform: translateY(0); opacity: 1; }
+  }
+  
+  @keyframes final-blink {
+    0%, 50%, 100% { background-color: transparent; }
+    25%, 75% { background-color: rgba(34, 197, 94, 0.2); }
+  }
+  
+  .hiding-item {
+    animation: blink-hide 0.8s ease-in-out;
+  }
+  
+  .hiding-item.slide-out {
+    animation: slide-down-hide 0.6s ease-in-out forwards;
+  }
+  
+  .unhiding-item {
+    animation: blink-unhide 0.8s ease-in-out;
+  }
+  
+  .unhiding-item.slide-in {
+    animation: slide-up-unhide 0.6s ease-out;
+  }
+  
+  .unhiding-item.final-blink {
+    animation: final-blink 0.8s ease-in-out;
+  }
+  
+  .action-row {
+    transition: all 0.3s ease-in-out;
+  }
+`;
+
+// Inject styles into document head
+if (typeof document !== 'undefined') {
+  const styleSheet = document.createElement('style');
+  styleSheet.textContent = animationStyles;
+  if (!document.head.querySelector('style[data-action-queue-animations]')) {
+    styleSheet.setAttribute('data-action-queue-animations', 'true');
+    document.head.appendChild(styleSheet);
+  }
+}
+
 interface ActionItem {
   id: string;
   orderNumber: string;
   orderId: string;
   customerName: string;
   songName: string;
+  songNumber?: number | null;
   packageName: string;
+  actionType: 'initial' | 'removal'; // New field to distinguish action types
   actions: {
     directStreams: boolean;
     addToPlaylists: boolean;
@@ -26,6 +90,9 @@ const ActionQueue: React.FC = () => {
   const [showHidden, setShowHidden] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [currentTime, setCurrentTime] = useState(Date.now());
+  const [isLiveUpdating, setIsLiveUpdating] = useState(false);
+  const [hidingItems, setHidingItems] = useState<Set<string>>(new Set());
+  const [unhidingItems, setUnhidingItems] = useState<Set<string>>(new Set());
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
   const timeUpdateRef = useRef<NodeJS.Timeout | null>(null);
 
@@ -42,7 +109,21 @@ const ActionQueue: React.FC = () => {
       setCurrentTime(Date.now());
     }, 60000); // Update every minute
 
-    // Cleanup intervals on unmount
+    // Listen for campaign action confirmations from ActiveCampaigns
+    const handleCampaignActionConfirmed = (event: CustomEvent) => {
+      console.log(`🔄 LIVE UPDATE: ActionQueue received campaignActionConfirmed event:`, event.detail);
+      // Show live update indicator
+      setIsLiveUpdating(true);
+      // Refresh action items immediately when any campaign action is confirmed
+      fetchActionItems();
+      // Hide live update indicator after 2 seconds
+      setTimeout(() => setIsLiveUpdating(false), 2000);
+    };
+
+    // Add event listener for live updates
+    window.addEventListener('campaignActionConfirmed', handleCampaignActionConfirmed as EventListener);
+
+    // Cleanup intervals and event listeners on unmount
     return () => {
       if (intervalRef.current) {
         clearInterval(intervalRef.current);
@@ -50,6 +131,8 @@ const ActionQueue: React.FC = () => {
       if (timeUpdateRef.current) {
         clearInterval(timeUpdateRef.current);
       }
+      // Remove event listener
+      window.removeEventListener('campaignActionConfirmed', handleCampaignActionConfirmed as EventListener);
     };
   }, []);
 
@@ -71,6 +154,18 @@ const ActionQueue: React.FC = () => {
 
   const hideItem = async (itemId: string) => {
     try {
+      // Start hide animation - add to hiding items set for blink effect
+      setHidingItems(prev => new Set([...prev, itemId]));
+      
+      // Wait for blink animation to complete (0.8 seconds for 2 blinks)
+      await new Promise(resolve => setTimeout(resolve, 800));
+      
+      // Add slide-out class for the slide down effect
+      const element = document.querySelector(`tr[data-item-id="${itemId}"]`);
+      if (element) {
+        element.classList.add('slide-out');
+      }
+      
       const response = await fetch('/api/marketing-manager/hide-action-item', {
         method: 'POST',
         headers: {
@@ -81,18 +176,47 @@ const ActionQueue: React.FC = () => {
 
       if (response.ok) {
         console.log(`✅ HIDE: Item ${itemId} hidden successfully, refreshing data`);
+        
+        // Wait for slide-down animation to complete (0.6 seconds)
+        await new Promise(resolve => setTimeout(resolve, 600));
+        
+        // Remove from hiding items and fetch fresh data
+        setHidingItems(prev => {
+          const newSet = new Set(prev);
+          newSet.delete(itemId);
+          return newSet;
+        });
+        
         // Fetch fresh data immediately to get updated state from database
         await fetchActionItems();
       } else {
         console.error('Failed to hide item:', response.statusText);
+        // Remove from hiding items on error
+        setHidingItems(prev => {
+          const newSet = new Set(prev);
+          newSet.delete(itemId);
+          return newSet;
+        });
       }
     } catch (error) {
       console.error('Error hiding item:', error);
+      // Remove from hiding items on error
+      setHidingItems(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(itemId);
+        return newSet;
+      });
     }
   };
 
   const unhideItem = async (itemId: string) => {
     try {
+      // Start unhide animation - add to unhiding items set
+      setUnhidingItems(prev => new Set([...prev, itemId]));
+      
+      // Wait for blink animation to complete (0.8 seconds for 2 blinks)
+      await new Promise(resolve => setTimeout(resolve, 800));
+      
       const response = await fetch('/api/marketing-manager/unhide-action-item', {
         method: 'POST',
         headers: {
@@ -103,13 +227,39 @@ const ActionQueue: React.FC = () => {
 
       if (response.ok) {
         console.log(`✅ UNHIDE: Item ${itemId} unhidden successfully, refreshing data`);
+        
         // Fetch fresh data immediately to get updated state from database
         await fetchActionItems();
+        
+        // Wait for slide-up and reposition animations to complete (1.2 seconds total)
+        await new Promise(resolve => setTimeout(resolve, 1200));
+        
+        // Final blink to show it's back in position, then remove from unhiding items
+        setTimeout(() => {
+          setUnhidingItems(prev => {
+            const newSet = new Set(prev);
+            newSet.delete(itemId);
+            return newSet;
+          });
+        }, 800); // Wait for final blink animation
+        
       } else {
         console.error('Failed to unhide item:', response.statusText);
+        // Remove from unhiding items on error
+        setUnhidingItems(prev => {
+          const newSet = new Set(prev);
+          newSet.delete(itemId);
+          return newSet;
+        });
       }
     } catch (error) {
       console.error('Error unhiding item:', error);
+      // Remove from unhiding items on error
+      setUnhidingItems(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(itemId);
+        return newSet;
+      });
     }
   };
 
@@ -127,6 +277,16 @@ const ActionQueue: React.FC = () => {
         element.classList.remove('ring-4', 'ring-indigo-500', 'ring-opacity-50');
       }, 3000);
     }
+  };
+
+  const getAnimationClass = (itemId: string) => {
+    if (hidingItems.has(itemId)) {
+      return 'hiding-item';
+    }
+    if (unhidingItems.has(itemId)) {
+      return 'unhiding-item slide-in final-blink';
+    }
+    return 'action-row';
   };
 
   const formatDueBy = (dueByString: string, timestamp: number) => {
@@ -237,8 +397,10 @@ const ActionQueue: React.FC = () => {
         </div>
         <div className="flex items-center space-x-4">
           <div className="flex items-center space-x-2">
-            <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-            <span className="text-xs text-gray-500">Live Updates</span>
+            <div className={`w-2 h-2 rounded-full ${isLiveUpdating ? 'bg-blue-500 animate-bounce' : 'bg-green-500 animate-pulse'}`}></div>
+            <span className={`text-xs ${isLiveUpdating ? 'text-blue-600 font-medium' : 'text-gray-500'}`}>
+              {isLiveUpdating ? 'Updating Live...' : 'Live Updates'}
+            </span>
           </div>
           <button
             onClick={async () => {
@@ -300,40 +462,63 @@ const ActionQueue: React.FC = () => {
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
                 {visibleItems.map((item) => (
-                  <tr key={item.id} className={`hover:bg-gray-50 ${item.status === 'Completed' ? 'bg-green-50' : ''}`}>
+                  <tr 
+                    key={item.id} 
+                    data-item-id={item.id}
+                    className={`hover:bg-gray-50 ${item.status === 'Completed' ? 'bg-green-50' : ''} ${getAnimationClass(item.id)}`}
+                  >
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <button
-                        onClick={() => scrollToActiveCampaign(item.orderNumber)}
-                        className="text-indigo-600 hover:text-indigo-900 font-medium"
-                      >
-                        {item.orderNumber}
-                      </button>
+                      <div className="flex flex-col items-center">
+                        <button
+                          onClick={() => scrollToActiveCampaign(item.orderNumber)}
+                          className="text-indigo-600 hover:text-indigo-900 font-medium"
+                        >
+                          {item.orderNumber}
+                        </button>
+                        {item.songNumber && (
+                          <span className="inline-flex items-center px-2 py-0.5 mt-1 text-xs font-medium bg-green-50 text-green-700 border border-green-200 rounded-full">
+                            Song {item.songNumber}
+                          </span>
+                        )}
+                      </div>
                     </td>
                     <td className="px-6 py-4">
                       <div className="space-y-1">
-                        <div className="flex items-center space-x-2">
-                          {item.actions.directStreams ? (
-                            <svg className="w-4 h-4 text-green-500" fill="currentColor" viewBox="0 0 20 20">
-                              <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                            </svg>
-                          ) : (
-                            <div className="w-4 h-4 border-2 border-gray-300 rounded"></div>
-                          )}
-                          <span className="text-sm text-gray-700">Direct Streams</span>
-                        </div>
-                        <div className="flex items-center space-x-2">
-                          {item.actions.addToPlaylists ? (
-                            <svg className="w-4 h-4 text-green-500" fill="currentColor" viewBox="0 0 20 20">
-                              <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                            </svg>
-                          ) : (
-                            <div className="w-4 h-4 border-2 border-gray-300 rounded"></div>
-                          )}
-                          <span className="text-sm text-gray-700">Add to Playlists</span>
-                        </div>
-                        {item.actions.removeFromPlaylists && (
+                        {/* Show actions based on action type */}
+                        {item.actionType === 'initial' ? (
+                          // INITIAL ACTION ITEMS: Show only Direct Streams + Add to Playlists
+                          <>
+                            <div className="flex items-center space-x-2">
+                              {item.actions.directStreams ? (
+                                <svg className="w-4 h-4 text-green-500" fill="currentColor" viewBox="0 0 20 20">
+                                  <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                                </svg>
+                              ) : (
+                                <div className="w-4 h-4 border-2 border-gray-300 rounded"></div>
+                              )}
+                              <span className="text-sm text-gray-700">Direct Streams</span>
+                            </div>
+                            <div className="flex items-center space-x-2">
+                              {item.actions.addToPlaylists ? (
+                                <svg className="w-4 h-4 text-green-500" fill="currentColor" viewBox="0 0 20 20">
+                                  <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                                </svg>
+                              ) : (
+                                <div className="w-4 h-4 border-2 border-gray-300 rounded"></div>
+                              )}
+                              <span className="text-sm text-gray-700">Add to Playlists</span>
+                            </div>
+                          </>
+                        ) : (
+                          // REMOVAL ACTION ITEMS: Show only Remove from Playlists
                           <div className="flex items-center space-x-2">
-                            <div className="w-4 h-4 border-2 border-red-300 rounded bg-red-50"></div>
+                            {item.actions.removeFromPlaylists ? (
+                              <svg className="w-4 h-4 text-green-500" fill="currentColor" viewBox="0 0 20 20">
+                                <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                              </svg>
+                            ) : (
+                              <div className="w-4 h-4 border-2 border-red-300 rounded bg-red-50"></div>
+                            )}
                             <span className="text-sm text-red-700">Remove from Playlists</span>
                           </div>
                         )}
@@ -407,7 +592,11 @@ const ActionQueue: React.FC = () => {
                       </thead>
                       <tbody className="bg-white divide-y divide-gray-200">
                         {actionItems.filter(item => item.isHidden).map((item) => (
-                          <tr key={item.id} className={`${item.status === 'Completed' ? 'bg-green-50' : ''}`}>
+                          <tr 
+                            key={item.id} 
+                            data-item-id={item.id}
+                            className={`${item.status === 'Completed' ? 'bg-green-50' : ''} ${getAnimationClass(item.id)}`}
+                          >
                             <td className="px-4 py-3 whitespace-nowrap">
                               <button
                                 onClick={() => scrollToActiveCampaign(item.orderNumber)}
@@ -418,26 +607,44 @@ const ActionQueue: React.FC = () => {
                             </td>
                             <td className="px-4 py-3">
                               <div className="space-y-1">
-                                <div className="flex items-center space-x-2">
-                                  {item.actions.directStreams ? (
-                                    <svg className="w-3 h-3 text-green-500" fill="currentColor" viewBox="0 0 20 20">
-                                      <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                                    </svg>
-                                  ) : (
-                                    <div className="w-3 h-3 border border-gray-300 rounded"></div>
-                                  )}
-                                  <span className="text-xs text-gray-700">Direct Streams</span>
-                                </div>
-                                <div className="flex items-center space-x-2">
-                                  {item.actions.addToPlaylists ? (
-                                    <svg className="w-3 h-3 text-green-500" fill="currentColor" viewBox="0 0 20 20">
-                                      <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                                    </svg>
-                                  ) : (
-                                    <div className="w-3 h-3 border border-gray-300 rounded"></div>
-                                  )}
-                                  <span className="text-xs text-gray-700">Add to Playlists</span>
-                                </div>
+                                {/* Show actions based on action type for hidden items */}
+                                {item.actionType === 'initial' ? (
+                                  // INITIAL ACTION ITEMS: Show only Direct Streams + Add to Playlists
+                                  <>
+                                    <div className="flex items-center space-x-2">
+                                      {item.actions.directStreams ? (
+                                        <svg className="w-3 h-3 text-green-500" fill="currentColor" viewBox="0 0 20 20">
+                                          <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                                        </svg>
+                                      ) : (
+                                        <div className="w-3 h-3 border border-gray-300 rounded"></div>
+                                      )}
+                                      <span className="text-xs text-gray-700">Direct Streams</span>
+                                    </div>
+                                    <div className="flex items-center space-x-2">
+                                      {item.actions.addToPlaylists ? (
+                                        <svg className="w-3 h-3 text-green-500" fill="currentColor" viewBox="0 0 20 20">
+                                          <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                                        </svg>
+                                      ) : (
+                                        <div className="w-3 h-3 border border-gray-300 rounded"></div>
+                                      )}
+                                      <span className="text-xs text-gray-700">Add to Playlists</span>
+                                    </div>
+                                  </>
+                                ) : (
+                                  // REMOVAL ACTION ITEMS: Show only Remove from Playlists
+                                  <div className="flex items-center space-x-2">
+                                    {item.actions.removeFromPlaylists ? (
+                                      <svg className="w-3 h-3 text-green-500" fill="currentColor" viewBox="0 0 20 20">
+                                        <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                                      </svg>
+                                    ) : (
+                                      <div className="w-3 h-3 border border-red-300 rounded bg-red-50"></div>
+                                    )}
+                                    <span className="text-xs text-red-700">Remove from Playlists</span>
+                                  </div>
+                                )}
                               </div>
                             </td>
                             <td className="px-4 py-3 whitespace-nowrap">

@@ -16,6 +16,15 @@ async function handler(req: NextApiRequest, res: NextApiResponse, adminUser: Adm
   try {
     const supabase = createAdminClient();
 
+    // Extract the actual campaign ID from the action item ID
+    // Action item IDs are in format: ${campaign.id}-initial or ${campaign.id}-removal
+    // Since campaign IDs are UUIDs (which contain dashes), we need to remove the suffix properly
+    const campaignId = itemId.endsWith('-initial') 
+      ? itemId.slice(0, -8) // Remove '-initial'
+      : itemId.endsWith('-removal') 
+      ? itemId.slice(0, -8) // Remove '-removal'  
+      : itemId; // Fallback for old format
+
     // Unhide the item by clearing the hidden_until field
     const { error } = await supabase
       .from('marketing_campaigns')
@@ -23,14 +32,14 @@ async function handler(req: NextApiRequest, res: NextApiResponse, adminUser: Adm
         hidden_until: null,
         updated_at: new Date().toISOString()
       })
-      .eq('id', itemId);
+      .eq('id', campaignId);
 
     if (error) {
       console.error('Error unhiding action item:', error);
       return res.status(500).json({ error: 'Failed to unhide action item' });
     }
 
-    console.log(`🔄 ACTION-QUEUE: Unhid action item ${itemId}`);
+    console.log(`🔄 ACTION-QUEUE: Unhid action item ${itemId} (campaign ${campaignId})`);
     res.status(200).json({ success: true, message: 'Action item unhidden successfully' });
   } catch (error) {
     console.error('Error in unhide-action-item API:', error);

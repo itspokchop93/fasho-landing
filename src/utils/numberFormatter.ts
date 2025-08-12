@@ -6,7 +6,7 @@
  * @param decimals - Number of decimal places (default: 0)
  * @returns Formatted string (e.g., "3K", "1.5M")
  */
-export const formatNumberWithAbbreviation = (num: number, decimals: number = 0): string => {
+export const formatNumberWithAbbreviation = (num: number, decimals: number = 1): string => {
   if (num === 0) return '0';
   
   const absNum = Math.abs(num);
@@ -17,7 +17,9 @@ export const formatNumberWithAbbreviation = (num: number, decimals: number = 0):
     return `${sign}${millions.toFixed(decimals)}M`;
   } else if (absNum >= 1000) {
     const thousands = absNum / 1000;
-    return `${sign}${thousands.toFixed(decimals)}K`;
+    // Remove trailing .0 for cleaner display
+    const formatted = thousands.toFixed(decimals);
+    return `${sign}${formatted.replace(/\.0$/, '')}K`;
   }
   
   return num.toString();

@@ -3,6 +3,136 @@ import { useRouter } from 'next/router';
 import { MUSIC_GENRES } from '../../constants/genres';
 import { formatProgressDisplay } from '../../utils/numberFormatter';
 
+// Custom Confirmation Modal Component
+interface ConfirmationModalProps {
+  isOpen: boolean;
+  message: string;
+  onConfirm: () => void;
+  onCancel: () => void;
+  position: { top: number; left: number } | null;
+  buttonType: 'direct-streams' | 'playlists-added' | 'de-playlisted';
+}
+
+const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
+  isOpen,
+  message,
+  onConfirm,
+  onCancel,
+  position,
+  buttonType
+}) => {
+  console.log('🎯 ConfirmationModal render:', { isOpen, position, buttonType, message });
+  
+  if (!isOpen || !position) {
+    console.log('🎯 Modal not rendering because:', { isOpen, position });
+    return null;
+  }
+
+  // Handle keyboard events
+  React.useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        onCancel();
+      } else if (event.key === 'Enter') {
+        onConfirm();
+      }
+    };
+
+    if (isOpen) {
+      document.addEventListener('keydown', handleKeyDown);
+      return () => document.removeEventListener('keydown', handleKeyDown);
+    }
+  }, [isOpen, onCancel, onConfirm]);
+
+  const getButtonColors = () => {
+    switch (buttonType) {
+      case 'direct-streams':
+        return {
+          confirm: 'bg-blue-600 hover:bg-blue-700 text-white',
+          border: 'border-blue-200',
+          accent: 'text-blue-600'
+        };
+      case 'playlists-added':
+        return {
+          confirm: 'bg-green-600 hover:bg-green-700 text-white',
+          border: 'border-green-200',
+          accent: 'text-green-600'
+        };
+      case 'de-playlisted':
+        return {
+          confirm: 'bg-red-600 hover:bg-red-700 text-white',
+          border: 'border-red-200',
+          accent: 'text-red-600'
+        };
+      default:
+        return {
+          confirm: 'bg-gray-600 hover:bg-gray-700 text-white',
+          border: 'border-gray-200',
+          accent: 'text-gray-600'
+        };
+    }
+  };
+
+  const colors = getButtonColors();
+
+  return (
+    <>
+      {/* Invisible overlay to close on outside click */}
+      <div 
+        className="fixed inset-0"
+        style={{ zIndex: 9999 }}
+        onClick={onCancel}
+      />
+      
+      {/* Small popup attached to button */}
+      <div
+        className="absolute bg-white rounded-lg shadow-xl border-2 border-gray-800"
+        style={{
+          zIndex: 10000,
+          top: position.top - 110,
+          left: position.left - 100,
+          width: '250px'
+        }}
+      >
+        {/* Arrow pointing down to button */}
+        <div 
+          className="absolute top-full left-1/2 transform -translate-x-1/2"
+          style={{
+            width: 0,
+            height: 0,
+            borderLeft: '10px solid transparent',
+            borderRight: '10px solid transparent',
+            borderTop: '10px solid #1f2937'
+          }}
+        ></div>
+        
+        {/* Content */}
+        <div className="p-4">
+          <p className="text-gray-800 text-sm mb-4 leading-tight font-medium">
+            Are you sure?
+          </p>
+          
+          {/* Buttons */}
+          <div className="flex space-x-3">
+            <button
+              onClick={onConfirm}
+              className="px-4 py-2 text-sm text-white bg-red-600 hover:bg-red-700 rounded font-medium flex-1"
+            >
+              ✓ Yes
+            </button>
+            <button
+              onClick={onCancel}
+              className="px-4 py-2 text-sm text-gray-700 bg-gray-100 hover:bg-gray-200 rounded font-medium flex-1"
+            >
+              ✗ No
+            </button>
+          </div>
+        </div>
+      </div>
+    </>
+  );
+};
+
 interface PlaylistAssignment {
   id: string;
   name: string;
@@ -17,6 +147,7 @@ interface Campaign {
   customerName: string;
   songName: string;
   songLink: string;
+  songNumber?: number | null;
   packageName: string;
   userGenre: string;
   directStreams: number;
@@ -39,6 +170,37 @@ interface Playlist {
 
 const ActiveCampaigns: React.FC = () => {
   const router = useRouter();
+  
+  // Add custom animation styles
+  const animationStyles = `
+    @keyframes button-state-change {
+      0% { transform: scale(1); opacity: 1; }
+      50% { transform: scale(0.95); opacity: 0.7; }
+      100% { transform: scale(1); opacity: 1; }
+    }
+    
+    @keyframes checkmark-entrance {
+      0% { transform: scale(0) rotate(0deg); opacity: 0; }
+      50% { transform: scale(1.2) rotate(180deg); opacity: 0.8; }
+      100% { transform: scale(1) rotate(360deg); opacity: 1; }
+    }
+    
+    @keyframes button-exit {
+      0% { transform: scale(1) translateY(0); opacity: 1; }
+      100% { transform: scale(0.8) translateY(-10px); opacity: 0; }
+    }
+    
+    @keyframes button-entrance {
+      0% { transform: scale(0.8) translateY(10px); opacity: 0; }
+      100% { transform: scale(1) translateY(0); opacity: 1; }
+    }
+    
+    .button-state-change { animation: button-state-change 0.6s ease-in-out; }
+    .checkmark-entrance { animation: checkmark-entrance 0.8s ease-out; }
+    .button-exit { animation: button-exit 0.4s ease-in; }
+    .button-entrance { animation: button-entrance 0.5s ease-out; }
+  `;
+  
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
   const [filteredCampaigns, setFilteredCampaigns] = useState<Campaign[]>([]);
   const [availablePlaylists, setAvailablePlaylists] = useState<Playlist[]>([]);
@@ -54,6 +216,21 @@ const ActiveCampaigns: React.FC = () => {
     campaignId: string;
   } | null>(null);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
+  
+  // Confirmation modal state
+  const [confirmationModal, setConfirmationModal] = useState<{
+    isOpen: boolean;
+    message: string;
+    campaignId: string;
+    action: 'direct-streams' | 'playlists-added' | 'de-playlisted';
+    position: { top: number; left: number } | null;
+  }>({
+    isOpen: false,
+    message: '',
+    campaignId: '',
+    action: 'direct-streams',
+    position: null
+  });
   
 
 
@@ -151,33 +328,81 @@ const ActiveCampaigns: React.FC = () => {
     window.open(`/admin/order/${orderId}`, '_blank');
   };
 
-  const confirmAction = async (campaignId: string, action: 'direct-streams' | 'playlists-added' | 'de-playlisted') => {
+  const showConfirmationModal = (campaignId: string, action: 'direct-streams' | 'playlists-added' | 'de-playlisted', event: React.MouseEvent) => {
     const actionMessages = {
       'direct-streams': 'Confirm that you have purchased direct streams for this campaign?',
       'playlists-added': 'Confirm that you have added this song to the assigned playlists?',
       'de-playlisted': 'Confirm that you have removed this song from all playlists?'
     };
 
-    if (window.confirm(actionMessages[action])) {
-      try {
-        const response = await fetch('/api/marketing-manager/confirm-action', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ campaignId, action }),
-        });
+    // Get button position
+    const button = event.currentTarget as HTMLButtonElement;
+    const rect = button.getBoundingClientRect();
+    
+    console.log('🎯 Button position:', {
+      top: rect.top,
+      left: rect.left,
+      width: rect.width,
+      height: rect.height,
+      scrollY: window.scrollY,
+      scrollX: window.scrollX
+    });
+    
+    const modalPosition = {
+      top: rect.top + window.scrollY,
+      left: rect.left + window.scrollX + (rect.width / 2)
+    };
+    
+    console.log('🎯 Modal position will be:', modalPosition);
+    
+    const newModalState = {
+      isOpen: true,
+      message: actionMessages[action],
+      campaignId,
+      action,
+      position: modalPosition
+    };
+    
+    console.log('🎯 Setting modal state:', newModalState);
+    setConfirmationModal(newModalState);
+  };
 
-        if (response.ok) {
-          // Refresh campaigns data
-          fetchCampaigns();
-        } else {
-          console.error('Failed to confirm action:', response.statusText);
-        }
-      } catch (error) {
-        console.error('Error confirming action:', error);
+  const handleConfirmAction = async () => {
+    const { campaignId, action } = confirmationModal;
+    
+    // Close modal first
+    setConfirmationModal(prev => ({ ...prev, isOpen: false }));
+    
+    try {
+      const response = await fetch('/api/marketing-manager/confirm-action', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ campaignId, action }),
+      });
+
+      if (response.ok) {
+        // Refresh campaigns data
+        fetchCampaigns();
+        
+        // Dispatch custom event to notify ActionQueue to refresh immediately
+        const event = new CustomEvent('campaignActionConfirmed', {
+          detail: { campaignId, action }
+        });
+        window.dispatchEvent(event);
+        
+        console.log(`🔄 LIVE UPDATE: Dispatched campaignActionConfirmed event for ${action} on campaign ${campaignId}`);
+      } else {
+        console.error('Failed to confirm action:', response.statusText);
       }
+    } catch (error) {
+      console.error('Error confirming action:', error);
     }
+  };
+
+  const handleCancelAction = () => {
+    setConfirmationModal(prev => ({ ...prev, isOpen: false }));
   };
 
   const updateGenre = async (campaignId: string, newGenre: string) => {
@@ -305,6 +530,9 @@ const ActiveCampaigns: React.FC = () => {
 
   return (
     <div className="bg-white rounded-xl p-6 shadow-lg border border-gray-100">
+      {/* Inject custom animation styles */}
+      <style dangerouslySetInnerHTML={{ __html: animationStyles }} />
+      
       <div className="flex items-center justify-between mb-6">
         <h2 className="text-lg font-semibold text-gray-900">Active Campaigns</h2>
         <div className="flex items-center space-x-2">
@@ -372,6 +600,26 @@ const ActiveCampaigns: React.FC = () => {
             className="px-4 py-2 bg-orange-600 hover:bg-orange-700 text-white rounded-lg font-medium mr-2"
           >
             Debug Clear Order
+          </button>
+          <button
+            onClick={async () => {
+              if (confirm('This will update ALL campaigns to use correct stream values from the Campaign Totals configuration. This is safe but will affect progress calculations. Continue?')) {
+                try {
+                  const response = await fetch('/api/marketing-manager/fix-campaign-stream-values', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' }
+                  });
+                  const result = await response.json();
+                  alert(`✅ ${result.message}\n\nUpdated: ${result.updatedCount}/${result.totalCampaigns} campaigns`);
+                  fetchCampaigns(); // Refresh to show updated values
+                } catch (error) {
+                  alert('❌ Error fixing stream values');
+                }
+              }
+            }}
+            className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg font-medium mr-2"
+          >
+            🔧 Fix Stream Values
           </button>
           <button
             onClick={async () => {
@@ -487,12 +735,19 @@ const ActiveCampaigns: React.FC = () => {
               {filteredCampaigns.map((campaign) => (
                 <tr key={campaign.id} id={`campaign-${campaign.orderNumber}`} className="hover:bg-gray-50">
                   <td className="px-3 py-4 whitespace-nowrap w-20">
-                    <button
-                      onClick={() => handleOrderNumberClick(campaign.orderId)}
-                      className="text-indigo-600 hover:text-indigo-900 font-medium"
-                    >
-                      {campaign.orderNumber}
-                    </button>
+                    <div className="flex flex-col items-center">
+                      <button
+                        onClick={() => handleOrderNumberClick(campaign.orderId)}
+                        className="text-indigo-600 hover:text-indigo-900 font-medium"
+                      >
+                        {campaign.orderNumber}
+                      </button>
+                      {campaign.songNumber && (
+                        <span className="inline-flex items-center px-2 py-0.5 mt-1 text-xs font-medium bg-green-50 text-green-700 border border-green-200 rounded-full">
+                          Song {campaign.songNumber}
+                        </span>
+                      )}
+                    </div>
                   </td>
                   <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-900 w-28">
                     {new Date(campaign.orderDate).toLocaleDateString()}
@@ -614,34 +869,65 @@ const ActiveCampaigns: React.FC = () => {
                       {campaign.status}
                     </span>
                   </td>
-                  <td className="px-4 py-4 whitespace-nowrap text-right text-sm font-medium w-36">
-                    <div className="flex flex-col space-y-2">
-                      {campaign.status === 'Removal Needed' ? (
-                        <button
-                          onClick={() => confirmAction(campaign.id, 'de-playlisted')}
-                          className="bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded text-xs font-medium"
-                        >
-                          De-Playlisted
-                        </button>
+                  <td className="px-4 py-4 whitespace-nowrap text-center text-sm font-medium w-40">
+                    <div className="flex flex-col items-center space-y-2 w-full">
+                      {campaign.status === 'Removal Needed' || (campaign.status === 'Completed' && campaign.removedFromPlaylists) ? (
+                        <div className="flex justify-center w-full transition-all duration-500 ease-in-out">
+                          {campaign.removedFromPlaylists || campaign.status === 'Completed' ? (
+                            // Green checkmark icon for completed de-playlisting - centered
+                            <div className="inline-flex items-center justify-center w-8 h-8 bg-green-500 rounded-full checkmark-entrance">
+                              <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                              </svg>
+                            </div>
+                          ) : (
+                            // De-Playlisted button - full width
+                            <button
+                              onClick={(e) => showConfirmationModal(campaign.id, 'de-playlisted', e)}
+                              className="bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded text-xs font-medium button-entrance hover:scale-105 transition-transform duration-200 w-full"
+                            >
+                              De-Playlisted
+                            </button>
+                          )}
+                        </div>
                       ) : (
-                        <>
-                          {!campaign.directStreamsConfirmed && (
-                            <button
-                              onClick={() => confirmAction(campaign.id, 'direct-streams')}
-                              className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded text-xs font-medium"
-                            >
-                              Directly Purchased
-                            </button>
-                          )}
-                          {!campaign.playlistsAddedConfirmed && (
-                            <button
-                              onClick={() => confirmAction(campaign.id, 'playlists-added')}
-                              className="bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded text-xs font-medium"
-                            >
-                              Added to Playlists
-                            </button>
-                          )}
-                        </>
+                        <div className="button-entrance w-full">
+                          {/* Directly Purchased Button - full width */}
+                          <button
+                            onClick={campaign.directStreamsConfirmed ? undefined : (e) => showConfirmationModal(campaign.id, 'direct-streams', e)}
+                            className={`w-full px-3 py-1 rounded text-xs font-medium flex items-center justify-center space-x-1 transition-all duration-500 ease-in-out mb-2 ${
+                              campaign.directStreamsConfirmed 
+                                ? 'bg-gray-300 text-gray-500 cursor-not-allowed button-state-change' 
+                                : 'bg-blue-600 hover:bg-blue-700 text-white hover:scale-105'
+                            }`}
+                            disabled={campaign.directStreamsConfirmed}
+                          >
+                            {campaign.directStreamsConfirmed && (
+                              <svg className="w-3 h-3 text-green-600 checkmark-entrance" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                              </svg>
+                            )}
+                            <span>Directly Purchased</span>
+                          </button>
+                          
+                          {/* Added to Playlists Button - full width */}
+                          <button
+                            onClick={campaign.playlistsAddedConfirmed ? undefined : (e) => showConfirmationModal(campaign.id, 'playlists-added', e)}
+                            className={`w-full px-3 py-1 rounded text-xs font-medium flex items-center justify-center space-x-1 transition-all duration-500 ease-in-out ${
+                              campaign.playlistsAddedConfirmed 
+                                ? 'bg-gray-300 text-gray-500 cursor-not-allowed button-state-change' 
+                                : 'bg-green-600 hover:bg-green-700 text-white hover:scale-105'
+                            }`}
+                            disabled={campaign.playlistsAddedConfirmed}
+                          >
+                            {campaign.playlistsAddedConfirmed && (
+                              <svg className="w-3 h-3 text-green-600 checkmark-entrance" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                              </svg>
+                            )}
+                            <span>Added to Playlists</span>
+                          </button>
+                        </div>
                       )}
                     </div>
                   </td>
@@ -652,6 +938,16 @@ const ActiveCampaigns: React.FC = () => {
           </div>
         </div>
       )}
+      
+      {/* Custom Confirmation Modal */}
+      <ConfirmationModal
+        isOpen={confirmationModal.isOpen}
+        message={confirmationModal.message}
+        onConfirm={handleConfirmAction}
+        onCancel={handleCancelAction}
+        position={confirmationModal.position}
+        buttonType={confirmationModal.action}
+      />
     </div>
   );
 };

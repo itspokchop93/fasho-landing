@@ -18,6 +18,21 @@ const CounterCards: React.FC = () => {
 
   useEffect(() => {
     fetchCounterData();
+    
+    // Listen for campaign action confirmations to update counters live
+    const handleCampaignActionConfirmed = (event: CustomEvent) => {
+      console.log(`🔄 LIVE UPDATE: CounterCards received campaignActionConfirmed event:`, event.detail);
+      // Refresh counter data immediately when any campaign action is confirmed
+      fetchCounterData();
+    };
+
+    // Add event listener for live updates
+    window.addEventListener('campaignActionConfirmed', handleCampaignActionConfirmed as EventListener);
+
+    // Cleanup event listener on unmount
+    return () => {
+      window.removeEventListener('campaignActionConfirmed', handleCampaignActionConfirmed as EventListener);
+    };
   }, []);
 
   const fetchCounterData = async () => {

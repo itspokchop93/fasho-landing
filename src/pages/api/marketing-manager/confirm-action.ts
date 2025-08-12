@@ -32,6 +32,7 @@ async function handler(req: NextApiRequest, res: NextApiResponse, adminUser: Adm
         playlist_assignments,
         direct_streams_confirmed,
         playlists_added_confirmed,
+        playlists_added_at,
         removed_from_playlists,
         time_on_playlists
       `)
@@ -55,11 +56,33 @@ async function handler(req: NextApiRequest, res: NextApiResponse, adminUser: Adm
 
       case 'playlists-added':
         updateData.playlists_added_confirmed = true;
-        // Set removal date based on time_on_playlists from campaign configuration
-        if (campaignData.time_on_playlists) {
-          const removalDate = new Date();
-          removalDate.setDate(removalDate.getDate() + campaignData.time_on_playlists);
-          updateData.removal_date = removalDate.toISOString().split('T')[0];
+        updateData.playlists_added_at = new Date().toISOString();
+        updateData.playlist_streams_progress = 0; // Reset to 0 when starting
+        
+        // DYNAMIC REMOVAL DATE: Calculate based on LIVE data (playlists × streams needed)
+        if (campaignData.playlist_assignments && campaignData.playlist_streams) {
+          const playlistAssignments = Array.isArray(campaignData.playlist_assignments) 
+            ? campaignData.playlist_assignments 
+            : [];
+          
+          if (playlistAssignments.length > 0) {
+            // Live calculation: 500 streams per playlist per day
+            const streamsPerDay = playlistAssignments.length * 500;
+            const streamsNeeded = campaignData.playlist_streams;
+            const daysNeeded = Math.ceil(streamsNeeded / streamsPerDay);
+            
+            const addedDate = new Date();
+            const calculatedRemovalDate = new Date(addedDate);
+            calculatedRemovalDate.setDate(calculatedRemovalDate.getDate() + daysNeeded);
+            
+            updateData.removal_date = calculatedRemovalDate.toISOString().split('T')[0];
+            
+            console.log(`📅 LIVE REMOVAL DATE for Order ${campaignData.order_number}:`);
+            console.log(`  - Streams needed: ${streamsNeeded}`);
+            console.log(`  - Playlists: ${playlistAssignments.length} (${streamsPerDay}/day)`);
+            console.log(`  - Days needed: ${daysNeeded}`);
+            console.log(`  - Remove on: ${updateData.removal_date}`);
+          }
         }
         break;
 

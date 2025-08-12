@@ -180,6 +180,184 @@ async function generatePlaylistAssignments(supabase: any, campaign: any): Promis
   return selectedPlaylists;
 }
 
+// Auto-import function to handle new orders
+async function autoImportNewOrders(supabase: any): Promise<number> {
+  try {
+    console.log('🔄 AUTO-IMPORT: Checking for new orders to import...');
+    
+    // Get all orders that don't have campaigns yet
+    const { data: existingOrders, error: ordersError } = await supabase
+      .from('orders')
+      .select(`
+        id,
+        order_number,
+        customer_name,
+        status,
+        created_at,
+        user_id,
+        order_items(
+          id,
+          track_title,
+          track_url,
+          package_name,
+          package_id
+        )
+      `)
+      .neq('status', 'cancelled');
+
+    if (ordersError) {
+      console.error('❌ Error fetching orders for auto-import:', ordersError);
+      return 0;
+    }
+
+    // Check which orders already have marketing campaigns
+    const { data: existingCampaigns, error: campaignsError } = await supabase
+      .from('marketing_campaigns')
+      .select('order_id');
+
+    if (campaignsError) {
+      console.error('❌ Error fetching existing campaigns:', campaignsError);
+      return 0;
+    }
+
+    const existingCampaignOrderIds = new Set(existingCampaigns?.map(c => c.order_id) || []);
+    const ordersToProcess = existingOrders?.filter(order => !existingCampaignOrderIds.has(order.id)) || [];
+
+    if (ordersToProcess.length === 0) {
+      console.log('✅ AUTO-IMPORT: No new orders to import');
+      return 0;
+    }
+
+    console.log(`🔄 AUTO-IMPORT: Found ${ordersToProcess.length} new orders to import`);
+
+    // Get user profiles for orders with user_ids
+    const userIds = ordersToProcess
+      .filter(order => order.user_id)
+      .map(order => order.user_id);
+
+    let userProfiles = {};
+    if (userIds.length > 0) {
+      const { data: profiles, error: profilesError } = await supabase
+        .from('user_profiles')
+        .select('user_id, first_name, last_name, music_genre')
+        .in('user_id', userIds);
+
+      if (!profilesError && profiles) {
+        userProfiles = profiles.reduce((acc, profile) => {
+          acc[profile.user_id] = profile;
+          return acc;
+        }, {});
+      }
+    }
+
+    // Process orders and create campaigns
+    const campaignsToInsert = [];
+    let importedCount = 0;
+
+    for (const order of ordersToProcess) {
+      if (!order.order_items || order.order_items.length === 0) continue;
+
+      // Add song numbering for orders with multiple tracks
+      for (const [songIndex, item] of order.order_items.entries()) {
+        const userProfile = userProfiles[order.user_id];
+        const packageData = await getPackageData(supabase, item.package_name);
+        const songNumber = order.order_items.length > 1 ? songIndex + 1 : null;
+        
+        campaignsToInsert.push({
+          order_id: order.id,
+          order_number: order.order_number,
+          customer_name: order.customer_name,
+          song_name: item.track_title,
+          song_link: item.track_url,
+          package_name: item.package_name,
+          package_id: item.package_id,
+          direct_streams: packageData.directStreams,
+          playlist_streams: packageData.playlistStreams,
+          direct_streams_progress: 0,
+          playlist_streams_progress: 0,
+          direct_streams_confirmed: false,
+          playlists_added_confirmed: false,
+          removed_from_playlists: false,
+          campaign_status: 'Action Needed',
+          time_on_playlists: packageData.timeOnPlaylists,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        });
+        importedCount++;
+      }
+    }
+
+    // Batch insert campaigns
+    if (campaignsToInsert.length > 0) {
+      const { error: insertError } = await supabase
+        .from('marketing_campaigns')
+        .insert(campaignsToInsert);
+
+      if (insertError) {
+        console.error('❌ Error inserting auto-imported campaigns:', insertError);
+        return 0;
+      }
+    }
+
+    console.log(`✅ AUTO-IMPORT: Successfully imported ${importedCount} campaigns`);
+    return importedCount;
+
+  } catch (error) {
+    console.error('❌ Error in auto-import process:', error);
+    return 0;
+  }
+}
+
+// Helper function to get package data from database
+async function getPackageData(supabase: any, packageName: string) {
+  try {
+    // Fetch package configuration from campaign_totals table
+    const { data: packageConfig, error } = await supabase
+      .from('campaign_totals')
+      .select('direct_streams, playlist_streams, time_on_playlists')
+      .eq('package_name', packageName.toUpperCase())
+      .single();
+
+    if (error || !packageConfig) {
+      console.error(`❌ Error fetching package config for ${packageName}:`, error);
+      
+      // Fallback to hardcoded values if database fetch fails (matching Campaign Totals)
+      const fallbackPackages = {
+        'LEGENDARY': { directStreams: 70000, playlistStreams: 40000, timeOnPlaylists: 14 },
+        'UNSTOPPABLE': { directStreams: 21000, playlistStreams: 20000, timeOnPlaylists: 10 },
+        'DOMINATE': { directStreams: 10000, playlistStreams: 9000, timeOnPlaylists: 6 },
+        'MOMENTUM': { directStreams: 3000, playlistStreams: 4000, timeOnPlaylists: 4 },
+        'BREAKTHROUGH': { directStreams: 1500, playlistStreams: 2000, timeOnPlaylists: 2 },
+        'TEST CAMPAIGN': { directStreams: 0, playlistStreams: 9000, timeOnPlaylists: 9 }
+      };
+      
+      const fallback = fallbackPackages[packageName.toUpperCase()] || { directStreams: 1000, playlistStreams: 3000, timeOnPlaylists: 6 };
+      console.log(`⚠️ Using fallback package data for ${packageName}:`, fallback);
+      return fallback;
+    }
+
+    console.log(`✅ Fetched package data for ${packageName} from database:`, packageConfig);
+    return {
+      directStreams: packageConfig.direct_streams,
+      playlistStreams: packageConfig.playlist_streams,
+      timeOnPlaylists: packageConfig.time_on_playlists
+    };
+  } catch (err) {
+    console.error(`❌ Exception fetching package config for ${packageName}:`, err);
+    
+    // Ultimate fallback (matching Campaign Totals)
+    const fallbackPackages = {
+      'LEGENDARY': { directStreams: 70000, playlistStreams: 40000, timeOnPlaylists: 14 },
+      'UNSTOPPABLE': { directStreams: 21000, playlistStreams: 20000, timeOnPlaylists: 10 },
+      'DOMINATE': { directStreams: 10000, playlistStreams: 9000, timeOnPlaylists: 6 },
+      'MOMENTUM': { directStreams: 3000, playlistStreams: 4000, timeOnPlaylists: 4 },
+      'BREAKTHROUGH': { directStreams: 1500, playlistStreams: 2000, timeOnPlaylists: 2 }
+    };
+    
+    return fallbackPackages[packageName.toUpperCase()] || { directStreams: 1000, playlistStreams: 3000, timeOnPlaylists: 6 };
+  }
+}
+
 async function handler(req: NextApiRequest, res: NextApiResponse, adminUser: AdminUser) {
   if (req.method !== 'GET') {
     return res.status(405).json({ error: 'Method not allowed' });
@@ -188,8 +366,14 @@ async function handler(req: NextApiRequest, res: NextApiResponse, adminUser: Adm
   try {
     const supabase = createAdminClient();
 
+    // AUTOMATICALLY IMPORT NEW ORDERS FIRST
+    const importedCount = await autoImportNewOrders(supabase);
+    if (importedCount > 0) {
+      console.log(`🚀 AUTO-IMPORT: ${importedCount} new orders imported into Active Campaigns!`);
+    }
+
     // Fetch all campaigns with their related order data
-    const { data: campaignsData, error: campaignsError } = await supabase
+    let { data: campaignsData, error: campaignsError } = await supabase
       .from('marketing_campaigns')
       .select(`
         id,
@@ -207,6 +391,7 @@ async function handler(req: NextApiRequest, res: NextApiResponse, adminUser: Adm
         playlist_streams_progress,
         direct_streams_confirmed,
         playlists_added_confirmed,
+        playlists_added_at,
         removed_from_playlists,
         removal_date,
         campaign_status,
@@ -264,12 +449,107 @@ async function handler(req: NextApiRequest, res: NextApiResponse, adminUser: Adm
       }
     }
 
+    // Migration logic: Handle existing "Running" campaigns that don't have playlists_added_at set
+    // These were marked as running yesterday, so we'll set their playlists_added_at to yesterday
+    const migrateExistingCampaigns = async () => {
+      try {
+        const yesterday = new Date();
+        yesterday.setDate(yesterday.getDate() - 1);
+        yesterday.setHours(12, 0, 0, 0); // Set to noon yesterday for consistency
+        
+        const { data: campaignsNeedingMigration, error: migrationFetchError } = await supabase
+          .from('marketing_campaigns')
+          .select('id, order_number')
+          .eq('playlists_added_confirmed', true)
+          .is('playlists_added_at', null);
+
+        if (migrationFetchError) {
+          console.error('Error fetching campaigns for migration:', migrationFetchError);
+          return;
+        }
+
+        if (campaignsNeedingMigration && campaignsNeedingMigration.length > 0) {
+          console.log(`🔄 MIGRATION: Found ${campaignsNeedingMigration.length} campaigns needing playlists_added_at migration`);
+          
+          const { error: migrationUpdateError } = await supabase
+            .from('marketing_campaigns')
+            .update({
+              playlists_added_at: yesterday.toISOString(),
+              playlist_streams_progress: 0 // Reset progress to start fresh
+            })
+            .eq('playlists_added_confirmed', true)
+            .is('playlists_added_at', null);
+
+          if (migrationUpdateError) {
+            console.error('Error updating campaigns in migration:', migrationUpdateError);
+          } else {
+            console.log(`✅ MIGRATION: Successfully updated ${campaignsNeedingMigration.length} campaigns with playlists_added_at`);
+            campaignsNeedingMigration.forEach(camp => {
+              console.log(`   - Order ${camp.order_number}: Set playlists_added_at to ${yesterday.toISOString()}`);
+            });
+          }
+        }
+      } catch (error) {
+        console.error('Error in migration logic:', error);
+      }
+    };
+
+    // Run migration for existing campaigns
+    await migrateExistingCampaigns();
+
+    // Re-fetch campaigns data after migration
+    const { data: updatedCampaignsData, error: refetchError } = await supabase
+      .from('marketing_campaigns')
+      .select(`
+        id,
+        order_id,
+        order_number,
+        customer_name,
+        song_name,
+        song_link,
+        package_name,
+        package_id,
+        direct_streams,
+        playlist_streams,
+        playlist_assignments,
+        direct_streams_progress,
+        playlist_streams_progress,
+        direct_streams_confirmed,
+        playlists_added_confirmed,
+        playlists_added_at,
+        removed_from_playlists,
+        removal_date,
+        campaign_status,
+        time_on_playlists,
+        created_at,
+        updated_at,
+        orders!inner(created_at, status, billing_info)
+      `)
+      .neq('orders.status', 'cancelled')
+      .order('created_at', { ascending: false });
+
+    if (refetchError) {
+      console.error('Error re-fetching campaigns after migration:', refetchError);
+      // Fall back to original data if refetch fails
+    } else {
+      campaignsData = updatedCampaignsData;
+    }
+
+    // Group campaigns by order number to calculate song numbers for multi-track orders
+    const campaignsByOrder = {};
+    (campaignsData || []).forEach(campaign => {
+      if (!campaignsByOrder[campaign.order_number]) {
+        campaignsByOrder[campaign.order_number] = [];
+      }
+      campaignsByOrder[campaign.order_number].push(campaign);
+    });
+
     // Process campaigns data to calculate progress and status
     const campaigns = campaignsData?.map(campaign => {
-      // Calculate playlist streams progress based on time elapsed and playlist assignments
-      let calculatedPlaylistProgress = campaign.playlist_streams_progress;
+      // Calculate playlist streams progress based on time elapsed since playlists_added_at
+      let calculatedPlaylistProgress = 0; // Always start at 0
       
-      if (campaign.playlists_added_confirmed && campaign.playlist_assignments) {
+      if (campaign.playlists_added_confirmed && campaign.playlists_added_at && campaign.playlist_assignments) {
         const playlistAssignments = Array.isArray(campaign.playlist_assignments) 
           ? campaign.playlist_assignments 
           : [];
@@ -277,9 +557,7 @@ async function handler(req: NextApiRequest, res: NextApiResponse, adminUser: Adm
         if (playlistAssignments.length > 0) {
           // Calculate streams based on 500 streams per playlist per 24 hours
           const now = new Date();
-          const playlistAddedDate = campaign.removal_date 
-            ? new Date(new Date(campaign.removal_date).getTime() - (campaign.playlist_streams / (playlistAssignments.length * 500)) * 24 * 60 * 60 * 1000)
-            : new Date(campaign.created_at);
+          const playlistAddedDate = new Date(campaign.playlists_added_at);
           
           const hoursElapsed = Math.max(0, (now.getTime() - playlistAddedDate.getTime()) / (1000 * 60 * 60));
           const streamsPerHour = (playlistAssignments.length * 500) / 24;
@@ -287,6 +565,9 @@ async function handler(req: NextApiRequest, res: NextApiResponse, adminUser: Adm
             Math.floor(hoursElapsed * streamsPerHour),
             campaign.playlist_streams
           );
+          
+          // Debug logging (can be removed in production)
+          console.log(`📊 Progress: Order ${campaign.order_number} - ${calculatedPlaylistProgress}/${campaign.playlist_streams} (${((calculatedPlaylistProgress / campaign.playlist_streams) * 100).toFixed(1)}%)`);
         }
       }
 
@@ -303,16 +584,41 @@ async function handler(req: NextApiRequest, res: NextApiResponse, adminUser: Adm
         status = 'Running';
       }
 
-      // Calculate removal date based on time_on_playlists from campaign_totals
-      let removalDate = campaign.removal_date;
-      if (campaign.playlists_added_confirmed && !removalDate && campaign.time_on_playlists) {
-        const calculatedRemovalDate = new Date();
-        calculatedRemovalDate.setDate(calculatedRemovalDate.getDate() + campaign.time_on_playlists);
-        removalDate = calculatedRemovalDate.toISOString().split('T')[0];
+      // Calculate removal date based on LIVE DATA: ALWAYS recalculate dynamically
+      let removalDate = null;
+      if (campaign.playlists_added_confirmed && campaign.playlists_added_at && campaign.playlist_assignments) {
+        const playlistAssignments = Array.isArray(campaign.playlist_assignments) 
+          ? campaign.playlist_assignments 
+          : [];
+        
+        if (playlistAssignments.length > 0) {
+          // LIVE CALCULATION: 500 streams per playlist per day
+          const streamsPerDay = playlistAssignments.length * 500;
+          const streamsNeeded = campaign.playlist_streams;
+          const daysNeeded = Math.ceil(streamsNeeded / streamsPerDay);
+          
+          const playlistAddedDate = new Date(campaign.playlists_added_at);
+          const calculatedRemovalDate = new Date(playlistAddedDate);
+          calculatedRemovalDate.setDate(calculatedRemovalDate.getDate() + daysNeeded);
+          removalDate = calculatedRemovalDate.toISOString().split('T')[0];
+          
+          console.log(`📅 LIVE REMOVAL DATE for Order ${campaign.order_number}:`);
+          console.log(`  - Package: ${campaign.package_name} (${streamsNeeded} streams needed)`);
+          console.log(`  - Playlists: ${playlistAssignments.length} (${streamsPerDay} streams/day)`);
+          console.log(`  - Days needed: ${daysNeeded} days`);
+          console.log(`  - Added: ${playlistAddedDate.toISOString().split('T')[0]}`);
+          console.log(`  - Remove: ${removalDate}`);
+        }
       }
 
       // Extract user genre for display
       const userGenre = campaign.orders?.billing_info?.musicGenre || 'General';
+
+      // Calculate song number for multi-track orders
+      const orderCampaigns = campaignsByOrder[campaign.order_number] || [];
+      const songNumber = orderCampaigns.length > 1 
+        ? orderCampaigns.findIndex(c => c.id === campaign.id) + 1 
+        : null;
 
       return {
         id: campaign.id,
@@ -322,6 +628,7 @@ async function handler(req: NextApiRequest, res: NextApiResponse, adminUser: Adm
         customerName: campaign.customer_name,
         songName: campaign.song_name,
         songLink: campaign.song_link,
+        songNumber: songNumber,
         packageName: campaign.package_name,
         userGenre: userGenre,
         directStreams: campaign.direct_streams,
