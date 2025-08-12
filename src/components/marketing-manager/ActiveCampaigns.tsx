@@ -195,10 +195,29 @@ const ActiveCampaigns: React.FC = () => {
       100% { transform: scale(1) translateY(0); opacity: 1; }
     }
     
+    @keyframes copy-click {
+      0% { transform: scale(1); }
+      50% { transform: scale(0.95); }
+      100% { transform: scale(1); }
+    }
+    
+    @keyframes text-fade-out {
+      0% { opacity: 1; transform: translateY(0); }
+      100% { opacity: 0; transform: translateY(-2px); }
+    }
+    
+    @keyframes text-fade-in {
+      0% { opacity: 0; transform: translateY(2px); }
+      100% { opacity: 1; transform: translateY(0); }
+    }
+    
     .button-state-change { animation: button-state-change 0.6s ease-in-out; }
     .checkmark-entrance { animation: checkmark-entrance 0.8s ease-out; }
     .button-exit { animation: button-exit 0.4s ease-in; }
     .button-entrance { animation: button-entrance 0.5s ease-out; }
+    .copy-click { animation: copy-click 0.2s ease-in-out; }
+    .text-fade-out { animation: text-fade-out 0.2s ease-out forwards; }
+    .text-fade-in { animation: text-fade-in 0.2s ease-in forwards; }
   `;
   
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
@@ -231,6 +250,9 @@ const ActiveCampaigns: React.FC = () => {
     action: 'direct-streams',
     position: null
   });
+  
+  // Copy link feedback state - tracks which campaigns have been copied recently
+  const [copiedStates, setCopiedStates] = useState<{[key: string]: boolean}>({});
   
 
 
@@ -315,10 +337,18 @@ const ActiveCampaigns: React.FC = () => {
     }
   };
 
-  const copyToClipboard = async (text: string) => {
+  const copyToClipboard = async (text: string, campaignId: string) => {
     try {
       await navigator.clipboard.writeText(text);
-      // Could add a toast notification here
+      
+      // Set copied state for this campaign
+      setCopiedStates(prev => ({ ...prev, [campaignId]: true }));
+      
+      // Reset after 2 seconds
+      setTimeout(() => {
+        setCopiedStates(prev => ({ ...prev, [campaignId]: false }));
+      }, 2000);
+      
     } catch (error) {
       console.error('Failed to copy to clipboard:', error);
     }
@@ -373,18 +403,18 @@ const ActiveCampaigns: React.FC = () => {
     // Close modal first
     setConfirmationModal(prev => ({ ...prev, isOpen: false }));
     
-    try {
-      const response = await fetch('/api/marketing-manager/confirm-action', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ campaignId, action }),
-      });
+      try {
+        const response = await fetch('/api/marketing-manager/confirm-action', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ campaignId, action }),
+        });
 
-      if (response.ok) {
-        // Refresh campaigns data
-        fetchCampaigns();
+        if (response.ok) {
+          // Refresh campaigns data
+          fetchCampaigns();
         
         // Dispatch custom event to notify ActionQueue to refresh immediately
         const event = new CustomEvent('campaignActionConfirmed', {
@@ -393,12 +423,12 @@ const ActiveCampaigns: React.FC = () => {
         window.dispatchEvent(event);
         
         console.log(`🔄 LIVE UPDATE: Dispatched campaignActionConfirmed event for ${action} on campaign ${campaignId}`);
-      } else {
-        console.error('Failed to confirm action:', response.statusText);
+        } else {
+          console.error('Failed to confirm action:', response.statusText);
+        }
+      } catch (error) {
+        console.error('Error confirming action:', error);
       }
-    } catch (error) {
-      console.error('Error confirming action:', error);
-    }
   };
 
   const handleCancelAction = () => {
@@ -574,12 +604,6 @@ const ActiveCampaigns: React.FC = () => {
           </select>
 
           <button
-            onClick={populateExistingOrders}
-            className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg font-medium mr-2"
-          >
-            Import Orders
-          </button>
-          <button
             onClick={async () => {
               const orderNumber = prompt('Enter order number to clear and regenerate assignments (e.g., 3424):');
               if (orderNumber) {
@@ -597,102 +621,9 @@ const ActiveCampaigns: React.FC = () => {
                 }
               }
             }}
-            className="px-4 py-2 bg-orange-600 hover:bg-orange-700 text-white rounded-lg font-medium mr-2"
+            className="px-4 py-2 bg-orange-600 hover:bg-orange-700 text-white rounded-lg font-medium"
           >
             Debug Clear Order
-          </button>
-          <button
-            onClick={async () => {
-              if (confirm('This will update ALL campaigns to use correct stream values from the Campaign Totals configuration. This is safe but will affect progress calculations. Continue?')) {
-                try {
-                  const response = await fetch('/api/marketing-manager/fix-campaign-stream-values', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' }
-                  });
-                  const result = await response.json();
-                  alert(`✅ ${result.message}\n\nUpdated: ${result.updatedCount}/${result.totalCampaigns} campaigns`);
-                  fetchCampaigns(); // Refresh to show updated values
-                } catch (error) {
-                  alert('❌ Error fixing stream values');
-                }
-              }
-            }}
-            className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg font-medium mr-2"
-          >
-            🔧 Fix Stream Values
-          </button>
-          <button
-            onClick={async () => {
-              try {
-                const response = await fetch('/api/marketing-manager/debug-playlist-genres');
-                const result = await response.json();
-                console.log('🎵 ALL PLAYLISTS BY GENRE:', result.byGenre);
-                alert('Playlist genres logged to console. Check console for details.');
-              } catch (error) {
-                alert('Error fetching playlist genres');
-              }
-            }}
-            className="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg font-medium mr-2"
-          >
-            Debug Playlist Genres
-          </button>
-
-          <button
-            onClick={async () => {
-              if (confirm('This will remove duplicate campaigns and keep only the oldest one per order. Continue?')) {
-                try {
-                  const response = await fetch('/api/marketing-manager/cleanup-duplicates', { method: 'POST' });
-                  const result = await response.json();
-                  alert(result.message);
-                  fetchCampaigns(); // Refresh the list
-                } catch (error) {
-                  alert('Error cleaning up duplicates');
-                }
-              }
-            }}
-            className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg font-medium mr-2"
-          >
-            Fix Duplicates
-          </button>
-          <button
-            onClick={async () => {
-              if (confirm('⚠️ WARNING: This will reset ALL playlist assignments for ALL orders and regenerate them with the correct genre mapping. This cannot be undone. Continue?')) {
-                try {
-                  const resetResponse = await fetch('/api/marketing-manager/reset-all-assignments', { method: 'POST' });
-                  const resetResult = await resetResponse.json();
-                  if (resetResponse.ok) {
-                    alert(`✅ Reset complete! Cleared assignments for ${resetResult.resetCount} campaigns. Now refreshing to regenerate assignments...`);
-                    fetchCampaigns(); // This will trigger regeneration for all campaigns with empty assignments
-                  } else {
-                    alert('Error resetting assignments: ' + resetResult.error);
-                  }
-                } catch (error) {
-                  alert('Error resetting all assignments');
-                }
-              }
-            }}
-            className="px-4 py-2 bg-yellow-600 hover:bg-yellow-700 text-white rounded-lg font-medium"
-          >
-            🔄 Reset All Assignments
-          </button>
-          <button
-            onClick={async () => {
-              const genre = prompt('Enter genre to debug (e.g., Hip-Hop):');
-              if (!genre) return;
-              
-              try {
-                const response = await fetch(`/api/marketing-manager/debug-genre-playlists?genre=${encodeURIComponent(genre)}`);
-                const result = await response.json();
-                console.log('🔍 GENRE DEBUG RESULT:', result);
-                alert(`Genre "${genre}": ${result.total} total, ${result.active} active, ${result.available} available playlists. Check console for details.`);
-              } catch (error) {
-                console.error('Debug error:', error);
-                alert('Debug failed');
-              }
-            }}
-            className="px-3 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg font-medium text-sm"
-          >
-            🔍 Debug Genre
           </button>
         </div>
       </div>
@@ -736,12 +667,12 @@ const ActiveCampaigns: React.FC = () => {
                 <tr key={campaign.id} id={`campaign-${campaign.orderNumber}`} className="hover:bg-gray-50">
                   <td className="px-3 py-4 whitespace-nowrap w-20">
                     <div className="flex flex-col items-center">
-                      <button
-                        onClick={() => handleOrderNumberClick(campaign.orderId)}
-                        className="text-indigo-600 hover:text-indigo-900 font-medium"
-                      >
-                        {campaign.orderNumber}
-                      </button>
+                    <button
+                      onClick={() => handleOrderNumberClick(campaign.orderId)}
+                      className="text-indigo-600 hover:text-indigo-900 font-medium"
+                    >
+                      {campaign.orderNumber}
+                    </button>
                       {campaign.songNumber && (
                         <span className="inline-flex items-center px-2 py-0.5 mt-1 text-xs font-medium bg-green-50 text-green-700 border border-green-200 rounded-full">
                           Song {campaign.songNumber}
@@ -768,11 +699,17 @@ const ActiveCampaigns: React.FC = () => {
                         {campaign.songName}
                       </div>
                       <button
-                        onClick={() => copyToClipboard(campaign.songLink)}
-                        className="text-xs text-indigo-600 hover:text-indigo-800 bg-indigo-50 px-1 py-0.5 rounded text-xs"
+                        onClick={() => copyToClipboard(campaign.songLink, campaign.id)}
+                        className={`text-xs text-indigo-600 hover:text-indigo-800 bg-indigo-50 px-1 py-0.5 rounded transition-all duration-200 ease-in-out ${
+                          copiedStates[campaign.id] ? 'copy-click bg-green-50 text-green-600' : ''
+                        }`}
                         title="Copy link to clipboard"
                       >
-                        copy link
+                        <span className={`inline-block transition-all duration-200 ease-in-out ${
+                          copiedStates[campaign.id] ? 'text-fade-in' : ''
+                        }`}>
+                          {copiedStates[campaign.id] ? 'Copied!' : 'copy link'}
+                        </span>
                       </button>
                     </div>
                   </td>
@@ -893,7 +830,7 @@ const ActiveCampaigns: React.FC = () => {
                       ) : (
                         <div className="button-entrance w-full">
                           {/* Directly Purchased Button - full width */}
-                          <button
+                            <button
                             onClick={campaign.directStreamsConfirmed ? undefined : (e) => showConfirmationModal(campaign.id, 'direct-streams', e)}
                             className={`w-full px-3 py-1 rounded text-xs font-medium flex items-center justify-center space-x-1 transition-all duration-500 ease-in-out mb-2 ${
                               campaign.directStreamsConfirmed 
@@ -908,7 +845,7 @@ const ActiveCampaigns: React.FC = () => {
                               </svg>
                             )}
                             <span>Directly Purchased</span>
-                          </button>
+                            </button>
                           
                           {/* Added to Playlists Button - full width */}
                           <button

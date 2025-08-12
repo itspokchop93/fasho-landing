@@ -2,6 +2,98 @@ import React, { useState, useEffect } from 'react';
 import CampaignTotals from './CampaignTotals';
 import { MUSIC_GENRES } from '../../constants/genres';
 
+// Custom Confirmation Modal Component for Delete Actions
+interface DeleteConfirmationModalProps {
+  isOpen: boolean;
+  onConfirm: () => void;
+  onCancel: () => void;
+  position: { top: number; left: number } | null;
+}
+
+const DeleteConfirmationModal: React.FC<DeleteConfirmationModalProps> = ({
+  isOpen,
+  onConfirm,
+  onCancel,
+  position
+}) => {
+  if (!isOpen || !position) {
+    return null;
+  }
+
+  // Handle keyboard events
+  React.useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        onCancel();
+      } else if (event.key === 'Enter') {
+        onConfirm();
+      }
+    };
+
+    if (isOpen) {
+      document.addEventListener('keydown', handleKeyDown);
+      return () => document.removeEventListener('keydown', handleKeyDown);
+    }
+  }, [isOpen, onCancel, onConfirm]);
+
+  return (
+    <>
+      {/* Invisible overlay to close on outside click */}
+      <div 
+        className="fixed inset-0"
+        style={{ zIndex: 9999 }}
+        onClick={onCancel}
+      />
+      
+      {/* Small popup attached to button */}
+      <div
+        className="absolute bg-white rounded-lg shadow-xl border-2 border-gray-800"
+        style={{
+          zIndex: 10000,
+          top: position.top - 110,
+          left: position.left - 100,
+          width: '250px'
+        }}
+      >
+        {/* Arrow pointing down to button */}
+        <div 
+          className="absolute top-full left-1/2 transform -translate-x-1/2"
+          style={{
+            width: 0,
+            height: 0,
+            borderLeft: '10px solid transparent',
+            borderRight: '10px solid transparent',
+            borderTop: '10px solid #1f2937'
+          }}
+        ></div>
+        
+        {/* Content */}
+        <div className="p-4">
+          <p className="text-gray-800 text-sm mb-4 leading-tight font-medium">
+            Delete this stream purchase record?
+          </p>
+          
+          {/* Buttons */}
+          <div className="flex space-x-3">
+            <button
+              onClick={onConfirm}
+              className="px-4 py-2 text-sm text-white bg-red-600 hover:bg-red-700 rounded font-medium flex-1"
+            >
+              ✓ Delete
+            </button>
+            <button
+              onClick={onCancel}
+              className="px-4 py-2 text-sm text-gray-700 bg-gray-100 hover:bg-gray-200 rounded font-medium flex-1"
+            >
+              ✗ Cancel
+            </button>
+          </div>
+        </div>
+      </div>
+    </>
+  );
+};
+
 interface Playlist {
   id: string;
   playlistName: string;
@@ -14,6 +106,26 @@ interface Playlist {
   imageUrl?: string;
   isActive: boolean;
   createdAt: string;
+  nextStreamPurchase?: string;
+}
+
+interface StreamPurchase {
+  id: string;
+  playlistId: string;
+  streamQty: number;
+  drips: number;
+  intervalMinutes: number;
+  purchaseDate: string;
+  nextPurchaseDate: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+interface StreamPurchaseForm {
+  playlistId: string;
+  streamQty: number;
+  drips: number;
+  intervalMinutes: number;
 }
 
 interface NewPlaylistForm {
@@ -26,10 +138,25 @@ interface NewPlaylistForm {
 
 const SystemSettings: React.FC = () => {
   const [playlists, setPlaylists] = useState<Playlist[]>([]);
+  const [streamPurchases, setStreamPurchases] = useState<StreamPurchase[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [showAddForm, setShowAddForm] = useState(false);
+  const [showStreamPurchaseForm, setShowStreamPurchaseForm] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isSubmittingStreamPurchase, setIsSubmittingStreamPurchase] = useState(false);
+  const [expandedPlaylist, setExpandedPlaylist] = useState<string | null>(null);
+  const [showSuccessBanner, setShowSuccessBanner] = useState(false);
+  const [successMessage, setSuccessMessage] = useState('');
+  const [confirmationModal, setConfirmationModal] = useState<{
+    isOpen: boolean;
+    purchaseId: string;
+    position: { top: number; left: number } | null;
+  }>({
+    isOpen: false,
+    purchaseId: '',
+    position: null
+  });
   const [newPlaylist, setNewPlaylist] = useState<NewPlaylistForm>({
     playlistName: '',
     genre: '',
@@ -37,10 +164,72 @@ const SystemSettings: React.FC = () => {
     playlistLink: '',
     maxSongs: 25
   });
+  const [streamPurchaseForm, setStreamPurchaseForm] = useState<StreamPurchaseForm>({
+    playlistId: '',
+    streamQty: 0,
+    drips: 0,
+    intervalMinutes: 1440
+  });
 
   useEffect(() => {
     fetchPlaylists();
+    fetchStreamPurchases();
   }, []);
+
+  const fetchStreamPurchases = async () => {
+    try {
+      const response = await fetch('/api/marketing-manager/system-settings/stream-purchases');
+      if (response.ok) {
+        const data = await response.json();
+        setStreamPurchases(data);
+      } else {
+        console.error('Failed to fetch stream purchases:', response.statusText);
+      }
+    } catch (error) {
+      console.error('Error fetching stream purchases:', error);
+    }
+  };
+
+  const getLatestStreamPurchaseForPlaylist = (playlistId: string): StreamPurchase | null => {
+    const playlistPurchases = streamPurchases
+      .filter(purchase => purchase.playlistId === playlistId)
+      .sort((a, b) => new Date(b.purchaseDate).getTime() - new Date(a.purchaseDate).getTime());
+    
+    return playlistPurchases.length > 0 ? playlistPurchases[0] : null;
+  };
+
+  const formatNextPurchaseDate = (dateString: string): string => {
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-US', { 
+      month: 'numeric', 
+      day: 'numeric', 
+      year: '2-digit' 
+    });
+  };
+
+  const getDateUrgency = (dateString: string) => {
+    const now = new Date();
+    const purchaseDate = new Date(dateString);
+    const diffTime = purchaseDate.getTime() - now.getTime();
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    
+    const isOverdue = diffTime < 0;
+    
+    let colorClass = '';
+    if (diffDays >= 5) {
+      colorClass = 'text-green-600 font-medium';
+    } else if (diffDays >= 2) {
+      colorClass = 'text-orange-500 font-medium';
+    } else {
+      colorClass = 'text-red-600 font-medium';
+    }
+    
+    return {
+      colorClass,
+      isOverdue,
+      daysAway: diffDays
+    };
+  };
 
   const fetchPlaylists = async (forceRefresh: boolean = false) => {
     try {
@@ -53,7 +242,17 @@ const SystemSettings: React.FC = () => {
       const response = await fetch(`/api/marketing-manager/system-settings/playlists${forceRefresh ? '?refresh=true' : ''}`);
       if (response.ok) {
         const data = await response.json();
-        setPlaylists(data);
+        
+        // Enhance playlists with next stream purchase data
+        const enhancedPlaylists = data.map((playlist: Playlist) => {
+          const latestPurchase = getLatestStreamPurchaseForPlaylist(playlist.id);
+          return {
+            ...playlist,
+            nextStreamPurchase: latestPurchase ? latestPurchase.nextPurchaseDate : null
+          };
+        });
+        
+        setPlaylists(enhancedPlaylists);
       } else {
         console.error('Failed to fetch playlists:', response.statusText);
       }
@@ -67,6 +266,7 @@ const SystemSettings: React.FC = () => {
 
   const handleRefresh = () => {
     fetchPlaylists(true);
+    fetchStreamPurchases();
   };
 
   const extractSpotifyPlaylistId = (url: string): string => {
@@ -130,6 +330,7 @@ const SystemSettings: React.FC = () => {
         });
         setShowAddForm(false);
         fetchPlaylists();
+        fetchStreamPurchases(); // Also refresh stream purchases to update dropdown
       } else {
         const errorData = await response.json();
         alert(`Failed to add playlist: ${errorData.error || response.statusText}`);
@@ -140,6 +341,121 @@ const SystemSettings: React.FC = () => {
     } finally {
       setIsSubmitting(false);
     }
+  };
+
+  const handleStreamPurchaseInputChange = (field: keyof StreamPurchaseForm, value: string | number) => {
+    setStreamPurchaseForm(prev => ({
+      ...prev,
+      [field]: value
+    }));
+  };
+
+  const handleStreamPurchaseSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!streamPurchaseForm.playlistId || !streamPurchaseForm.streamQty || !streamPurchaseForm.drips || !streamPurchaseForm.intervalMinutes) {
+      alert('Please fill in all required fields.');
+      return;
+    }
+
+    setIsSubmittingStreamPurchase(true);
+
+    try {
+      const response = await fetch('/api/marketing-manager/system-settings/stream-purchases', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(streamPurchaseForm),
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        
+        // Reset form and refresh data
+        setStreamPurchaseForm({
+          playlistId: '',
+          streamQty: 0,
+          drips: 0,
+          intervalMinutes: 1440
+        });
+        setShowStreamPurchaseForm(false);
+        fetchStreamPurchases();
+        fetchPlaylists(); // Refresh to update next purchase dates
+        
+        showSuccessBannerWithMessage(result.message);
+      } else {
+        const errorData = await response.json();
+        alert(`Failed to add stream purchase: ${errorData.error || response.statusText}`);
+      }
+    } catch (error) {
+      console.error('Error adding stream purchase:', error);
+      alert('An error occurred while adding the stream purchase.');
+    } finally {
+      setIsSubmittingStreamPurchase(false);
+    }
+  };
+
+  const togglePlaylistExpansion = (playlistId: string) => {
+    setExpandedPlaylist(expandedPlaylist === playlistId ? null : playlistId);
+  };
+
+  const showSuccessBannerWithMessage = (message: string) => {
+    setSuccessMessage(message);
+    setShowSuccessBanner(true);
+    
+    // Auto-hide after 8 seconds
+    setTimeout(() => {
+      setShowSuccessBanner(false);
+      setSuccessMessage('');
+    }, 8000);
+  };
+
+  const showDeleteConfirmation = (purchaseId: string, event: React.MouseEvent) => {
+    const button = event.currentTarget as HTMLButtonElement;
+    const rect = button.getBoundingClientRect();
+    
+    const modalPosition = {
+      top: rect.top + window.scrollY,
+      left: rect.left + window.scrollX + (rect.width / 2)
+    };
+    
+    setConfirmationModal({
+      isOpen: true,
+      purchaseId,
+      position: modalPosition
+    });
+  };
+
+  const handleDeleteConfirm = async () => {
+    try {
+      const response = await fetch('/api/marketing-manager/system-settings/stream-purchases', {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ purchaseId: confirmationModal.purchaseId }),
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        fetchStreamPurchases();
+        fetchPlaylists(); // Refresh to update next purchase dates
+        showSuccessBannerWithMessage('Stream purchase deleted successfully');
+      } else {
+        const errorData = await response.json();
+        alert(`Failed to delete stream purchase: ${errorData.error || response.statusText}`);
+      }
+    } catch (error) {
+      console.error('Error deleting stream purchase:', error);
+      alert('An error occurred while deleting the stream purchase.');
+    } finally {
+      setConfirmationModal({ isOpen: false, purchaseId: '', position: null });
+    }
+  };
+
+  const handleDeleteCancel = () => {
+    setConfirmationModal({ isOpen: false, purchaseId: '', position: null });
   };
 
   const togglePlaylistStatus = async (playlistId: string, currentStatus: boolean) => {
@@ -221,6 +537,24 @@ const SystemSettings: React.FC = () => {
       
       {/* Playlist Network Section */}
       <div className="bg-white rounded-xl p-6 shadow-lg border border-gray-100">
+        {/* Success Banner */}
+        {showSuccessBanner && (
+          <div className={`mb-4 p-4 bg-green-50 border border-green-200 rounded-lg transition-all duration-300 ${showSuccessBanner ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-2'}`}>
+            <div className="flex items-center">
+              <div className="flex-shrink-0">
+                <svg className="h-5 w-5 text-green-400" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                </svg>
+              </div>
+              <div className="ml-3">
+                <p className="text-sm font-medium text-green-800">
+                  {successMessage}
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+        
         <div className="flex items-center justify-between mb-6">
           <div>
             <h2 className="text-lg font-semibold text-gray-900">Playlist Network</h2>
@@ -252,6 +586,15 @@ const SystemSettings: React.FC = () => {
               )}
             </button>
             <button
+              onClick={() => setShowStreamPurchaseForm(!showStreamPurchaseForm)}
+              className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg font-medium flex items-center space-x-2"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+              </svg>
+              <span>Add Stream Purchase</span>
+            </button>
+            <button
               onClick={() => setShowAddForm(!showAddForm)}
               className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg font-medium flex items-center space-x-2"
             >
@@ -262,6 +605,98 @@ const SystemSettings: React.FC = () => {
             </button>
           </div>
         </div>
+
+        {/* Add Stream Purchase Form */}
+        {showStreamPurchaseForm && (
+          <div className="mb-6 bg-green-50 rounded-lg p-4 border border-green-200">
+            <h3 className="text-md font-medium text-gray-900 mb-4">Add Stream Purchase</h3>
+            <form onSubmit={handleStreamPurchaseSubmit} className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Playlist *
+                  </label>
+                  <select
+                    required
+                    value={streamPurchaseForm.playlistId}
+                    onChange={(e) => handleStreamPurchaseInputChange('playlistId', e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                  >
+                    <option value="">Select a playlist...</option>
+                    {playlists
+                      .filter(playlist => playlist.isActive)
+                      .map(playlist => (
+                        <option key={playlist.id} value={playlist.id}>
+                          {playlist.playlistName} ({playlist.genre})
+                        </option>
+                      ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Stream QTY *
+                  </label>
+                  <input
+                    type="number"
+                    required
+                    min="1"
+                    value={streamPurchaseForm.streamQty || ''}
+                    onChange={(e) => handleStreamPurchaseInputChange('streamQty', parseInt(e.target.value) || 0)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                    placeholder="e.g. 1000"
+                  />
+                  <p className="text-xs text-gray-500 mt-1">Streams per drip</p>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Drips *
+                  </label>
+                  <input
+                    type="number"
+                    required
+                    min="1"
+                    value={streamPurchaseForm.drips || ''}
+                    onChange={(e) => handleStreamPurchaseInputChange('drips', parseInt(e.target.value) || 0)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                    placeholder="e.g. 7"
+                  />
+                  <p className="text-xs text-gray-500 mt-1">Number of drip deliveries</p>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Interval (minutes) *
+                  </label>
+                  <input
+                    type="number"
+                    required
+                    min="1"
+                    value={streamPurchaseForm.intervalMinutes || ''}
+                    onChange={(e) => handleStreamPurchaseInputChange('intervalMinutes', parseInt(e.target.value) || 1440)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                    placeholder="1440 (1 day)"
+                  />
+                  <p className="text-xs text-gray-500 mt-1">Minutes between each drip (1440 = 1 day)</p>
+                </div>
+              </div>
+              <div className="flex justify-end space-x-3">
+                <button
+                  type="button"
+                  onClick={() => setShowStreamPurchaseForm(false)}
+                  className="px-4 py-2 text-gray-700 bg-gray-200 rounded-md hover:bg-gray-300"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={isSubmittingStreamPurchase}
+                  className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 disabled:opacity-50"
+                >
+                  {isSubmittingStreamPurchase ? 'Adding...' : 'Add Stream Purchase'}
+                </button>
+              </div>
+            </form>
+          </div>
+        )}
 
         {/* Add Playlist Form */}
         {showAddForm && (
@@ -378,6 +813,9 @@ const SystemSettings: React.FC = () => {
             <thead className="bg-gray-50">
               <tr>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Image
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -393,6 +831,9 @@ const SystemSettings: React.FC = () => {
                   Song Count
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Next Stream Purchase
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Status
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -401,95 +842,247 @@ const SystemSettings: React.FC = () => {
               </tr>
             </thead>
               <tbody className="bg-white divide-y divide-gray-200">
-                {playlists.map((playlist) => (
-                  <tr key={playlist.id} className="hover:bg-gray-50">
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="flex-shrink-0 h-12 w-12">
-                        <img
-                          className="h-12 w-12 rounded-lg object-cover border border-gray-200"
-                          src={playlist.imageUrl || 'https://via.placeholder.com/48x48/1DB954/FFFFFF?text=♪'}
-                          alt={`${playlist.playlistName} cover`}
-                          onError={(e) => {
-                            const target = e.target as HTMLImageElement;
-                            console.log('🖼️ IMAGE ERROR: Failed to load:', playlist.imageUrl);
-                            target.src = 'https://via.placeholder.com/48x48/1DB954/FFFFFF?text=♪';
-                          }}
-                          onLoad={(e) => {
-                            const target = e.target as HTMLImageElement;
-                            if (playlist.imageUrl) {
-                              console.log('🖼️ IMAGE SUCCESS: Loaded:', playlist.imageUrl);
-                            }
-                          }}
-                        />
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm font-medium text-gray-900">
-                        {playlist.playlistName}
-                      </div>
-                      <div className="text-xs text-gray-500">
-                        Max: {playlist.maxSongs} songs
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span className="inline-flex px-2 py-1 text-xs font-medium rounded-full bg-gray-100 text-gray-800">
-                        {playlist.genre}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {playlist.accountEmail}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="flex items-center space-x-2">
-                        <span className="text-sm font-medium text-gray-900">
-                          {playlist.songCount}
-                        </span>
-                        <div className="text-xs text-gray-500">
-                          ({playlist.maxSongs > 0 ? ((playlist.songCount / playlist.maxSongs) * 100).toFixed(1) : 0}% full)
-                        </div>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <button
-                        onClick={() => togglePlaylistStatus(playlist.id, playlist.isActive)}
-                        className={`inline-flex px-2 py-1 text-xs font-medium rounded-full border ${
-                          playlist.isActive
-                            ? 'bg-green-100 text-green-800 border-green-200'
-                            : 'bg-red-100 text-red-800 border-red-200'
-                        }`}
+                {playlists.map((playlist) => {
+                  const playlistPurchases = streamPurchases
+                    .filter(purchase => purchase.playlistId === playlist.id)
+                    .sort((a, b) => new Date(b.purchaseDate).getTime() - new Date(a.purchaseDate).getTime());
+                  
+
+                  
+                  const latestPurchase = playlistPurchases[0];
+                  const isExpanded = expandedPlaylist === playlist.id;
+
+                  return (
+                    <React.Fragment key={playlist.id}>
+                      <tr 
+                        className="hover:bg-gray-50 cursor-pointer transition-colors duration-150"
+                        onClick={() => togglePlaylistExpansion(playlist.id)}
                       >
-                        {playlist.isActive ? 'Active' : 'Inactive'}
-                      </button>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                      <div className="flex items-center space-x-2">
-                        <button
-                          onClick={() => openSpotifyPlaylist(playlist.playlistLink)}
-                          className="text-green-600 hover:text-green-900"
-                          title="View on Spotify"
-                        >
-                          <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
-                            <path d="M12 0C5.4 0 0 5.4 0 12s5.4 12 12 12 12-5.4 12-12S18.66 0 12 0zm5.521 17.34c-.24.359-.66.48-1.021.24-2.82-1.74-6.36-2.101-10.561-1.141-.418.122-.779-.179-.899-.539-.12-.421.18-.78.54-.9 4.56-1.021 8.52-.6 11.64 1.32.42.18.479.659.301 1.02zm1.44-3.3c-.301.42-.841.6-1.262.3-3.239-1.98-8.159-2.58-11.939-1.38-.479.12-1.02-.12-1.14-.6-.12-.48.12-1.021.6-1.141C9.6 9.9 15 10.561 18.72 12.84c.361.181.54.78.241 1.2zm.12-3.36C15.24 8.4 8.82 8.16 5.16 9.301c-.6.179-1.2-.181-1.38-.721-.18-.601.18-1.2.72-1.381 4.26-1.26 11.28-1.02 15.721 1.621.539.3.719 1.02.42 1.56-.299.421-1.02.599-1.559.3z"/>
-                          </svg>
-                        </button>
-                        <button
-                          onClick={() => deletePlaylist(playlist.id, playlist.playlistName)}
-                          className="text-red-600 hover:text-red-900"
-                          title="Delete playlist"
-                        >
-                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                          </svg>
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              togglePlaylistExpansion(playlist.id);
+                            }}
+                            className="flex items-center justify-center w-6 h-6 text-gray-400 hover:text-gray-600 transition-transform duration-200"
+                          >
+                            <svg 
+                              className={`w-4 h-4 transform transition-transform duration-200 ${isExpanded ? 'rotate-90' : ''}`}
+                              fill="none" 
+                              stroke="currentColor" 
+                              viewBox="0 0 24 24"
+                            >
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                            </svg>
+                          </button>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="flex-shrink-0 h-12 w-12">
+                            <img
+                              className="h-12 w-12 rounded-lg object-cover border border-gray-200"
+                              src={playlist.imageUrl || 'https://via.placeholder.com/48x48/1DB954/FFFFFF?text=♪'}
+                              alt={`${playlist.playlistName} cover`}
+                              onError={(e) => {
+                                const target = e.target as HTMLImageElement;
+                                console.log('🖼️ IMAGE ERROR: Failed to load:', playlist.imageUrl);
+                                target.src = 'https://via.placeholder.com/48x48/1DB954/FFFFFF?text=♪';
+                              }}
+                              onLoad={(e) => {
+                                const target = e.target as HTMLImageElement;
+                                if (playlist.imageUrl) {
+                                  console.log('🖼️ IMAGE SUCCESS: Loaded:', playlist.imageUrl);
+                                }
+                              }}
+                            />
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="text-sm font-medium text-gray-900">
+                            {playlist.playlistName}
+                          </div>
+                          <div className="text-xs text-gray-500">
+                            Max: {playlist.maxSongs} songs
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <span className="inline-flex px-2 py-1 text-xs font-medium rounded-full bg-gray-100 text-gray-800">
+                            {playlist.genre}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                          {playlist.accountEmail}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="flex items-center space-x-2">
+                            <span className="text-sm font-medium text-gray-900">
+                              {playlist.songCount}
+                            </span>
+                            <div className="text-xs text-gray-500">
+                              ({playlist.maxSongs > 0 ? ((playlist.songCount / playlist.maxSongs) * 100).toFixed(1) : 0}% full)
+                            </div>
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          {latestPurchase ? (
+                            (() => {
+                              const urgency = getDateUrgency(latestPurchase.nextPurchaseDate);
+                              return (
+                                <div className={`text-sm ${urgency.colorClass} flex items-center space-x-1`}>
+                                  <span>{formatNextPurchaseDate(latestPurchase.nextPurchaseDate)}</span>
+                                  {urgency.isOverdue && <span>⚠️</span>}
+                                </div>
+                              );
+                            })()
+                          ) : (
+                            <span className="text-sm text-gray-400">No data</span>
+                          )}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              togglePlaylistStatus(playlist.id, playlist.isActive);
+                            }}
+                            className={`inline-flex px-2 py-1 text-xs font-medium rounded-full border ${
+                              playlist.isActive
+                                ? 'bg-green-100 text-green-800 border-green-200'
+                                : 'bg-red-100 text-red-800 border-red-200'
+                            }`}
+                          >
+                            {playlist.isActive ? 'Active' : 'Inactive'}
+                          </button>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                          <div className="flex items-center space-x-2">
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                openSpotifyPlaylist(playlist.playlistLink);
+                              }}
+                              className="text-green-600 hover:text-green-900"
+                              title="View on Spotify"
+                            >
+                              <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+                                <path d="M12 0C5.4 0 0 5.4 0 12s5.4 12 12 12 12-5.4 12-12S18.66 0 12 0zm5.521 17.34c-.24.359-.66.48-1.021.24-2.82-1.74-6.36-2.101-10.561-1.141-.418.122-.779-.179-.899-.539-.12-.421.18-.78.54-.9 4.56-1.021 8.52-.6 11.64 1.32.42.18.479.659.301 1.02zm1.44-3.3c-.301.42-.841.6-1.262.3-3.239-1.98-8.159-2.58-11.939-1.38-.479.12-1.02-.12-1.14-.6-.12-.48.12-1.021.6-1.141C9.6 9.9 15 10.561 18.72 12.84c.361.181.54.78.241 1.2zm.12-3.36C15.24 8.4 8.82 8.16 5.16 9.301c-.6.179-1.2-.181-1.38-.721-.18-.601.18-1.2.72-1.381 4.26-1.26 11.28-1.02 15.721 1.621.539.3.719 1.02.42 1.56-.299.421-1.02.599-1.559.3z"/>
+                              </svg>
+                            </button>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                deletePlaylist(playlist.id, playlist.playlistName);
+                              }}
+                              className="text-red-600 hover:text-red-900"
+                              title="Delete playlist"
+                            >
+                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                              </svg>
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                      
+                      {/* Accordion Details Section */}
+                      {isExpanded && (
+                        <tr>
+                          <td colSpan={9} className="px-0 py-0">
+                            <div className="bg-gray-50 border-t border-gray-200 animate-slide-down">
+                              <div className="px-6 py-4">
+                                <h4 className="text-sm font-medium text-gray-900 mb-3">Stream Purchase History</h4>
+                                {playlistPurchases.length === 0 ? (
+                                  <div className="text-center py-6">
+                                    <svg className="mx-auto h-8 w-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                                    </svg>
+                                    <p className="mt-2 text-sm text-gray-500">No stream purchases recorded yet</p>
+                                  </div>
+                                ) : (
+                                  <div className="overflow-x-auto">
+                                    <table className="min-w-full divide-y divide-gray-200">
+                                      <thead className="bg-gray-100">
+                                        <tr>
+                                          <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                            Last Purchase
+                                          </th>
+                                          <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                            Stream QTY
+                                          </th>
+                                          <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                            Drips
+                                          </th>
+                                          <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                            Interval
+                                          </th>
+                                          <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                            Next Purchase Needed
+                                          </th>
+                                          <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                            Actions
+                                          </th>
+                                        </tr>
+                                      </thead>
+                                      <tbody className="bg-white divide-y divide-gray-200">
+                                        {playlistPurchases.map((purchase) => (
+                                          <tr key={purchase.id}>
+                                            <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-900">
+                                              {formatNextPurchaseDate(purchase.purchaseDate)}
+                                            </td>
+                                            <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-900">
+                                              {purchase.streamQty.toLocaleString()}
+                                            </td>
+                                            <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-900">
+                                              {purchase.drips}
+                                            </td>
+                                            <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-900">
+                                              {purchase.intervalMinutes} min
+                                              {purchase.intervalMinutes === 1440 && (
+                                                <span className="text-gray-500 ml-1">(1 day)</span>
+                                              )}
+                                            </td>
+                                            <td className="px-4 py-2 whitespace-nowrap text-sm font-medium text-gray-900">
+                                              {formatNextPurchaseDate(purchase.nextPurchaseDate)}
+                                            </td>
+                                            <td className="px-4 py-2 whitespace-nowrap text-right text-sm font-medium">
+                                              <button
+                                                onClick={(e) => {
+                                                  e.stopPropagation();
+                                                  showDeleteConfirmation(purchase.id, e);
+                                                }}
+                                                className="text-red-600 hover:text-red-900 transition-colors duration-200"
+                                                title="Delete stream purchase"
+                                              >
+                                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                                </svg>
+                                              </button>
+                                            </td>
+                                          </tr>
+                                        ))}
+                                      </tbody>
+                                    </table>
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          </td>
+                        </tr>
+                      )}
+                    </React.Fragment>
+                  );
+                })}
               </tbody>
             </table>
           </div>
         )}
       </div>
+      
+      {/* Delete Confirmation Modal */}
+      <DeleteConfirmationModal
+        isOpen={confirmationModal.isOpen}
+        onConfirm={handleDeleteConfirm}
+        onCancel={handleDeleteCancel}
+        position={confirmationModal.position}
+      />
     </div>
   );
 };
