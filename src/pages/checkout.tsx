@@ -54,11 +54,11 @@ interface AddOnOrderItem {
 const packages: Package[] = [
   {
     id: "test",
-    name: "TEST CAMPAIGN",
+    name: "TEST PACKAGE",
     price: 0.10,
-    plays: "Test Campaign Only",
-    placements: "Testing Purposes",
-    description: "Test campaign for development and testing purposes only"
+    plays: "1 - 5 Streams",
+    placements: "1 - 2 Playlist Pitches",
+    description: "Test package for development and checkout testing purposes"
   },
   {
     id: "legendary",
@@ -372,7 +372,7 @@ export default function CheckoutPage() {
     }
 
     // Redirect to /add page
-    router.push('/add');
+    router.push( '/add');
   };
 
   // Update totals including add-ons and coupons
@@ -538,7 +538,7 @@ export default function CheckoutPage() {
 
       if (!sessionIdParam) {
         console.error('No session ID provided');
-        router.push('/add');
+        router.push( '/add');
         return;
       }
 
@@ -560,7 +560,7 @@ export default function CheckoutPage() {
             setError('already_completed');
             // Redirect after appropriate time
             setTimeout(() => {
-              router.push('/dashboard');
+              router.push( '/dashboard');
             }, 2500);
             return;
           } 
@@ -586,7 +586,7 @@ export default function CheckoutPage() {
                 console.log('🔄 CHECKOUT: Session recovered successfully, redirecting to new session:', newSessionId);
                 
                 // Redirect to checkout with new session ID
-                router.push({
+                router.push( {
                   pathname: '/checkout',
                   query: { sessionId: newSessionId }
                 });
@@ -599,7 +599,7 @@ export default function CheckoutPage() {
             // If recovery fails, show user-friendly error and redirect
             setError('Your checkout session has expired. Redirecting you to start a new checkout...');
             setTimeout(() => {
-              router.push('/add');
+              router.push( '/add');
             }, 3000);
             return;
           }
@@ -607,7 +607,7 @@ export default function CheckoutPage() {
           // For other errors, show generic message
           setError('Invalid checkout session. Please start a new checkout.');
           setTimeout(() => {
-            router.push('/add');
+            router.push( '/add');
           }, 3000);
           return;
         }
@@ -722,7 +722,7 @@ export default function CheckoutPage() {
         console.error('Error validating session:', error);
         setError('Failed to load checkout session. Please try again.');
         setTimeout(() => {
-          router.push('/add');
+          router.push( '/add');
         }, 3000);
       }
     };
@@ -1437,7 +1437,7 @@ export default function CheckoutPage() {
       console.log('🚀 CHECKOUT: About to redirect to thank you page with order:', orderResult.order.orderNumber);
       
       try {
-        await router.push(`/thank-you?order=${orderResult.order.orderNumber}`);
+        await router.push( `/thank-you?order=${orderResult.order.orderNumber}`);
         console.log('🔓 CHECKOUT: Payment processing completed successfully - redirect initiated');
       } catch (redirectError) {
         console.error('🔓 CHECKOUT: Router.push failed:', redirectError);
@@ -2064,7 +2064,7 @@ export default function CheckoutPage() {
                       <span>Redirecting you to your dashboard...</span>
                     </div>
                     <button
-                      onClick={() => router.push('/dashboard')}
+                      onClick={() => router.push( '/dashboard')}
                       className="bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] text-black font-semibold py-3 px-6 rounded-lg hover:opacity-90 transition-opacity"
                     >
                       Go to Dashboard
@@ -2081,7 +2081,7 @@ export default function CheckoutPage() {
                     <p className="text-white/80 mb-6 max-w-2xl mx-auto">{error}</p>
                     <p className="text-white/60 text-sm mb-6">You will be redirected to start a new checkout in a few seconds...</p>
                     <button
-                      onClick={() => router.push('/add')}
+                      onClick={() => router.push( '/add')}
                       className="bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] text-black font-semibold py-3 px-6 rounded-lg hover:opacity-90 transition-opacity"
                     >
                       Start New Checkout

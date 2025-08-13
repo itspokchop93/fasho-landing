@@ -932,9 +932,15 @@ export default function Home() {
       setFocused(false);
       setShowSearchResults(false);
       setPreviewTrack(null);
-      // Redirect to /add page with the selected track
+      // Redirect to /add page with the selected track - preserve current URL parameters
       const trackData = encodeURIComponent(JSON.stringify(previewTrack));
-      router.push(`/add?selectedTrack=${trackData}`);
+      
+      // Preserve existing URL parameters (like gclid) from current page
+      const currentParams = new URLSearchParams(window.location.search);
+      const preservedParams = currentParams.toString();
+      const separator = preservedParams ? '&' : '';
+      
+      router.push(`/add?selectedTrack=${trackData}${separator}${preservedParams}`);
     }
   };
 
@@ -966,9 +972,15 @@ export default function Home() {
 
     setLoading(true);
     try {
-      // Redirect to /add page with the selected track
+      // Redirect to /add page with the selected track - preserve current URL parameters
       const trackData = encodeURIComponent(JSON.stringify(selectedTrack));
-      router.push(`/add?selectedTrack=${trackData}`);
+      
+      // Preserve existing URL parameters (like gclid) from current page
+      const currentParams = new URLSearchParams(window.location.search);
+      const preservedParams = currentParams.toString();
+      const separator = preservedParams ? '&' : '';
+      
+      router.push(`/add?selectedTrack=${trackData}${separator}${preservedParams}`);
     } catch (error) {
       console.error('Error redirecting:', error);
       setError('Failed to continue. Please try again.');

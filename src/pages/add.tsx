@@ -19,6 +19,7 @@ import * as gtag from '../utils/gtag';
 export default function AddSongsPage() {
   const router = useRouter();
   const supabase = createClient();
+  // Extract track-related parameters, excluding tracking parameters like gclid
   const { title, artist, imageUrl, id, url } = router.query;
 
   // Logo data
@@ -457,11 +458,33 @@ export default function AddSongsPage() {
     // Save tracks to session storage for potential return
     sessionStorage.setItem("selectedTracks", JSON.stringify(tracks));
 
+    // Preserve tracking parameters (like gclid) when navigating to packages
+    const currentParams = new URLSearchParams(window.location.search);
+    const preservedParams: any = {};
+    
+    // Preserve specific tracking parameters
+    if (currentParams.get('gclid')) {
+      preservedParams.gclid = currentParams.get('gclid');
+    }
+    if (currentParams.get('fbclid')) {
+      preservedParams.fbclid = currentParams.get('fbclid');
+    }
+    if (currentParams.get('utm_source')) {
+      preservedParams.utm_source = currentParams.get('utm_source');
+    }
+    if (currentParams.get('utm_medium')) {
+      preservedParams.utm_medium = currentParams.get('utm_medium');
+    }
+    if (currentParams.get('utm_campaign')) {
+      preservedParams.utm_campaign = currentParams.get('utm_campaign');
+    }
+
     // Normal flow - go to packages page
     router.push({
       pathname: "/packages",
       query: {
         tracks: JSON.stringify(tracks),
+        ...preservedParams
       },
     });
   };

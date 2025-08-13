@@ -13,22 +13,36 @@ export const CONVERSION_LABEL = process.env.NEXT_PUBLIC_GOOGLE_CONVERSION_LABEL;
 export const CHECKOUT_INIT_CONVERSION_ID = process.env.NEXT_PUBLIC_GOOGLE_CHECKOUT_INIT_CONVERSION_ID;
 export const CHECKOUT_INIT_LABEL = process.env.NEXT_PUBLIC_GOOGLE_CHECKOUT_INIT_LABEL;
 
-// Pageview tracking
+// Enhanced pageview tracking for SPA navigation
 export const pageview = (url) => {
   if (typeof window !== 'undefined' && window.gtag) {
+    console.log('🎯 GTAG: Tracking pageview for:', url);
+    
     // Track pageview in Google Analytics 4
     if (GA4_MEASUREMENT_ID) {
       window.gtag('config', GA4_MEASUREMENT_ID, {
         page_path: url,
+        // Ensure proper attribution context
+        cookie_flags: 'SameSite=None;Secure',
       });
     }
     
-    // Track pageview in Google Ads
+    // Track pageview in Google Ads with enhanced attribution
     if (GA_TRACKING_ID) {
       window.gtag('config', GA_TRACKING_ID, {
         page_path: url,
+        // Maintain conversion attribution context
+        cookie_flags: 'SameSite=None;Secure',
+        // Preserve click attribution for SPA navigation
+        send_page_view: true,
       });
     }
+    
+    // CRITICAL: Re-configure Conversion Linker after each navigation
+    // This ensures ad click attribution is maintained across SPA routes
+    window.gtag('config', 'CONVERSION_LINKER', {
+      cookie_flags: 'SameSite=None;Secure',
+    });
   }
 };
 
@@ -49,9 +63,15 @@ export const trackBeginCheckout = (checkoutData) => {
   }
 };
 
-// Track purchase conversion
+// Track purchase conversion with enhanced attribution
 export const trackPurchase = (orderData) => {
   if (typeof window !== 'undefined' && window.gtag) {
+    console.log('🎯 GTAG: Tracking purchase conversion:', {
+      orderId: orderData.orderId,
+      value: orderData.totalAmount,
+      itemCount: orderData.items?.length
+    });
+
     // Enhanced ecommerce purchase event
     window.gtag('event', 'purchase', {
       transaction_id: orderData.orderId,
@@ -66,13 +86,17 @@ export const trackPurchase = (orderData) => {
       }))
     });
 
-    // Google Ads conversion tracking
-    window.gtag('event', 'conversion', {
+    // Google Ads conversion tracking with GCLID injection
+    const conversionData = {
       send_to: `${CONVERSION_ID}/${CONVERSION_LABEL}`,
       value: orderData.totalAmount,
       currency: 'USD',
       transaction_id: orderData.orderId
-    });
+    };
+
+    // Send the conversion event
+    window.gtag('event', 'conversion', conversionData);
+    console.log('🎯 GTAG: Conversion event sent with data:', conversionData);
   }
 };
 

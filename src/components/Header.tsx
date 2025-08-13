@@ -5,6 +5,29 @@ import { createClient } from '../utils/supabase/client';
 import { userProfileService, ArtistProfile } from '../utils/userProfile';
 import { useAuth } from '../utils/authContext';
 
+// Utility function to preserve tracking parameters in navigation
+const preserveTrackingParams = (href: string): string => {
+  if (typeof window === 'undefined') return href;
+  
+  const currentParams = new URLSearchParams(window.location.search);
+  const trackingParams = new URLSearchParams();
+  
+  // Preserve important tracking parameters
+  ['gclid', 'fbclid', 'utm_source', 'utm_medium', 'utm_campaign', 'utm_term', 'utm_content'].forEach(param => {
+    const value = currentParams.get(param);
+    if (value) {
+      trackingParams.set(param, value);
+    }
+  });
+  
+  if (trackingParams.toString()) {
+    const separator = href.includes('?') ? '&' : '?';
+    return `${href}${separator}${trackingParams.toString()}`;
+  }
+  
+  return href;
+};
+
 interface HeaderProps {
   transparent?: boolean;
   hideSignUp?: boolean;
@@ -381,7 +404,7 @@ export default function Header({ transparent = false, hideSignUp = false, extraC
         <div className="flex items-center justify-between h-16 animate-fade-in-up" style={{ animationDelay: '0.2s' }}>
           {/* Logo */}
           <div className="flex-shrink-0 animate-fade-in-up" style={{ animationDelay: '0.1s' }}>
-            <Link href="/" className="block transition-transform duration-300 ease-in-out hover:scale-105">
+            <Link href={preserveTrackingParams("/")} className="block transition-transform duration-300 ease-in-out hover:scale-105">
               <img 
                 src="/fasho-logo-wide.png" 
                 alt="FASHO" 
@@ -394,17 +417,17 @@ export default function Header({ transparent = false, hideSignUp = false, extraC
           <nav className={`hidden md:flex items-center space-x-2 ${hideSignUp ? 'pr-16' : ''} animate-fade-in-up`} style={{ animationDelay: '0.4s' }}>
 
             {!isHomepage && (
-              <Link href="/pricing" className="text-white hover:text-[#59e3a5] transition-all duration-300 ease-in-out font-medium px-4 py-2 rounded-lg hover:bg-white/5 hover:scale-105 transform backdrop-blur-sm border border-transparent hover:border-white/10">
+              <Link href={preserveTrackingParams("/pricing")} className="text-white hover:text-[#59e3a5] transition-all duration-300 ease-in-out font-medium px-4 py-2 rounded-lg hover:bg-white/5 hover:scale-105 transform backdrop-blur-sm border border-transparent hover:border-white/10">
                 Pricing
               </Link>
             )}
-            <Link href="/#faq" className="text-white hover:text-[#59e3a5] transition-all duration-300 ease-in-out font-medium px-4 py-2 rounded-lg hover:bg-white/5 hover:scale-105 transform backdrop-blur-sm border border-transparent hover:border-white/10">
+            <Link href={preserveTrackingParams("/#faq")} className="text-white hover:text-[#59e3a5] transition-all duration-300 ease-in-out font-medium px-4 py-2 rounded-lg hover:bg-white/5 hover:scale-105 transform backdrop-blur-sm border border-transparent hover:border-white/10">
               FAQ
             </Link>
-            <Link href="/about" className="text-white hover:text-[#59e3a5] transition-all duration-300 ease-in-out font-medium px-4 py-2 rounded-lg hover:bg-white/5 hover:scale-105 transform backdrop-blur-sm border border-transparent hover:border-white/10">
+            <Link href={preserveTrackingParams("/about")} className="text-white hover:text-[#59e3a5] transition-all duration-300 ease-in-out font-medium px-4 py-2 rounded-lg hover:bg-white/5 hover:scale-105 transform backdrop-blur-sm border border-transparent hover:border-white/10">
               About
             </Link>
-            <Link href="/contact" className="text-white hover:text-[#59e3a5] transition-all duration-300 ease-in-out font-medium px-4 py-2 rounded-lg hover:bg-white/5 hover:scale-105 transform backdrop-blur-sm border border-transparent hover:border-white/10">
+            <Link href={preserveTrackingParams("/contact")} className="text-white hover:text-[#59e3a5] transition-all duration-300 ease-in-out font-medium px-4 py-2 rounded-lg hover:bg-white/5 hover:scale-105 transform backdrop-blur-sm border border-transparent hover:border-white/10">
               Contact
             </Link>
             {!currentUser && !authLoading && (
@@ -476,7 +499,7 @@ export default function Header({ transparent = false, hideSignUp = false, extraC
             <div className="px-4 pt-4 pb-4 space-y-1 text-center">
 
               {!isHomepage && (
-                <Link href="/pricing" className="flex items-center justify-center gap-3 px-4 py-4 mx-2 text-white hover:text-[#59e3a5] hover:bg-white/5 transition-all duration-300 ease-in-out font-medium rounded-xl backdrop-blur-sm border border-transparent hover:border-white/10 transform hover:scale-[1.02] animate-fade-in-up" style={{ animationDelay: !isHomepage ? '0.1s' : '0.05s' }}>
+                <Link href={preserveTrackingParams("/pricing")} className="flex items-center justify-center gap-3 px-4 py-4 mx-2 text-white hover:text-[#59e3a5] hover:bg-white/5 transition-all duration-300 ease-in-out font-medium rounded-xl backdrop-blur-sm border border-transparent hover:border-white/10 transform hover:scale-[1.02] animate-fade-in-up" style={{ animationDelay: !isHomepage ? '0.1s' : '0.05s' }}>
                   <svg className="w-5 h-5" fill="none" stroke="url(#gradient1)" viewBox="0 0 24 24">
                     <defs>
                       <linearGradient id="gradient1" x1="0%" y1="0%" x2="100%" y2="0%">
@@ -506,7 +529,7 @@ export default function Header({ transparent = false, hideSignUp = false, extraC
                 </Link>
               )}
               <Link 
-                href="/#faq" 
+                href={preserveTrackingParams("/#faq")} 
                 onClick={() => setIsMobileMenuOpen(false)}
                 className="flex items-center justify-center gap-3 px-4 py-4 mx-2 text-white hover:text-[#59e3a5] hover:bg-white/5 transition-all duration-300 ease-in-out font-medium rounded-xl backdrop-blur-sm border border-transparent hover:border-white/10 transform hover:scale-[1.02] animate-fade-in-up" 
                 style={{ animationDelay: !isHomepage ? '0.25s' : '0.2s' }}
@@ -522,7 +545,7 @@ export default function Header({ transparent = false, hideSignUp = false, extraC
                 </svg>
                 FAQ
               </Link>
-              <Link href="/about" className="flex items-center justify-center gap-3 px-4 py-4 mx-2 text-white hover:text-[#59e3a5] hover:bg-white/5 transition-all duration-300 ease-in-out font-medium rounded-xl backdrop-blur-sm border border-transparent hover:border-white/10 transform hover:scale-[1.02] animate-fade-in-up" style={{ animationDelay: !isHomepage ? '0.3s' : '0.25s' }}>
+              <Link href={preserveTrackingParams("/about")} className="flex items-center justify-center gap-3 px-4 py-4 mx-2 text-white hover:text-[#59e3a5] hover:bg-white/5 transition-all duration-300 ease-in-out font-medium rounded-xl backdrop-blur-sm border border-transparent hover:border-white/10 transform hover:scale-[1.02] animate-fade-in-up" style={{ animationDelay: !isHomepage ? '0.3s' : '0.25s' }}>
                 <svg className="w-5 h-5" fill="none" stroke="url(#gradient3)" viewBox="0 0 24 24">
                   <defs>
                     <linearGradient id="gradient3" x1="0%" y1="0%" x2="100%" y2="0%">
@@ -534,7 +557,7 @@ export default function Header({ transparent = false, hideSignUp = false, extraC
                 </svg>
                 About
               </Link>
-              <Link href="/contact" className="flex items-center justify-center gap-3 px-4 py-4 mx-2 text-white hover:text-[#59e3a5] hover:bg-white/5 transition-all duration-300 ease-in-out font-medium rounded-xl backdrop-blur-sm border border-transparent hover:border-white/10 transform hover:scale-[1.02] animate-fade-in-up" style={{ animationDelay: !isHomepage ? '0.35s' : '0.3s' }}>
+              <Link href={preserveTrackingParams("/contact")} className="flex items-center justify-center gap-3 px-4 py-4 mx-2 text-white hover:text-[#59e3a5] hover:bg-white/5 transition-all duration-300 ease-in-out font-medium rounded-xl backdrop-blur-sm border border-transparent hover:border-white/10 transform hover:scale-[1.02] animate-fade-in-up" style={{ animationDelay: !isHomepage ? '0.35s' : '0.3s' }}>
                 <svg className="w-5 h-5" fill="none" stroke="url(#gradient4)" viewBox="0 0 24 24">
                   <defs>
                     <linearGradient id="gradient4" x1="0%" y1="0%" x2="100%" y2="0%">

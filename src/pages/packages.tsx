@@ -11,6 +11,7 @@ import dynamic from 'next/dynamic';
 import { createClient } from '../utils/supabase/client';
 import * as gtag from '../utils/gtag';
 
+
 const Lottie = dynamic(() => import('lottie-react'), { ssr: false });
 
 interface Package {
@@ -119,10 +120,10 @@ export default function PackagesPage() {
         setSongIndicatorKey(prev => prev + 1);
       } catch (error) {
         console.error("Failed to parse tracks:", error);
-        router.push('/add');
+        router.push( '/add');
       }
     } else {
-      router.push('/add');
+      router.push( '/add');
     }
   }, [router.isReady, tracksParam, router.query.sessionId]);
 
@@ -491,11 +492,32 @@ export default function PackagesPage() {
         console.log('🔐 PACKAGES: Created checkout session with userId:', finalUserId);
         console.log('🔐 PACKAGES: Session ID:', sessionId);
 
-        // Go to checkout with session ID
+        // Go to checkout with session ID - preserving tracking parameters
+        const currentParams = new URLSearchParams(window.location.search);
+        const preservedParams: any = {};
+        
+        // Preserve specific tracking parameters
+        if (currentParams.get('gclid')) {
+          preservedParams.gclid = currentParams.get('gclid');
+        }
+        if (currentParams.get('fbclid')) {
+          preservedParams.fbclid = currentParams.get('fbclid');
+        }
+        if (currentParams.get('utm_source')) {
+          preservedParams.utm_source = currentParams.get('utm_source');
+        }
+        if (currentParams.get('utm_medium')) {
+          preservedParams.utm_medium = currentParams.get('utm_medium');
+        }
+        if (currentParams.get('utm_campaign')) {
+          preservedParams.utm_campaign = currentParams.get('utm_campaign');
+        }
+        
         router.push({
           pathname: '/checkout',
           query: {
-            sessionId
+            sessionId,
+            ...preservedParams
           }
         });
       } catch (error) {
@@ -533,12 +555,12 @@ export default function PackagesPage() {
     const updatedTracks = tracks.filter((_, index) => index !== currentSongIndex);
     
     if (updatedTracks.length === 0) {
-      router.push('/add');
+      router.push( '/add');
     } else {
       // Store remaining tracks and redirect to add page to replace this song
       sessionStorage.setItem('remainingTracks', JSON.stringify(updatedTracks));
       sessionStorage.setItem('replacingSongIndex', currentSongIndex.toString());
-      router.push('/add');
+      router.push( '/add');
     }
   };
 

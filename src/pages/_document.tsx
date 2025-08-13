@@ -54,6 +54,10 @@ export default function Document() {
                   
                   ${GA4_MEASUREMENT_ID ? `gtag('config', '${GA4_MEASUREMENT_ID}');` : ''}
                   ${GA_TRACKING_ID ? `gtag('config', '${GA_TRACKING_ID}');` : ''}
+                  
+                  // CRITICAL: Conversion Linker for proper ad click attribution
+                  gtag('config', 'CONVERSION_LINKER');
+                  console.log('🎯 GOOGLE ADS: Conversion Linker tag configured for attribution');
                 `,
               }}
             />

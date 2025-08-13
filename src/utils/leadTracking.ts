@@ -252,6 +252,68 @@ class LeadTracker {
   }
 
   /**
+   * Get GCLID from stored lead data or current URL
+   */
+  public static getGclid(): string | null {
+    if (typeof window === 'undefined') return null;
+    
+    // First check stored lead data
+    const leadData = this.getLeadData();
+    if (leadData?.gclid) {
+      return leadData.gclid;
+    }
+    
+    // Fall back to current URL parameters
+    const params = this.parseUrlParams();
+    return params.get('gclid');
+  }
+
+  /**
+   * Get Microsoft Click ID from stored lead data or current URL
+   */
+  public static getMsclkid(): string | null {
+    if (typeof window === 'undefined') return null;
+    
+    // First check stored lead data
+    const leadData = this.getLeadData();
+    if (leadData?.msclkid) {
+      return leadData.msclkid;
+    }
+    
+    // Fall back to current URL parameters  
+    const params = this.parseUrlParams();
+    return params.get('msclkid');
+  }
+
+  /**
+   * Get all available tracking parameters for navigation preservation
+   */
+  public static getTrackingParams(): { [key: string]: string } {
+    if (typeof window === 'undefined') return {};
+    
+    const params: { [key: string]: string } = {};
+    const leadData = this.getLeadData();
+    const urlParams = this.parseUrlParams();
+    
+    // Get GCLID from lead data or URL
+    const gclid = leadData?.gclid || urlParams.get('gclid');
+    if (gclid) params.gclid = gclid;
+    
+    // Get Microsoft Click ID from lead data or URL
+    const msclkid = leadData?.msclkid || urlParams.get('msclkid');
+    if (msclkid) params.msclkid = msclkid;
+    
+    // Preserve UTM parameters
+    const utmParams = ['utm_source', 'utm_medium', 'utm_campaign', 'utm_term', 'utm_content'];
+    utmParams.forEach(param => {
+      const value = urlParams.get(param);
+      if (value) params[param] = value;
+    });
+    
+    return params;
+  }
+
+  /**
    * Clear lead data (useful for testing)
    */
   public static clearLeadData(): void {

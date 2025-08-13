@@ -57,46 +57,79 @@ interface OrderData {
   couponDiscount?: number;
 }
 
-// Function to track purchase event for Google Ads
+// Enhanced function to track purchase event with proper timing
 const trackPurchaseEvent = (orderData: OrderData) => {
-  if (!orderData) return;
+  if (!orderData) {
+    console.warn('🎯 GOOGLE ADS: No order data provided for tracking');
+    return;
+  }
 
-  try {
-    // Prepare tracking data - ensure no Spotify data is sent
-    const trackingItems = orderData.items.map((item, index) => ({
-      id: `${item.track.id}_${item.package.id}`,
-      packageName: item.package.name,
-      price: item.isDiscounted ? item.discountedPrice : item.originalPrice,
-      quantity: 1
-    }));
+  console.log('🎯 GOOGLE ADS: Starting purchase tracking sequence...');
 
-    // Add addon items if they exist
-    if (orderData.addOnItems && orderData.addOnItems.length > 0) {
-      orderData.addOnItems.forEach(addon => {
-        trackingItems.push({
-          id: addon.id,
-          packageName: addon.name,
-          price: addon.price,
-          quantity: 1
-        });
-      });
+  // Ensure gtag is loaded before tracking
+  const attemptTracking = (retryCount = 0) => {
+    if (typeof window === 'undefined') {
+      console.warn('🎯 GOOGLE ADS: Window not available, skipping tracking');
+      return;
     }
 
-    // Track the purchase
-    gtag.trackPurchase({
-      orderId: orderData.orderNumber || orderData.orderId || `order_${Date.now()}`,
-      totalAmount: orderData.total,
-      items: trackingItems
-    });
+    if (!window.gtag) {
+      if (retryCount < 5) {
+        console.log(`🎯 GOOGLE ADS: gtag not ready, retrying in 500ms (attempt ${retryCount + 1}/5)`);
+        setTimeout(() => attemptTracking(retryCount + 1), 500);
+        return;
+      } else {
+        console.error('🎯 GOOGLE ADS: gtag failed to load after 5 attempts');
+        return;
+      }
+    }
 
-    console.log('🎯 GOOGLE ADS: Purchase tracked successfully', {
-      orderId: orderData.orderNumber || orderData.orderId,
-      total: orderData.total,
-      itemCount: trackingItems.length
-    });
-  } catch (error) {
-    console.error('🎯 GOOGLE ADS: Error tracking purchase:', error);
-  }
+    try {
+      console.log('🎯 GOOGLE ADS: gtag ready, preparing tracking data...');
+      
+      // Prepare tracking data - ensure no Spotify data is sent
+      const trackingItems = orderData.items.map((item, index) => ({
+        id: `${item.track.id}_${item.package.id}`,
+        packageName: item.package.name,
+        price: item.isDiscounted ? item.discountedPrice : item.originalPrice,
+        quantity: 1
+      }));
+
+      // Add addon items if they exist
+      if (orderData.addOnItems && orderData.addOnItems.length > 0) {
+        orderData.addOnItems.forEach(addon => {
+          trackingItems.push({
+            id: addon.id,
+            packageName: addon.name,
+            price: addon.price,
+            quantity: 1
+          });
+        });
+      }
+
+      const trackingData = {
+        orderId: orderData.orderNumber || orderData.orderId || `order_${Date.now()}`,
+        totalAmount: orderData.total,
+        items: trackingItems
+      };
+
+      console.log('🎯 GOOGLE ADS: Tracking data prepared:', trackingData);
+
+      // Track the purchase with error handling
+      gtag.trackPurchase(trackingData);
+
+      console.log('🎯 GOOGLE ADS: Purchase tracked successfully', {
+        orderId: trackingData.orderId,
+        total: trackingData.totalAmount,
+        itemCount: trackingItems.length
+      });
+    } catch (error) {
+      console.error('🎯 GOOGLE ADS: Error tracking purchase:', error);
+    }
+  };
+
+  // Start tracking attempt after a brief delay to ensure page is ready
+  setTimeout(attemptTracking, 100);
 };
 
 export default function ThankYouPage() {
@@ -446,26 +479,63 @@ export default function ThankYouPage() {
           <script
             dangerouslySetInnerHTML={{
               __html: `
-                // Google Ads Purchase Conversion v2 - Enhanced Ecommerce
-                if (typeof gtag !== 'undefined') {
-                  gtag('event', 'conversion', {
-                    'send_to': 'AW-17096610863/iwXJCMeWxIAbEK-optg_',
-                    'value': ${orderData.total},
-                    'currency': 'USD',
-                    'transaction_id': '${orderData.orderNumber || orderData.orderId || `order_${Date.now()}`}',
-                    'items': [{
-                      'item_id': 'agency_campaign',
-                      'item_name': 'Agency Campaign',
-                      'category': 'Music Promotion Services',
-                      'quantity': 1,
-                      'price': ${orderData.total}
-                    }]
-                  });
+                // Google Ads Purchase Conversion v2 - Enhanced Ecommerce with improved timing
+                (function() {
+                  var attemptCount = 0;
+                  var maxAttempts = 10;
                   
-                  console.log('🎯 GOOGLE ADS v2: Purchase conversion tracked with transaction ID: ${orderData.orderNumber || orderData.orderId || `order_${Date.now()}`}');
-                } else {
-                  console.error('🎯 GOOGLE ADS v2: gtag not available for conversion tracking');
-                }
+                  function trackConversion() {
+                    if (typeof gtag !== 'undefined') {
+                      // Get GCLID from URL or localStorage if available
+                      var gclid = null;
+                      try {
+                        var urlParams = new URLSearchParams(window.location.search);
+                        gclid = urlParams.get('gclid');
+                        if (!gclid && localStorage.getItem('fasho_lead_data')) {
+                          var leadData = JSON.parse(localStorage.getItem('fasho_lead_data'));
+                          gclid = leadData.gclid;
+                        }
+                      } catch (e) {
+                        console.warn('🎯 GOOGLE ADS v2: Could not retrieve GCLID:', e);
+                      }
+                      
+                      var conversionData = {
+                        'send_to': 'AW-17096610863/iwXJCMeWxIAbEK-optg_',
+                        'value': ${orderData.total},
+                        'currency': 'USD',
+                        'transaction_id': '${orderData.orderNumber || orderData.orderId || `order_${Date.now()}`}',
+                        'items': [{
+                          'item_id': 'agency_campaign',
+                          'item_name': 'Agency Campaign',
+                          'category': 'Music Promotion Services',
+                          'quantity': 1,
+                          'price': ${orderData.total}
+                        }]
+                      };
+                      
+                      // Inject GCLID if available
+                      if (gclid) {
+                        conversionData.gclid = gclid;
+                        console.log('🎯 GOOGLE ADS v2: Injecting GCLID:', gclid);
+                      }
+                      
+                      gtag('event', 'conversion', conversionData);
+                      
+                      console.log('🎯 GOOGLE ADS v2: Purchase conversion tracked with transaction ID:', '${orderData.orderNumber || orderData.orderId || `order_${Date.now()}`}', 'GCLID:', gclid || 'none');
+                    } else {
+                      attemptCount++;
+                      if (attemptCount < maxAttempts) {
+                        console.log('🎯 GOOGLE ADS v2: gtag not ready, retrying (attempt ' + attemptCount + '/' + maxAttempts + ')');
+                        setTimeout(trackConversion, 200);
+                      } else {
+                        console.error('🎯 GOOGLE ADS v2: gtag not available after ' + maxAttempts + ' attempts');
+                      }
+                    }
+                  }
+                  
+                  // Start tracking after a brief delay
+                  setTimeout(trackConversion, 100);
+                })();
               `,
             }}
           />

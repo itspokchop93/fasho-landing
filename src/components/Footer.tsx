@@ -1,4 +1,27 @@
 import React, { useState, useEffect } from 'react';
+
+// Utility function to preserve tracking parameters in navigation
+const preserveTrackingParams = (href: string): string => {
+  if (typeof window === 'undefined') return href;
+  
+  const currentParams = new URLSearchParams(window.location.search);
+  const trackingParams = new URLSearchParams();
+  
+  // Preserve important tracking parameters
+  ['gclid', 'fbclid', 'utm_source', 'utm_medium', 'utm_campaign', 'utm_term', 'utm_content'].forEach(param => {
+    const value = currentParams.get(param);
+    if (value) {
+      trackingParams.set(param, value);
+    }
+  });
+  
+  if (trackingParams.toString()) {
+    const separator = href.includes('?') ? '&' : '?';
+    return `${href}${separator}${trackingParams.toString()}`;
+  }
+  
+  return href;
+};
 import { createClient } from '../utils/supabase/client';
 
 const Footer = () => {
@@ -37,26 +60,26 @@ const Footer = () => {
             <h4 className="text-white font-semibold mb-4">Services</h4>
             <ul className="space-y-2">
               <li>
-                <a href="/pricing" className="text-gray-400 hover:text-[#59e3a5] transition-colors duration-200 text-sm">
+                <a href={preserveTrackingParams("/pricing")} className="text-gray-400 hover:text-[#59e3a5] transition-colors duration-200 text-sm">
                   Pricing
                 </a>
               </li>
               <li>
-                <a href="/authenticity-guarantee" className="text-gray-400 hover:text-[#59e3a5] transition-colors duration-200 text-sm">
+                <a href={preserveTrackingParams("/authenticity-guarantee")} className="text-gray-400 hover:text-[#59e3a5] transition-colors duration-200 text-sm">
                   Authenticity Guarantee
                 </a>
               </li>
               <li>
                 <a 
-                  href="/#faq" 
+                  href={preserveTrackingParams("/#faq")} 
                   onClick={(e) => {
                     e.preventDefault();
                     const faqSection = document.querySelector('#faq');
                     if (faqSection) {
                       faqSection.scrollIntoView({ behavior: 'smooth' });
                     } else {
-                      // If not on homepage, navigate to homepage with anchor
-                      window.location.href = '/#faq';
+                      // If not on homepage, navigate to homepage with anchor preserving tracking
+                      window.location.href = preserveTrackingParams('/#faq');
                     }
                   }}
                   className="text-gray-400 hover:text-[#59e3a5] transition-colors duration-200 text-sm"
@@ -72,12 +95,12 @@ const Footer = () => {
             <h4 className="text-white font-semibold mb-4">Company</h4>
             <ul className="space-y-2">
               <li>
-                <a href="/about" className="text-gray-400 hover:text-[#59e3a5] transition-colors duration-200 text-sm">
+                <a href={preserveTrackingParams("/about")} className="text-gray-400 hover:text-[#59e3a5] transition-colors duration-200 text-sm">
                   About
                 </a>
               </li>
               <li>
-                <a href="/api/contact-support" className="text-gray-400 hover:text-[#59e3a5] transition-colors duration-200 text-sm">
+                <a href={preserveTrackingParams("/api/contact-support")} className="text-gray-400 hover:text-[#59e3a5] transition-colors duration-200 text-sm">
                   Contact Us
                 </a>
               </li>
