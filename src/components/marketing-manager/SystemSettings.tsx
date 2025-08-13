@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import CampaignTotals from './CampaignTotals';
 import { MUSIC_GENRES } from '../../constants/genres';
 
@@ -115,6 +115,7 @@ interface StreamPurchase {
   streamQty: number;
   drips: number;
   intervalMinutes: number;
+  serviceId: string;
   purchaseDate: string;
   nextPurchaseDate: string;
   createdAt: string;
@@ -126,6 +127,7 @@ interface StreamPurchaseForm {
   streamQty: number;
   drips: number;
   intervalMinutes: number;
+  serviceId: string;
 }
 
 interface NewPlaylistForm {
@@ -157,6 +159,11 @@ const SystemSettings: React.FC = () => {
     purchaseId: '',
     position: null
   });
+  const [sortConfig, setSortConfig] = useState<{
+    key: string;
+    direction: 'asc' | 'desc';
+  } | null>(null);
+  const [copiedPlaylistId, setCopiedPlaylistId] = useState<string | null>(null);
   const [newPlaylist, setNewPlaylist] = useState<NewPlaylistForm>({
     playlistName: '',
     genre: '',
@@ -168,7 +175,8 @@ const SystemSettings: React.FC = () => {
     playlistId: '',
     streamQty: 0,
     drips: 0,
-    intervalMinutes: 1440
+    intervalMinutes: 1440,
+    serviceId: ''
   });
 
   useEffect(() => {
@@ -373,12 +381,13 @@ const SystemSettings: React.FC = () => {
         const result = await response.json();
         
         // Reset form and refresh data
-        setStreamPurchaseForm({
-          playlistId: '',
-          streamQty: 0,
-          drips: 0,
-          intervalMinutes: 1440
-        });
+              setStreamPurchaseForm({
+        playlistId: '',
+        streamQty: 0,
+        drips: 0,
+        intervalMinutes: 1440,
+        serviceId: ''
+      });
         setShowStreamPurchaseForm(false);
         fetchStreamPurchases();
         fetchPlaylists(); // Refresh to update next purchase dates
@@ -410,6 +419,93 @@ const SystemSettings: React.FC = () => {
       setSuccessMessage('');
     }, 8000);
   };
+
+  const handleSort = (key: string) => {
+    let direction: 'asc' | 'desc' = 'asc';
+    if (sortConfig && sortConfig.key === key && sortConfig.direction === 'asc') {
+      direction = 'desc';
+    }
+    setSortConfig({ key, direction });
+  };
+
+  const getSortIcon = (columnKey: string) => {
+    if (!sortConfig || sortConfig.key !== columnKey) {
+      return (
+        <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4" />
+        </svg>
+      );
+    }
+    
+    if (sortConfig.direction === 'asc') {
+      return (
+        <svg className="w-4 h-4 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4h13M3 8h9m-9 4h6m4 0l4-4m0 0l4 4m-4-4v12" />
+        </svg>
+      );
+    } else {
+      return (
+        <svg className="w-4 h-4 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4h13M3 8h9m-9 4h9m5-4v12m0 0l-4-4m4 4l4-4" />
+        </svg>
+      );
+    }
+  };
+
+  const sortedPlaylists = useMemo(() => {
+    let sortableItems = [...playlists];
+    
+    if (sortConfig !== null) {
+      sortableItems.sort((a, b) => {
+        let aValue: any;
+        let bValue: any;
+        
+        switch (sortConfig.key) {
+          case 'playlistName':
+            aValue = a.playlistName.toLowerCase();
+            bValue = b.playlistName.toLowerCase();
+            break;
+          case 'accountEmail':
+            aValue = a.accountEmail.toLowerCase();
+            bValue = b.accountEmail.toLowerCase();
+            break;
+          case 'songCount':
+            aValue = a.songCount || 0;
+            bValue = b.songCount || 0;
+            break;
+          case 'nextStreamPurchase':
+            // Get the latest purchase for each playlist
+            const aLatestPurchase = streamPurchases
+              .filter(purchase => purchase.playlistId === a.id)
+              .sort((x, y) => new Date(y.purchaseDate).getTime() - new Date(x.purchaseDate).getTime())[0];
+            const bLatestPurchase = streamPurchases
+              .filter(purchase => purchase.playlistId === b.id)
+              .sort((x, y) => new Date(y.purchaseDate).getTime() - new Date(x.purchaseDate).getTime())[0];
+            
+            // If no purchase data, put at end
+            if (!aLatestPurchase && !bLatestPurchase) return 0;
+            if (!aLatestPurchase) return 1;
+            if (!bLatestPurchase) return -1;
+            
+            aValue = new Date(aLatestPurchase.nextPurchaseDate).getTime();
+            bValue = new Date(bLatestPurchase.nextPurchaseDate).getTime();
+            break;
+          default:
+            return 0;
+        }
+        
+        if (aValue < bValue) {
+          return sortConfig.direction === 'asc' ? -1 : 1;
+        }
+        if (aValue > bValue) {
+          return sortConfig.direction === 'asc' ? 1 : -1;
+        }
+        return 0;
+      });
+    }
+    
+    return sortableItems;
+  }, [playlists, sortConfig, streamPurchases]);
 
   const showDeleteConfirmation = (purchaseId: string, event: React.MouseEvent) => {
     const button = event.currentTarget as HTMLButtonElement;
@@ -456,6 +552,32 @@ const SystemSettings: React.FC = () => {
 
   const handleDeleteCancel = () => {
     setConfirmationModal({ isOpen: false, purchaseId: '', position: null });
+  };
+
+  const handleCopyPlaylistLink = async (playlistLink: string, playlistId: string) => {
+    try {
+      await navigator.clipboard.writeText(playlistLink);
+      setCopiedPlaylistId(playlistId);
+      
+      // Reset the copied state after 5 seconds
+      setTimeout(() => {
+        setCopiedPlaylistId(null);
+      }, 5000);
+    } catch (error) {
+      console.error('Failed to copy playlist link:', error);
+      // Fallback for browsers that don't support clipboard API
+      const textArea = document.createElement('textarea');
+      textArea.value = playlistLink;
+      document.body.appendChild(textArea);
+      textArea.select();
+      document.execCommand('copy');
+      document.body.removeChild(textArea);
+      
+      setCopiedPlaylistId(playlistId);
+      setTimeout(() => {
+        setCopiedPlaylistId(null);
+      }, 5000);
+    }
   };
 
   const togglePlaylistStatus = async (playlistId: string, currentStatus: boolean) => {
@@ -611,7 +733,7 @@ const SystemSettings: React.FC = () => {
           <div className="mb-6 bg-green-50 rounded-lg p-4 border border-green-200">
             <h3 className="text-md font-medium text-gray-900 mb-4">Add Stream Purchase</h3>
             <form onSubmit={handleStreamPurchaseSubmit} className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     Playlist *
@@ -625,12 +747,27 @@ const SystemSettings: React.FC = () => {
                     <option value="">Select a playlist...</option>
                     {playlists
                       .filter(playlist => playlist.isActive)
+                      .sort((a, b) => a.playlistName.localeCompare(b.playlistName))
                       .map(playlist => (
                         <option key={playlist.id} value={playlist.id}>
                           {playlist.playlistName} ({playlist.genre})
                         </option>
                       ))}
                   </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Service ID *
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={streamPurchaseForm.serviceId || ''}
+                    onChange={(e) => handleStreamPurchaseInputChange('serviceId', e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                    placeholder="e.g. 1933"
+                    maxLength={6}
+                  />
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -678,6 +815,8 @@ const SystemSettings: React.FC = () => {
                   <p className="text-xs text-gray-500 mt-1">Minutes between each drip (1440 = 1 day)</p>
                 </div>
               </div>
+
+              
               <div className="flex justify-end space-x-3">
                 <button
                   type="button"
@@ -818,20 +957,44 @@ const SystemSettings: React.FC = () => {
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Image
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Playlist Name
+                <th 
+                  className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 select-none"
+                  onClick={() => handleSort('playlistName')}
+                >
+                  <div className="flex items-center space-x-1">
+                    <span>Playlist Name</span>
+                    {getSortIcon('playlistName')}
+                  </div>
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Genre
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Account
+                <th 
+                  className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 select-none"
+                  onClick={() => handleSort('accountEmail')}
+                >
+                  <div className="flex items-center space-x-1">
+                    <span>Account</span>
+                    {getSortIcon('accountEmail')}
+                  </div>
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Song Count
+                <th 
+                  className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 select-none"
+                  onClick={() => handleSort('songCount')}
+                >
+                  <div className="flex items-center space-x-1">
+                    <span>Song Count</span>
+                    {getSortIcon('songCount')}
+                  </div>
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Next Stream Purchase
+                <th 
+                  className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 select-none"
+                  onClick={() => handleSort('nextStreamPurchase')}
+                >
+                  <div className="flex items-center space-x-1">
+                    <span>Next Stream Purchase</span>
+                    {getSortIcon('nextStreamPurchase')}
+                  </div>
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Status
@@ -842,7 +1005,7 @@ const SystemSettings: React.FC = () => {
               </tr>
             </thead>
               <tbody className="bg-white divide-y divide-gray-200">
-                {playlists.map((playlist) => {
+                {sortedPlaylists.map((playlist) => {
                   const playlistPurchases = streamPurchases
                     .filter(purchase => purchase.playlistId === playlist.id)
                     .sort((a, b) => new Date(b.purchaseDate).getTime() - new Date(a.purchaseDate).getTime());
@@ -957,6 +1120,20 @@ const SystemSettings: React.FC = () => {
                             <button
                               onClick={(e) => {
                                 e.stopPropagation();
+                                handleCopyPlaylistLink(playlist.playlistLink, playlist.id);
+                              }}
+                              className={`px-2 py-1 text-xs font-medium rounded transition-colors duration-200 ${
+                                copiedPlaylistId === playlist.id
+                                  ? 'bg-green-100 text-green-800 border border-green-300'
+                                  : 'bg-blue-100 text-blue-800 border border-blue-300 hover:bg-blue-200'
+                              }`}
+                              title="Copy playlist link to clipboard"
+                            >
+                              {copiedPlaylistId === playlist.id ? 'COPIED!' : 'COPY LINK'}
+                            </button>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
                                 openSpotifyPlaylist(playlist.playlistLink);
                               }}
                               className="text-green-600 hover:text-green-900"
@@ -1005,6 +1182,9 @@ const SystemSettings: React.FC = () => {
                                             Last Purchase
                                           </th>
                                           <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                            Service ID
+                                          </th>
+                                          <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                                             Stream QTY
                                           </th>
                                           <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -1026,6 +1206,9 @@ const SystemSettings: React.FC = () => {
                                           <tr key={purchase.id}>
                                             <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-900">
                                               {formatNextPurchaseDate(purchase.purchaseDate)}
+                                            </td>
+                                            <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-900">
+                                              {purchase.serviceId || 'N/A'}
                                             </td>
                                             <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-900">
                                               {purchase.streamQty.toLocaleString()}

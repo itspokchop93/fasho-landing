@@ -93,6 +93,7 @@ const ActionQueue: React.FC = () => {
   const [isLiveUpdating, setIsLiveUpdating] = useState(false);
   const [hidingItems, setHidingItems] = useState<Set<string>>(new Set());
   const [unhidingItems, setUnhidingItems] = useState<Set<string>>(new Set());
+  const [selectedItems, setSelectedItems] = useState<Set<string>>(new Set());
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
   const timeUpdateRef = useRef<NodeJS.Timeout | null>(null);
 
@@ -150,7 +151,12 @@ const ActionQueue: React.FC = () => {
     } finally {
       setIsLoading(false);
     }
+    
+    // Clear selection after fetching new data
+    setSelectedItems(new Set());
   };
+
+
 
   const hideItem = async (itemId: string) => {
     try {
@@ -189,6 +195,13 @@ const ActionQueue: React.FC = () => {
         
         // Fetch fresh data immediately to get updated state from database
         await fetchActionItems();
+        
+        // Remove item from selection if it was selected
+        setSelectedItems(prev => {
+          const newSet = new Set(prev);
+          newSet.delete(itemId);
+          return newSet;
+        });
       } else {
         console.error('Failed to hide item:', response.statusText);
         // Remove from hiding items on error
@@ -373,6 +386,44 @@ const ActionQueue: React.FC = () => {
   
   console.log(`📊 QUEUE STATE: Total items: ${actionItems.length}, Visible: ${visibleItems.length}, Hidden: ${hiddenCount}, ShowHidden: ${showHidden}`);
 
+  // Bulk selection functions
+  const handleItemSelection = (itemId: string, checked: boolean) => {
+    setSelectedItems(prev => {
+      const newSet = new Set(prev);
+      if (checked) {
+        newSet.add(itemId);
+      } else {
+        newSet.delete(itemId);
+      }
+      return newSet;
+    });
+  };
+
+  const handleSelectAll = (checked: boolean) => {
+    if (checked) {
+      const allVisibleIds = visibleItems.map(item => item.id);
+      setSelectedItems(new Set(allVisibleIds));
+    } else {
+      setSelectedItems(new Set());
+    }
+  };
+
+  const hideSelectedItems = async () => {
+    const itemsToHide = Array.from(selectedItems);
+    
+    // Hide each selected item
+    for (const itemId of itemsToHide) {
+      try {
+        await hideItem(itemId);
+      } catch (error) {
+        console.error(`Error hiding item ${itemId}:`, error);
+      }
+    }
+    
+    // Clear selection after hiding
+    setSelectedItems(new Set());
+  };
+
   if (isLoading) {
     return (
       <div className="bg-white rounded-xl p-6 shadow-lg border border-gray-100">
@@ -443,19 +494,27 @@ const ActionQueue: React.FC = () => {
             <table className="min-w-full divide-y divide-gray-200">
               <thead className="bg-gray-50 sticky top-0 z-10">
                 <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-3 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider w-16">
+                    <input
+                      type="checkbox"
+                      checked={selectedItems.size > 0 && selectedItems.size === visibleItems.length}
+                      onChange={(e) => handleSelectAll(e.target.checked)}
+                      className="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                    />
+                  </th>
+                  <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Order #
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Actions
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Due By
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Status
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Actions
                   </th>
                 </tr>
@@ -467,7 +526,15 @@ const ActionQueue: React.FC = () => {
                     data-item-id={item.id}
                     className={`hover:bg-gray-50 ${item.status === 'Completed' ? 'bg-green-50' : ''} ${getAnimationClass(item.id)}`}
                   >
-                    <td className="px-6 py-4 whitespace-nowrap">
+                    <td className="px-3 py-4 whitespace-nowrap text-center">
+                      <input
+                        type="checkbox"
+                        checked={selectedItems.has(item.id)}
+                        onChange={(e) => handleItemSelection(item.id, e.target.checked)}
+                        className="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                      />
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-center">
                       <div className="flex flex-col items-center">
                         <button
                           onClick={() => scrollToActiveCampaign(item.orderNumber)}
@@ -482,8 +549,8 @@ const ActionQueue: React.FC = () => {
                         )}
                       </div>
                     </td>
-                    <td className="px-6 py-4">
-                      <div className="space-y-1">
+                    <td className="px-6 py-4 text-center">
+                      <div className="space-y-1 flex flex-col items-center">
                         {/* Show actions based on action type */}
                         {item.actionType === 'initial' ? (
                           // INITIAL ACTION ITEMS: Show only Direct Streams + Add to Playlists
@@ -524,11 +591,11 @@ const ActionQueue: React.FC = () => {
                         )}
                       </div>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                    <td className="px-6 py-4 whitespace-nowrap text-center text-sm text-gray-900">
                       {formatDueBy(item.dueBy, item.dueByTimestamp)}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="space-y-1">
+                    <td className="px-6 py-4 whitespace-nowrap text-center">
+                      <div className="space-y-1 flex flex-col items-center">
                         <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full border ${getStatusColor(item.status)}`}>
                           {item.status}
                         </span>
@@ -545,7 +612,7 @@ const ActionQueue: React.FC = () => {
                         })()}
                       </div>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                    <td className="px-6 py-4 whitespace-nowrap text-center text-sm font-medium">
                       <button
                         onClick={() => hideItem(item.id)}
                         className="text-gray-400 hover:text-gray-600 text-xs"
@@ -558,6 +625,21 @@ const ActionQueue: React.FC = () => {
               </tbody>
             </table>
           </div>
+        </div>
+      )}
+
+      {/* Hide Selected Button */}
+      {selectedItems.size >= 2 && (
+        <div className="mt-4 flex justify-start">
+          <button
+            onClick={hideSelectedItems}
+            className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg text-sm font-medium flex items-center space-x-2 transition-colors duration-200"
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.878 9.878L3 3m6.878 6.878L21 21" />
+            </svg>
+            <span>Hide Selected ({selectedItems.size})</span>
+          </button>
         </div>
       )}
 

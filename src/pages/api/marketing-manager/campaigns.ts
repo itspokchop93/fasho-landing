@@ -1,6 +1,7 @@
 import { NextApiRequest, NextApiResponse } from 'next';
 import { createAdminClient } from '../../../utils/supabase/server';
 import { requireAdminAuth, AdminUser } from '../../../utils/admin/auth';
+import { extractTrackIdFromUrl, getAvailablePlaylistsWithProtection } from '../../../utils/playlist-assignment-protection';
 
 // Helper function to generate playlist assignments for a campaign
 async function generatePlaylistAssignments(supabase: any, campaign: any): Promise<any[]> {
@@ -21,6 +22,21 @@ async function generatePlaylistAssignments(supabase: any, campaign: any): Promis
     console.log(`🎵 CAMPAIGNS: Found genre in billing_info: ${userGenre} for campaign ${campaign.id}`);
   } else {
     console.log(`🎵 CAMPAIGNS: No genre found in billing_info, using General for campaign ${campaign.id}`);
+  }
+
+  // Extract track ID from song_link or use existing track_id
+  let trackId = campaign.track_id;
+  if (!trackId && campaign.song_link) {
+    trackId = extractTrackIdFromUrl(campaign.song_link);
+    console.log(`🎵 CAMPAIGNS: Extracted track ID ${trackId} from song link for campaign ${campaign.id}`);
+    
+    // Update the campaign with the extracted track_id for future use
+    if (trackId) {
+      await supabase
+        .from('marketing_campaigns')
+        .update({ track_id: trackId })
+        .eq('id', campaign.id);
+    }
   }
 
   // Map old package names to new ones
@@ -62,123 +78,19 @@ async function generatePlaylistAssignments(supabase: any, campaign: any): Promis
   }
   console.log(`🎵 CAMPAIGNS: Need ${playlistsNeeded} playlists for ${campaign.package_name} package, campaign ${campaign.id}`);
 
-  // Get available playlists matching the user's genre
-  console.log(`🎵 CAMPAIGNS: Looking for playlists with genre: "${userGenre}"`);
-  
-  // Use the exact genre from checkout - no mapping needed
-  // All playlists should use the same exact genres as the checkout/add-playlist dropdown
-  let searchGenre = userGenre;
-  console.log(`🎵 CAMPAIGNS: Searching for playlists with exact genre: "${searchGenre}"`);
-  
-  const { data: genreMatchingPlaylists, error: genrePlaylistError } = await supabase
-    .from('playlist_network')
-    .select('id, playlist_name, genre, cached_song_count, max_songs')
-    .eq('is_active', true)
-    .eq('genre', searchGenre)
-    .order('playlist_name', { ascending: true });
-
-  console.log(`🎵 CAMPAIGNS: Found ${genreMatchingPlaylists?.length || 0} playlists for genre "${searchGenre}":`, genreMatchingPlaylists);
-  
-  // Debug: List all found playlists with their details
-  genreMatchingPlaylists?.forEach((playlist, index) => {
-    console.log(`🎵 CAMPAIGNS: [${index + 1}] "${playlist.playlist_name}" (ID: ${playlist.id}, Songs: ${playlist.cached_song_count || 0}/${playlist.max_songs || 25})`);
-  });
-
-  if (genrePlaylistError) {
-    console.error('Error fetching genre-matching playlists:', genrePlaylistError);
-    return [];
-  }
-
-  // Filter out full playlists (where song count >= max songs)
-  const availableGenrePlaylists = genreMatchingPlaylists?.filter(playlist => {
-    const songCount = playlist.cached_song_count || 0;
-    const maxSongs = playlist.max_songs || 25; // Default to 25 if max_songs is null
-    const isAvailable = songCount < maxSongs;
-    
-    if (!isAvailable) {
-      console.log(`🎵 CAMPAIGNS: Excluding full playlist "${playlist.playlist_name}" (${songCount}/${maxSongs} songs)`);
-    }
-    
-    return isAvailable;
-  }) || [];
-
-  console.log(`🎵 CAMPAIGNS: ${availableGenrePlaylists.length} available (non-full) ${searchGenre} playlists after capacity filtering`);
-  
-  // Debug: List available playlists after capacity filtering
-  availableGenrePlaylists.forEach((playlist, index) => {
-    console.log(`🎵 CAMPAIGNS: Available [${index + 1}] "${playlist.playlist_name}" (Songs: ${playlist.cached_song_count || 0}/${playlist.max_songs || 25})`);
-  });
-
-  let selectedPlaylists: any[] = [];
-
-  // Add genre-specific playlists first
-  if (availableGenrePlaylists && availableGenrePlaylists.length > 0) {
-    const genrePlaylistsToAdd = Math.min(availableGenrePlaylists.length, playlistsNeeded);
-    selectedPlaylists = availableGenrePlaylists.slice(0, genrePlaylistsToAdd).map(playlist => ({
-      id: playlist.id,
-      name: playlist.playlist_name,
-      genre: playlist.genre
-    }));
-
-    console.log(`🎵 CAMPAIGNS: Added ${genrePlaylistsToAdd} available ${userGenre} playlists for campaign ${campaign.id}`);
-  }
-
-  // If we still need more playlists, fill with General playlists
-  if (selectedPlaylists.length < playlistsNeeded) {
-    const remainingNeeded = playlistsNeeded - selectedPlaylists.length;
-    console.log(`🎵 CAMPAIGNS: Need ${remainingNeeded} more playlists. Looking for General playlists...`);
-    
-    // Get already selected playlist IDs to avoid duplicates
-    const selectedIds = selectedPlaylists.map(p => p.id);
-    
-    let generalPlaylistQuery = supabase
-      .from('playlist_network')
-      .select('id, playlist_name, genre, cached_song_count, max_songs')
-      .eq('is_active', true)
-      .eq('genre', 'General')
-      .order('playlist_name', { ascending: true });
-
-    // Only add the NOT IN clause if we have selected IDs to exclude
-    if (selectedIds.length > 0) {
-      generalPlaylistQuery = generalPlaylistQuery.not('id', 'in', `(${selectedIds.join(',')})`);
-    }
-
-    const { data: generalPlaylists, error: generalPlaylistError } = await generalPlaylistQuery;
-    console.log(`🎵 CAMPAIGNS: Found ${generalPlaylists?.length || 0} General playlists:`, generalPlaylists);
-
-    // Filter out full General playlists
-    const availableGeneralPlaylists = generalPlaylists?.filter(playlist => {
-      const songCount = playlist.cached_song_count || 0;
-      const maxSongs = playlist.max_songs || 25;
-      const isAvailable = songCount < maxSongs;
-      
-      if (!isAvailable) {
-        console.log(`🎵 CAMPAIGNS: Excluding full General playlist "${playlist.playlist_name}" (${songCount}/${maxSongs} songs)`);
-      }
-      
-      return isAvailable;
-    }) || [];
-
-    console.log(`🎵 CAMPAIGNS: ${availableGeneralPlaylists.length} available (non-full) General playlists after capacity filtering`);
-
-    if (generalPlaylistError) {
-      console.error('Error fetching general playlists:', generalPlaylistError);
-    } else if (availableGeneralPlaylists && availableGeneralPlaylists.length > 0) {
-      // Take only the number of playlists we need
-      const playlistsToTake = availableGeneralPlaylists.slice(0, remainingNeeded);
-      const generalPlaylistsToAdd = playlistsToTake.map(playlist => ({
-        id: playlist.id,
-        name: playlist.playlist_name,
-        genre: playlist.genre
-      }));
-
-      selectedPlaylists = [...selectedPlaylists, ...generalPlaylistsToAdd];
-      console.log(`🎵 CAMPAIGNS: Added ${generalPlaylistsToAdd.length} available General playlists to fill remaining slots for campaign ${campaign.id}`);
-    }
-  }
+  // Get playlist assignments with duplicate protection
+  const selectedPlaylists = await getAvailablePlaylistsWithProtection(
+    supabase,
+    userGenre,
+    playlistsNeeded,
+    trackId || '',
+    campaign.id // Exclude current campaign for re-assignments
+  );
 
   return selectedPlaylists;
 }
+
+
 
 // Auto-import function to handle new orders
 async function autoImportNewOrders(supabase: any): Promise<number> {
@@ -263,12 +175,16 @@ async function autoImportNewOrders(supabase: any): Promise<number> {
         const packageData = await getPackageData(supabase, item.package_name);
         const songNumber = order.order_items.length > 1 ? songIndex + 1 : null;
         
+        // Extract track ID from the song URL for duplicate protection
+        const trackId = extractTrackIdFromUrl(item.track_url);
+        
         campaignsToInsert.push({
           order_id: order.id,
           order_number: order.order_number,
           customer_name: order.customer_name,
           song_name: item.track_title,
           song_link: item.track_url,
+          track_id: trackId,
           package_name: item.package_name,
           package_id: item.package_id,
           direct_streams: packageData.directStreams,

@@ -1,6 +1,7 @@
 import { NextApiRequest, NextApiResponse } from 'next';
 import { createAdminClient } from '../../../utils/supabase/server';
 import { requireAdminAuth, AdminUser } from '../../../utils/admin/auth';
+import { extractTrackIdFromUrl, getAvailablePlaylistsWithProtection } from '../../../utils/playlist-assignment-protection';
 import { MUSIC_GENRES } from '../../../constants/genres';
 
 // Get package configuration from campaign_totals table
@@ -61,53 +62,18 @@ const getDefaultAssignments = (packageName: string) => {
   return assignments[pkg] || 2;
 };
 
-// Intelligent playlist assignment based on genre and availability
-const assignPlaylistsForCampaign = async (supabase: any, customerGenre: string, playlistsNeeded: number) => {
+// Intelligent playlist assignment based on genre and availability with duplicate protection
+const assignPlaylistsForCampaign = async (supabase: any, customerGenre: string, playlistsNeeded: number, trackId: string) => {
   try {
-    // Get all active playlists
-    const { data: playlists, error } = await supabase
-      .from('playlist_network')
-      .select('*')
-      .eq('is_active', true)
-      .order('cached_song_count', { ascending: true }); // Prioritize less full playlists
-
-    if (error || !playlists) {
-      console.error('Error fetching playlists:', error);
-      return [];
-    }
-
-    // Filter playlists by genre match first
-    const genreMatchedPlaylists = playlists.filter(playlist => 
-      playlist.genre === customerGenre
+    // Use the new duplicate protection system
+    const selectedPlaylists = await getAvailablePlaylistsWithProtection(
+      supabase,
+      customerGenre,
+      playlistsNeeded,
+      trackId || ''
     );
 
-    // Filter by availability (not at max capacity)
-    const availablePlaylists = genreMatchedPlaylists.filter(playlist => 
-      (playlist.cached_song_count || 0) < playlist.max_songs
-    );
-
-    // If not enough genre-matched playlists, include other available playlists
-    let selectedPlaylists = availablePlaylists.slice(0, playlistsNeeded);
-    
-    if (selectedPlaylists.length < playlistsNeeded) {
-      const otherAvailablePlaylists = playlists.filter(playlist => 
-        playlist.genre !== customerGenre && 
-        (playlist.cached_song_count || 0) < playlist.max_songs &&
-        !selectedPlaylists.find(selected => selected.id === playlist.id)
-      );
-      
-      const additionalNeeded = playlistsNeeded - selectedPlaylists.length;
-      selectedPlaylists = [
-        ...selectedPlaylists, 
-        ...otherAvailablePlaylists.slice(0, additionalNeeded)
-      ];
-    }
-
-    return selectedPlaylists.map(playlist => ({
-      id: playlist.id,
-      name: playlist.playlist_name,
-      genre: playlist.genre
-    }));
+    return selectedPlaylists;
   } catch (error) {
     console.error('Error in playlist assignment:', error);
     return [];
@@ -266,14 +232,18 @@ async function handler(req: NextApiRequest, res: NextApiResponse, adminUser: Adm
         try {
           console.log(`🎵 Processing track: ${orderItem.track_title} (Package: ${orderItem.package_name})`);
           
+          // Extract track ID from song URL for duplicate protection
+          const trackId = extractTrackIdFromUrl(orderItem.track_url);
+          
           // Get package configuration
           const packageConfig = await getPackageConfiguration(supabase, orderItem.package_name);
           
-          // Assign playlists intelligently
+          // Assign playlists intelligently with duplicate protection
           const playlistAssignments = await assignPlaylistsForCampaign(
             supabase, 
             customerGenre, 
-            packageConfig.playlist_assignments_needed
+            packageConfig.playlist_assignments_needed,
+            trackId || ''
           );
 
           // Prepare campaign data
@@ -283,6 +253,7 @@ async function handler(req: NextApiRequest, res: NextApiResponse, adminUser: Adm
             customer_name: order.customer_name,
             song_name: orderItem.track_title,
             song_link: orderItem.track_url || '',
+            track_id: trackId,
             package_name: orderItem.package_name,
             package_id: orderItem.package_id,
             direct_streams: packageConfig.direct_streams,

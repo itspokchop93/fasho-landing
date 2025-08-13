@@ -7,6 +7,7 @@ interface StreamPurchaseRequest {
   streamQty: number;
   drips: number;
   intervalMinutes: number;
+  serviceId: string;
 }
 
 interface StreamPurchase {
@@ -15,6 +16,7 @@ interface StreamPurchase {
   streamQty: number;
   drips: number;
   intervalMinutes: number;
+  serviceId: string;
   purchaseDate: string;
   nextPurchaseDate: string;
   createdAt: string;
@@ -35,6 +37,7 @@ async function handler(req: NextApiRequest, res: NextApiResponse, adminUser: Adm
           stream_qty,
           drips,
           interval_minutes,
+          service_id,
           purchase_date,
           next_purchase_date,
           created_at,
@@ -59,6 +62,7 @@ async function handler(req: NextApiRequest, res: NextApiResponse, adminUser: Adm
         streamQty: purchase.stream_qty,
         drips: purchase.drips,
         intervalMinutes: purchase.interval_minutes,
+        serviceId: purchase.service_id,
         purchaseDate: purchase.purchase_date,
         nextPurchaseDate: purchase.next_purchase_date,
         createdAt: purchase.created_at,
@@ -107,12 +111,12 @@ async function handler(req: NextApiRequest, res: NextApiResponse, adminUser: Adm
 
   if (req.method === 'POST') {
     try {
-      const { playlistId, streamQty, drips, intervalMinutes }: StreamPurchaseRequest = req.body;
+      const { playlistId, streamQty, drips, intervalMinutes, serviceId }: StreamPurchaseRequest = req.body;
 
       // Validate required fields
-      if (!playlistId || !streamQty || !drips || !intervalMinutes) {
+      if (!playlistId || !streamQty || !drips || !intervalMinutes || !serviceId) {
         return res.status(400).json({ 
-          error: 'Missing required fields: playlistId, streamQty, drips, intervalMinutes' 
+          error: 'Missing required fields: playlistId, streamQty, drips, intervalMinutes, serviceId' 
         });
       }
 
@@ -153,6 +157,7 @@ async function handler(req: NextApiRequest, res: NextApiResponse, adminUser: Adm
           stream_qty: streamQty,
           drips,
           interval_minutes: intervalMinutes,
+          service_id: serviceId,
           purchase_date: purchaseDate.toISOString(),
           next_purchase_date: nextPurchaseDate.toISOString()
         })
@@ -162,6 +167,7 @@ async function handler(req: NextApiRequest, res: NextApiResponse, adminUser: Adm
           stream_qty,
           drips,
           interval_minutes,
+          service_id,
           purchase_date,
           next_purchase_date,
           created_at,
@@ -184,6 +190,7 @@ async function handler(req: NextApiRequest, res: NextApiResponse, adminUser: Adm
         streamQty: purchase.stream_qty,
         drips: purchase.drips,
         intervalMinutes: purchase.interval_minutes,
+        serviceId: purchase.service_id,
         purchaseDate: purchase.purchase_date,
         nextPurchaseDate: purchase.next_purchase_date,
         createdAt: purchase.created_at,

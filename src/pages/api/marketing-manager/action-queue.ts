@@ -10,7 +10,28 @@ async function handler(req: NextApiRequest, res: NextApiResponse, adminUser: Adm
   try {
     const supabase = createAdminClient();
 
-    // Get campaigns that need actions (not hidden and not completed)
+    // First, run cleanup to mark expired hidden/completed items as excluded
+    try {
+      const cleanupResponse = await fetch(`${req.headers.origin}/api/marketing-manager/cleanup-expired-action-items`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Cookie': req.headers.cookie || ''
+        }
+      });
+      
+      if (cleanupResponse.ok) {
+        const cleanupResult = await cleanupResponse.json();
+        if (cleanupResult.totalUpdated > 0) {
+          console.log(`🧹 AUTO-CLEANUP: ${cleanupResult.totalUpdated} campaigns marked as excluded from action queue`);
+        }
+      }
+    } catch (cleanupError) {
+      console.error('Error running auto-cleanup:', cleanupError);
+      // Continue even if cleanup fails
+    }
+
+    // Get campaigns that need actions (not cancelled)
     const { data: campaignsData, error: campaignsError } = await supabase
       .from('marketing_campaigns')
       .select(`
@@ -26,7 +47,11 @@ async function handler(req: NextApiRequest, res: NextApiResponse, adminUser: Adm
         campaign_status,
         playlist_streams_progress,
         playlist_streams,
+        playlist_assignments,
+        playlists_added_at,
         hidden_until,
+        initial_actions_excluded,
+        removal_actions_excluded,
         created_at,
         updated_at,
         orders!inner(created_at, status)
@@ -73,25 +98,26 @@ async function handler(req: NextApiRequest, res: NextApiResponse, adminUser: Adm
       const isHidden = campaign.hidden_until && new Date(campaign.hidden_until) > now;
 
       // STEP 1 & 2: Create INITIAL ACTION ITEM (Direct Streams + Add to Playlists)
-      // Show this when either action is NOT confirmed yet OR when both are completed (for 8-hour window)
-      const initialActionsCompleted = campaign.direct_streams_confirmed && campaign.playlists_added_confirmed;
-      const needsInitialActions = !initialActionsCompleted;
-      
-      // Always show initial action items, but determine their status
-      let status: 'Needed' | 'Overdue' | 'Completed';
-      let completedAt = null;
+      // Only show if initial actions are not excluded
+      if (!campaign.initial_actions_excluded) {
+        const initialActionsCompleted = campaign.direct_streams_confirmed && campaign.playlists_added_confirmed;
+        const needsInitialActions = !initialActionsCompleted;
+        
+        // Always show initial action items, but determine their status
+        let status: 'Needed' | 'Overdue' | 'Completed';
+        let completedAt = null;
 
-      if (initialActionsCompleted) {
-        status = 'Completed';
-        completedAt = campaign.updated_at;
-      } else if (hoursUntilDue > 0) {
-        status = 'Needed';
-      } else {
-        status = 'Overdue';
-      }
+        if (initialActionsCompleted) {
+          status = 'Completed';
+          completedAt = campaign.updated_at;
+        } else if (hoursUntilDue > 0) {
+          status = 'Needed';
+        } else {
+          status = 'Overdue';
+        }
 
-      // Create the initial action item (always show it, status determines appearance)
-      actionItems.push({
+        // Create the initial action item
+        actionItems.push({
           id: `${campaign.id}-initial`,
           orderNumber: campaign.order_number,
           orderId: campaign.order_id,
@@ -113,6 +139,7 @@ async function handler(req: NextApiRequest, res: NextApiResponse, adminUser: Adm
           hiddenUntil: campaign.hidden_until,
           completedAt: completedAt
         });
+      }
 
       // STEP 6 & 7: Create REMOVAL ACTION ITEM (Remove from Playlists)
       // Calculate if removal is needed the same way as campaigns.ts does
@@ -145,10 +172,11 @@ async function handler(req: NextApiRequest, res: NextApiResponse, adminUser: Adm
       // Show removal action item when:
       // 1. Both initial actions completed AND playlist target reached (needs removal)
       // 2. OR when already removed but within 8 hours (show as completed)
+      // 3. AND removal actions are not excluded
       const needsRemovalAction = bothInitialActionsCompleted && playlistTargetReached;
       const isRemovalCompleted = campaign.removed_from_playlists;
       
-      if (needsRemovalAction) {
+      if (needsRemovalAction && !campaign.removal_actions_excluded) {
         // Determine status and completion details for removal action item
         let removalStatus: 'Needed' | 'Overdue' | 'Completed';
         let removalCompletedAt = null;

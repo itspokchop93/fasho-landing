@@ -25,13 +25,25 @@ async function handler(req: NextApiRequest, res: NextApiResponse, adminUser: Adm
       ? itemId.slice(0, -8) // Remove '-removal'  
       : itemId; // Fallback for old format
 
-    // Unhide the item by clearing the hidden_until field
+    // Determine which action type to unhide based on the item ID
+    const actionType = itemId.endsWith('-initial') ? 'initial' : 'removal';
+    
+    let updateFields: any = {
+      hidden_until: null,
+      updated_at: new Date().toISOString()
+    };
+    
+    // Reset the appropriate exclusion flag based on action type
+    if (actionType === 'initial') {
+      updateFields.initial_actions_excluded = false;
+    } else {
+      updateFields.removal_actions_excluded = false;
+    }
+
+    // Unhide the item by clearing the hidden_until field and resetting the appropriate exclusion flag
     const { error } = await supabase
       .from('marketing_campaigns')
-      .update({ 
-        hidden_until: null,
-        updated_at: new Date().toISOString()
-      })
+      .update(updateFields)
       .eq('id', campaignId);
 
     if (error) {

@@ -1,6 +1,7 @@
 import { NextApiRequest, NextApiResponse } from 'next';
 import { createAdminClient } from '../../../utils/supabase/server';
 import { requireAdminAuth, AdminUser } from '../../../utils/admin/auth';
+import { extractTrackIdFromUrl, getAvailablePlaylistsWithProtection } from '../../../utils/playlist-assignment-protection';
 
 interface PlaylistAssignment {
   id: string;
@@ -29,6 +30,9 @@ async function handler(req: NextApiRequest, res: NextApiResponse, adminUser: Adm
         id,
         order_id,
         order_number,
+        song_name,
+        song_link,
+        track_id,
         package_name,
         package_id,
         playlist_assignments,
@@ -70,65 +74,29 @@ async function handler(req: NextApiRequest, res: NextApiResponse, adminUser: Adm
     const playlistsNeeded = packageConfig.playlist_assignments_needed;
     console.log(`🎵 PLAYLIST-ASSIGNMENT: Need ${playlistsNeeded} playlists for ${campaign.package_name} package`);
 
-    // Get available playlists matching the user's genre
-    const { data: genreMatchingPlaylists, error: genrePlaylistError } = await supabase
-      .from('playlist_network')
-      .select('id, playlist_name, genre')
-      .eq('is_active', true)
-      .eq('genre', userGenre)
-      .order('playlist_name', { ascending: true });
-
-    if (genrePlaylistError) {
-      console.error('Error fetching genre-matching playlists:', genrePlaylistError);
-      return res.status(500).json({ error: 'Failed to fetch playlists' });
-    }
-
-    let selectedPlaylists: PlaylistAssignment[] = [];
-
-    // Add genre-specific playlists first
-    if (genreMatchingPlaylists && genreMatchingPlaylists.length > 0) {
-      const genrePlaylistsToAdd = Math.min(genreMatchingPlaylists.length, playlistsNeeded);
-      selectedPlaylists = genreMatchingPlaylists.slice(0, genrePlaylistsToAdd).map(playlist => ({
-        id: playlist.id,
-        name: playlist.playlist_name,
-        genre: playlist.genre
-      }));
-
-      console.log(`🎵 PLAYLIST-ASSIGNMENT: Added ${genrePlaylistsToAdd} ${userGenre} playlists`);
-    }
-
-    // If we still need more playlists, fill with General playlists
-    if (selectedPlaylists.length < playlistsNeeded) {
-      const remainingNeeded = playlistsNeeded - selectedPlaylists.length;
+    // Extract track ID from song_link or use existing track_id
+    let trackId = campaign.track_id;
+    if (!trackId && campaign.song_link) {
+      trackId = extractTrackIdFromUrl(campaign.song_link);
+      console.log(`🎵 PLAYLIST-ASSIGNMENT: Extracted track ID ${trackId} from song link`);
       
-      // Get already selected playlist IDs to avoid duplicates
-      const selectedIds = selectedPlaylists.map(p => p.id);
-      
-      const { data: generalPlaylists, error: generalPlaylistError } = await supabase
-        .from('playlist_network')
-        .select('id, playlist_name, genre')
-        .eq('is_active', true)
-        .eq('genre', 'General')
-        .not('id', 'in', `(${selectedIds.join(',')})`)
-        .order('playlist_name', { ascending: true })
-        .limit(remainingNeeded);
-
-      if (generalPlaylistError) {
-        console.error('Error fetching general playlists:', generalPlaylistError);
-        return res.status(500).json({ error: 'Failed to fetch general playlists' });
-      }
-
-      if (generalPlaylists && generalPlaylists.length > 0) {
-        const generalPlaylistsToAdd = generalPlaylists.map(playlist => ({
-          id: playlist.id,
-          name: playlist.playlist_name,
-          genre: playlist.genre
-        }));
-
-        selectedPlaylists = [...selectedPlaylists, ...generalPlaylistsToAdd];
-        console.log(`🎵 PLAYLIST-ASSIGNMENT: Added ${generalPlaylistsToAdd.length} General playlists to fill remaining slots`);
+      // Update the campaign with the extracted track_id for future use
+      if (trackId) {
+        await supabase
+          .from('marketing_campaigns')
+          .update({ track_id: trackId })
+          .eq('id', campaignId);
       }
     }
+
+    // Get playlist assignments with duplicate protection
+    const selectedPlaylists = await getAvailablePlaylistsWithProtection(
+      supabase,
+      userGenre,
+      playlistsNeeded,
+      trackId || '',
+      campaignId // Exclude current campaign for genre changes
+    );
 
     // Update the campaign with the generated playlist assignments
     const { data: updatedCampaign, error: updateError } = await supabase
