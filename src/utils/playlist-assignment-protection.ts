@@ -65,7 +65,7 @@ export async function getExcludedPlaylistsForTrack(
     // Extract all playlist IDs from existing campaigns
     const excludedPlaylistIds: string[] = [];
     
-    existingCampaigns.forEach(campaign => {
+    existingCampaigns.forEach((campaign: any) => {
       console.log(`🚫 DUPLICATE-PROTECTION: Found existing campaign Order #${campaign.order_number} (${campaign.song_name}) with track ID ${trackId}`);
       
       if (campaign.playlist_assignments && Array.isArray(campaign.playlist_assignments)) {
@@ -126,12 +126,12 @@ export async function getAvailablePlaylistsWithProtection(
   // Add genre-specific playlists first (with capacity check)
   if (genreMatchingPlaylists && genreMatchingPlaylists.length > 0) {
     // Filter out full playlists
-    const availableGenrePlaylists = genreMatchingPlaylists.filter(playlist => 
+    const availableGenrePlaylists = genreMatchingPlaylists.filter((playlist: any) => 
       (playlist.cached_song_count || 0) < (playlist.max_songs || 25)
     );
 
     const genrePlaylistsToAdd = Math.min(availableGenrePlaylists.length, playlistsNeeded);
-    selectedPlaylists = availableGenrePlaylists.slice(0, genrePlaylistsToAdd).map(playlist => ({
+    selectedPlaylists = availableGenrePlaylists.slice(0, genrePlaylistsToAdd).map((playlist: any) => ({
       id: playlist.id,
       name: playlist.playlist_name,
       genre: playlist.genre
@@ -165,11 +165,11 @@ export async function getAvailablePlaylistsWithProtection(
       console.error('🚫 DUPLICATE-PROTECTION: Error fetching general playlists:', generalPlaylistError);
     } else if (generalPlaylists && generalPlaylists.length > 0) {
       // Filter out full playlists
-      const availableGeneralPlaylists = generalPlaylists.filter(playlist => 
+      const availableGeneralPlaylists = generalPlaylists.filter((playlist: any) => 
         (playlist.cached_song_count || 0) < (playlist.max_songs || 25)
       );
 
-      const generalPlaylistsToAdd = availableGeneralPlaylists.map(playlist => ({
+      const generalPlaylistsToAdd = availableGeneralPlaylists.map((playlist: any) => ({
         id: playlist.id,
         name: playlist.playlist_name,
         genre: playlist.genre

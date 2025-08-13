@@ -39,7 +39,7 @@ const getPackageConfiguration = async (supabase: any, packageName: string) => {
 // Fallback function for default stream values
 const getDefaultStreams = (packageName: string, type: 'direct' | 'playlist') => {
   const pkg = packageName.toUpperCase();
-  const values = {
+  const values: { [key: string]: { direct: number; playlist: number } } = {
     'LEGENDARY': { direct: 70000, playlist: 40000 },
     'UNSTOPPABLE': { direct: 21000, playlist: 20000 },
     'DOMINATE': { direct: 10000, playlist: 9000 },
@@ -52,7 +52,7 @@ const getDefaultStreams = (packageName: string, type: 'direct' | 'playlist') => 
 // Fallback function for default playlist assignments
 const getDefaultAssignments = (packageName: string) => {
   const pkg = packageName.toUpperCase();
-  const assignments = {
+  const assignments: { [key: string]: number } = {
     'LEGENDARY': 4,
     'UNSTOPPABLE': 4,
     'DOMINATE': 3,
@@ -199,7 +199,7 @@ async function handler(req: NextApiRequest, res: NextApiResponse, adminUser: Adm
       if (profilesError) {
         console.error('⚠️ Warning: Could not fetch user profiles:', profilesError);
       } else {
-        userProfiles = profiles?.reduce((acc, profile) => {
+        userProfiles = profiles?.reduce((acc: any, profile: any) => {
           acc[profile.user_id] = profile;
           return acc;
         }, {}) || {};
@@ -216,7 +216,7 @@ async function handler(req: NextApiRequest, res: NextApiResponse, adminUser: Adm
       }
 
       // Get customer genre from user profile or default to 'Pop'
-      const userProfile = order.user_id ? userProfiles[order.user_id] : null;
+      const userProfile = order.user_id ? (userProfiles as any)[order.user_id] : null;
       const customerGenre = userProfile?.music_genre || 'Pop';
       
       console.log(`📦 Processing order ${order.order_number} - Genre: ${customerGenre}, Items: ${order.order_items.length}`);
@@ -274,7 +274,7 @@ async function handler(req: NextApiRequest, res: NextApiResponse, adminUser: Adm
             orderNumber: order.order_number,
             trackTitle: orderItem.track_title,
             packageName: orderItem.package_name,
-            error: itemError.message
+            error: itemError instanceof Error ? itemError.message : 'Unknown error'
           });
         }
       }
@@ -302,11 +302,11 @@ async function handler(req: NextApiRequest, res: NextApiResponse, adminUser: Adm
 
   } catch (error) {
     console.error('❌ CRITICAL ERROR in populate existing orders:', error);
-    console.error('❌ Error stack:', error.stack);
+    console.error('❌ Error stack:', error instanceof Error ? error.stack : 'No stack trace');
     res.status(500).json({ 
       error: 'Internal server error',
-      details: error.message,
-      stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
+      details: error instanceof Error ? error.message : 'Unknown error',
+      stack: process.env.NODE_ENV === 'development' && error instanceof Error ? error.stack : undefined
     });
   }
 }

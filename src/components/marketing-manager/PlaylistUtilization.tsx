@@ -217,7 +217,7 @@ const PlaylistUtilization: React.FC = () => {
             )}
           </button>
           <button
-            onClick={fetchPlaylistUtilization}
+            onClick={() => fetchPlaylistUtilization()}
             disabled={refreshing}
             className="flex items-center space-x-2 text-indigo-600 hover:text-indigo-800 text-sm font-medium disabled:opacity-50"
           >

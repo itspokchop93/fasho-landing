@@ -60,7 +60,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       } else {
         // Query auth.users table to find user by email
         const { data: users } = await supabase.auth.admin.listUsers();
-        const foundUser = users.users.find(u => u.email === email);
+        const foundUser = users.users.find((u: any) => u.email === email);
         if (foundUser) {
           targetUserId = foundUser.id;
         }

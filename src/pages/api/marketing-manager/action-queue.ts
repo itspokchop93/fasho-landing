@@ -67,7 +67,7 @@ async function handler(req: NextApiRequest, res: NextApiResponse, adminUser: Adm
     const actionItems: any[] = [];
 
     // Group campaigns by order number to calculate song numbers for multi-track orders
-    const campaignsByOrder = {};
+    const campaignsByOrder: { [key: string]: any[] } = {};
     (campaignsData || []).forEach(campaign => {
       if (!campaignsByOrder[campaign.order_number]) {
         campaignsByOrder[campaign.order_number] = [];
@@ -83,7 +83,7 @@ async function handler(req: NextApiRequest, res: NextApiResponse, adminUser: Adm
         ? orderCampaigns.findIndex(c => c.id === campaign.id) + 1 
         : null;
 
-      const orderCreatedAt = new Date(campaign.orders.created_at);
+      const orderCreatedAt = new Date((campaign.orders as any).created_at);
       const dueByTimestamp = orderCreatedAt.getTime() + (48 * 60 * 60 * 1000); // 48 hours after order
       const hoursUntilDue = Math.floor((dueByTimestamp - now.getTime()) / (1000 * 60 * 60));
       
@@ -246,7 +246,7 @@ async function handler(req: NextApiRequest, res: NextApiResponse, adminUser: Adm
     const sortedActionItems = filteredActionItems
       .sort((a, b) => {
         // Sort by status priority (Overdue > Needed > Completed), then by due date
-        const statusPriority = { 'Overdue': 0, 'Needed': 1, 'Completed': 2 };
+        const statusPriority: { [key: string]: number } = { 'Overdue': 0, 'Needed': 1, 'Completed': 2 };
         if (statusPriority[a.status] !== statusPriority[b.status]) {
           return statusPriority[a.status] - statusPriority[b.status];
         }

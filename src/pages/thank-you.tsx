@@ -73,7 +73,7 @@ const trackPurchaseEvent = (orderData: OrderData) => {
       return;
     }
 
-    if (!window.gtag) {
+    if (!(window as any).gtag) {
       if (retryCount < 5) {
         console.log(`🎯 GOOGLE ADS: gtag not ready, retrying in 500ms (attempt ${retryCount + 1}/5)`);
         setTimeout(() => attemptTracking(retryCount + 1), 500);

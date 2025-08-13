@@ -40,7 +40,7 @@ async function generatePlaylistAssignments(supabase: any, campaign: any): Promis
   }
 
   // Map old package names to new ones
-  const packageNameMapping = {
+  const packageNameMapping: { [key: string]: string } = {
     'ULTRA': 'LEGENDARY',
     'DIAMOND': 'UNSTOPPABLE', 
     'DOMINATE': 'DOMINATE', // Already correct
@@ -64,7 +64,7 @@ async function generatePlaylistAssignments(supabase: any, campaign: any): Promis
   if (packageError || !packageConfig) {
     console.error(`Error fetching package configuration for ${campaign.package_name} (mapped to ${mappedPackageName}):`, packageError);
     // Fallback: use default assignments based on package type
-    const fallbackAssignments = {
+    const fallbackAssignments: { [key: string]: number } = {
       'LEGENDARY': 4,
       'UNSTOPPABLE': 4,
       'DOMINATE': 3,
@@ -132,8 +132,8 @@ async function autoImportNewOrders(supabase: any): Promise<number> {
       return 0;
     }
 
-    const existingCampaignOrderIds = new Set(existingCampaigns?.map(c => c.order_id) || []);
-    const ordersToProcess = existingOrders?.filter(order => !existingCampaignOrderIds.has(order.id)) || [];
+    const existingCampaignOrderIds = new Set(existingCampaigns?.map((c: any) => c.order_id) || []);
+    const ordersToProcess = existingOrders?.filter((order: any) => !existingCampaignOrderIds.has(order.id)) || [];
 
     if (ordersToProcess.length === 0) {
       console.log('✅ AUTO-IMPORT: No new orders to import');
@@ -144,10 +144,10 @@ async function autoImportNewOrders(supabase: any): Promise<number> {
 
     // Get user profiles for orders with user_ids
     const userIds = ordersToProcess
-      .filter(order => order.user_id)
-      .map(order => order.user_id);
+      .filter((order: any) => order.user_id)
+      .map((order: any) => order.user_id);
 
-    let userProfiles = {};
+    let userProfiles: { [key: string]: any } = {};
     if (userIds.length > 0) {
       const { data: profiles, error: profilesError } = await supabase
         .from('user_profiles')
@@ -155,7 +155,7 @@ async function autoImportNewOrders(supabase: any): Promise<number> {
         .in('user_id', userIds);
 
       if (!profilesError && profiles) {
-        userProfiles = profiles.reduce((acc, profile) => {
+        userProfiles = profiles.reduce((acc: any, profile: any) => {
           acc[profile.user_id] = profile;
           return acc;
         }, {});
@@ -238,7 +238,7 @@ async function getPackageData(supabase: any, packageName: string) {
       console.error(`❌ Error fetching package config for ${packageName}:`, error);
       
       // Fallback to hardcoded values if database fetch fails (matching Campaign Totals)
-      const fallbackPackages = {
+      const fallbackPackages: { [key: string]: { directStreams: number; playlistStreams: number; timeOnPlaylists: number } } = {
         'LEGENDARY': { directStreams: 70000, playlistStreams: 40000, timeOnPlaylists: 14 },
         'UNSTOPPABLE': { directStreams: 21000, playlistStreams: 20000, timeOnPlaylists: 10 },
         'DOMINATE': { directStreams: 10000, playlistStreams: 9000, timeOnPlaylists: 6 },
@@ -262,13 +262,13 @@ async function getPackageData(supabase: any, packageName: string) {
     console.error(`❌ Exception fetching package config for ${packageName}:`, err);
     
     // Ultimate fallback (matching Campaign Totals)
-    const fallbackPackages = {
-      'LEGENDARY': { directStreams: 70000, playlistStreams: 40000, timeOnPlaylists: 14 },
-      'UNSTOPPABLE': { directStreams: 21000, playlistStreams: 20000, timeOnPlaylists: 10 },
-      'DOMINATE': { directStreams: 10000, playlistStreams: 9000, timeOnPlaylists: 6 },
-      'MOMENTUM': { directStreams: 3000, playlistStreams: 4000, timeOnPlaylists: 4 },
-      'BREAKTHROUGH': { directStreams: 1500, playlistStreams: 2000, timeOnPlaylists: 2 }
-    };
+      const fallbackPackages: { [key: string]: { directStreams: number; playlistStreams: number; timeOnPlaylists: number } } = {
+    'LEGENDARY': { directStreams: 70000, playlistStreams: 40000, timeOnPlaylists: 14 },
+    'UNSTOPPABLE': { directStreams: 21000, playlistStreams: 20000, timeOnPlaylists: 10 },
+    'DOMINATE': { directStreams: 10000, playlistStreams: 9000, timeOnPlaylists: 6 },
+    'MOMENTUM': { directStreams: 3000, playlistStreams: 4000, timeOnPlaylists: 4 },
+    'BREAKTHROUGH': { directStreams: 1500, playlistStreams: 2000, timeOnPlaylists: 2 }
+  };
     
     return fallbackPackages[packageName.toUpperCase()] || { directStreams: 1000, playlistStreams: 3000, timeOnPlaylists: 6 };
   }
@@ -452,7 +452,7 @@ async function handler(req: NextApiRequest, res: NextApiResponse, adminUser: Adm
     }
 
     // Group campaigns by order number to calculate song numbers for multi-track orders
-    const campaignsByOrder = {};
+    const campaignsByOrder: { [key: string]: any[] } = {};
     (campaignsData || []).forEach(campaign => {
       if (!campaignsByOrder[campaign.order_number]) {
         campaignsByOrder[campaign.order_number] = [];
@@ -528,7 +528,7 @@ async function handler(req: NextApiRequest, res: NextApiResponse, adminUser: Adm
       }
 
       // Extract user genre for display
-      const userGenre = campaign.orders?.billing_info?.musicGenre || 'General';
+      const userGenre = (campaign.orders as any)?.billing_info?.musicGenre || 'General';
 
       // Calculate song number for multi-track orders
       const orderCampaigns = campaignsByOrder[campaign.order_number] || [];
@@ -540,7 +540,7 @@ async function handler(req: NextApiRequest, res: NextApiResponse, adminUser: Adm
         id: campaign.id,
         orderNumber: campaign.order_number,
         orderId: campaign.order_id,
-        orderDate: campaign.orders.created_at,
+        orderDate: (campaign.orders as any).created_at,
         customerName: campaign.customer_name,
         songName: campaign.song_name,
         songLink: campaign.song_link,

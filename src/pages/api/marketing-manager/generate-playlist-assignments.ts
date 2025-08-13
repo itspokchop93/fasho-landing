@@ -50,8 +50,8 @@ async function handler(req: NextApiRequest, res: NextApiResponse, adminUser: Adm
     let userGenre = 'General'; // Default fallback
     
     // Use the same logic as order details page - check billing_info first (the reliable source)
-    if (campaign.orders?.billing_info?.musicGenre) {
-      userGenre = campaign.orders.billing_info.musicGenre;
+    if ((campaign.orders as any)?.billing_info?.musicGenre) {
+      userGenre = (campaign.orders as any).billing_info.musicGenre;
       console.log(`🎵 PLAYLIST-ASSIGNMENT: Found genre in billing_info: ${userGenre}`);
     } else {
       console.log(`🎵 PLAYLIST-ASSIGNMENT: No genre found in billing_info, using General`);

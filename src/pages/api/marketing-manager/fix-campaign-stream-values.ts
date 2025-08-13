@@ -16,7 +16,7 @@ async function getPackageDataFromDB(supabase: any, packageName: string) {
       console.error(`❌ Error fetching package config for ${packageName}:`, error);
       
       // Fallback to correct values (matching Campaign Totals screenshot)
-      const fallbackPackages = {
+      const fallbackPackages: { [key: string]: { directStreams: number; playlistStreams: number; timeOnPlaylists: number } } = {
         'LEGENDARY': { directStreams: 70000, playlistStreams: 40000, timeOnPlaylists: 14 },
         'UNSTOPPABLE': { directStreams: 21000, playlistStreams: 20000, timeOnPlaylists: 10 },
         'DOMINATE': { directStreams: 10000, playlistStreams: 9000, timeOnPlaylists: 6 },
@@ -39,13 +39,13 @@ async function getPackageDataFromDB(supabase: any, packageName: string) {
     console.error(`❌ Exception fetching package config for ${packageName}:`, err);
     
     // Ultimate fallback (matching Campaign Totals screenshot)
-    const fallbackPackages = {
-      'LEGENDARY': { directStreams: 70000, playlistStreams: 40000, timeOnPlaylists: 14 },
-      'UNSTOPPABLE': { directStreams: 21000, playlistStreams: 20000, timeOnPlaylists: 10 },
-      'DOMINATE': { directStreams: 10000, playlistStreams: 9000, timeOnPlaylists: 6 },
-      'MOMENTUM': { directStreams: 3000, playlistStreams: 4000, timeOnPlaylists: 4 },
-      'BREAKTHROUGH': { directStreams: 1500, playlistStreams: 2000, timeOnPlaylists: 2 }
-    };
+      const fallbackPackages: { [key: string]: { directStreams: number; playlistStreams: number; timeOnPlaylists: number } } = {
+    'LEGENDARY': { directStreams: 70000, playlistStreams: 40000, timeOnPlaylists: 14 },
+    'UNSTOPPABLE': { directStreams: 21000, playlistStreams: 20000, timeOnPlaylists: 10 },
+    'DOMINATE': { directStreams: 10000, playlistStreams: 9000, timeOnPlaylists: 6 },
+    'MOMENTUM': { directStreams: 3000, playlistStreams: 4000, timeOnPlaylists: 4 },
+    'BREAKTHROUGH': { directStreams: 1500, playlistStreams: 2000, timeOnPlaylists: 2 }
+  };
     
     return fallbackPackages[packageName.toUpperCase()] || { directStreams: 1000, playlistStreams: 3000, timeOnPlaylists: 6 };
   }
@@ -145,7 +145,7 @@ async function handler(req: NextApiRequest, res: NextApiResponse, adminUser: Adm
           orderNumber: campaign.order_number,
           package: campaign.package_name,
           success: false,
-          error: err.message
+          error: err instanceof Error ? err.message : 'Unknown error'
         });
       }
     }

@@ -27,6 +27,7 @@ async function handler(req: NextApiRequest, res: NextApiResponse, adminUser: Adm
       .select(`
         id,
         order_id,
+        order_number,
         direct_streams,
         playlist_streams,
         playlist_assignments,
