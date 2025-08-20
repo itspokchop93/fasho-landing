@@ -13,6 +13,12 @@ interface CacheStats {
   timestamp: string;
 }
 
+interface SongRow {
+  id: string;
+  spotifyUrl: string;
+  packageName: string;
+}
+
 const AdminSettingsManagement: React.FC = () => {
   const [settings, setSettings] = useState<AdminSettings>({ 
     webhook_url: '',
@@ -26,6 +32,34 @@ const AdminSettingsManagement: React.FC = () => {
   const [cacheStats, setCacheStats] = useState<CacheStats | null>(null);
   const [cacheLoading, setCacheLoading] = useState(false);
   const [autoRefresh, setAutoRefresh] = useState(false);
+
+  // Test Order state
+  const [testOrderData, setTestOrderData] = useState({
+    customerEmail: '',
+    firstName: '',
+    lastName: '',
+    billingAddress: {
+      street: '',
+      city: '',
+      state: '',
+      zipCode: '',
+      country: 'US'
+    }
+  });
+  const [songRows, setSongRows] = useState<SongRow[]>([
+    { id: '1', spotifyUrl: '', packageName: 'BREAKTHROUGH' }
+  ]);
+  const [isCreatingTestOrder, setIsCreatingTestOrder] = useState(false);
+
+  // Available packages
+  const availablePackages = [
+    { id: 'test', name: 'TEST PACKAGE', price: 0.10 },
+    { id: 'legendary', name: 'LEGENDARY', price: 479 },
+    { id: 'unstoppable', name: 'UNSTOPPABLE', price: 259 },
+    { id: 'dominate', name: 'DOMINATE', price: 149 },
+    { id: 'momentum', name: 'MOMENTUM', price: 79 },
+    { id: 'breakthrough', name: 'BREAKTHROUGH', price: 39 }
+  ];
 
   // Load settings on component mount
   useEffect(() => {
@@ -286,6 +320,99 @@ const AdminSettingsManagement: React.FC = () => {
     }
   };
 
+  // Test Order Functions
+  const addSongRow = () => {
+    const newId = (songRows.length + 1).toString();
+    setSongRows([...songRows, { id: newId, spotifyUrl: '', packageName: 'BREAKTHROUGH' }]);
+  };
+
+  const removeSongRow = (id: string) => {
+    if (songRows.length > 1) {
+      setSongRows(songRows.filter(row => row.id !== id));
+    }
+  };
+
+  const updateSongRow = (id: string, field: 'spotifyUrl' | 'packageName', value: string) => {
+    setSongRows(songRows.map(row => 
+      row.id === id ? { ...row, [field]: value } : row
+    ));
+  };
+
+  const handleTestOrderSubmit = async () => {
+    try {
+      console.log('🧪 TEST-ORDER-UI: Starting test order submission...');
+      setIsCreatingTestOrder(true);
+      setError(null);
+      setSuccess(null);
+
+      // Validate form data
+      if (!testOrderData.customerEmail || !testOrderData.firstName || !testOrderData.lastName) {
+        throw new Error('Please fill in all required customer information');
+      }
+
+      // Validate at least one song
+      const validSongs = songRows.filter(row => row.spotifyUrl.trim());
+      if (validSongs.length === 0) {
+        throw new Error('Please add at least one Spotify URL');
+      }
+
+      // Validate Spotify URLs
+      for (const song of validSongs) {
+        if (!song.spotifyUrl.includes('spotify.com/track/')) {
+          throw new Error('Please enter valid Spotify track URLs');
+        }
+      }
+
+      console.log('🧪 TEST-ORDER-UI: Validation passed, sending request...');
+      console.log('🧪 TEST-ORDER-UI: Customer info:', testOrderData);
+      console.log('🧪 TEST-ORDER-UI: Songs:', validSongs);
+
+      const response = await fetch('/api/test/create-test-order', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+        body: JSON.stringify({
+          customerInfo: testOrderData,
+          songs: validSongs
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        console.error('🧪 TEST-ORDER-UI: Server error:', errorData);
+        throw new Error(errorData.error || `Failed to create test order (${response.status})`);
+      }
+
+      const data = await response.json();
+      setSuccess(`Test order created successfully! Order #${data.orderNumber} with ${validSongs.length} song(s).`);
+      
+      // Reset form
+      setTestOrderData({
+        customerEmail: '',
+        firstName: '',
+        lastName: '',
+        billingAddress: {
+          street: '',
+          city: '',
+          state: '',
+          zipCode: '',
+          country: 'US'
+        }
+      });
+      setSongRows([{ id: '1', spotifyUrl: '', packageName: 'BREAKTHROUGH' }]);
+      
+      // Clear success message after 5 seconds
+      setTimeout(() => setSuccess(null), 5000);
+    } catch (err) {
+      console.error('Error creating test order:', err);
+      setError(err instanceof Error ? err.message : 'Failed to create test order');
+    } finally {
+      setIsCreatingTestOrder(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="bg-white rounded-xl p-6 shadow-lg border border-gray-100">
@@ -494,6 +621,276 @@ const AdminSettingsManagement: React.FC = () => {
               </div>
               <div className="mt-3 pt-3 border-t border-gray-200">
                 <span className="text-xs text-gray-500">Note: Changes will be applied globally across the entire website.</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Create Test Order Section */}
+      <div className="bg-white rounded-xl p-6 shadow-lg border border-gray-100">
+        <div className="flex items-center mb-6">
+          <div className="flex-shrink-0">
+            <div className="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
+              <svg className="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+              </svg>
+            </div>
+          </div>
+          <div className="ml-4">
+            <h2 className="text-xl font-semibold text-gray-900">Create Test Order</h2>
+            <p className="text-gray-600">Create test orders for development and testing purposes.</p>
+          </div>
+        </div>
+
+        <div className="space-y-6">
+          {/* Customer Information */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+              <label htmlFor="customer-email" className="block text-sm font-medium text-gray-700 mb-2">
+                Customer Email *
+              </label>
+              <input
+                id="customer-email"
+                type="email"
+                value={testOrderData.customerEmail}
+                onChange={(e) => setTestOrderData({ ...testOrderData, customerEmail: e.target.value })}
+                placeholder="customer@example.com"
+                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label htmlFor="first-name" className="block text-sm font-medium text-gray-700 mb-2">
+                  First Name *
+                </label>
+                <input
+                  id="first-name"
+                  type="text"
+                  value={testOrderData.firstName}
+                  onChange={(e) => setTestOrderData({ ...testOrderData, firstName: e.target.value })}
+                  placeholder="John"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+                />
+              </div>
+              <div>
+                <label htmlFor="last-name" className="block text-sm font-medium text-gray-700 mb-2">
+                  Last Name *
+                </label>
+                <input
+                  id="last-name"
+                  type="text"
+                  value={testOrderData.lastName}
+                  onChange={(e) => setTestOrderData({ ...testOrderData, lastName: e.target.value })}
+                  placeholder="Doe"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Billing Address */}
+          <div>
+            <h3 className="text-lg font-medium text-gray-900 mb-4">Billing Address</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="md:col-span-2">
+                <label htmlFor="street" className="block text-sm font-medium text-gray-700 mb-2">
+                  Street Address
+                </label>
+                <input
+                  id="street"
+                  type="text"
+                  value={testOrderData.billingAddress.street}
+                  onChange={(e) => setTestOrderData({ 
+                    ...testOrderData, 
+                    billingAddress: { ...testOrderData.billingAddress, street: e.target.value }
+                  })}
+                  placeholder="123 Main Street"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+                />
+              </div>
+              <div>
+                <label htmlFor="city" className="block text-sm font-medium text-gray-700 mb-2">
+                  City
+                </label>
+                <input
+                  id="city"
+                  type="text"
+                  value={testOrderData.billingAddress.city}
+                  onChange={(e) => setTestOrderData({ 
+                    ...testOrderData, 
+                    billingAddress: { ...testOrderData.billingAddress, city: e.target.value }
+                  })}
+                  placeholder="New York"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+                />
+              </div>
+              <div>
+                <label htmlFor="state" className="block text-sm font-medium text-gray-700 mb-2">
+                  State
+                </label>
+                <input
+                  id="state"
+                  type="text"
+                  value={testOrderData.billingAddress.state}
+                  onChange={(e) => setTestOrderData({ 
+                    ...testOrderData, 
+                    billingAddress: { ...testOrderData.billingAddress, state: e.target.value }
+                  })}
+                  placeholder="NY"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+                />
+              </div>
+              <div>
+                <label htmlFor="zip-code" className="block text-sm font-medium text-gray-700 mb-2">
+                  ZIP Code
+                </label>
+                <input
+                  id="zip-code"
+                  type="text"
+                  value={testOrderData.billingAddress.zipCode}
+                  onChange={(e) => setTestOrderData({ 
+                    ...testOrderData, 
+                    billingAddress: { ...testOrderData.billingAddress, zipCode: e.target.value }
+                  })}
+                  placeholder="10001"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+                />
+              </div>
+              <div>
+                <label htmlFor="country" className="block text-sm font-medium text-gray-700 mb-2">
+                  Country
+                </label>
+                <select
+                  id="country"
+                  value={testOrderData.billingAddress.country}
+                  onChange={(e) => setTestOrderData({ 
+                    ...testOrderData, 
+                    billingAddress: { ...testOrderData.billingAddress, country: e.target.value }
+                  })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+                >
+                  <option value="US">United States</option>
+                  <option value="CA">Canada</option>
+                  <option value="GB">United Kingdom</option>
+                  <option value="AU">Australia</option>
+                  <option value="DE">Germany</option>
+                  <option value="FR">France</option>
+                  <option value="IT">Italy</option>
+                  <option value="ES">Spain</option>
+                  <option value="NL">Netherlands</option>
+                  <option value="SE">Sweden</option>
+                  <option value="NO">Norway</option>
+                  <option value="DK">Denmark</option>
+                  <option value="FI">Finland</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+          {/* Song Rows */}
+          <div>
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-medium text-gray-900">Songs</h3>
+              <button
+                onClick={addSongRow}
+                className="inline-flex items-center px-3 py-2 border border-transparent text-sm font-medium rounded-md text-green-700 bg-green-100 hover:bg-green-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
+              >
+                <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                </svg>
+                Add Song
+              </button>
+            </div>
+            <div className="space-y-4">
+              {songRows.map((song, index) => (
+                <div key={song.id} className="flex items-center space-x-3 p-4 border border-gray-200 rounded-lg">
+                  <div className="flex-1">
+                    <label htmlFor={`spotify-url-${song.id}`} className="block text-sm font-medium text-gray-700 mb-2">
+                      Spotify URL *
+                    </label>
+                    <input
+                      id={`spotify-url-${song.id}`}
+                      type="url"
+                      value={song.spotifyUrl}
+                      onChange={(e) => updateSongRow(song.id, 'spotifyUrl', e.target.value)}
+                      placeholder="https://open.spotify.com/track/..."
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+                    />
+                  </div>
+                  <div className="w-48">
+                    <label htmlFor={`package-${song.id}`} className="block text-sm font-medium text-gray-700 mb-2">
+                      Package
+                    </label>
+                    <select
+                      id={`package-${song.id}`}
+                      value={song.packageName}
+                      onChange={(e) => updateSongRow(song.id, 'packageName', e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+                    >
+                      {availablePackages.map(pkg => (
+                        <option key={pkg.id} value={pkg.name}>
+                          {pkg.name} (${pkg.price})
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  {songRows.length > 1 && (
+                    <button
+                      onClick={() => removeSongRow(song.id)}
+                      className="p-2 text-red-600 hover:text-red-800 focus:outline-none"
+                    >
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                      </svg>
+                    </button>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Submit Button */}
+          <div className="pt-4 border-t border-gray-200">
+            <button
+              onClick={handleTestOrderSubmit}
+              disabled={isCreatingTestOrder}
+              className="inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-md shadow-sm text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {isCreatingTestOrder ? (
+                <>
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                  Creating Order...
+                </>
+              ) : (
+                <>
+                  <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                  </svg>
+                  Create Test Order
+                </>
+              )}
+            </button>
+            <p className="mt-2 text-sm text-gray-500">
+              This will create a complete order with all the specified songs and automatically import it into the marketing manager.
+            </p>
+          </div>
+
+          {/* Information */}
+          <div className="bg-blue-50 rounded-lg p-4">
+            <h3 className="text-sm font-medium text-blue-900 mb-3">Test Order Information</h3>
+            <div className="space-y-2 text-sm text-blue-800">
+              <div className="flex items-start">
+                <span className="font-medium text-blue-900 w-32 flex-shrink-0">Order Creation:</span>
+                <span>Creates a real order in the database with status "paid"</span>
+              </div>
+              <div className="flex items-start">
+                <span className="font-medium text-blue-900 w-32 flex-shrink-0">Auto Import:</span>
+                <span>Automatically imports into marketing manager for campaign tracking</span>
+              </div>
+              <div className="flex items-start">
+                <span className="font-medium text-blue-900 w-32 flex-shrink-0">Multiple Songs:</span>
+                <span>Add multiple songs to test multi-track orders</span>
               </div>
             </div>
           </div>

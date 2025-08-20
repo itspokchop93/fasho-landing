@@ -2,6 +2,118 @@ import { NextApiRequest, NextApiResponse } from 'next';
 import { createAdminClient } from '../../../utils/supabase/server';
 import { requireAdminAuth, AdminUser } from '../../../utils/admin/auth';
 
+// CLEANUP LOGIC: Extracted from cleanup-expired-action-items.ts to run directly
+async function runCleanupLogic(supabase: any) {
+  const now = new Date();
+  let totalUpdated = 0;
+
+  // Find campaigns where hidden_until has expired (8 hours have passed)
+  const { data: expiredHiddenCampaigns, error: fetchError } = await supabase
+    .from('marketing_campaigns')
+    .select('id, order_number, hidden_until, initial_actions_excluded, removal_actions_excluded, direct_streams_confirmed, playlists_added_confirmed, removed_from_playlists')
+    .not('hidden_until', 'is', null)
+    .lt('hidden_until', now.toISOString());
+
+  if (fetchError) {
+    console.error('Error fetching expired hidden campaigns:', fetchError);
+    return { totalUpdated: 0, error: fetchError };
+  }
+
+  console.log(`🧹 CLEANUP: Found ${expiredHiddenCampaigns?.length || 0} campaigns with expired hidden_until timestamps`);
+
+
+  if (expiredHiddenCampaigns && expiredHiddenCampaigns.length > 0) {
+    // Process each campaign to determine which action type should be excluded
+    for (const campaign of expiredHiddenCampaigns) {
+      const initialCompleted = campaign.direct_streams_confirmed && campaign.playlists_added_confirmed;
+      const removalCompleted = campaign.removed_from_playlists;
+      
+      let updateFields: any = {
+        hidden_until: null, // Clear the hidden_until since it's now permanent
+        updated_at: new Date().toISOString()
+      };
+      
+      // Determine which action type to exclude based on campaign state
+      if (!initialCompleted && !campaign.initial_actions_excluded) {
+        // Initial actions are not completed and not yet excluded - exclude them
+        updateFields.initial_actions_excluded = true;
+        console.log(`🧹 CLEANUP: Order ${campaign.order_number} - excluding initial actions`);
+      } else if (initialCompleted && !removalCompleted && !campaign.removal_actions_excluded) {
+        // Initial actions completed but removal not completed - exclude removal actions
+        updateFields.removal_actions_excluded = true;
+        console.log(`🧹 CLEANUP: Order ${campaign.order_number} - excluding removal actions`);
+      } else if (removalCompleted && !campaign.removal_actions_excluded) {
+        // Removal completed - exclude removal actions
+        updateFields.removal_actions_excluded = true;
+        console.log(`🧹 CLEANUP: Order ${campaign.order_number} - excluding completed removal actions`);
+      }
+      
+      // Apply the update for this specific campaign
+      const { error: updateError } = await supabase
+        .from('marketing_campaigns')
+        .update(updateFields)
+        .eq('id', campaign.id);
+
+      if (updateError) {
+        console.error(`Error updating campaign ${campaign.id}:`, updateError);
+      } else {
+        totalUpdated++;
+      }
+    }
+  }
+
+  // Also find campaigns that were completed more than 8 hours ago and should be excluded
+  const eightHoursAgo = new Date(now.getTime() - (8 * 60 * 60 * 1000));
+  
+  const { data: expiredCompletedCampaigns, error: completedFetchError } = await supabase
+    .from('marketing_campaigns')
+    .select('id, order_number, updated_at, direct_streams_confirmed, playlists_added_confirmed, removed_from_playlists, initial_actions_excluded, removal_actions_excluded')
+    .lt('updated_at', eightHoursAgo.toISOString())
+    .or('and(direct_streams_confirmed.eq.true,playlists_added_confirmed.eq.true),removed_from_playlists.eq.true');
+
+  if (!completedFetchError && expiredCompletedCampaigns && expiredCompletedCampaigns.length > 0) {
+    // Mark completed campaigns as excluded based on which actions are completed
+    for (const campaign of expiredCompletedCampaigns) {
+      let updateFields: any = {
+        updated_at: new Date().toISOString()
+      };
+      
+      const initialCompleted = campaign.direct_streams_confirmed && campaign.playlists_added_confirmed;
+      const removalCompleted = campaign.removed_from_playlists;
+      
+      if (initialCompleted && !campaign.initial_actions_excluded) {
+        updateFields.initial_actions_excluded = true;
+        console.log(`🧹 CLEANUP: Order ${campaign.order_number} - excluding completed initial actions`);
+      }
+      
+      if (removalCompleted && !campaign.removal_actions_excluded) {
+        updateFields.removal_actions_excluded = true;
+        console.log(`🧹 CLEANUP: Order ${campaign.order_number} - excluding completed removal actions`);
+      }
+      
+      // Only update if there are fields to update
+      if (Object.keys(updateFields).length > 1) { // More than just updated_at
+        const { error: completedUpdateError } = await supabase
+          .from('marketing_campaigns')
+          .update(updateFields)
+          .eq('id', campaign.id);
+
+        if (completedUpdateError) {
+          console.error(`Error updating completed campaign ${campaign.id}:`, completedUpdateError);
+        } else {
+          totalUpdated++;
+        }
+      }
+    }
+  }
+
+  return { 
+    totalUpdated,
+    expiredHidden: expiredHiddenCampaigns?.length || 0,
+    expiredCompleted: expiredCompletedCampaigns?.length || 0
+  };
+}
+
 async function handler(req: NextApiRequest, res: NextApiResponse, adminUser: AdminUser) {
   if (req.method !== 'GET') {
     return res.status(405).json({ error: 'Method not allowed' });
@@ -12,19 +124,9 @@ async function handler(req: NextApiRequest, res: NextApiResponse, adminUser: Adm
 
     // First, run cleanup to mark expired hidden/completed items as excluded
     try {
-      const cleanupResponse = await fetch(`${req.headers.origin}/api/marketing-manager/cleanup-expired-action-items`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Cookie': req.headers.cookie || ''
-        }
-      });
-      
-      if (cleanupResponse.ok) {
-        const cleanupResult = await cleanupResponse.json();
-        if (cleanupResult.totalUpdated > 0) {
-          console.log(`🧹 AUTO-CLEANUP: ${cleanupResult.totalUpdated} campaigns marked as excluded from action queue`);
-        }
+      const cleanupResult = await runCleanupLogic(supabase);
+      if (cleanupResult.totalUpdated > 0) {
+        console.log(`🧹 AUTO-CLEANUP: ${cleanupResult.totalUpdated} campaigns marked as excluded from action queue`);
       }
     } catch (cleanupError) {
       console.error('Error running auto-cleanup:', cleanupError);
@@ -49,6 +151,8 @@ async function handler(req: NextApiRequest, res: NextApiResponse, adminUser: Adm
         playlist_streams,
         playlist_assignments,
         playlists_added_at,
+        direct_streams_confirmed_at,
+        removed_from_playlists_at,
         hidden_until,
         initial_actions_excluded,
         removal_actions_excluded,
@@ -96,6 +200,8 @@ async function handler(req: NextApiRequest, res: NextApiResponse, adminUser: Adm
 
       // Check if item is currently hidden
       const isHidden = campaign.hidden_until && new Date(campaign.hidden_until) > now;
+      
+      // Check if item is currently hidden (no detailed logging in production)
 
       // STEP 1 & 2: Create INITIAL ACTION ITEM (Direct Streams + Add to Playlists)
       // Only show if initial actions are not excluded
@@ -109,7 +215,19 @@ async function handler(req: NextApiRequest, res: NextApiResponse, adminUser: Adm
 
         if (initialActionsCompleted) {
           status = 'Completed';
-          completedAt = campaign.updated_at;
+          // Use the LATEST of the two completion timestamps as the overall completion time
+          const directCompletedAt = campaign.direct_streams_confirmed_at;
+          const playlistsCompletedAt = campaign.playlists_added_at;
+          
+          if (directCompletedAt && playlistsCompletedAt) {
+            // Both completed - use the later timestamp
+            completedAt = new Date(directCompletedAt) > new Date(playlistsCompletedAt) 
+              ? directCompletedAt 
+              : playlistsCompletedAt;
+          } else {
+            // Use whichever one exists (fallback to updated_at if neither exists)
+            completedAt = directCompletedAt || playlistsCompletedAt || campaign.updated_at;
+          }
         } else if (hoursUntilDue > 0) {
           status = 'Needed';
         } else {
@@ -184,7 +302,7 @@ async function handler(req: NextApiRequest, res: NextApiResponse, adminUser: Adm
         if (isRemovalCompleted) {
           // De-playlisted button was clicked - show as completed
           removalStatus = 'Completed';
-          removalCompletedAt = campaign.updated_at; // When it was completed
+          removalCompletedAt = campaign.removed_from_playlists_at || campaign.updated_at; // Use dedicated timestamp
         } else {
           // Still needs to be removed
           removalStatus = 'Needed';

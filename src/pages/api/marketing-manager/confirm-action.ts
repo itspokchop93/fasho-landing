@@ -52,6 +52,7 @@ async function handler(req: NextApiRequest, res: NextApiResponse, adminUser: Adm
     switch (action) {
       case 'direct-streams':
         updateData.direct_streams_confirmed = true;
+        updateData.direct_streams_confirmed_at = new Date().toISOString(); // DEDICATED COMPLETION TIMESTAMP
         updateData.direct_streams_progress = campaignData.direct_streams;
         break;
 
@@ -89,6 +90,7 @@ async function handler(req: NextApiRequest, res: NextApiResponse, adminUser: Adm
 
       case 'de-playlisted':
         updateData.removed_from_playlists = true;
+        updateData.removed_from_playlists_at = new Date().toISOString(); // DEDICATED COMPLETION TIMESTAMP
         updateData.campaign_status = 'Completed';
         updateData.playlist_streams_progress = campaignData.playlist_streams;
         break;

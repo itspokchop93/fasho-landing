@@ -5,7 +5,6 @@ import ActionQueue from './marketing-manager/ActionQueue';
 import ActiveCampaigns from './marketing-manager/ActiveCampaigns';
 import PlaylistUtilization from './marketing-manager/PlaylistUtilization';
 import SystemSettings from './marketing-manager/SystemSettings';
-
 const MarketingManager: React.FC = () => {
   const router = useRouter();
   const [activeTab, setActiveTab] = useState('manager');

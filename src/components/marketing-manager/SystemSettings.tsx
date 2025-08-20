@@ -997,6 +997,9 @@ const SystemSettings: React.FC = () => {
                   </div>
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Last QTY
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Status
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -1101,6 +1104,15 @@ const SystemSettings: React.FC = () => {
                           )}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
+                          {latestPurchase ? (
+                            <div className="text-sm font-medium text-gray-900">
+                              {(latestPurchase.streamQty * latestPurchase.drips).toLocaleString()}
+                            </div>
+                          ) : (
+                            <span className="text-sm text-gray-400">No data</span>
+                          )}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
                           <button
                             onClick={(e) => {
                               e.stopPropagation();
@@ -1162,7 +1174,7 @@ const SystemSettings: React.FC = () => {
                       {/* Accordion Details Section */}
                       {isExpanded && (
                         <tr>
-                          <td colSpan={9} className="px-0 py-0">
+                          <td colSpan={10} className="px-0 py-0">
                             <div className="bg-gray-50 border-t border-gray-200 animate-slide-down">
                               <div className="px-6 py-4">
                                 <h4 className="text-sm font-medium text-gray-900 mb-3">Stream Purchase History</h4>

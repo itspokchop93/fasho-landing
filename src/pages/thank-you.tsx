@@ -474,72 +474,7 @@ export default function ThankYouPage() {
           </>
         )}
 
-        {/* Google Ads FASHO - Purchase v2 Conversion Pixel */}
-        {orderData && (
-          <script
-            dangerouslySetInnerHTML={{
-              __html: `
-                // Google Ads Purchase Conversion v2 - Enhanced Ecommerce with improved timing
-                (function() {
-                  var attemptCount = 0;
-                  var maxAttempts = 10;
-                  
-                  function trackConversion() {
-                    if (typeof gtag !== 'undefined') {
-                      // Get GCLID from URL or localStorage if available
-                      var gclid = null;
-                      try {
-                        var urlParams = new URLSearchParams(window.location.search);
-                        gclid = urlParams.get('gclid');
-                        if (!gclid && localStorage.getItem('fasho_lead_data')) {
-                          var leadData = JSON.parse(localStorage.getItem('fasho_lead_data'));
-                          gclid = leadData.gclid;
-                        }
-                      } catch (e) {
-                        console.warn('🎯 GOOGLE ADS v2: Could not retrieve GCLID:', e);
-                      }
-                      
-                      var conversionData = {
-                        'send_to': 'AW-17096610863/iwXJCMeWxIAbEK-optg_',
-                        'value': ${orderData.total},
-                        'currency': 'USD',
-                        'transaction_id': '${orderData.orderNumber || orderData.orderId || `order_${Date.now()}`}',
-                        'items': [{
-                          'item_id': 'agency_campaign',
-                          'item_name': 'Agency Campaign',
-                          'category': 'Music Promotion Services',
-                          'quantity': 1,
-                          'price': ${orderData.total}
-                        }]
-                      };
-                      
-                      // Inject GCLID if available
-                      if (gclid) {
-                        conversionData.gclid = gclid;
-                        console.log('🎯 GOOGLE ADS v2: Injecting GCLID:', gclid);
-                      }
-                      
-                      gtag('event', 'conversion', conversionData);
-                      
-                      console.log('🎯 GOOGLE ADS v2: Purchase conversion tracked with transaction ID:', '${orderData.orderNumber || orderData.orderId || `order_${Date.now()}`}', 'GCLID:', gclid || 'none');
-                    } else {
-                      attemptCount++;
-                      if (attemptCount < maxAttempts) {
-                        console.log('🎯 GOOGLE ADS v2: gtag not ready, retrying (attempt ' + attemptCount + '/' + maxAttempts + ')');
-                        setTimeout(trackConversion, 200);
-                      } else {
-                        console.error('🎯 GOOGLE ADS v2: gtag not available after ' + maxAttempts + ' attempts');
-                      }
-                    }
-                  }
-                  
-                  // Start tracking after a brief delay
-                  setTimeout(trackConversion, 100);
-                })();
-              `,
-            }}
-          />
-        )}
+
       </Head>
       
               <Header extraClasses="thank-you-page-header" />
