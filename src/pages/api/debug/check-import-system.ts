@@ -48,8 +48,8 @@ async function handler(req: NextApiRequest, res: NextApiResponse, adminUser: Adm
 
     // Test database functions
     let functionTests = {
-      get_package_streams: { exists: false, error: null },
-      get_package_configuration: { exists: false, error: null }
+      get_package_streams: { exists: false, error: null as string | null },
+      get_package_configuration: { exists: false, error: null as string | null }
     };
 
     // Test get_package_streams
@@ -73,7 +73,7 @@ async function handler(req: NextApiRequest, res: NextApiResponse, adminUser: Adm
       });
       functionTests.get_package_configuration = { 
         exists: !configError, 
-        error: configError?.message || null,
+        error: configError?.message ?? null,
         result: configData || null
       };
     } catch (e: any) {
