@@ -59,7 +59,7 @@ async function handler(req: NextApiRequest, res: NextApiResponse, adminUser: Adm
       });
       functionTests.get_package_streams = { 
         exists: !streamError, 
-        error: streamError?.message || null,
+        error: streamError?.message ?? null,
         result: streamData || null
       };
     } catch (e: any) {
