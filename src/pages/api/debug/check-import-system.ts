@@ -48,8 +48,8 @@ async function handler(req: NextApiRequest, res: NextApiResponse, adminUser: Adm
 
     // Test database functions
     let functionTests = {
-      get_package_streams: { exists: false, error: null as string | null },
-      get_package_configuration: { exists: false, error: null as string | null }
+      get_package_streams: { exists: false, error: null as string | null, result: null as any },
+      get_package_configuration: { exists: false, error: null as string | null, result: null as any }
     };
 
     // Test get_package_streams
