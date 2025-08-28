@@ -178,6 +178,25 @@ export class BlogPostService {
       console.error('Failed to increment view count:', error);
     }
   }
+
+  async findPostsBySourceArticleId(sourceArticleId: string): Promise<BlogApiResponse<{id: string, slug: string, title: string}[]>> {
+    try {
+      const { data, error } = await this.supabase
+        .from('blog_posts')
+        .select('id, slug, title')
+        .eq('source_article_id', sourceArticleId)
+        .limit(1);
+
+      if (error) throw error;
+
+      return { success: true, data: data || [] };
+    } catch (error) {
+      return { 
+        success: false, 
+        error: error instanceof Error ? error.message : 'Failed to find posts by source article ID'
+      };
+    }
+  }
 }
 
 // Website source operations

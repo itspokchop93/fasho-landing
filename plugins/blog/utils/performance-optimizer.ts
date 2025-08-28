@@ -149,8 +149,9 @@ export class PerformanceOptimizer {
     // Defer non-critical JavaScript
     const scripts = document.querySelectorAll('script:not([async]):not([defer])');
     scripts.forEach(script => {
-      if (!script.src.includes('critical')) {
-        script.defer = true;
+      const scriptElement = script as HTMLScriptElement;
+      if (!scriptElement.src.includes('critical')) {
+        scriptElement.defer = true;
       }
     });
 
@@ -311,12 +312,13 @@ export class WebVitalsTracker {
       const fidObserver = new PerformanceObserver((list) => {
         const entries = list.getEntries();
         entries.forEach(entry => {
-          console.log('FID:', entry.processingStart - entry.startTime);
+          const fidEntry = entry as any; // FID entries have different properties
+          console.log('FID:', fidEntry.processingStart - fidEntry.startTime);
           
           if ((window as any).gtag) {
             (window as any).gtag('event', 'web_vitals', {
               name: 'FID',
-              value: Math.round(entry.processingStart - entry.startTime),
+              value: Math.round(fidEntry.processingStart - fidEntry.startTime),
               event_category: 'Web Vitals'
             });
           }

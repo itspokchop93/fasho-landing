@@ -120,7 +120,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       <dc:date>${post.published_at || post.created_at}</dc:date>`;
 
         // Add categories/tags
-        categories.forEach(category => {
+        categories.forEach((category: string) => {
           rssXml += `
       <category>${escapeXml(category)}</category>`;
         });

@@ -23,7 +23,7 @@ export async function generateSitemapXML(): Promise<string> {
     // Get all published blog posts
     const { data: posts, error } = await supabase
       .from('blog_posts')
-      .select('slug, updated_at, published_at')
+      .select('slug, updated_at, published_at, created_at, title, meta_description, featured_image_url, tags')
       .eq('status', 'published')
       .not('published_at', 'is', null)
       .lte('published_at', new Date().toISOString())
@@ -57,7 +57,7 @@ export async function generateSitemapXML(): Promise<string> {
       // Get additional SEO data for enhanced sitemap
       const { data: postsWithSEO, error: seoError } = await supabase
         .from('blog_posts')
-        .select('slug, updated_at, published_at, title, meta_description, featured_image_url, tags')
+        .select('slug, updated_at, published_at, created_at, title, meta_description, featured_image_url, tags')
         .eq('status', 'published')
         .not('published_at', 'is', null)
         .lte('published_at', new Date().toISOString())

@@ -99,15 +99,12 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       console.log(`🔍 WEBHOOK: Checking for duplicate article with source_article_id: ${payload.article.id}`);
       
       // Search by source_article_id instead of id
-      const { data: existingPosts, error } = await blogPostService.supabase
-        .from('blog_posts')
-        .select('id, slug, title')
-        .eq('source_article_id', payload.article.id)
-        .limit(1);
+      const existingPostsResponse = await blogPostService.findPostsBySourceArticleId(payload.article.id);
 
-      if (error) {
-        console.error('🚨 WEBHOOK: Error checking for duplicates:', error);
-      } else if (existingPosts && existingPosts.length > 0) {
+      if (!existingPostsResponse.success) {
+        console.error('🚨 WEBHOOK: Error checking for duplicates:', existingPostsResponse.error);
+      } else if (existingPostsResponse.data && existingPostsResponse.data.length > 0) {
+        const existingPosts = existingPostsResponse.data;
         isDuplicate = true;
         const existingPost = existingPosts[0];
         console.log(`🔄 WEBHOOK: Duplicate article detected!`);
@@ -153,7 +150,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     console.log(`💾 WEBHOOK: Creating post with isDuplicate=${isDuplicate}, source_article_id will be: ${isDuplicate ? 'null' : payload.article.id}`);
     
     const createPostResponse = await blogPostService.createPost({
-      source_article_id: isDuplicate ? null : payload.article.id,
+      source_article_id: isDuplicate ? undefined : payload.article.id,
       title: payload.article.title,
       content: payload.article.content || '',
       html_content: payload.article.htmlContent,
@@ -165,7 +162,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       article_type: payload.article.articleType || 'blog_post',
       slug: slug,
       status: 'draft', // Save as draft for review and editing
-      published_at: null, // Will be set when manually published
+      published_at: undefined, // Will be set when manually published
       read_time: readTime,
       author_name: 'Article Chef',
       view_count: 0
