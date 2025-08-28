@@ -129,8 +129,9 @@ export class PerformanceOptimizer {
     // Add aspect ratio containers for images
     const images = document.querySelectorAll('img:not([style*="aspect-ratio"])');
     images.forEach(img => {
-      const aspectRatio = img.naturalWidth / img.naturalHeight || 16/9;
-      (img as HTMLElement).style.aspectRatio = aspectRatio.toString();
+      const imageElement = img as HTMLImageElement;
+      const aspectRatio = imageElement.naturalWidth / imageElement.naturalHeight || 16/9;
+      imageElement.style.aspectRatio = aspectRatio.toString();
     });
 
     // Reserve space for dynamic content
