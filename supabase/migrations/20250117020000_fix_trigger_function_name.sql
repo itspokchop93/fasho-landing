@@ -97,3 +97,6 @@ $$ LANGUAGE plpgsql;
 -- 3. Add comment explaining the fix
 COMMENT ON FUNCTION create_marketing_campaign_from_order IS 'Fixed to use get_package_streams() instead of non-existent get_package_configuration()';
 COMMENT ON FUNCTION get_package_streams IS 'Updated to return time_on_playlists in addition to stream counts';
+
+
+

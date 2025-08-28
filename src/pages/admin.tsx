@@ -11,6 +11,7 @@ import MarketingManager from '../components/MarketingManager'
 import MonthlyOrdersChart from '../components/MonthlyOrdersChart'
 import ActiveUsersSection from '../components/ActiveUsersSection'
 import AdminAccessDenied from '../components/AdminAccessDenied'
+import BlogDashboard from '../../plugins/blog/components/BlogDashboard'
 import { verifyAdminToken, getAdminTokenFromRequest, AdminUser } from '../utils/admin/auth'
 
 interface AdminDashboardProps {
@@ -366,6 +367,15 @@ export default function AdminDashboard({ adminUser, authError }: AdminDashboardP
     )
   }
 
+  const renderBlogContent = () => {
+    console.log('🔄 ADMIN-RENDER: Rendering blog content...');
+    return (
+      <div className="space-y-6">
+        <BlogDashboard adminUser={adminUser} />
+      </div>
+    )
+  }
+
   const renderMarketingManagerContent = () => {
     console.log('🔄 ADMIN-RENDER: Rendering marketing manager content...');
     return (
@@ -390,6 +400,8 @@ export default function AdminDashboard({ adminUser, authError }: AdminDashboardP
         return renderOrdersContent()
       case 'marketing-manager':
         return renderMarketingManagerContent()
+      case 'blog':
+        return adminUser.role === 'admin' ? renderBlogContent() : renderOrdersContent()
       case 'emails':
         return adminUser.role === 'admin' ? renderEmailsContent() : renderOrdersContent()
       case 'coupons':
@@ -466,6 +478,23 @@ export default function AdminDashboard({ adminUser, authError }: AdminDashboardP
                   >
                     Marketing Manager
                   </button>
+
+                  {/* Blog Tab - Only for full admins */}
+                  {adminUser.role === 'admin' && (
+                    <button
+                      onClick={() => {
+                        setActiveTab('blog')
+                        window.location.hash = '#blog'
+                      }}
+                      className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                        activeTab === 'blog'
+                          ? 'bg-indigo-100 text-indigo-700'
+                          : 'text-gray-500 hover:text-gray-700'
+                      }`}
+                    >
+                      Blog
+                    </button>
+                  )}
                   
                   {/* Emails Tab - Only for full admins */}
                   {adminUser.role === 'admin' && (

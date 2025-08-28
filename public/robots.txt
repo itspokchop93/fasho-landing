@@ -1,0 +1,74 @@
+# Robots.txt for FASHO.co - Optimized for SEO and Blog Content
+# Last updated: 2025
+
+# Allow all search engines to crawl the entire site
+User-agent: *
+Allow: /
+
+# Specific optimizations for major search engines
+User-agent: Googlebot
+Allow: /
+Crawl-delay: 1
+
+User-agent: Bingbot
+Allow: /
+Crawl-delay: 2
+
+User-agent: Slurp
+Allow: /
+Crawl-delay: 2
+
+# Allow social media crawlers for better social sharing
+User-agent: facebookexternalhit
+Allow: /
+
+User-agent: Twitterbot
+Allow: /
+
+User-agent: LinkedInBot
+Allow: /
+
+User-agent: WhatsApp
+Allow: /
+
+# Block unnecessary crawlers to save server resources
+User-agent: AhrefsBot
+Disallow: /
+
+User-agent: SemrushBot
+Disallow: /
+
+User-agent: MJ12bot
+Disallow: /
+
+User-agent: DotBot
+Disallow: /
+
+# Disallow admin and API endpoints for security
+Disallow: /admin
+Disallow: /api/
+Disallow: /_next/
+Disallow: /node_modules/
+
+# Allow blog content and sitemap
+Allow: /blog/
+Allow: /sitemap.xml
+Allow: /blog/sitemap.xml
+
+# Sitemaps for better crawling
+Sitemap: https://fasho.co/sitemap.xml
+Sitemap: https://fasho.co/blog/sitemap.xml
+
+# Allow CSS and JS for better rendering
+Allow: *.css
+Allow: *.js
+Allow: *.png
+Allow: *.jpg
+Allow: *.jpeg
+Allow: *.gif
+Allow: *.webp
+Allow: *.svg
+
+# Host directive for primary domain (helps with canonicalization)
+Host: https://fasho.co
+

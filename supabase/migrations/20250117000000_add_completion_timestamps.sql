@@ -35,3 +35,6 @@ WHERE removed_from_playlists = true
 -- Add helpful comments
 COMMENT ON COLUMN marketing_campaigns.direct_streams_confirmed_at IS 'Timestamp when direct streams were confirmed - used for accurate Action Queue auto-removal';
 COMMENT ON COLUMN marketing_campaigns.removed_from_playlists_at IS 'Timestamp when removal from playlists was completed - used for accurate Action Queue auto-removal';
+
+
+
