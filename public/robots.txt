@@ -18,6 +18,20 @@ User-agent: Slurp
 Allow: /
 Crawl-delay: 2
 
+# Allow ChatGPT/OpenAI Crawler (ChatGPT-User / CCBot)
+# This helps ensure your site can be crawled by OpenAI for inclusion in AI training and ChatGPT browsing plugins
+User-agent: ChatGPT-User
+Allow: /
+Crawl-delay: 1
+
+User-agent: CCBot
+Allow: /
+Crawl-delay: 1
+
+User-agent: GPTBot
+Allow: /
+Crawl-delay: 1
+
 # Allow social media crawlers for better social sharing
 User-agent: facebookexternalhit
 Allow: /

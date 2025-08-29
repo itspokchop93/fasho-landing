@@ -6,6 +6,7 @@ import BlogPostList from './BlogPostList';
 import BlogEditor from './BlogEditor';
 import BlogSettings from './BlogSettings';
 import BlogAnalytics from './BlogAnalytics';
+import IndexLinks from './IndexLinks';
 import { BlogPost, BlogDashboardStats } from '../types/blog';
 
 interface BlogDashboardProps {
@@ -16,7 +17,7 @@ interface BlogDashboardProps {
   };
 }
 
-type BlogTab = 'posts' | 'new-post' | 'edit-post' | 'analytics' | 'settings';
+type BlogTab = 'posts' | 'new-post' | 'edit-post' | 'analytics' | 'settings' | 'index-links';
 
 const BlogDashboard: React.FC<BlogDashboardProps> = ({ adminUser }) => {
   const [activeTab, setActiveTab] = useState<BlogTab>('posts');
@@ -76,7 +77,7 @@ const BlogDashboard: React.FC<BlogDashboardProps> = ({ adminUser }) => {
     const hash = window.location.hash;
     if (hash.includes('blog-')) {
       const tab = hash.split('blog-')[1] as BlogTab;
-      if (['posts', 'new-post', 'analytics', 'settings'].includes(tab)) {
+      if (['posts', 'new-post', 'analytics', 'settings', 'index-links'].includes(tab)) {
         setActiveTab(tab);
       }
     }
@@ -114,6 +115,8 @@ const BlogDashboard: React.FC<BlogDashboardProps> = ({ adminUser }) => {
         return <BlogAnalytics />;
       case 'settings':
         return <BlogSettings />;
+      case 'index-links':
+        return <IndexLinks />;
       default:
         return (
           <BlogPostList 
@@ -199,6 +202,17 @@ const BlogDashboard: React.FC<BlogDashboardProps> = ({ adminUser }) => {
               style={{ zIndex: 12 }}
             >
               Analytics
+            </button>
+            <button
+              onClick={() => handleTabChange('index-links')}
+              className={`py-2 px-1 border-b-2 font-medium text-sm transition-colors ${
+                activeTab === 'index-links'
+                  ? 'border-blue-500 text-blue-600'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+              }`}
+              style={{ zIndex: 12 }}
+            >
+              Index Links
             </button>
             <button
               onClick={() => handleTabChange('settings')}

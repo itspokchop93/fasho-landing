@@ -78,6 +78,117 @@ export default function BlogPostPage({ post, relatedPosts, error }: BlogPostPage
   return (
     <>
       <Head>
+        {/* Ensure Tailwind CSS is loaded */}
+        <link rel="stylesheet" href="/_next/static/css/app.css" />
+        <style>{`
+          /* Force CSS Reset and Base Styles */
+          *, *::before, *::after {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+          }
+          
+          html, body {
+            height: 100%;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+          }
+          
+          /* Ensure Tailwind classes work */
+          .min-h-screen { min-height: 100vh; }
+          .bg-gradient-to-br { background-image: linear-gradient(to bottom right, var(--tw-gradient-stops)); }
+          .from-\\[\\#0f0f23\\] { --tw-gradient-from: #0f0f23; --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to, rgba(15, 15, 35, 0)); }
+          .via-\\[\\#1a1a2e\\] { --tw-gradient-stops: var(--tw-gradient-from), #1a1a2e, var(--tw-gradient-to, rgba(26, 26, 46, 0)); }
+          .to-\\[\\#16213e\\] { --tw-gradient-to: #16213e; }
+          
+          /* Container styles */
+          .max-w-6xl { max-width: 72rem; }
+          .mx-auto { margin-left: auto; margin-right: auto; }
+          .px-4 { padding-left: 1rem; padding-right: 1rem; }
+          .sm\\:px-6 { padding-left: 1.5rem; padding-right: 1.5rem; }
+          .lg\\:px-8 { padding-left: 2rem; padding-right: 2rem; }
+          .pt-16 { padding-top: 4rem; }
+          .pb-16 { padding-bottom: 4rem; }
+          
+          /* White card container */
+          .bg-white { background-color: #ffffff; }
+          .rounded-2xl { border-radius: 1rem; }
+          .shadow-2xl { box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25); }
+          .p-8 { padding: 2rem; }
+          .lg\\:p-12 { padding: 3rem; }
+          
+          /* Typography */
+          .text-4xl { font-size: 2.25rem; line-height: 2.5rem; }
+          .lg\\:text-5xl { font-size: 3rem; line-height: 1; }
+          .font-bold { font-weight: 700; }
+          .text-gray-900 { color: #111827; }
+          .mb-6 { margin-bottom: 1.5rem; }
+          .leading-tight { line-height: 1.25; }
+          
+          /* Additional fallback styles */
+          .relative { position: relative; }
+          .overflow-hidden { overflow: hidden; }
+          .border { border-width: 1px; }
+          .border-gray-200 { border-color: #e5e7eb; }
+          .aspect-video { aspect-ratio: 16 / 9; }
+          .w-full { width: 100%; }
+          .h-full { height: 100%; }
+          .object-cover { object-fit: cover; }
+          .flex { display: flex; }
+          .flex-wrap { flex-wrap: wrap; }
+          .gap-2 { gap: 0.5rem; }
+          .text-sm { font-size: 0.875rem; line-height: 1.25rem; }
+          .px-4 { padding-left: 1rem; padding-right: 1rem; }
+          .py-2 { padding-top: 0.5rem; padding-bottom: 0.5rem; }
+          .rounded-full { border-radius: 9999px; }
+          .transition-all { transition-property: all; transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1); transition-duration: 150ms; }
+          .duration-300 { transition-duration: 300ms; }
+          .hover\\:scale-105:hover { transform: scale(1.05); }
+          .text-center { text-align: center; }
+          
+          /* Prose styles for content */
+          .prose { 
+            max-width: none;
+            color: #374151;
+            line-height: 1.7;
+            font-size: 19px;
+          }
+          .prose h1, .prose h2, .prose h3, .prose h4, .prose h5, .prose h6 { 
+            color: #1f2937;
+            font-weight: 600;
+            margin-top: 1.5rem;
+            margin-bottom: 1rem;
+          }
+          .prose p { 
+            margin-top: 1.25rem;
+            margin-bottom: 1.25rem;
+          }
+          .prose a { 
+            color: #2563eb;
+            text-decoration: none;
+            font-weight: 500;
+          }
+          .prose a:hover { 
+            color: #1d4ed8;
+            text-decoration: underline;
+          }
+          .prose img { 
+            max-width: 100%;
+            height: auto;
+            border-radius: 0.75rem;
+            margin: 1.5rem 0;
+          }
+          .prose strong { 
+            font-weight: 700;
+            color: #1f2937;
+          }
+          .prose ul, .prose ol { 
+            margin: 1.25rem 0;
+            padding-left: 1.75rem;
+          }
+          .prose li { 
+            margin: 0.5rem 0;
+          }
+        `}</style>
         {/* Basic Meta Tags */}
         <title>{post.meta_title || `${post.title} | Fasho Blog`}</title>
         <meta name="description" content={post.meta_description || post.excerpt || post.content.substring(0, 160)} />
@@ -190,11 +301,19 @@ export default function BlogPostPage({ post, relatedPosts, error }: BlogPostPage
         <link rel="icon" href="/favicon.ico" />
       </Head>
 
-      <div className="min-h-screen bg-gradient-to-br from-[#0f0f23] via-[#1a1a2e] to-[#16213e]" style={{ zIndex: 1 }}>
+      <div 
+        className="min-h-screen bg-gradient-to-br from-[#0f0f23] via-[#1a1a2e] to-[#16213e]" 
+        style={{ 
+          zIndex: 1,
+          minHeight: '100vh',
+          background: 'linear-gradient(to bottom right, #0f0f23, #1a1a2e, #16213e)',
+          fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif"
+        }}
+      >
         {/* Blog Header */}
         <BlogHeader />
 
-        <main className="pt-16">
+        <main className="pt-16" style={{ paddingTop: '4rem' }}>
           {/* Breadcrumb */}
           <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 mb-6" style={{ zIndex: 2 }}>
             <nav className="flex" aria-label="Breadcrumb">
@@ -233,7 +352,19 @@ export default function BlogPostPage({ post, relatedPosts, error }: BlogPostPage
             ></div>
             
             <div className="relative">
-              <div className="bg-white rounded-2xl shadow-2xl overflow-hidden border border-gray-200/40 relative" style={{ zIndex: 12 }} suppressHydrationWarning={true}>
+              <div 
+                className="bg-white rounded-2xl shadow-2xl overflow-hidden border border-gray-200/40 relative" 
+                style={{ 
+                  zIndex: 12,
+                  backgroundColor: '#ffffff',
+                  borderRadius: '1rem',
+                  boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
+                  overflow: 'hidden',
+                  border: '1px solid rgba(229, 231, 235, 0.4)',
+                  position: 'relative'
+                }} 
+                suppressHydrationWarning={true}
+              >
               {/* Featured Image */}
               {post.featured_image_url && (
                 <div className="aspect-video relative overflow-hidden">
@@ -248,7 +379,13 @@ export default function BlogPostPage({ post, relatedPosts, error }: BlogPostPage
               )}
 
               {/* Content */}
-              <div className="p-8 lg:p-12">
+              <div 
+                className="p-8 lg:p-12" 
+                style={{ 
+                  padding: '3rem',
+                  fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif"
+                }}
+              >
                 {/* Tags */}
                 {post.tags && post.tags.length > 0 && (
                   <div className="flex flex-wrap gap-2 mb-6">
@@ -266,7 +403,17 @@ export default function BlogPostPage({ post, relatedPosts, error }: BlogPostPage
                 )}
 
                 {/* Title */}
-                <h1 className="text-4xl lg:text-5xl font-bold text-gray-900 mb-6 leading-tight" style={{ fontFamily: "'Inter Tight', sans-serif" }}>
+                <h1 
+                  className="text-4xl lg:text-5xl font-bold text-gray-900 mb-6 leading-tight" 
+                  style={{ 
+                    fontFamily: "'Inter Tight', sans-serif",
+                    fontSize: '3rem',
+                    fontWeight: '700',
+                    color: '#111827',
+                    marginBottom: '1.5rem',
+                    lineHeight: '1.25'
+                  }}
+                >
                   {post.title}
                 </h1>
 
@@ -289,7 +436,9 @@ export default function BlogPostPage({ post, relatedPosts, error }: BlogPostPage
                     zIndex: 13,
                     fontFamily: "'Inter', sans-serif",
                     fontSize: '19px',
-                    lineHeight: '1.7'
+                    lineHeight: '1.7',
+                    maxWidth: 'none',
+                    color: '#374151'
                   }}
                 />
               
