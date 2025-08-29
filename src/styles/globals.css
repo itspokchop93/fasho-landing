@@ -1672,6 +1672,18 @@ button, a, [role="button"] {
   }
 }
 
+/* Fix for profile dropdown overflow issues */
+.profile-dropdown-container {
+  position: relative;
+  overflow: visible !important;
+}
+
+.profile-dropdown-menu {
+  position: absolute;
+  z-index: 99999 !important;
+  overflow: visible !important;
+}
+
 /* ===== SALES POP STYLES ===== */
 .sales-pop-container {
   position: fixed;

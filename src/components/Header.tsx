@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { useState, useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { useRouter } from 'next/router';
 import { createClient } from '../utils/supabase/client';
 import { userProfileService, ArtistProfile } from '../utils/userProfile';
@@ -41,8 +42,10 @@ export default function Header({ transparent = false, hideSignUp = false, extraC
   const [showProfileDropdown, setShowProfileDropdown] = useState(false);
   const [showSignOutModal, setShowSignOutModal] = useState(false);
   const [userFirstName, setUserFirstName] = useState<string>('User');
+  const [dropdownPosition, setDropdownPosition] = useState({ top: 0, right: 0 });
   const dropdownRef = useRef<HTMLDivElement>(null);
   const mobileDropdownRef = useRef<HTMLDivElement>(null);
+  const profileButtonRef = useRef<HTMLDivElement>(null);
   const supabase = createClient();
   const router = useRouter();
   
@@ -136,6 +139,25 @@ export default function Header({ transparent = false, hideSignUp = false, extraC
     return artistProfile?.artist_image_url || null;
   };
 
+  // Calculate dropdown position relative to viewport
+  const calculateDropdownPosition = () => {
+    if (profileButtonRef.current) {
+      const rect = profileButtonRef.current.getBoundingClientRect();
+      setDropdownPosition({
+        top: rect.bottom + 8, // 8px offset
+        right: window.innerWidth - rect.right
+      });
+    }
+  };
+
+  // Toggle dropdown with position calculation
+  const toggleProfileDropdown = () => {
+    if (!showProfileDropdown) {
+      calculateDropdownPosition();
+    }
+    setShowProfileDropdown(!showProfileDropdown);
+  };
+
   const renderProfileAvatar = () => {
     const profileImageUrl = getUserProfileImage();
     
@@ -199,11 +221,13 @@ export default function Header({ transparent = false, hideSignUp = false, extraC
     const handleClickOutside = (event: MouseEvent | TouchEvent) => {
       const target = event.target as Node;
       
-      // Don't close if clicking inside desktop or mobile dropdown
+      // Don't close if clicking inside desktop, mobile dropdown, or the profile button
       const isInsideDesktopDropdown = dropdownRef.current && dropdownRef.current.contains(target);
       const isInsideMobileDropdown = mobileDropdownRef.current && mobileDropdownRef.current.contains(target);
+      const isInsideProfileButton = profileButtonRef.current && profileButtonRef.current.contains(target);
+      const isInsidePortalDropdown = target instanceof Element && target.closest('.profile-dropdown-menu');
       
-      if (!isInsideDesktopDropdown && !isInsideMobileDropdown) {
+      if (!isInsideDesktopDropdown && !isInsideMobileDropdown && !isInsideProfileButton && !isInsidePortalDropdown) {
         setShowProfileDropdown(false);
       }
     };
@@ -257,11 +281,26 @@ export default function Header({ transparent = false, hideSignUp = false, extraC
   useEffect(() => {
     const handleScroll = () => {
       setIsScrolled(window.scrollY > 50);
+      // Recalculate dropdown position on scroll if it's open
+      if (showProfileDropdown) {
+        calculateDropdownPosition();
+      }
+    };
+
+    const handleResize = () => {
+      // Recalculate dropdown position on resize if it's open
+      if (showProfileDropdown) {
+        calculateDropdownPosition();
+      }
     };
 
     window.addEventListener('scroll', handleScroll);
-    return () => window.removeEventListener('scroll', handleScroll);
-  }, []);
+    window.addEventListener('resize', handleResize);
+    return () => {
+      window.removeEventListener('scroll', handleScroll);
+      window.removeEventListener('resize', handleResize);
+    };
+  }, [showProfileDropdown]);
 
   const getHeaderClasses = () => {
     const baseClasses = `fixed w-full top-[38px] z-[9998] transition-all duration-300`;
@@ -299,8 +338,18 @@ export default function Header({ transparent = false, hideSignUp = false, extraC
   );
 
   // Profile dropdown menu
-  const renderProfileDropdown = () => (
-    <div className="absolute right-0 top-full mt-2 w-52 bg-gradient-to-br from-gray-900/95 to-gray-800/95 backdrop-blur-md rounded-xl shadow-2xl border border-gray-700/50 py-3 z-[9999]">
+  const renderProfileDropdown = () => {
+    if (typeof window === 'undefined') return null;
+    
+    return createPortal(
+      <div 
+        className="fixed w-52 bg-gradient-to-br from-gray-900/95 to-gray-800/95 backdrop-blur-md rounded-xl shadow-2xl border border-gray-700/50 py-3 profile-dropdown-menu"
+        style={{
+          top: dropdownPosition.top,
+          right: dropdownPosition.right,
+          zIndex: 99999
+        }}
+      >
       <div className="px-4 py-2 border-b border-gray-700/50 mb-2">
         <p className="text-xs text-gray-400 uppercase tracking-wide font-medium">Account</p>
       </div>
@@ -392,16 +441,19 @@ export default function Header({ transparent = false, hideSignUp = false, extraC
           <span className="font-medium">Sign Out</span>
         </div>
       </button>
-    </div>
-  );
+      </div>,
+      document.body
+    );
+  };
 
   return (
     <header 
       className={`${getHeaderClasses()} animate-slide-down ${extraClasses}`} 
       suppressHydrationWarning={true}
+      style={{ overflow: 'visible' }}
     >
-      <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-2">
-        <div className="flex items-center justify-between h-16 animate-fade-in-up" style={{ animationDelay: '0.2s' }}>
+      <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-2" style={{ overflow: 'visible' }}>
+        <div className="flex items-center justify-between h-16 animate-fade-in-up" style={{ animationDelay: '0.2s', overflow: 'visible' }}>
           {/* Logo */}
           <div className="flex-shrink-0 animate-fade-in-up" style={{ animationDelay: '0.1s' }}>
             <Link href={preserveTrackingParams("/")} className="block transition-transform duration-300 ease-in-out hover:scale-105">
@@ -414,7 +466,7 @@ export default function Header({ transparent = false, hideSignUp = false, extraC
           </div>
 
           {/* Desktop Navigation */}
-          <nav className={`hidden md:flex items-center space-x-2 ${hideSignUp ? 'pr-16' : ''} animate-fade-in-up`} style={{ animationDelay: '0.4s' }}>
+          <nav className={`hidden md:flex items-center space-x-2 ${hideSignUp ? 'pr-16' : ''} animate-fade-in-up`} style={{ animationDelay: '0.4s', overflow: 'visible' }}>
 
             {!isHomepage && (
               <Link href={preserveTrackingParams("/pricing")} className="text-white hover:text-[#59e3a5] transition-all duration-300 ease-in-out font-medium px-4 py-2 rounded-lg hover:bg-white/5 hover:scale-105 transform backdrop-blur-sm border border-transparent hover:border-white/10">
@@ -442,16 +494,16 @@ export default function Header({ transparent = false, hideSignUp = false, extraC
             {!hideSignUp && (
               <div className="animate-fade-in-up" style={{ animationDelay: '0.6s' }}>
                 {currentUser && !authLoading ? (
-                  <div className="relative" ref={dropdownRef}>
-                    <div className="flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-white/5 transition-all duration-300 border border-transparent hover:border-white/10 backdrop-blur-sm">
+                  <div className="relative profile-dropdown-container" ref={dropdownRef}>
+                    <div className="flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-white/5 transition-all duration-300 border border-transparent hover:border-white/10 backdrop-blur-sm" ref={profileButtonRef}>
                       <button
-                        onClick={() => setShowProfileDropdown(!showProfileDropdown)}
+                        onClick={toggleProfileDropdown}
                         className="text-white font-medium hover:text-[#59e3a5] transition-all duration-300 cursor-pointer"
                       >
                         Hey, {userFirstName}!
                       </button>
                       <button
-                        onClick={() => setShowProfileDropdown(!showProfileDropdown)}
+                        onClick={toggleProfileDropdown}
                         className="w-10 h-10 bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] rounded-full flex items-center justify-center hover:opacity-90 hover:scale-105 transition-all duration-300 shadow-lg"
                       >
                         {renderProfileAvatar()}
@@ -590,7 +642,7 @@ export default function Header({ transparent = false, hideSignUp = false, extraC
                   currentUser && !authLoading ? (
                     <div className="relative w-full" ref={mobileDropdownRef}>
                       <button
-                        onClick={() => setShowProfileDropdown(!showProfileDropdown)}
+                        onClick={toggleProfileDropdown}
                         className="flex flex-col items-center gap-3 px-4 py-4 mx-2 bg-white/5 backdrop-blur-sm rounded-xl border border-white/10 hover:bg-white/10 transition-all duration-300 ease-in-out transform hover:scale-[1.02] w-full"
                         style={{ touchAction: 'manipulation', cursor: 'pointer' }}
                       >
