@@ -2,7 +2,7 @@
 // Lightning-fast cached sitemap for SEO optimization
 
 import { NextApiRequest, NextApiResponse } from 'next';
-import { getCachedSitemap, getSitemapCacheInfo } from '../../../../plugins/blog/utils/sitemap-cache';
+import { getCachedSitemap, getSitemapCacheInfo, forceSitemapUpdate } from '../../../../plugins/blog/utils/sitemap-cache';
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== 'GET') {
@@ -12,8 +12,11 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   try {
     console.log('🗺️ SITEMAP: Request received');
     
+    // Check if force refresh is requested
+    const forceRefresh = req.query.force === 'true' || req.query.refresh === 'true';
+    
     // Get cached or fresh sitemap
-    const sitemap = await getCachedSitemap();
+    const sitemap = forceRefresh ? await forceSitemapUpdate() : await getCachedSitemap();
     const cacheInfo = getSitemapCacheInfo();
     
     console.log(`🗺️ SITEMAP: Serving sitemap (cached: ${cacheInfo.cached}, posts: ${cacheInfo.postCount}, age: ${cacheInfo.age}s)`);

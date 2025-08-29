@@ -3,7 +3,7 @@
 
 import { NextApiRequest, NextApiResponse } from 'next';
 import { BlogPostService } from '../../../../../../plugins/blog/utils/supabase';
-import { triggerSitemapUpdate } from '../../../../../../plugins/blog/utils/sitemap-cache';
+import { triggerSitemapUpdate, forceSitemapUpdate } from '../../../../../../plugins/blog/utils/sitemap-cache';
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   const { id } = req.query;
@@ -90,9 +90,11 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
       if (error) throw error;
 
-      // Always trigger sitemap update when deleting posts
-      console.log('🗺️ BLOG-API: Triggering sitemap update for post deletion');
-      triggerSitemapUpdate();
+      // Force immediate sitemap update when deleting posts
+      console.log('🗺️ BLOG-API: FORCE updating sitemap for post deletion');
+      forceSitemapUpdate().catch((error) => {
+        console.error('💥 BLOG-API: Force sitemap update failed:', error);
+      });
 
       return res.status(200).json({
         success: true,

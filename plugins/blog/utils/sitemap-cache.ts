@@ -210,10 +210,25 @@ async function waitForRegeneration(): Promise<string> {
 export async function triggerSitemapUpdate(): Promise<void> {
   console.log('🚀 SITEMAP: Triggering update...');
   
+  // Immediately invalidate cache to force fresh generation
+  sitemapCache = null;
+  
   // Don't await - let it run in background
   regenerateSitemap().catch((error) => {
     console.error('💥 SITEMAP: Background update failed:', error);
   });
+}
+
+// Force immediate sitemap regeneration (bypasses all caching)
+export async function forceSitemapUpdate(): Promise<string> {
+  console.log('🚨 SITEMAP: FORCE UPDATE - Immediately invalidating cache...');
+  
+  // Clear cache immediately
+  sitemapCache = null;
+  isRegenerating = false;
+  
+  // Generate fresh sitemap
+  return await regenerateSitemap();
 }
 
 // Get cache info for debugging
