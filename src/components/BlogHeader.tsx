@@ -380,6 +380,9 @@ export default function BlogHeader() {
 
           {/* Desktop Navigation */}
           <nav className="hidden md:flex items-center space-x-2 animate-fade-in-up" style={{ animationDelay: '0.4s' }}>
+            <Link href={preserveTrackingParams("/blog")} className="text-white hover:text-[#59e3a5] transition-all duration-300 ease-in-out font-medium px-4 py-2 rounded-lg hover:bg-white/5 hover:scale-105 transform backdrop-blur-sm border border-transparent hover:border-white/10">
+              Blog
+            </Link>
             <Link href={preserveTrackingParams("/pricing")} className="text-white hover:text-[#59e3a5] transition-all duration-300 ease-in-out font-medium px-4 py-2 rounded-lg hover:bg-white/5 hover:scale-105 transform backdrop-blur-sm border border-transparent hover:border-white/10">
               Pricing
             </Link>

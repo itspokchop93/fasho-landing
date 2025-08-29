@@ -311,9 +311,83 @@ export default function BlogPostPage({ post, relatedPosts, error }: BlogPostPage
         }}
       >
         {/* Blog Header */}
-        <BlogHeader />
+        <div style={{ zIndex: 9999 }}>
+          <style jsx global>{`
+            /* FORCE HEADER STYLES - Production Fix */
+            header {
+              position: fixed !important;
+              width: 100% !important;
+              top: 0 !important;
+              z-index: 9998 !important;
+              transition: all 0.3s !important;
+              background-color: rgba(24, 25, 42, 0.95) !important;
+              backdrop-filter: blur(8px) !important;
+              border-bottom: 1px solid rgba(255, 255, 255, 0.1) !important;
+            }
+            header .container {
+              max-width: 1200px !important;
+              margin: 0 auto !important;
+              padding: 0.5rem 1rem !important;
+            }
+            header .flex {
+              display: flex !important;
+              align-items: center !important;
+              justify-content: space-between !important;
+              height: 4rem !important;
+            }
+            header nav {
+              display: flex !important;
+              align-items: center !important;
+              gap: 0.5rem !important;
+            }
+            header nav a {
+              color: white !important;
+              font-weight: 500 !important;
+              padding: 0.5rem 1rem !important;
+              border-radius: 0.5rem !important;
+              transition: all 0.3s !important;
+              text-decoration: none !important;
+            }
+            header nav a:hover {
+              color: #59e3a5 !important;
+              background-color: rgba(255, 255, 255, 0.05) !important;
+              transform: scale(1.05) !important;
+            }
+            header img {
+              height: 2rem !important;
+              width: auto !important;
+            }
+            header button {
+              background: linear-gradient(to right, #8b5cf6, #6366f1) !important;
+              color: white !important;
+              font-weight: bold !important;
+              padding: 0.5rem 0.75rem !important;
+              border-radius: 0.5rem !important;
+              border: none !important;
+              cursor: pointer !important;
+              transition: all 0.3s !important;
+            }
+            header button:hover {
+              opacity: 0.9 !important;
+              transform: scale(1.05) !important;
+            }
+            /* Mobile Menu */
+            header .md\\:hidden {
+              display: block !important;
+            }
+            @media (min-width: 768px) {
+              header .md\\:hidden {
+                display: none !important;
+              }
+              header .hidden {
+                display: flex !important;
+              }
+            }
+          `}</style>
+          <BlogHeader />
+        </div>
 
-        <main className="pt-16" style={{ paddingTop: '4rem' }}>
+        <main className="pt-16" style={{ paddingTop: '4rem', zIndex: 2 }}>
           {/* Breadcrumb */}
           <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 mb-6" style={{ zIndex: 2 }}>
             <nav className="flex" aria-label="Breadcrumb">
@@ -703,7 +777,78 @@ export default function BlogPostPage({ post, relatedPosts, error }: BlogPostPage
         </main>
 
         {/* Footer */}
-        <Footer />
+        <div style={{ zIndex: 100 }}>
+          <style jsx global>{`
+            /* FORCE FOOTER STYLES - Production Fix */
+            footer {
+              background: linear-gradient(to bottom, #0a0a13, #000000) !important;
+              border-top: 1px solid rgba(255, 255, 255, 0.1) !important;
+              padding: 3rem 1rem !important;
+            }
+            footer .max-w-6xl {
+              max-width: 72rem !important;
+              margin: 0 auto !important;
+            }
+            footer .grid {
+              display: grid !important;
+              gap: 2rem !important;
+            }
+            footer .grid-cols-1 {
+              grid-template-columns: repeat(1, minmax(0, 1fr)) !important;
+            }
+            @media (min-width: 768px) {
+              footer .md\\:grid-cols-4 {
+                grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+              }
+            }
+            footer h4 {
+              color: white !important;
+              font-weight: 600 !important;
+              margin-bottom: 1rem !important;
+              font-size: 1rem !important;
+            }
+            footer ul {
+              list-style: none !important;
+              padding: 0 !important;
+              margin: 0 !important;
+            }
+            footer li {
+              margin-bottom: 0.5rem !important;
+            }
+            footer a {
+              color: #9ca3af !important;
+              text-decoration: none !important;
+              font-size: 0.875rem !important;
+              transition: color 0.2s !important;
+            }
+            footer a:hover {
+              color: #59e3a5 !important;
+            }
+            footer p {
+              color: #9ca3af !important;
+              font-size: 0.875rem !important;
+              line-height: 1.6 !important;
+              margin: 0 !important;
+            }
+            footer img {
+              height: 2rem !important;
+              width: auto !important;
+              margin-bottom: 1rem !important;
+            }
+            footer .border-t {
+              border-top: 1px solid rgba(255, 255, 255, 0.1) !important;
+              margin-top: 2rem !important;
+              padding-top: 1.5rem !important;
+            }
+            footer .text-center {
+              text-align: center !important;
+            }
+            footer .text-gray-500 {
+              color: #6b7280 !important;
+            }
+          `}</style>
+          <Footer />
+        </div>
       </div>
     </>
   );
