@@ -10,12 +10,26 @@ const supabase = createClient(
 // Initialize Google Indexing API
 const getGoogleIndexingClient = () => {
   try {
-    const serviceAccountKey = process.env.GOOGLE_SERVICE_ACCOUNT_KEY || process.env.GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY;
-    if (!serviceAccountKey) {
-      throw new Error('GOOGLE_SERVICE_ACCOUNT_KEY not found in environment variables');
+    const credentials = {
+      type: process.env.GOOGLE_SERVICE_ACCOUNT_TYPE,
+      project_id: process.env.GOOGLE_SERVICE_ACCOUNT_PROJECT_ID,
+      private_key_id: process.env.GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY_ID,
+      private_key: process.env.GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY,
+      client_email: process.env.GOOGLE_SERVICE_ACCOUNT_CLIENT_EMAIL,
+      client_id: process.env.GOOGLE_SERVICE_ACCOUNT_CLIENT_ID,
+      auth_uri: process.env.GOOGLE_SERVICE_ACCOUNT_AUTH_URI,
+      token_uri: process.env.GOOGLE_SERVICE_ACCOUNT_TOKEN_URI,
+      auth_provider_x509_cert_url: process.env.GOOGLE_SERVICE_ACCOUNT_AUTH_PROVIDER_X509_CERT_URL,
+      client_x509_cert_url: process.env.GOOGLE_SERVICE_ACCOUNT_CLIENT_X509_CERT_URL,
+      universe_domain: process.env.GOOGLE_SERVICE_ACCOUNT_UNIVERSE_DOMAIN
+    };
+
+    if (!credentials.private_key || !credentials.client_email) {
+      throw new Error('Required Google Service Account environment variables not found');
     }
 
-    const credentials = JSON.parse(serviceAccountKey);
+    console.log('Using Google Service Account environment variables');
+    
     const auth = new google.auth.GoogleAuth({
       credentials,
       scopes: ['https://www.googleapis.com/auth/indexing'],
@@ -28,63 +42,15 @@ const getGoogleIndexingClient = () => {
   }
 };
 
-// Ping Google sitemap
-const pingGoogleSitemap = async (): Promise<{ status: string; response: string }> => {
-  try {
-    const sitemapUrl = 'https://fasho.co/blog/sitemap.xml';
-    const pingUrl = `https://www.google.com/ping?sitemap=${encodeURIComponent(sitemapUrl)}`;
-    
-    const response = await fetch(pingUrl, { method: 'GET' });
-    
-    if (response.ok) {
-      return {
-        status: 'success',
-        response: `Google sitemap ping successful (${response.status})`
-      };
-    } else {
-      return {
-        status: 'error',
-        response: `Google sitemap ping failed with status ${response.status}`
-      };
-    }
-  } catch (error) {
-    return {
-      status: 'error',
-      response: `Google sitemap ping error: ${error instanceof Error ? error.message : 'Unknown error'}`
-    };
-  }
-};
-
-// Ping Bing sitemap
-const pingBingSitemap = async (): Promise<{ status: string; response: string }> => {
-  try {
-    const sitemapUrl = 'https://fasho.co/blog/sitemap.xml';
-    const pingUrl = `https://www.bing.com/ping?sitemap=${encodeURIComponent(sitemapUrl)}`;
-    
-    const response = await fetch(pingUrl, { method: 'GET' });
-    
-    if (response.ok) {
-      return {
-        status: 'success',
-        response: `Bing sitemap ping successful (${response.status})`
-      };
-    } else {
-      return {
-        status: 'error',
-        response: `Bing sitemap ping failed with status ${response.status}`
-      };
-    }
-  } catch (error) {
-    return {
-      status: 'error',
-      response: `Bing sitemap ping error: ${error instanceof Error ? error.message : 'Unknown error'}`
-    };
-  }
-};
+// Deprecated: Google and Bing sitemap pings are no longer supported
+// Google deprecated in January 2024, Bing returns 410
+// Use Google Search Console and Bing IndexNow API instead
 
 // Submit to Google Indexing API
 const submitToGoogleIndexing = async (url: string): Promise<{ status: string; response: string }> => {
   try {
+    console.log('Attempting to submit URL to Google Indexing API:', url);
+
     const indexingService = getGoogleIndexingClient();
     if (!indexingService) {
       return {
@@ -116,13 +82,20 @@ const submitToGoogleIndexing = async (url: string): Promise<{ status: string; re
 const submitToBingIndexNow = async (url: string): Promise<{ status: string; response: string }> => {
   try {
     const bingKey = '7d74a786c60e481b9d28086a23118639';
-    const indexNowUrl = `https://www.bing.com/indexnow?url=${encodeURIComponent(url)}&key=${bingKey}`;
+    const host = 'fasho.co';
     
-    const response = await fetch(indexNowUrl, { 
+    const requestBody = {
+      host: host,
+      key: bingKey,
+      urlList: [url]
+    };
+    
+    const response = await fetch('https://api.indexnow.org/indexnow', { 
       method: 'POST',
       headers: {
-        'Content-Type': 'application/json'
-      }
+        'Content-Type': 'application/json; charset=utf-8'
+      },
+      body: JSON.stringify(requestBody)
     });
     
     if (response.ok || response.status === 200 || response.status === 202) {
@@ -169,26 +142,16 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     // Execute all indexing steps sequentially
     const timestamp = new Date().toISOString();
     
-    console.log('Step 1: Pinging Google sitemap...');
-    const googleSitemapResult = await pingGoogleSitemap();
-    console.log('Google sitemap result:', googleSitemapResult);
-
-    console.log('Step 2: Pinging Bing sitemap...');
-    const bingSitemapResult = await pingBingSitemap();
-    console.log('Bing sitemap result:', bingSitemapResult);
-
-    console.log('Step 3: Submitting to Google Indexing API...');
+    console.log('Step 1: Submitting to Google Indexing API...');
     const googleIndexingResult = await submitToGoogleIndexing(url);
     console.log('Google Indexing API result:', googleIndexingResult);
 
-    console.log('Step 4: Submitting to Bing IndexNow...');
+    console.log('Step 2: Submitting to Bing IndexNow...');
     const bingIndexNowResult = await submitToBingIndexNow(url);
     console.log('Bing IndexNow result:', bingIndexNowResult);
 
     // Compile results
     const results = {
-      googleSitemapPing: googleSitemapResult,
-      bingSitemapPing: bingSitemapResult,
       googleIndexingAPI: googleIndexingResult,
       bingIndexNowAPI: bingIndexNowResult
     };

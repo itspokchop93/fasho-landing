@@ -14,8 +14,6 @@ interface IndexSubmission {
   submitted_at: string;
   submitted_by: string;
   results: {
-    googleSitemapPing: IndexResult;
-    bingSitemapPing: IndexResult;
     googleIndexingAPI: IndexResult;
     bingIndexNowAPI: IndexResult;
   };
@@ -261,20 +259,8 @@ const IndexLinks: React.FC = () => {
                 {expandedItems.has(submission.id) && (
                   <div className="mt-4 ml-6 space-y-3 bg-gray-50 p-4 rounded-md" style={{ zIndex: 15 }}>
                     <div className="space-y-2">
-                      <div className="flex items-center space-x-2">
-                        <span>{getStatusIcon(submission.results.googleSitemapPing.status)}</span>
-                        <span className="font-medium">Google Sitemap Ping:</span>
-                        <span className="text-sm text-gray-600">
-                          {submission.results.googleSitemapPing.response}
-                        </span>
-                      </div>
-                      
-                      <div className="flex items-center space-x-2">
-                        <span>{getStatusIcon(submission.results.bingSitemapPing.status)}</span>
-                        <span className="font-medium">Bing Sitemap Ping:</span>
-                        <span className="text-sm text-gray-600">
-                          {submission.results.bingSitemapPing.response}
-                        </span>
+                      <div className="text-sm text-blue-600 italic mb-2">
+                        Note: Sitemap pings have been deprecated by Google and Bing. Using direct indexing APIs instead.
                       </div>
                       
                       <div className="flex items-center space-x-2">
