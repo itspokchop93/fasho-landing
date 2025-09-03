@@ -27,3 +27,4 @@ INSERT INTO blog_settings (setting_key, setting_value) VALUES
 ('analytics', $json${"google_analytics_id": ""}$json$)
 ON CONFLICT (setting_key) DO NOTHING;
 
+
