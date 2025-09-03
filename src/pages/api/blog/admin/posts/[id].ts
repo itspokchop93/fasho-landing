@@ -4,6 +4,7 @@
 import { NextApiRequest, NextApiResponse } from 'next';
 import { BlogPostService } from '../../../../../../plugins/blog/utils/supabase';
 import { triggerSitemapUpdate, forceSitemapUpdate } from '../../../../../../plugins/blog/utils/sitemap-cache';
+import { addReadTimeToPost } from '../../../../../../plugins/blog/utils/read-time';
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   const { id } = req.query;
@@ -51,7 +52,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         updateData.slug = uniqueSlug;
       }
 
-      const response = await blogPostService.updatePost(id, updateData);
+      // Calculate read time automatically if content is being updated
+      const updateDataWithReadTime = addReadTimeToPost(updateData);
+
+      const response = await blogPostService.updatePost(id, updateDataWithReadTime);
       
       if (!response.success) {
         return res.status(400).json(response);

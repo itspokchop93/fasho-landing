@@ -36,6 +36,7 @@ export default function BlogHeader() {
   const [userFirstName, setUserFirstName] = useState<string>('User');
   const dropdownRef = useRef<HTMLDivElement>(null);
   const mobileDropdownRef = useRef<HTMLDivElement>(null);
+  const profileButtonRef = useRef<HTMLDivElement>(null);
   const supabase = createClient();
   const router = useRouter();
   
@@ -402,35 +403,33 @@ export default function BlogHeader() {
             )}
             
             {/* Sign Up Button or User Profile */}
-            <div className="animate-fade-in-up" style={{ animationDelay: '0.6s' }}>
-              {currentUser && !authLoading ? (
-                <div className="relative" ref={dropdownRef}>
-                  <div className="flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-white/5 transition-all duration-300 border border-transparent hover:border-white/10 backdrop-blur-sm">
-                    <button
-                      onClick={() => setShowProfileDropdown(!showProfileDropdown)}
-                      className="text-white font-medium hover:text-[#59e3a5] transition-all duration-300 cursor-pointer"
-                    >
-                      Hey, {userFirstName}!
-                    </button>
-                    <button
-                      onClick={() => setShowProfileDropdown(!showProfileDropdown)}
-                      className="w-10 h-10 bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] rounded-full flex items-center justify-center hover:opacity-90 hover:scale-105 transition-all duration-300 shadow-lg"
-                    >
-                      {renderProfileAvatar()}
-                    </button>
+            {!authLoading && (
+              <div className="animate-fade-in-up" style={{ animationDelay: '0.6s' }}>
+                {currentUser ? (
+                  <div className="relative profile-dropdown-container" ref={dropdownRef}>
+                    <div className="flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-white/5 transition-all duration-300 border border-transparent hover:border-white/10 backdrop-blur-sm" ref={profileButtonRef}>
+                      <button
+                        onClick={() => setShowProfileDropdown(!showProfileDropdown)}
+                        className="text-white font-medium hover:text-[#59e3a5] transition-all duration-300 cursor-pointer"
+                      >
+                        Hey, {userFirstName}!
+                      </button>
+                      <button
+                        onClick={() => setShowProfileDropdown(!showProfileDropdown)}
+                        className="w-10 h-10 bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] rounded-full flex items-center justify-center hover:opacity-90 hover:scale-105 transition-all duration-300 shadow-lg"
+                      >
+                        {renderProfileAvatar()}
+                      </button>
+                    </div>
+                    {showProfileDropdown && renderProfileDropdown()}
                   </div>
-                  {showProfileDropdown && renderProfileDropdown()}
-                </div>
-              ) : !authLoading ? (
-                <Link href="/#start-campaign" className="bg-gradient-to-r from-[#8b5cf6] to-[#6366f1] text-white font-bold px-3 py-2 rounded-lg hover:opacity-90 hover:scale-105 transition-all duration-300 shadow-lg backdrop-blur-sm border border-white/20">
-                  START CAMPAIGN
-                </Link>
-              ) : (
-                <div className="bg-gradient-to-r from-[#8b5cf6] to-[#6366f1] text-white font-bold px-3 py-2 rounded-lg opacity-50">
-                  Loading...
-                </div>
-              )}
-            </div>
+                ) : (
+                  <Link href="/#start-campaign" className="bg-gradient-to-r from-[#8b5cf6] to-[#6366f1] text-white font-bold px-3 py-2 rounded-lg hover:opacity-90 hover:scale-105 transition-all duration-300 shadow-lg backdrop-blur-sm border border-white/20">
+                    START CAMPAIGN
+                  </Link>
+                )}
+              </div>
+            )}
           </nav>
 
           {/* Mobile menu button */}

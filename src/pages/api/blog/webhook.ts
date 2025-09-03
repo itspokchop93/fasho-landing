@@ -6,6 +6,7 @@ import { NextApiRequest, NextApiResponse } from 'next';
 import { IncomingWebhookPayload } from '../../../../plugins/blog/types/blog';
 import { BlogPostService, WebsiteSourceService, WebhookLogService } from '../../../../plugins/blog/utils/supabase';
 import { generateSlug } from '../../../../plugins/blog/utils/slug-generator';
+import { calculateReadTime } from '../../../../plugins/blog/utils/read-time';
 import { triggerSitemapUpdate } from '../../../../plugins/blog/utils/sitemap-cache';
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
@@ -125,9 +126,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       });
     }
 
-    // Calculate estimated read time (rough estimate: 200 words per minute)
-    const wordCount = payload.article.content ? payload.article.content.split(/\s+/).length : 0;
-    const readTime = Math.max(1, Math.ceil(wordCount / 200));
+    // Calculate estimated read time using utility function
+    const readTime = calculateReadTime(payload.article.content || '');
 
     // Debug meta description length
     const metaDesc = payload.article.metaDescription;

@@ -4,7 +4,7 @@
 import { GetServerSideProps } from 'next';
 import Head from 'next/head';
 import Link from 'next/link';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { getBlogSupabaseClient } from '../../../plugins/blog/utils/supabase';
 import { BlogPost } from '../../../plugins/blog/types/blog';
 import { schemaGenerator } from '../../../plugins/blog/utils/schema-generator';
@@ -14,11 +14,108 @@ import Footer from '../../components/Footer';
 
 interface BlogPostPageProps {
   post: BlogPost;
-  relatedPosts: BlogPost[];
+  trendingPosts: BlogPost[];
+  latestPosts: BlogPost[];
   error?: string;
 }
 
-export default function BlogPostPage({ post, relatedPosts, error }: BlogPostPageProps) {
+// Latest Posts Carousel Component
+const LatestPostsCarousel = ({ latestPosts, formatDate, getReadTime }: { latestPosts: BlogPost[], formatDate: (date: string) => string, getReadTime: (time?: number) => string }) => {
+  const [currentIndex, setCurrentIndex] = useState(0);
+  
+  const maxSlides = Math.max(0, latestPosts.length - 3); // Show 3 at a time, so max slides = total - 3
+  
+  const nextSlide = () => {
+    setCurrentIndex((prev) => Math.min(prev + 1, maxSlides));
+  };
+  
+  const prevSlide = () => {
+    setCurrentIndex((prev) => Math.max(prev - 1, 0));
+  };
+  
+  return (
+    <div className="mt-12 pt-8 border-t border-gray-200" style={{ zIndex: 4 }}>
+      <div className="flex items-center justify-between mb-6">
+        <h3 className="text-2xl font-bold text-gray-900">Latest Posts</h3>
+        <div className="flex gap-2">
+          <button
+            onClick={prevSlide}
+            disabled={currentIndex === 0}
+            className={`p-2 rounded-full text-white transition-opacity ${
+              currentIndex === 0 
+                ? 'bg-gray-500 opacity-50 cursor-not-allowed' 
+                : 'bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] hover:opacity-90'
+            }`}
+            style={{ zIndex: 5 }}
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+            </svg>
+          </button>
+          <button
+            onClick={nextSlide}
+            disabled={currentIndex >= maxSlides}
+            className={`p-2 rounded-full text-white transition-opacity ${
+              currentIndex >= maxSlides 
+                ? 'bg-gray-500 opacity-50 cursor-not-allowed' 
+                : 'bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] hover:opacity-90'
+            }`}
+            style={{ zIndex: 5 }}
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+            </svg>
+          </button>
+        </div>
+      </div>
+      <div className="relative overflow-hidden">
+        <div 
+          className="flex transition-transform duration-300 ease-in-out gap-6"
+          style={{ transform: `translateX(-${currentIndex * (100 / 3)}%)` }}
+        >
+          {latestPosts.map((latestPost) => (
+            <article
+              key={latestPost.id}
+              className="flex-shrink-0 w-1/3 bg-white rounded-2xl shadow-xl overflow-hidden hover:scale-105 transition-all duration-300 border border-gray-200 hover:border-[#59e3a5]/50 hover:shadow-2xl hover:shadow-[#59e3a5]/20"
+              style={{ zIndex: 5 }}
+            >
+              <Link href={`/blog/${latestPost.slug}`} className="block">
+                {latestPost.featured_image_url && (
+                  <div className="h-48 overflow-hidden">
+                    <img
+                      src={latestPost.featured_image_url}
+                      alt={latestPost.title}
+                      className="w-full h-full object-cover hover:scale-110 transition-transform duration-300"
+                    />
+                  </div>
+                )}
+                <div className="p-6">
+                  <h4 className="text-lg font-semibold text-gray-900 mb-2 line-clamp-2 hover:text-[#59e3a5] transition-colors">
+                    {latestPost.title}
+                  </h4>
+                  {latestPost.excerpt && (
+                    <p className="text-gray-600 text-sm mb-3 line-clamp-2">
+                      {latestPost.excerpt}
+                    </p>
+                  )}
+                  <div className="flex items-center text-xs text-gray-500">
+                    <time dateTime={latestPost.published_at || latestPost.created_at}>
+                      {formatDate(latestPost.published_at || latestPost.created_at)}
+                    </time>
+                    <span className="mx-2">•</span>
+                    <span>{getReadTime(latestPost.read_time)}</span>
+                  </div>
+                </div>
+              </Link>
+            </article>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default function BlogPostPage({ post, trendingPosts, latestPosts, error }: BlogPostPageProps) {
   // Performance and analytics initialization
   useEffect(() => {
     // Initialize performance optimizations
@@ -80,115 +177,7 @@ export default function BlogPostPage({ post, relatedPosts, error }: BlogPostPage
       <Head>
         {/* Ensure Tailwind CSS is loaded */}
         <link rel="stylesheet" href="/_next/static/css/app.css" />
-        <style>{`
-          /* Force CSS Reset and Base Styles */
-          *, *::before, *::after {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-          }
-          
-          html, body {
-            height: 100%;
-            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-          }
-          
-          /* Ensure Tailwind classes work */
-          .min-h-screen { min-height: 100vh; }
-          .bg-gradient-to-br { background-image: linear-gradient(to bottom right, var(--tw-gradient-stops)); }
-          .from-\\[\\#0f0f23\\] { --tw-gradient-from: #0f0f23; --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to, rgba(15, 15, 35, 0)); }
-          .via-\\[\\#1a1a2e\\] { --tw-gradient-stops: var(--tw-gradient-from), #1a1a2e, var(--tw-gradient-to, rgba(26, 26, 46, 0)); }
-          .to-\\[\\#16213e\\] { --tw-gradient-to: #16213e; }
-          
-          /* Container styles */
-          .max-w-6xl { max-width: 72rem; }
-          .mx-auto { margin-left: auto; margin-right: auto; }
-          .px-4 { padding-left: 1rem; padding-right: 1rem; }
-          .sm\\:px-6 { padding-left: 1.5rem; padding-right: 1.5rem; }
-          .lg\\:px-8 { padding-left: 2rem; padding-right: 2rem; }
-          .pt-16 { padding-top: 4rem; }
-          .pb-16 { padding-bottom: 4rem; }
-          
-          /* White card container */
-          .bg-white { background-color: #ffffff; }
-          .rounded-2xl { border-radius: 1rem; }
-          .shadow-2xl { box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25); }
-          .p-8 { padding: 2rem; }
-          .lg\\:p-12 { padding: 3rem; }
-          
-          /* Typography */
-          .text-4xl { font-size: 2.25rem; line-height: 2.5rem; }
-          .lg\\:text-5xl { font-size: 3rem; line-height: 1; }
-          .font-bold { font-weight: 700; }
-          .text-gray-900 { color: #111827; }
-          .mb-6 { margin-bottom: 1.5rem; }
-          .leading-tight { line-height: 1.25; }
-          
-          /* Additional fallback styles */
-          .relative { position: relative; }
-          .overflow-hidden { overflow: hidden; }
-          .border { border-width: 1px; }
-          .border-gray-200 { border-color: #e5e7eb; }
-          .aspect-video { aspect-ratio: 16 / 9; }
-          .w-full { width: 100%; }
-          .h-full { height: 100%; }
-          .object-cover { object-fit: cover; }
-          .flex { display: flex; }
-          .flex-wrap { flex-wrap: wrap; }
-          .gap-2 { gap: 0.5rem; }
-          .text-sm { font-size: 0.875rem; line-height: 1.25rem; }
-          .px-4 { padding-left: 1rem; padding-right: 1rem; }
-          .py-2 { padding-top: 0.5rem; padding-bottom: 0.5rem; }
-          .rounded-full { border-radius: 9999px; }
-          .transition-all { transition-property: all; transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1); transition-duration: 150ms; }
-          .duration-300 { transition-duration: 300ms; }
-          .hover\\:scale-105:hover { transform: scale(1.05); }
-          .text-center { text-align: center; }
-          
-          /* Prose styles for content */
-          .prose { 
-            max-width: none;
-            color: #374151;
-            line-height: 1.7;
-            font-size: 19px;
-          }
-          .prose h1, .prose h2, .prose h3, .prose h4, .prose h5, .prose h6 { 
-            color: #1f2937;
-            font-weight: 600;
-            margin-top: 1.5rem;
-            margin-bottom: 1rem;
-          }
-          .prose p { 
-            margin-top: 1.25rem;
-            margin-bottom: 1.25rem;
-          }
-          .prose a { 
-            color: #2563eb;
-            text-decoration: none;
-            font-weight: 500;
-          }
-          .prose a:hover { 
-            color: #1d4ed8;
-            text-decoration: underline;
-          }
-          .prose img { 
-            max-width: 100%;
-            height: auto;
-            border-radius: 0.75rem;
-            margin: 1.5rem 0;
-          }
-          .prose strong { 
-            font-weight: 700;
-            color: #1f2937;
-          }
-          .prose ul, .prose ol { 
-            margin: 1.25rem 0;
-            padding-left: 1.75rem;
-          }
-          .prose li { 
-            margin: 0.5rem 0;
-          }
-        `}</style>
+        
         {/* Basic Meta Tags */}
         <title>{post.meta_title || `${post.title} | Fasho Blog`}</title>
         <meta name="description" content={post.meta_description || post.excerpt || post.content.substring(0, 160)} />
@@ -208,15 +197,21 @@ export default function BlogPostPage({ post, relatedPosts, error }: BlogPostPage
         <meta property="og:site_name" content="Fasho" />
         <meta property="og:locale" content="en_US" />
         
-        {/* OpenGraph Image with required dimensions */}
-        {(post.open_graph_image || post.featured_image_url) ? (
+        {/* Article-specific Open Graph */}
+        <meta property="article:published_time" content={post.published_at || post.created_at} />
+        {post.tags && post.tags.map((tag) => (
+          <meta key={tag} property="article:tag" content={tag} />
+        ))}
+        
+        {/* Open Graph Image */}
+        {post.featured_image_url ? (
           <>
-            <meta property="og:image" content={post.open_graph_image || post.featured_image_url} />
-            <meta property="og:image:secure_url" content={post.open_graph_image || post.featured_image_url} />
+            <meta property="og:image" content={post.featured_image_url} />
+            <meta property="og:image:secure_url" content={post.featured_image_url} />
             <meta property="og:image:type" content="image/jpeg" />
             <meta property="og:image:width" content="1200" />
             <meta property="og:image:height" content="630" />
-            <meta property="og:image:alt" content={post.title} />
+            <meta property="og:image:alt" content={`${post.title} - Fasho Blog`} />
           </>
         ) : (
           <>
@@ -225,44 +220,28 @@ export default function BlogPostPage({ post, relatedPosts, error }: BlogPostPage
             <meta property="og:image:type" content="image/png" />
             <meta property="og:image:width" content="1200" />
             <meta property="og:image:height" content="630" />
-            <meta property="og:image:alt" content={`${post.title} - Fasho Blog`} />
+            <meta property="og:image:alt" content="Fasho - Music Marketing Platform" />
           </>
         )}
         
-        {/* Article-specific OpenGraph */}
-        <meta property="article:author" content={post.author_name} />
-        <meta property="article:published_time" content={post.published_at || post.created_at} />
-        <meta property="article:modified_time" content={post.updated_at} />
-        <meta property="article:section" content="Blog" />
-        {post.tags?.map((tag) => (
-          <meta key={tag} property="article:tag" content={tag} />
-        ))}
-        
-        {/* Additional OpenGraph for better sharing */}
-        <meta property="og:updated_time" content={post.updated_at} />
-        <meta property="og:see_also" content="https://fasho.co/blog" />
-        
-        {/* Twitter Card - Enhanced */}
+        {/* Twitter Card */}
         <meta name="twitter:card" content="summary_large_image" />
         <meta name="twitter:site" content="@fasho" />
-        <meta name="twitter:creator" content="@fasho" />
         <meta name="twitter:title" content={post.twitter_title || post.meta_title || post.title} />
-        <meta name="twitter:description" content={post.twitter_description || post.meta_description || post.excerpt || post.content.substring(0, 200)} />
+        <meta name="twitter:description" content={post.twitter_description || post.meta_description || post.excerpt || post.content.substring(0, 160)} />
         
-        {/* Twitter Image with proper dimensions */}
-        {(post.twitter_image || post.featured_image_url) ? (
+        {/* Twitter Image */}
+        {post.featured_image_url ? (
           <>
-            <meta name="twitter:image" content={post.twitter_image || post.featured_image_url} />
-            <meta name="twitter:image:alt" content={post.title} />
+            <meta name="twitter:image" content={post.featured_image_url} />
+            <meta name="twitter:image:alt" content={`${post.title} - Fasho Blog`} />
             <meta name="twitter:image:width" content="1200" />
             <meta name="twitter:image:height" content="630" />
           </>
         ) : (
           <>
             <meta name="twitter:image" content="https://fasho.co/fasho-logo-wide.png" />
-            <meta name="twitter:image:alt" content={`${post.title} - Fasho Blog`} />
-            <meta name="twitter:image:width" content="1200" />
-            <meta name="twitter:image:height" content="630" />
+            <meta name="twitter:image:alt" content="Fasho - Music Marketing Platform" />
           </>
         )}
         
@@ -276,17 +255,7 @@ export default function BlogPostPage({ post, relatedPosts, error }: BlogPostPage
           dangerouslySetInnerHTML={{ __html: advancedSchemaMarkup }}
         />
         
-        {/* Additional Performance and SEO Tags */}
-        <meta name="robots" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1" />
-        <meta name="author" content={post.author_name} />
-        <meta name="article:author" content={post.author_name} />
-        <meta name="article:published_time" content={post.published_at || post.created_at} />
-        <meta name="article:modified_time" content={post.updated_at} />
-        <meta name="article:section" content="Technology" />
-        <meta name="news_keywords" content={post.target_keyword || post.tags?.slice(0, 5).join(', ')} />
-        
-        {/* DNS Prefetch for Performance */}
-        <link rel="dns-prefetch" href="//fonts.googleapis.com" />
+        {/* Performance and SEO optimizations */}
         <link rel="dns-prefetch" href="//www.google-analytics.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         
@@ -312,374 +281,130 @@ export default function BlogPostPage({ post, relatedPosts, error }: BlogPostPage
       >
         {/* Blog Header */}
         <div style={{ zIndex: 9999 }}>
-          <style jsx global>{`
-            /* FORCE HEADER STYLES - Production Fix */
-            header {
-              position: fixed !important;
-              width: 100% !important;
-              top: 0 !important;
-              z-index: 9998 !important;
-              transition: all 0.3s !important;
-              background-color: rgba(24, 25, 42, 0.95) !important;
-              backdrop-filter: blur(8px) !important;
-              border-bottom: 1px solid rgba(255, 255, 255, 0.1) !important;
-            }
-            header .container {
-              max-width: 1200px !important;
-              margin: 0 auto !important;
-              padding: 0.5rem 1rem !important;
-            }
-            header .flex {
-              display: flex !important;
-              align-items: center !important;
-              justify-content: space-between !important;
-              height: 4rem !important;
-            }
-            header nav {
-              display: flex !important;
-              align-items: center !important;
-              gap: 0.5rem !important;
-            }
-            header nav a {
-              color: white !important;
-              font-weight: 500 !important;
-              padding: 0.5rem 1rem !important;
-              border-radius: 0.5rem !important;
-              transition: all 0.3s !important;
-              text-decoration: none !important;
-            }
-            header nav a:hover {
-              color: #59e3a5 !important;
-              background-color: rgba(255, 255, 255, 0.05) !important;
-              transform: scale(1.05) !important;
-            }
-            header img {
-              height: 2rem !important;
-              width: auto !important;
-            }
-            header button {
-              background: linear-gradient(to right, #8b5cf6, #6366f1) !important;
-              color: white !important;
-              font-weight: bold !important;
-              padding: 0.5rem 0.75rem !important;
-              border-radius: 0.5rem !important;
-              border: none !important;
-              cursor: pointer !important;
-              transition: all 0.3s !important;
-            }
-            header button:hover {
-              opacity: 0.9 !important;
-              transform: scale(1.05) !important;
-            }
-            /* Mobile Menu */
-            header .md\\:hidden {
-              display: block !important;
-            }
-            @media (min-width: 768px) {
-              header .md\\:hidden {
-                display: none !important;
-              }
-              header .hidden {
-                display: flex !important;
-              }
-            }
-          `}</style>
           <BlogHeader />
         </div>
 
         <main className="pt-16" style={{ paddingTop: '4rem', zIndex: 2 }}>
-          {/* Breadcrumb */}
-          <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 mb-6" style={{ zIndex: 2 }}>
+          {/* Breadcrumb - positioned above featured image */}
+          <div className="max-w-[90vw] mx-auto px-4 sm:px-6 lg:px-8 py-8 pt-12" style={{ zIndex: 2 }}>
             <nav className="flex" aria-label="Breadcrumb">
-              <ol className="flex items-center space-x-2 text-xs text-white/80">
+              <ol className="flex items-center space-x-2 text-sm text-white/70">
                 <li>
-                  <Link href="/" className="hover:text-white transition-colors">
+                  <Link href="/" className="hover:text-white/90 transition-colors text-xs">
                     Home
                   </Link>
                 </li>
                 <li>
-                  <span className="text-white/60">/</span>
+                  <span className="mx-2">/</span>
                 </li>
                 <li>
-                  <Link href="/blog" className="hover:text-white transition-colors">
+                  <Link href="/blog" className="hover:text-white/90 transition-colors text-xs">
                     Blog
                   </Link>
                 </li>
                 <li>
-                  <span className="text-white/60">/</span>
+                  <span className="mx-2">/</span>
                 </li>
-                <li className="text-white/60 truncate max-w-xs">{post.title}</li>
+                <li className="text-white/50 text-xs truncate max-w-xs">
+                  {post.title}
+                </li>
               </ol>
             </nav>
           </div>
 
-          {/* Article */}
-          <article className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 pb-16 relative" style={{ zIndex: 10 }}>
-            {/* BIG GRADIENT GLOW - positioned to be visible around container */}
-            <div 
-              className="absolute -inset-16 rounded-3xl pointer-events-none" 
-              style={{
-                background: 'radial-gradient(ellipse 140% 140% at center, rgba(89, 227, 165, 0.4), rgba(20, 192, 255, 0.35), rgba(139, 92, 246, 0.25), rgba(59, 130, 246, 0.15), transparent 70%)',
-                filter: 'blur(80px)',
-                zIndex: 9
-              }}
-            ></div>
-            
-            <div className="relative">
-              <div 
-                className="bg-white rounded-2xl shadow-2xl overflow-hidden border border-gray-200/40 relative" 
-                style={{ 
-                  zIndex: 12,
-                  backgroundColor: '#ffffff',
-                  borderRadius: '1rem',
-                  boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
-                  overflow: 'hidden',
-                  border: '1px solid rgba(229, 231, 235, 0.4)',
-                  position: 'relative'
-                }} 
-                suppressHydrationWarning={true}
-              >
-              {/* Featured Image */}
+          {/* Featured Image with Overlay */}
               {post.featured_image_url && (
-                <div className="aspect-video relative overflow-hidden">
+            <div className="max-w-[90vw] mx-auto px-4 sm:px-6 lg:px-8 mb-8" style={{ zIndex: 2 }}>
+              <div className="relative rounded-2xl overflow-hidden shadow-2xl h-64 md:h-96 border border-[#1db954]/30 shadow-[0_0_20px_rgba(29,185,84,0.3)]" style={{ zIndex: 3 }}>
                   <img
                     src={post.featured_image_url}
                     alt={post.title}
                     className="w-full h-full object-cover"
-                    style={{ zIndex: 13 }}
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent"></div>
+                  style={{ zIndex: 4 }}
+                />
+                <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/60 to-black/40" style={{ zIndex: 5 }}></div>
+                
+                {/* Overlay Content */}
+                <div className="absolute inset-0 flex items-end" style={{ zIndex: 6 }}>
+                  <div className="p-8 md:p-12 w-full">
+                    <h1 className="text-3xl md:text-5xl font-bold text-white mb-4 leading-tight max-w-[80%]" style={{ zIndex: 7 }}>
+                      {post.title}
+                    </h1>
+                    
+                    {/* Article Meta */}
+                    <div className="flex flex-wrap items-center gap-4 mb-4 text-white/90" style={{ zIndex: 7 }}>
+                      <time dateTime={post.published_at || post.created_at} className="text-sm">
+                        {formatDate(post.published_at || post.created_at)}
+                      </time>
+                      <span className="text-white/60">•</span>
+                      <span className="text-sm">{getReadTime(post.read_time)}</span>
                 </div>
-              )}
 
-              {/* Content */}
-              <div 
-                className="p-8 lg:p-12" 
-                style={{ 
-                  padding: '3rem',
-                  fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif"
-                }}
-              >
                 {/* Tags */}
                 {post.tags && post.tags.length > 0 && (
-                  <div className="flex flex-wrap gap-2 mb-6">
+                      <div className="flex flex-wrap gap-2" style={{ zIndex: 7 }}>
                     {post.tags.map((tag) => (
                       <Link
                         key={tag}
                         href={`/blog?tag=${encodeURIComponent(tag)}`}
-                        className="text-sm bg-gradient-to-r from-[#59e3a5]/20 to-[#14c0ff]/20 text-[#059669] px-4 py-2 rounded-full hover:from-[#59e3a5]/30 hover:to-[#14c0ff]/30 transition-all duration-300 border border-[#59e3a5]/40"
-                        style={{ zIndex: 13 }}
+                            className="text-xs bg-gradient-to-r from-[#59e3a5]/20 to-[#14c0ff]/20 text-[#59e3a5] px-3 py-1 rounded-full hover:from-[#59e3a5]/30 hover:to-[#14c0ff]/30 transition-all duration-300 border border-[#59e3a5]/40"
+                            style={{ zIndex: 8 }}
                       >
-                        #{tag}
+                            {tag}
                       </Link>
                     ))}
                   </div>
                 )}
-
-                {/* Title */}
-                <h1 
-                  className="text-4xl lg:text-5xl font-bold text-gray-900 mb-6 leading-tight" 
-                  style={{ 
-                    fontFamily: "'Inter Tight', sans-serif",
-                    fontSize: '3rem',
-                    fontWeight: '700',
-                    color: '#111827',
-                    marginBottom: '1.5rem',
-                    lineHeight: '1.25'
-                  }}
-                >
-                  {post.title}
-                </h1>
-
-                {/* Meta (without author and views) */}
-                <div className="flex items-center border-b border-gray-200 pb-6 mb-8 text-sm text-gray-600">
-                  <div className="flex items-center space-x-4">
-                    <time dateTime={post.published_at || post.created_at} className="font-medium">
-                      {formatDate(post.published_at || post.created_at)}
-                    </time>
-                    <span>•</span>
-                    <span>{getReadTime(post.read_time)}</span>
                   </div>
                 </div>
+              </div>
+            </div>
+          )}
+
+          {/* Main Content Grid - 2 Column Layout */}
+          <div className="max-w-[90vw] mx-auto px-4 sm:px-6 lg:px-8 pb-16">
+            <div className="grid grid-cols-1 lg:grid-cols-10 gap-8">
+              {/* Main Article Content - 70% */}
+              <article className="lg:col-span-7 bg-white rounded-2xl shadow-2xl p-8 lg:p-12" style={{ zIndex: 3 }}>
 
                 {/* Article Content */}
                 <div 
-                  className="prose prose-lg max-w-none prose-headings:text-gray-900 prose-p:text-gray-700 prose-a:text-[#059669] prose-a:no-underline hover:prose-a:underline prose-strong:text-gray-900 prose-code:text-[#0ea5e9] prose-blockquote:border-l-[#059669] prose-blockquote:text-gray-600"
-                  dangerouslySetInnerHTML={{ __html: post.html_content }}
-                  style={{ 
-                    zIndex: 13,
-                    fontFamily: "'Inter', sans-serif",
-                    fontSize: '19px',
-                    lineHeight: '1.7',
-                    maxWidth: 'none',
-                    color: '#374151'
-                  }}
+                  className="prose prose-lg max-w-none blog-content" 
+                  style={{ zIndex: 4 }}
+                  dangerouslySetInnerHTML={{ __html: post.content }}
                 />
-              
-              {/* Enhanced Styling for Blog Content */}
+
               <style jsx global>{`
-                .prose h1 {
-                  font-family: 'Inter Tight', sans-serif !important;
-                  font-size: 2.5rem !important;
-                  font-weight: 700 !important;
-                  color: #1f2937 !important;
-                  margin: 2rem 0 1.5rem 0 !important;
-                  line-height: 1.2 !important;
-                  border-bottom: none !important;
-                }
-                .prose h2 {
-                  font-family: 'Inter Tight', sans-serif !important;
-                  font-size: 2rem !important;
-                  font-weight: 600 !important;
-                  color: #1f2937 !important;
-                  margin: 1.75rem 0 1rem 0 !important;
-                  line-height: 1.3 !important;
-                  border-bottom: none !important;
-                }
-                .prose h3 {
-                  font-family: 'Inter Tight', sans-serif !important;
-                  font-size: 1.75rem !important;
-                  font-weight: 600 !important;
-                  color: #1f2937 !important;
-                  margin: 1.5rem 0 0.75rem 0 !important;
-                  line-height: 1.4 !important;
-                }
-                .prose h4 {
-                  font-family: 'Inter Tight', sans-serif !important;
-                  font-size: 1.5rem !important;
-                  font-weight: 600 !important;
-                  color: #1f2937 !important;
-                  margin: 1.25rem 0 0.5rem 0 !important;
-                  line-height: 1.4 !important;
-                }
-                .prose h5 {
-                  font-family: 'Inter Tight', sans-serif !important;
-                  font-size: 1.25rem !important;
-                  font-weight: 600 !important;
-                  color: #1f2937 !important;
-                  margin: 1rem 0 0.5rem 0 !important;
-                  line-height: 1.4 !important;
-                }
-                .prose h6 {
-                  font-family: 'Inter Tight', sans-serif !important;
-                  font-size: 1.125rem !important;
-                  font-weight: 600 !important;
-                  color: #1f2937 !important;
-                  margin: 1rem 0 0.5rem 0 !important;
-                  line-height: 1.4 !important;
-                }
-                .prose strong {
-                  font-weight: 700 !important;
-                  color: #1f2937 !important;
-                }
-                .prose em {
-                  font-style: italic !important;
-                }
-                .prose u {
-                  text-decoration: underline !important;
-                }
-                .prose s {
-                  text-decoration: line-through !important;
-                }
-                .prose blockquote {
-                  border-left: 4px solid #3b82f6 !important;
-                  padding-left: 1.5rem !important;
-                  margin: 1.5rem 0 !important;
-                  font-style: italic !important;
-                  color: #6b7280 !important;
-                  background-color: #f9fafb !important;
-                  padding: 1rem 1.5rem !important;
-                  border-radius: 0.5rem !important;
-                }
-                .prose code {
-                  background-color: #f3f4f6 !important;
-                  padding: 0.125rem 0.375rem !important;
-                  border-radius: 0.375rem !important;
-                  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace !important;
-                  font-size: 0.875rem !important;
-                  color: #e11d48 !important;
-                }
-                .prose pre {
-                  background-color: #1f2937 !important;
-                  color: #f9fafb !important;
-                  padding: 1.5rem !important;
-                  border-radius: 0.75rem !important;
-                  overflow-x: auto !important;
-                  margin: 1.5rem 0 !important;
-                  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace !important;
-                }
-                .prose pre code {
-                  background-color: transparent !important;
-                  padding: 0 !important;
-                  color: inherit !important;
-                  font-size: 0.875rem !important;
-                }
-                .prose ul, .prose ol {
-                  margin: 1.25rem 0 !important;
-                  padding-left: 1.75rem !important;
+                  .blog-content p {
+                    margin-bottom: 1.5em !important;
+                    margin-top: 0 !important;
+                  }
+                  .blog-content p:last-child {
+                    margin-bottom: 0 !important;
+                  }
+                  .blog-content h1, .blog-content h2, .blog-content h3, .blog-content h4, .blog-content h5, .blog-content h6 {
+                    margin-top: 2em !important;
+                    margin-bottom: 1em !important;
+                  }
+                  .blog-content h1:first-child, .blog-content h2:first-child, .blog-content h3:first-child, .blog-content h4:first-child, .blog-content h5:first-child, .blog-content h6:first-child {
+                    margin-top: 0 !important;
+                  }
+                  .blog-content ul, .blog-content ol {
+                    margin-bottom: 1.5em !important;
+                  }
+                  .blog-content blockquote {
+                    margin: 2em 0 !important;
+                  }
+                  .blog-content br {
+                    margin-bottom: 1em !important;
                 }
                 .prose p {
-                  font-family: 'Inter', sans-serif !important;
-                  font-size: 19px !important;
-                  margin: 1.25rem 0 !important;
-                  line-height: 1.7 !important;
-                  color: #374151 !important;
-                }
-                .prose li {
-                  font-family: 'Inter', sans-serif !important;
-                  font-size: 19px !important;
-                  margin: 0.5rem 0 !important;
-                  line-height: 1.7 !important;
-                }
-                .prose img {
-                  max-width: 100% !important;
-                  height: auto !important;
-                  border-radius: 0.75rem !important;
-                  margin: 1.5rem 0 !important;
-                  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04) !important;
-                }
-                .prose a {
-                  color: #2563eb !important;
-                  text-decoration: none !important;
-                  font-weight: 500 !important;
-                  transition: color 0.2s ease !important;
-                }
-                .prose a:hover {
-                  color: #1d4ed8 !important;
-                  text-decoration: underline !important;
-                }
-                .prose table {
-                  width: 100% !important;
-                  border-collapse: collapse !important;
-                  margin: 1.5rem 0 !important;
-                  background-color: white !important;
-                  border-radius: 0.5rem !important;
-                  overflow: hidden !important;
-                  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1) !important;
-                }
-                .prose th {
-                  background-color: #f9fafb !important;
-                  padding: 0.75rem 1rem !important;
-                  text-align: left !important;
-                  font-weight: 600 !important;
-                  color: #1f2937 !important;
-                  border-bottom: 1px solid #e5e7eb !important;
-                }
-                .prose td {
-                  padding: 0.75rem 1rem !important;
-                  border-bottom: 1px solid #f3f4f6 !important;
-                  color: #374151 !important;
-                }
-                .prose hr {
-                  border: none !important;
-                  height: 1px !important;
-                  background-color: #e5e7eb !important;
-                  margin: 2rem 0 !important;
+                    margin-bottom: 1.5em !important;
                 }
               `}</style>
 
                 {/* Share Buttons */}
-                <div className="border-t border-gray-200 pt-8 mt-12">
+                <div className="mt-12 pt-8 border-t border-gray-200" style={{ zIndex: 4 }}>
                   <h3 className="text-lg font-semibold text-gray-900 mb-4">Share this article</h3>
                   <div className="flex flex-wrap gap-3">
                     <a
@@ -687,7 +412,7 @@ export default function BlogPostPage({ post, relatedPosts, error }: BlogPostPage
                       target="_blank"
                       rel="noopener noreferrer"
                       className="bg-gradient-to-r from-[#1da1f2] to-[#1a8cd8] hover:from-[#1a8cd8] hover:to-[#1976d2] text-white px-6 py-3 rounded-xl text-sm font-medium transition-all duration-300 hover:scale-105 shadow-lg"
-                      style={{ zIndex: 13 }}
+                      style={{ zIndex: 5 }}
                     >
                       Share on Twitter
                     </a>
@@ -696,7 +421,7 @@ export default function BlogPostPage({ post, relatedPosts, error }: BlogPostPage
                       target="_blank"
                       rel="noopener noreferrer"
                       className="bg-gradient-to-r from-[#4267B2] to-[#365899] hover:from-[#365899] hover:to-[#2d4373] text-white px-6 py-3 rounded-xl text-sm font-medium transition-all duration-300 hover:scale-105 shadow-lg"
-                      style={{ zIndex: 13 }}
+                      style={{ zIndex: 5 }}
                     >
                       Share on Facebook
                     </a>
@@ -705,148 +430,66 @@ export default function BlogPostPage({ post, relatedPosts, error }: BlogPostPage
                       target="_blank"
                       rel="noopener noreferrer"
                       className="bg-gradient-to-r from-[#0077b5] to-[#005885] hover:from-[#005885] hover:to-[#004471] text-white px-6 py-3 rounded-xl text-sm font-medium transition-all duration-300 hover:scale-105 shadow-lg"
-                      style={{ zIndex: 13 }}
+                      style={{ zIndex: 5 }}
                     >
                       Share on LinkedIn
                     </a>
                   </div>
                 </div>
-              </div>
-            </div>
-            </div>
+
+                {/* Latest Posts Carousel Section at Bottom */}
+                {latestPosts && latestPosts.length > 0 && <LatestPostsCarousel latestPosts={latestPosts} formatDate={formatDate} getReadTime={getReadTime} />}
           </article>
 
-          {/* Related Posts */}
-          {relatedPosts.length > 0 && (
-            <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16" style={{ zIndex: 2 }}>
-              <h2 className="text-3xl font-bold text-white mb-12 text-center">Related Articles</h2>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-                {relatedPosts.map((relatedPost) => (
-                  <article 
-                    key={relatedPost.id}
-                    className="bg-white rounded-2xl shadow-xl overflow-hidden hover:scale-105 transition-all duration-300 border border-gray-200/40"
-                    style={{ zIndex: 3 }}
-                    suppressHydrationWarning={true}
-                  >
-                    {relatedPost.featured_image_url && (
-                      <div className="aspect-video relative overflow-hidden">
-                        <img
-                          src={relatedPost.featured_image_url}
-                          alt={relatedPost.title}
-                          className="w-full h-full object-cover"
-                          style={{ zIndex: 4 }}
+              {/* Trending Posts Sidebar - 30% */}
+              <aside className="lg:col-span-3 hidden lg:block">
+                <div className="sticky top-24" style={{ zIndex: 9990 }}>
+                  <div className="bg-gradient-to-br from-gray-800/90 to-gray-900/90 backdrop-blur-sm rounded-2xl shadow-xl border border-gray-700/50 p-6" style={{ zIndex: 9991 }}>
+                    <h2 className="text-xl font-bold text-white mb-6">Trending Posts</h2>
+                    <div className="space-y-4">
+                      {trendingPosts && trendingPosts.length > 0 ? (
+                        trendingPosts.map((trendingPost) => (
+                          <div
+                            key={trendingPost.id}
+                            className="group border-b border-gray-600/30 pb-4 last:border-b-0 last:pb-0"
+                            style={{ zIndex: 9992 }}
+                          >
+                            <Link href={`/blog/${trendingPost.slug}`} className="block">
+                              <div className="flex gap-3">
+                                {trendingPost.featured_image_url && (
+                                  <div className="flex-shrink-0 w-16 h-16 rounded-lg overflow-hidden">
+                                    <img
+                                      src={trendingPost.featured_image_url}
+                                      alt={trendingPost.title}
+                                      className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
                         />
                       </div>
                     )}
-                    <div className="p-6">
-                      <h3 className="text-lg font-semibold text-gray-900 mb-3 line-clamp-2 leading-tight">
-                        <Link 
-                          href={`/blog/${relatedPost.slug}`}
-                          className="hover:text-[#059669] transition-colors"
-                          style={{ zIndex: 4 }}
-                        >
-                          {relatedPost.title}
-                        </Link>
+                                <div className="flex-1 min-w-0">
+                                  <h3 className="text-sm font-medium text-white group-hover:text-[#59e3a5] transition-colors line-clamp-2 mb-1">
+                                    {trendingPost.title}
                       </h3>
-                      <p className="text-gray-600 text-sm mb-4 line-clamp-3 leading-relaxed">
-                        {relatedPost.excerpt || relatedPost.content.substring(0, 120) + '...'}
+                                  <p className="text-xs text-gray-300">
+                                    {formatDate(trendingPost.published_at || trendingPost.created_at)}
                       </p>
-                      <div className="text-sm text-gray-500 font-medium">
-                        {formatDate(relatedPost.published_at || relatedPost.created_at)}
+                                </div>
+                              </div>
+                            </Link>
                       </div>
+                        ))
+                      ) : (
+                        <p className="text-gray-300 text-sm">No trending posts found.</p>
+                      )}
                     </div>
-                  </article>
-                ))}
+                  </div>
+                </div>
+              </aside>
               </div>
-            </section>
-          )}
-
-          {/* Back to Blog */}
-          <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 pb-16" style={{ zIndex: 2 }}>
-            <Link
-              href="/blog"
-              className="inline-flex items-center space-x-2 bg-gradient-to-r from-[#59e3a5]/20 to-[#14c0ff]/20 hover:from-[#59e3a5]/30 hover:to-[#14c0ff]/30 text-white px-6 py-3 rounded-xl font-medium transition-all duration-300 border border-[#59e3a5]/30 hover:scale-105"
-              style={{ zIndex: 3 }}
-            >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-              </svg>
-              <span>Back to Blog</span>
-            </Link>
           </div>
         </main>
 
         {/* Footer */}
-        <div style={{ zIndex: 100 }}>
-          <style jsx global>{`
-            /* FORCE FOOTER STYLES - Production Fix */
-            footer {
-              background: linear-gradient(to bottom, #0a0a13, #000000) !important;
-              border-top: 1px solid rgba(255, 255, 255, 0.1) !important;
-              padding: 3rem 1rem !important;
-            }
-            footer .max-w-6xl {
-              max-width: 72rem !important;
-              margin: 0 auto !important;
-            }
-            footer .grid {
-              display: grid !important;
-              gap: 2rem !important;
-            }
-            footer .grid-cols-1 {
-              grid-template-columns: repeat(1, minmax(0, 1fr)) !important;
-            }
-            @media (min-width: 768px) {
-              footer .md\\:grid-cols-4 {
-                grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
-              }
-            }
-            footer h4 {
-              color: white !important;
-              font-weight: 600 !important;
-              margin-bottom: 1rem !important;
-              font-size: 1rem !important;
-            }
-            footer ul {
-              list-style: none !important;
-              padding: 0 !important;
-              margin: 0 !important;
-            }
-            footer li {
-              margin-bottom: 0.5rem !important;
-            }
-            footer a {
-              color: #9ca3af !important;
-              text-decoration: none !important;
-              font-size: 0.875rem !important;
-              transition: color 0.2s !important;
-            }
-            footer a:hover {
-              color: #59e3a5 !important;
-            }
-            footer p {
-              color: #9ca3af !important;
-              font-size: 0.875rem !important;
-              line-height: 1.6 !important;
-              margin: 0 !important;
-            }
-            footer img {
-              height: 2rem !important;
-              width: auto !important;
-              margin-bottom: 1rem !important;
-            }
-            footer .border-t {
-              border-top: 1px solid rgba(255, 255, 255, 0.1) !important;
-              margin-top: 2rem !important;
-              padding-top: 1.5rem !important;
-            }
-            footer .text-center {
-              text-align: center !important;
-            }
-            footer .text-gray-500 {
-              color: #6b7280 !important;
-            }
-          `}</style>
+        <div style={{ zIndex: 2 }}>
           <Footer />
         </div>
       </div>
@@ -854,71 +497,77 @@ export default function BlogPostPage({ post, relatedPosts, error }: BlogPostPage
   );
 }
 
-export const getServerSideProps: GetServerSideProps = async (context) => {
-  const { slug } = context.params!;
-
-  if (!slug || typeof slug !== 'string') {
-    return {
-      notFound: true
-    };
-  }
-
+export const getServerSideProps: GetServerSideProps = async ({ params }) => {
   try {
+    const { slug } = params!;
     const supabase = getBlogSupabaseClient();
 
-    // Get the blog post
-    const { data: post, error } = await supabase
+    // Fetch the blog post
+    const { data: post, error: postError } = await supabase
       .from('blog_posts')
-      .select(`
-        *,
-        categories:blog_post_categories(
-          category:blog_categories(*)
-        )
-      `)
+      .select('*')
       .eq('slug', slug)
       .eq('status', 'published')
       .not('published_at', 'is', null)
       .lte('published_at', new Date().toISOString())
       .single();
 
-    if (error || !post) {
+    if (postError || !post) {
+      console.error('Post not found:', postError);
       return {
-        notFound: true
+        props: {
+          post: null,
+          trendingPosts: [],
+          latestPosts: [],
+          error: 'Post not found'
+        }
       };
     }
 
-    // Get related posts (same tags, excluding current post)
-    let relatedQuery = supabase
+    // Get 5 Random Posts for Sidebar (Trending Posts)
+    console.log('📈 TRENDING POSTS: Fetching 5 random posts for sidebar');
+    const { data: trendingPosts, error: trendingError } = await supabase
       .from('blog_posts')
-      .select('id, title, slug, excerpt, content, featured_image_url, published_at, created_at')
+      .select('id, title, slug, excerpt, featured_image_url, published_at, created_at, read_time')
       .eq('status', 'published')
       .not('published_at', 'is', null)
       .lte('published_at', new Date().toISOString())
       .neq('id', post.id)
-      .limit(3);
+      .order('created_at', { ascending: false })
+      .limit(5);
 
-    // If post has tags, find posts with similar tags
-    if (post.tags && post.tags.length > 0) {
-      relatedQuery = relatedQuery.overlaps('tags', post.tags);
-    }
+    console.log('📈 TRENDING POSTS: Found', trendingPosts?.length || 0, 'posts');
+    if (trendingError) console.error('📈 TRENDING POSTS: Error:', trendingError);
 
-    const { data: relatedPosts } = await relatedQuery
-      .order('published_at', { ascending: false });
+    // Get Latest 9 Posts for Bottom Carousel
+    console.log('🔄 LATEST POSTS: Fetching 9 latest posts for carousel');
+    const { data: latestPosts, error: latestError } = await supabase
+      .from('blog_posts')
+      .select('id, title, slug, excerpt, featured_image_url, published_at, created_at, read_time')
+      .eq('status', 'published')
+      .not('published_at', 'is', null)
+      .lte('published_at', new Date().toISOString())
+      .neq('id', post.id)
+      .order('published_at', { ascending: false })
+      .limit(9);
+
+    console.log('🔄 LATEST POSTS: Found', latestPosts?.length || 0, 'latest posts');
+    if (latestError) console.error('🔄 LATEST POSTS: Error:', latestError);
 
     return {
       props: {
         post,
-        relatedPosts: relatedPosts || []
+        trendingPosts: trendingPosts || [],
+        latestPosts: latestPosts || []
       }
     };
-
   } catch (error) {
-    console.error('Error in blog post page getServerSideProps:', error);
-    
+    console.error('Error fetching blog post:', error);
     return {
       props: {
         post: null,
-        relatedPosts: [],
+        trendingPosts: [],
+        latestPosts: [],
         error: 'Failed to load post'
       }
     };

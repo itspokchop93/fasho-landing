@@ -5,6 +5,7 @@ import { NextApiRequest, NextApiResponse } from 'next';
 import { BlogPostService } from '../../../../../plugins/blog/utils/supabase';
 import { BlogPost, BlogFilters, BlogListResponse } from '../../../../../plugins/blog/types/blog';
 import { triggerSitemapUpdate } from '../../../../../plugins/blog/utils/sitemap-cache';
+import { addReadTimeToPost } from '../../../../../plugins/blog/utils/read-time';
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   const blogPostService = new BlogPostService();
@@ -114,11 +115,14 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       const baseSlug = postData.slug || generateSlug(postData.title);
       const uniqueSlug = await blogPostService.generateUniqueSlug(baseSlug);
       
-      const createResponse = await blogPostService.createPost({
+      // Calculate read time automatically
+      const postDataWithReadTime = addReadTimeToPost({
         ...postData,
         slug: uniqueSlug,
         author_name: postData.author_name || 'Admin'
       });
+      
+      const createResponse = await blogPostService.createPost(postDataWithReadTime);
 
       if (!createResponse.success) {
         console.log('❌ BLOG-API: Create failed:', createResponse.error);

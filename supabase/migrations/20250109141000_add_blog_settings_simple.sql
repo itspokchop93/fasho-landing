@@ -28,3 +28,4 @@ INSERT INTO blog_settings (setting_key, setting_value) VALUES
 ON CONFLICT (setting_key) DO NOTHING;
 
 
+

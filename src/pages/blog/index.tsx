@@ -4,7 +4,7 @@
 import { GetServerSideProps } from 'next';
 import Head from 'next/head';
 import Link from 'next/link';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { getBlogSupabaseClient } from '../../../plugins/blog/utils/supabase';
 import { BlogPost, BlogListResponse } from '../../../plugins/blog/types/blog';
 import { schemaGenerator } from '../../../plugins/blog/utils/schema-generator';
@@ -13,6 +13,7 @@ import Footer from '../../components/Footer';
 
 interface BlogPageProps {
   posts: BlogPost[];
+  featuredPosts: BlogPost[];
   pagination: {
     page: number;
     limit: number;
@@ -26,7 +27,110 @@ interface BlogPageProps {
   };
 }
 
-export default function BlogPage({ posts, pagination, filters }: BlogPageProps) {
+// Featured Hero Carousel Component
+const FeaturedHeroCarousel = ({ featuredPosts }: { featuredPosts: BlogPost[] }) => {
+  const [currentIndex, setCurrentIndex] = useState(0);
+
+  useEffect(() => {
+    if (featuredPosts.length <= 1) return;
+    
+    const interval = setInterval(() => {
+      setCurrentIndex((prevIndex) => 
+        prevIndex === featuredPosts.length - 1 ? 0 : prevIndex + 1
+      );
+    }, 5000);
+
+    return () => clearInterval(interval);
+  }, [featuredPosts.length]);
+
+  if (!featuredPosts.length) return null;
+
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    });
+  };
+
+  return (
+    <div className="relative h-[70vh] overflow-hidden" style={{ zIndex: 1 }}>
+      {featuredPosts.map((post, index) => (
+        <div
+          key={post.id}
+          className={`absolute inset-0 transition-all duration-1000 ease-in-out ${
+            index === currentIndex ? 'opacity-100 scale-100' : 'opacity-0 scale-105'
+          }`}
+          style={{ zIndex: index === currentIndex ? 2 : 1 }}
+        >
+          {/* Background Image */}
+          <div className="absolute inset-0" style={{ zIndex: 1 }}>
+            <img
+              src={post.featured_image_url || '/default-blog-bg.jpg'}
+              alt={post.title}
+              className="w-full h-full object-cover"
+            />
+            <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/60 to-black/40" style={{ zIndex: 2 }}></div>
+          </div>
+
+          {/* Content Overlay */}
+          <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-full flex items-center" style={{ zIndex: 3 }}>
+            <div className="max-w-3xl">
+              <div className="mb-4">
+                <span className="inline-block bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] text-white px-4 py-2 rounded-full text-sm font-medium" style={{ zIndex: 4 }}>
+                  Featured Article
+                </span>
+              </div>
+              <Link href={`/blog/${post.slug}`}>
+                <h1 className="text-4xl md:text-6xl font-bold text-white mb-6 leading-tight hover:text-[#59e3a5] transition-colors cursor-pointer" style={{ zIndex: 4 }}>
+                  {post.title}
+                </h1>
+              </Link>
+              <p className="text-xl text-gray-200 mb-8 leading-relaxed" style={{ zIndex: 4 }}>
+                {post.excerpt || post.content.substring(0, 200) + '...'}
+              </p>
+              <div className="flex items-center space-x-6 mb-8" style={{ zIndex: 4 }}>
+                <span className="text-gray-300">{formatDate(post.published_at || post.created_at)}</span>
+                <span className="text-gray-300">•</span>
+                <span className="text-gray-300">{post.read_time || '5'} min read</span>
+              </div>
+              <Link
+                href={`/blog/${post.slug}`}
+                className="inline-flex items-center space-x-2 bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] hover:from-[#59e3a5]/90 hover:to-[#14c0ff]/90 text-white px-8 py-4 rounded-xl font-semibold transition-all duration-300 hover:scale-105 shadow-xl hover:shadow-2xl"
+                style={{ zIndex: 4 }}
+              >
+                <span>Read Full Article</span>
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
+                </svg>
+              </Link>
+            </div>
+          </div>
+        </div>
+      ))}
+
+      {/* Carousel Indicators */}
+      {featuredPosts.length > 1 && (
+        <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2 flex space-x-3" style={{ zIndex: 4 }}>
+          {featuredPosts.map((_, index) => (
+            <button
+              key={index}
+              onClick={() => setCurrentIndex(index)}
+              className={`w-3 h-3 rounded-full transition-all duration-300 ${
+                index === currentIndex
+                  ? 'bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] scale-125'
+                  : 'bg-white/50 hover:bg-white/75'
+              }`}
+              style={{ zIndex: 5 }}
+            />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+};
+
+export default function BlogPage({ posts, featuredPosts, pagination, filters }: BlogPageProps) {
   const [searchTerm, setSearchTerm] = useState(filters.search || '');
 
   // Format date for display
@@ -180,38 +284,119 @@ export default function BlogPage({ posts, pagination, filters }: BlogPageProps) 
         <link rel="icon" href="/favicon.ico" />
       </Head>
 
-      <div className="min-h-screen bg-gradient-to-br from-[#0f0f23] via-[#1a1a2e] to-[#16213e]" style={{ zIndex: 1 }}>
-        {/* Blog Header */}
-        <BlogHeader />
+      {/* Dark background with gradient */}
+      <div className="min-h-screen bg-gradient-to-br from-[#0a0a13] via-[#0d0d1a] to-[#000000] relative" style={{ zIndex: 1 }}>
+        {/* Header */}
+        <div style={{ zIndex: 100 }}>
+          <style jsx global>{`
+            /* FORCE HEADER STYLES - Production Fix */
+            header {
+              position: fixed !important;
+              width: 100% !important;
+              top: 0 !important;
+              z-index: 9998 !important;
+              transition: all 0.3s !important;
+              background-color: rgba(24, 25, 42, 0.95) !important;
+              backdrop-filter: blur(8px) !important;
+              border-bottom: 1px solid rgba(255, 255, 255, 0.1) !important;
+            }
+            header .container {
+              max-width: 1200px !important;
+              margin: 0 auto !important;
+              padding: 0.5rem 1rem !important;
+            }
+            header .flex {
+              display: flex !important;
+              align-items: center !important;
+              justify-content: space-between !important;
+              height: 4rem !important;
+            }
+            header nav {
+              display: flex !important;
+              align-items: center !important;
+              gap: 0.5rem !important;
+            }
+            header nav a {
+              color: white !important;
+              font-weight: 500 !important;
+              padding: 0.5rem 1rem !important;
+              border-radius: 0.5rem !important;
+              transition: all 0.3s !important;
+              text-decoration: none !important;
+            }
+            header nav a:hover {
+              color: #59e3a5 !important;
+              background-color: rgba(255, 255, 255, 0.05) !important;
+              transform: scale(1.05) !important;
+            }
+            header img {
+              height: 2rem !important;
+              width: auto !important;
+            }
+            header button {
+              background: linear-gradient(to right, #8b5cf6, #6366f1) !important;
+              color: white !important;
+              font-weight: bold !important;
+              padding: 0.5rem 0.75rem !important;
+              border-radius: 0.5rem !important;
+              border: none !important;
+              cursor: pointer !important;
+              transition: all 0.3s !important;
+            }
+            header button:hover {
+              opacity: 0.9 !important;
+              transform: scale(1.05) !important;
+            }
+            /* Mobile Menu */
+            header .md\\:hidden {
+              display: block !important;
+            }
+            @media (min-width: 768px) {
+              header .md\\:hidden {
+                display: none !important;
+              }
+              header .hidden {
+                display: flex !important;
+              }
+            }
+          `}</style>
+          <BlogHeader />
+        </div>
 
-        <main className="pt-16">
-          {/* Hero Section */}
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16" style={{ zIndex: 2 }}>
-            <div className="text-center mb-16">
-              <h1 className="text-5xl lg:text-6xl font-bold text-white mb-6 leading-tight">
-                FASHO <span className="bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] bg-clip-text text-transparent">Blog</span>
+        <main className="pt-16" style={{ zIndex: 2 }}>
+          {/* Featured Hero Carousel - only show on page 1 and without search */}
+          {pagination.page === 1 && !filters.search && (
+            <FeaturedHeroCarousel featuredPosts={featuredPosts} />
+          )}
+
+          {/* Blog Archive Section */}
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
+            {/* Section Header */}
+            <div className="text-center mb-12" style={{ zIndex: 3 }}>
+              <h1 className="text-4xl md:text-5xl font-bold text-white mb-6">
+                Latest <span className="bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] bg-clip-text text-transparent">Articles</span>
               </h1>
-              <p className="text-xl lg:text-2xl text-white/80 max-w-3xl mx-auto leading-relaxed">
-                Insights, tips, and industry news to help you succeed in music promotion
+              <p className="text-xl text-gray-300 max-w-3xl mx-auto leading-relaxed">
+                Discover insights, tips, and industry news to help you succeed in music promotion and playlist marketing
               </p>
             </div>
 
             {/* Search and Filters */}
-            <div className="mb-12" style={{ zIndex: 2 }}>
-              <form onSubmit={handleSearch} className="max-w-2xl mx-auto">
-                <div className="flex bg-white/10 backdrop-blur-md rounded-2xl border border-white/20 overflow-hidden" suppressHydrationWarning={true}>
+            <div className="mb-12" style={{ zIndex: 3 }}>
+              <form onSubmit={handleSearch} className="max-w-md mx-auto">
+                <div className="flex">
                   <input
                     type="text"
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
                     placeholder="Search articles..."
-                    className="flex-1 bg-transparent px-6 py-4 text-white placeholder-white/60 focus:outline-none"
-                    style={{ zIndex: 3 }}
+                    className="flex-1 bg-white/10 backdrop-blur-sm border border-white/20 rounded-l-xl px-6 py-4 text-white placeholder-gray-300 focus:outline-none focus:ring-2 focus:ring-[#59e3a5] focus:border-[#59e3a5]"
+                    style={{ zIndex: 4 }}
                   />
                   <button
                     type="submit"
-                    className="bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] hover:from-[#4ade80] hover:to-[#06b6d4] text-white px-8 py-4 font-medium transition-all duration-300 hover:scale-105"
-                    style={{ zIndex: 3 }}
+                    className="bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] hover:from-[#59e3a5]/90 hover:to-[#14c0ff]/90 text-white px-8 py-4 rounded-r-xl font-semibold transition-all duration-300 hover:scale-105"
+                    style={{ zIndex: 4 }}
                   >
                     Search
                   </button>
@@ -221,64 +406,55 @@ export default function BlogPage({ posts, pagination, filters }: BlogPageProps) 
 
             {/* Posts Grid */}
             {posts.length > 0 ? (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mb-16" style={{ zIndex: 2 }}>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mb-16" style={{ zIndex: 3 }}>
                 {posts.map((post) => (
-                  <article 
-                    key={post.id} 
-                    className="bg-white/10 backdrop-blur-md rounded-2xl shadow-xl border border-white/20 overflow-hidden hover:bg-white/15 hover:scale-105 transition-all duration-300"
-                    style={{ zIndex: 3 }}
-                    suppressHydrationWarning={true}
+                  <article
+                    key={post.id}
+                    className="bg-gradient-to-br from-white/10 to-white/5 backdrop-blur-sm rounded-2xl shadow-xl overflow-hidden hover:scale-105 transition-all duration-300 border border-white/20 hover:border-[#59e3a5]/50 hover:shadow-2xl hover:shadow-[#59e3a5]/20"
+                    style={{ zIndex: 4 }}
                   >
-                    {/* Featured Image */}
                     {post.featured_image_url && (
                       <div className="aspect-video relative overflow-hidden">
                         <img
                           src={post.featured_image_url}
                           alt={post.title}
-                          className="w-full h-full object-cover"
-                          style={{ zIndex: 4 }}
+                          className="w-full h-full object-cover hover:scale-110 transition-transform duration-500"
+                          style={{ zIndex: 5 }}
                         />
-                        <div className="absolute inset-0 bg-gradient-to-t from-black/30 to-transparent"></div>
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" style={{ zIndex: 6 }}></div>
                       </div>
                     )}
-
-                    {/* Content */}
                     <div className="p-6">
                       {/* Tags */}
                       {post.tags && post.tags.length > 0 && (
-                        <div className="flex flex-wrap gap-2 mb-4">
+                        <div className="flex flex-wrap gap-2 mb-3">
                           {post.tags.slice(0, 3).map((tag) => (
                             <Link
                               key={tag}
                               href={`/blog?tag=${encodeURIComponent(tag)}`}
-                              className="text-xs bg-gradient-to-r from-[#59e3a5]/20 to-[#14c0ff]/20 text-[#59e3a5] px-3 py-1 rounded-full hover:from-[#59e3a5]/30 hover:to-[#14c0ff]/30 transition-all duration-300 border border-[#59e3a5]/30"
-                              style={{ zIndex: 4 }}
+                              className="text-xs bg-gradient-to-r from-[#59e3a5]/20 to-[#14c0ff]/20 text-[#59e3a5] px-3 py-1 rounded-full hover:from-[#59e3a5]/30 hover:to-[#14c0ff]/30 transition-colors border border-[#59e3a5]/30"
+                              style={{ zIndex: 5 }}
                             >
-                              #{tag}
+                              {tag}
                             </Link>
                           ))}
                         </div>
                       )}
 
-                      {/* Title */}
-                      <h2 className="text-xl font-bold text-white mb-3 line-clamp-2 leading-tight">
+                      <h2 className="text-xl font-semibold text-white mb-3 line-clamp-2 leading-tight">
                         <Link 
                           href={`/blog/${post.slug}`}
                           className="hover:text-[#59e3a5] transition-colors"
-                          style={{ zIndex: 4 }}
+                          style={{ zIndex: 5 }}
                         >
                           {post.title}
                         </Link>
                       </h2>
-
-                      {/* Excerpt */}
-                      <p className="text-white/70 mb-4 line-clamp-3 leading-relaxed">
+                      <p className="text-gray-300 text-sm mb-4 line-clamp-3 leading-relaxed">
                         {post.excerpt || post.content.substring(0, 150) + '...'}
                       </p>
-
-                      {/* Meta (without author) */}
-                      <div className="flex items-center justify-between text-sm text-white/60">
-                        <time dateTime={post.published_at || post.created_at} className="font-medium">
+                      <div className="flex items-center justify-between text-sm text-gray-400">
+                        <time dateTime={post.published_at || post.created_at}>
                           {formatDate(post.published_at || post.created_at)}
                         </time>
                         <span>{getReadTime(post.read_time)}</span>
@@ -288,73 +464,59 @@ export default function BlogPage({ posts, pagination, filters }: BlogPageProps) 
                 ))}
               </div>
             ) : (
-              <div className="text-center py-16" style={{ zIndex: 2 }}>
-                <div className="bg-white/10 backdrop-blur-md rounded-2xl p-12 border border-white/20 max-w-md mx-auto" suppressHydrationWarning={true}>
-                  <h3 className="text-2xl font-semibold text-white mb-4">No posts found</h3>
-                  <p className="text-white/70">
-                    {filters.search ? 'Try adjusting your search terms.' : 'Check back soon for new content!'}
+              <div className="text-center py-16" style={{ zIndex: 3 }}>
+                <div className="max-w-md mx-auto">
+                  <h3 className="text-2xl font-semibold text-white mb-4">No articles found</h3>
+                  <p className="text-gray-300 mb-8">
+                    {filters.search 
+                      ? `No articles match your search for "${filters.search}"`
+                      : "We haven't published any articles yet, but we're working on it!"
+                    }
                   </p>
+                  {filters.search && (
+                    <Link
+                      href="/blog"
+                      className="inline-flex items-center space-x-2 bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] hover:from-[#59e3a5]/90 hover:to-[#14c0ff]/90 text-white px-6 py-3 rounded-xl font-semibold transition-all duration-300 hover:scale-105"
+                      style={{ zIndex: 4 }}
+                    >
+                      <span>View All Articles</span>
+                    </Link>
+                  )}
                 </div>
               </div>
             )}
 
             {/* Pagination */}
             {pagination.totalPages > 1 && (
-              <div className="flex items-center justify-center space-x-4 pt-8" style={{ zIndex: 2 }}>
-                {/* Previous Button */}
-                {pagination.page > 1 ? (
+              <div className="flex justify-center items-center space-x-6" style={{ zIndex: 3 }}>
+                {pagination.page > 1 && (
                   <Link
-                    href={`/blog?page=${pagination.page - 1}${filters.search ? `&search=${encodeURIComponent(filters.search)}` : ''}`}
-                    className="px-6 py-3 bg-white/10 backdrop-blur-md border border-white/20 rounded-xl text-white hover:bg-white/20 transition-all duration-300 font-medium"
-                    style={{ zIndex: 3 }}
-                    suppressHydrationWarning={true}
+                    href={pagination.page === 2 ? "/blog" : `/blog?page=${pagination.page - 1}`}
+                    className="flex items-center space-x-2 px-6 py-3 bg-gradient-to-r from-white/10 to-white/5 backdrop-blur-sm border border-white/20 rounded-xl hover:border-[#59e3a5]/50 hover:shadow-lg hover:shadow-[#59e3a5]/20 transition-all duration-300 text-white"
+                    style={{ zIndex: 4 }}
                   >
-                    Previous
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                    </svg>
+                    <span>Previous</span>
                   </Link>
-                ) : (
-                  <span className="px-6 py-3 bg-white/5 border border-white/10 rounded-xl text-white/40 cursor-not-allowed font-medium">
-                    Previous
-                  </span>
                 )}
 
-                {/* Page Numbers */}
-                <div className="flex space-x-2">
-                  {Array.from({ length: Math.min(5, pagination.totalPages) }, (_, i) => {
-                    const pageNum = Math.max(1, pagination.page - 2) + i;
-                    if (pageNum > pagination.totalPages) return null;
+                <span className="text-gray-300 px-4 py-2">
+                  Page {pagination.page} of {pagination.totalPages}
+                </span>
 
-                    return (
-                      <Link
-                        key={pageNum}
-                        href={`/blog?page=${pageNum}${filters.search ? `&search=${encodeURIComponent(filters.search)}` : ''}`}
-                        className={`px-4 py-3 rounded-xl text-sm font-medium transition-all duration-300 ${
-                          pageNum === pagination.page
-                            ? 'bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] text-white shadow-lg'
-                            : 'bg-white/10 backdrop-blur-md text-white hover:bg-white/20 border border-white/20'
-                        }`}
-                        style={{ zIndex: 3 }}
-                        suppressHydrationWarning={true}
-                      >
-                        {pageNum}
-                      </Link>
-                    );
-                  })}
-                </div>
-
-                {/* Next Button */}
-                {pagination.page < pagination.totalPages ? (
+                {pagination.page < pagination.totalPages && (
                   <Link
-                    href={`/blog?page=${pagination.page + 1}${filters.search ? `&search=${encodeURIComponent(filters.search)}` : ''}`}
-                    className="px-6 py-3 bg-white/10 backdrop-blur-md border border-white/20 rounded-xl text-white hover:bg-white/20 transition-all duration-300 font-medium"
-                    style={{ zIndex: 3 }}
-                    suppressHydrationWarning={true}
+                    href={`/blog?page=${pagination.page + 1}`}
+                    className="flex items-center space-x-2 px-6 py-3 bg-gradient-to-r from-white/10 to-white/5 backdrop-blur-sm border border-white/20 rounded-xl hover:border-[#59e3a5]/50 hover:shadow-lg hover:shadow-[#59e3a5]/20 transition-all duration-300 text-white"
+                    style={{ zIndex: 4 }}
                   >
-                    Next
+                    <span>Next</span>
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                    </svg>
                   </Link>
-                ) : (
-                  <span className="px-6 py-3 bg-white/5 border border-white/10 rounded-xl text-white/40 cursor-not-allowed font-medium">
-                    Next
-                  </span>
                 )}
               </div>
             )}
@@ -362,7 +524,66 @@ export default function BlogPage({ posts, pagination, filters }: BlogPageProps) 
         </main>
 
         {/* Footer */}
-        <Footer />
+        <div style={{ zIndex: 100 }}>
+          <style jsx global>{`
+            /* FORCE FOOTER STYLES - Production Fix */
+            footer {
+              background: linear-gradient(to bottom, #0a0a13, #000000) !important;
+              border-top: 1px solid rgba(255, 255, 255, 0.1) !important;
+              padding: 3rem 1rem !important;
+            }
+            footer .max-w-6xl {
+              max-width: 72rem !important;
+              margin: 0 auto !important;
+            }
+            footer .grid {
+              display: grid !important;
+              gap: 2rem !important;
+            }
+            footer .grid-cols-1 {
+              grid-template-columns: repeat(1, minmax(0, 1fr)) !important;
+            }
+            @media (min-width: 768px) {
+              footer .md\\:grid-cols-4 {
+                grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+              }
+            }
+            footer h4 {
+              color: white !important;
+              font-weight: 600 !important;
+              margin-bottom: 1rem !important;
+              font-size: 1rem !important;
+            }
+            footer ul {
+              list-style: none !important;
+              padding: 0 !important;
+              margin: 0 !important;
+            }
+            footer ul li {
+              margin-bottom: 0.5rem !important;
+            }
+            footer ul li a {
+              color: #9ca3af !important;
+              text-decoration: none !important;
+              transition: color 0.3s !important;
+            }
+            footer ul li a:hover {
+              color: #59e3a5 !important;
+            }
+            footer p {
+              color: #9ca3af !important;
+              font-size: 0.875rem !important;
+              line-height: 1.5 !important;
+            }
+            footer .text-center {
+              text-align: center !important;
+              margin-top: 2rem !important;
+              padding-top: 2rem !important;
+              border-top: 1px solid rgba(255, 255, 255, 0.1) !important;
+            }
+          `}</style>
+          <Footer />
+        </div>
       </div>
     </>
   );
@@ -426,11 +647,34 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
       throw error;
     }
 
+    // Fetch featured posts for carousel (latest 5 posts with images)
+    const { data: featuredPosts } = await supabase
+      .from('blog_posts')
+      .select(`
+        id,
+        title,
+        content,
+        excerpt,
+        slug,
+        featured_image_url,
+        author_name,
+        read_time,
+        published_at,
+        created_at
+      `)
+      .eq('status', 'published')
+      .not('published_at', 'is', null)
+      .not('featured_image_url', 'is', null)
+      .lte('published_at', new Date().toISOString())
+      .order('published_at', { ascending: false })
+      .limit(5);
+
     const totalPages = Math.ceil((count || 0) / limit);
 
     return {
       props: {
         posts: posts || [],
+        featuredPosts: featuredPosts || [],
         pagination: {
           page: pageNum,
           limit,
@@ -451,6 +695,7 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
     return {
       props: {
         posts: [],
+        featuredPosts: [],
         pagination: {
           page: 1,
           limit: 12,
