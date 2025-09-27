@@ -43,6 +43,7 @@ async function handler(req: NextApiRequest, res: NextApiResponse, adminUser: Adm
         playlists_added_confirmed,
         removal_date,
         time_on_playlists,
+        created_at,
         orders!inner(created_at, status, billing_info)
       `)
       .eq('playlists_added_confirmed', true)
