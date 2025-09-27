@@ -422,6 +422,23 @@ const ActiveCampaigns: React.FC = () => {
         });
         window.dispatchEvent(event);
         
+        // If this is a "playlists-added" action, also dispatch event for PlaylistPurchasesNeeded
+        if (action === 'playlists-added') {
+          const campaign = campaigns.find(c => c.id === campaignId);
+          if (campaign && campaign.playlistAssignments) {
+            const playlistsAddedEvent = new CustomEvent('playlistsAdded', {
+              detail: {
+                campaignId,
+                playlistAssignments: campaign.playlistAssignments,
+                songName: campaign.songName,
+                orderNumber: campaign.orderNumber
+              }
+            });
+            window.dispatchEvent(playlistsAddedEvent);
+            console.log(`📋 PLAYLIST-PURCHASES: Dispatched playlistsAdded event for campaign ${campaignId}`, campaign.playlistAssignments);
+          }
+        }
+        
         console.log(`🔄 LIVE UPDATE: Dispatched campaignActionConfirmed event for ${action} on campaign ${campaignId}`);
         } else {
           console.error('Failed to confirm action:', response.statusText);
@@ -473,6 +490,26 @@ const ActiveCampaigns: React.FC = () => {
         // Refresh campaigns data
         fetchCampaigns();
         setEditingPlaylist(null);
+        
+        // Dispatch event to notify SystemSettings to refresh current placements
+        const event = new CustomEvent('playlistAssignmentUpdated', {
+          detail: { campaignId, playlistIndex, newPlaylistId }
+        });
+        window.dispatchEvent(event);
+        console.log(`🔄 PLAYLIST-UPDATE: 🎯 DISPATCHED playlistAssignmentUpdated event for campaign ${campaignId}`, {
+          campaignId,
+          playlistIndex,
+          newPlaylistId,
+          eventType: 'playlistAssignmentUpdated'
+        });
+        
+        // TEST: Verify event listeners are working by logging all event listeners on window
+        console.log(`🔄 PLAYLIST-UPDATE: 🧪 DEBUG - Active event listeners on window:`, Object.keys(window as any));
+        
+        // TEST: Try to manually verify the event is dispatched
+        setTimeout(() => {
+          console.log(`🔄 PLAYLIST-UPDATE: 🧪 DEBUG - Event should have been processed by now`);
+        }, 100);
       } else {
         console.error('Failed to update playlist assignment:', response.statusText);
       }
@@ -548,7 +585,7 @@ const ActiveCampaigns: React.FC = () => {
   if (isLoading) {
     return (
       <div className="bg-white rounded-xl p-6 shadow-lg border border-gray-100">
-        <h2 className="text-lg font-semibold text-gray-900 mb-4">Active Campaigns</h2>
+        <h2 className="text-2xl font-bold text-green-800 mb-4">Active Campaigns</h2>
         <div className="animate-pulse space-y-4">
           {[1, 2, 3, 4, 5].map(i => (
             <div key={i} className="h-20 bg-gray-200 rounded"></div>
@@ -564,7 +601,7 @@ const ActiveCampaigns: React.FC = () => {
       <style dangerouslySetInnerHTML={{ __html: animationStyles }} />
       
       <div className="flex items-center justify-between mb-6">
-        <h2 className="text-lg font-semibold text-gray-900">Active Campaigns</h2>
+        <h2 className="text-2xl font-bold text-green-800">Active Campaigns</h2>
         <div className="flex items-center space-x-2">
           <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
           <span className="text-xs text-gray-500">Live Updates</span>
@@ -757,6 +794,7 @@ const ActiveCampaigns: React.FC = () => {
                                   onChange={(e) => updatePlaylistAssignment(campaign.id, index, e.target.value)}
                                   className="text-xs border border-gray-300 rounded px-1 py-1 flex-1 min-w-0"
                                 >
+                                  <option value="removed">✅ Removed</option>
                                   {availablePlaylists.map(p => (
                                     <option key={p.id} value={p.id}>{p.name}</option>
                                   ))}
@@ -771,10 +809,14 @@ const ActiveCampaigns: React.FC = () => {
                             ) : (
                               <button
                                 onClick={() => setEditingPlaylist({ campaignId: campaign.id, playlistIndex: index })}
-                                className="text-xs text-indigo-600 hover:text-indigo-800 bg-indigo-50 px-2 py-1 rounded truncate w-full text-left"
-                                title={playlist.name}
+                                className={`text-xs px-2 py-1 rounded truncate w-full text-left ${
+                                  playlist.id === 'removed' 
+                                    ? 'text-green-600 hover:text-green-800 bg-green-50'
+                                    : 'text-indigo-600 hover:text-indigo-800 bg-indigo-50'
+                                }`}
+                                title={playlist.id === 'removed' ? '✅ Removed' : playlist.name}
                               >
-                                {playlist.name}
+                                {playlist.id === 'removed' ? '✅ Removed' : playlist.name}
                               </button>
                             )}
                           </div>

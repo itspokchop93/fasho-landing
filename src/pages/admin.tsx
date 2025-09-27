@@ -3,7 +3,7 @@ import Head from 'next/head'
 import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/router'
 import Lottie from 'lottie-react'
-import AdminOrdersManagement from '../components/AdminOrdersManagement'
+import AdminOrdersWithSubTabs from '../components/AdminOrdersWithSubTabs'
 import AdminEmailManagement from '../components/AdminEmailManagement'
 import AdminCouponsManagement from '../components/AdminCouponsManagement'
 import AdminSettingsManagement from '../components/AdminSettingsManagement'
@@ -78,50 +78,66 @@ export default function AdminDashboard({ adminUser, authError }: AdminDashboardP
     }
   }, [lottieAnimationData])
 
-  // Handle hash fragment navigation (e.g., /admin#orders)
+  // Handle query parameter navigation (e.g., /admin?p=orders)
   useEffect(() => {
-    const handleHashChange = () => {
-      const hash = window.location.hash.replace('#', '')
-      console.log('🔄 ADMIN-NAV: Hash changed to:', hash);
-      if (hash === 'orders') {
+    const handleRouteChange = () => {
+      const urlParams = new URLSearchParams(window.location.search)
+      const page = urlParams.get('p') || 'dashboard'
+      
+      console.log('🔄 ADMIN-NAV: Page parameter:', page);
+      
+      if (page === 'orders' || page === 'orders-management' || page === 'orders-customers') {
         console.log('🔄 ADMIN-NAV: Setting active tab to orders');
         setActiveTab('orders')
-      } else if (hash === 'emails') {
+      } else if (page === 'emails') {
         // Check if sub-admin trying to access emails (not allowed)
         if (adminUser.role === 'sub_admin') {
           console.log('🔄 ADMIN-NAV: Sub-admin cannot access emails tab');
           setActiveTab('orders') // Redirect to orders
-          window.location.hash = '#orders'
+          router.replace('/admin?p=orders', undefined, { shallow: true })
           return
         }
         console.log('🔄 ADMIN-NAV: Setting active tab to emails');
         setActiveTab('emails')
-      } else if (hash === 'coupons') {
+      } else if (page === 'coupons') {
         // Check if sub-admin trying to access coupons (not allowed)
         if (adminUser.role === 'sub_admin') {
           console.log('🔄 ADMIN-NAV: Sub-admin cannot access coupons tab');
           setActiveTab('orders') // Redirect to orders
-          window.location.hash = '#orders'
+          router.replace('/admin?p=orders', undefined, { shallow: true })
           return
         }
         console.log('🔄 ADMIN-NAV: Setting active tab to coupons');
         setActiveTab('coupons')
-      } else if (hash === 'settings') {
+      } else if (page === 'settings') {
         // Check if sub-admin trying to access settings (not allowed)
         if (adminUser.role === 'sub_admin') {
           console.log('🔄 ADMIN-NAV: Sub-admin cannot access settings tab');
           setActiveTab('orders') // Redirect to orders
-          window.location.hash = '#orders'
+          router.replace('/admin?p=orders', undefined, { shallow: true })
           return
         }
         console.log('🔄 ADMIN-NAV: Setting active tab to settings');
         setActiveTab('settings')
-      } else if (hash === 'dashboard' || !hash) {
+      } else if (page === 'blog') {
+        // Check if sub-admin trying to access blog (not allowed)
+        if (adminUser.role === 'sub_admin') {
+          console.log('🔄 ADMIN-NAV: Sub-admin cannot access blog tab');
+          setActiveTab('orders') // Redirect to orders
+          router.replace('/admin?p=orders', undefined, { shallow: true })
+          return
+        }
+        console.log('🔄 ADMIN-NAV: Setting active tab to blog');
+        setActiveTab('blog')
+      } else if (page === 'marketing-manager') {
+        console.log('🔄 ADMIN-NAV: Setting active tab to marketing-manager');
+        setActiveTab('marketing-manager')
+      } else if (page === 'dashboard' || !page) {
         // Check if sub-admin trying to access dashboard (not allowed)
         if (adminUser.role === 'sub_admin') {
           console.log('🔄 ADMIN-NAV: Sub-admin cannot access dashboard tab');
           setActiveTab('orders') // Redirect to orders
-          window.location.hash = '#orders'
+          router.replace('/admin?p=orders', undefined, { shallow: true })
           return
         }
         console.log('🔄 ADMIN-NAV: Setting active tab to dashboard');
@@ -129,16 +145,17 @@ export default function AdminDashboard({ adminUser, authError }: AdminDashboardP
       }
     }
 
-    // Check hash on initial load
-    handleHashChange()
+    // Check route on initial load
+    handleRouteChange()
 
-    // Listen for hash changes
-    window.addEventListener('hashchange', handleHashChange)
+    // Listen for route changes
+    const handlePopState = () => handleRouteChange()
+    window.addEventListener('popstate', handlePopState)
 
     return () => {
-      window.removeEventListener('hashchange', handleHashChange)
+      window.removeEventListener('popstate', handlePopState)
     }
-  }, [adminUser.role])
+  }, [adminUser.role, router])
 
   // Fetch analytics data (only for full admins)
   useEffect(() => {
@@ -334,7 +351,7 @@ export default function AdminDashboard({ adminUser, authError }: AdminDashboardP
 
   const renderOrdersContent = () => (
     <div className="space-y-6">
-      <AdminOrdersManagement />
+      <AdminOrdersWithSubTabs />
     </div>
   )
 
@@ -437,7 +454,7 @@ export default function AdminDashboard({ adminUser, authError }: AdminDashboardP
                     <button
                       onClick={() => {
                         setActiveTab('dashboard')
-                        window.location.hash = '#dashboard'
+                        router.replace('/admin?p=dashboard', undefined, { shallow: true })
                       }}
                       className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${
                         activeTab === 'dashboard'
@@ -453,7 +470,7 @@ export default function AdminDashboard({ adminUser, authError }: AdminDashboardP
                   <button
                     onClick={() => {
                       setActiveTab('orders')
-                      window.location.hash = '#orders'
+                      router.replace('/admin?p=orders', undefined, { shallow: true })
                     }}
                     className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${
                       activeTab === 'orders'
@@ -468,7 +485,7 @@ export default function AdminDashboard({ adminUser, authError }: AdminDashboardP
                   <button
                     onClick={() => {
                       setActiveTab('marketing-manager')
-                      window.location.hash = '#marketing-manager'
+                      router.replace('/admin?p=marketing-manager', undefined, { shallow: true })
                     }}
                     className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${
                       activeTab === 'marketing-manager'
@@ -484,7 +501,7 @@ export default function AdminDashboard({ adminUser, authError }: AdminDashboardP
                     <button
                       onClick={() => {
                         setActiveTab('blog')
-                        window.location.hash = '#blog'
+                        router.replace('/admin?p=blog', undefined, { shallow: true })
                       }}
                       className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${
                         activeTab === 'blog'
@@ -501,7 +518,7 @@ export default function AdminDashboard({ adminUser, authError }: AdminDashboardP
                     <button
                       onClick={() => {
                         setActiveTab('emails')
-                        window.location.hash = '#emails'
+                        router.replace('/admin?p=emails', undefined, { shallow: true })
                       }}
                       className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${
                         activeTab === 'emails'
@@ -518,7 +535,7 @@ export default function AdminDashboard({ adminUser, authError }: AdminDashboardP
                     <button
                       onClick={() => {
                         setActiveTab('coupons')
-                        window.location.hash = '#coupons'
+                        router.replace('/admin?p=coupons', undefined, { shallow: true })
                       }}
                       className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${
                         activeTab === 'coupons'
@@ -535,7 +552,7 @@ export default function AdminDashboard({ adminUser, authError }: AdminDashboardP
                     <button
                       onClick={() => {
                         setActiveTab('settings')
-                        window.location.hash = '#settings'
+                        router.replace('/admin?p=settings', undefined, { shallow: true })
                       }}
                       className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${
                         activeTab === 'settings'
@@ -568,7 +585,7 @@ export default function AdminDashboard({ adminUser, authError }: AdminDashboardP
         </nav>
 
         {/* Main Content */}
-        <div className={`mx-auto px-4 sm:px-6 lg:px-8 py-8 ${activeTab === 'marketing-manager' ? 'max-w-[88vw]' : 'max-w-7xl'}`}>
+        <div className={`mx-auto px-4 sm:px-6 lg:px-8 py-8 ${activeTab === 'marketing-manager' ? 'max-w-[95vw]' : activeTab === 'orders' ? 'max-w-[95vw]' : 'max-w-7xl'}`}>
           {renderContent()}
         </div>
       </main>

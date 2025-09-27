@@ -105,6 +105,9 @@ interface Playlist {
   songCount: number;
   imageUrl?: string;
   isActive: boolean;
+  healthStatus?: 'active' | 'private' | 'removed' | 'error' | 'unknown';
+  healthLastChecked?: string;
+  healthErrorMessage?: string;
   createdAt: string;
   nextStreamPurchase?: string;
 }
@@ -120,6 +123,17 @@ interface StreamPurchase {
   nextPurchaseDate: string;
   createdAt: string;
   updatedAt: string;
+}
+
+interface CurrentPlacement {
+  id: string;
+  orderNumber: string;
+  orderId: string;
+  songName: string;
+  songLink: string;
+  packageName: string;
+  placementDate: string;
+  status: string;
 }
 
 interface StreamPurchaseForm {
@@ -138,9 +152,14 @@ interface NewPlaylistForm {
   maxSongs: number;
 }
 
-const SystemSettings: React.FC = () => {
+interface SystemSettingsProps {
+  onlyPlaylistNetwork?: boolean;
+}
+
+const SystemSettings: React.FC<SystemSettingsProps> = ({ onlyPlaylistNetwork = false }) => {
   const [playlists, setPlaylists] = useState<Playlist[]>([]);
   const [streamPurchases, setStreamPurchases] = useState<StreamPurchase[]>([]);
+  const [currentPlacements, setCurrentPlacements] = useState<{ [playlistId: string]: CurrentPlacement[] }>({});
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [showAddForm, setShowAddForm] = useState(false);
@@ -182,7 +201,89 @@ const SystemSettings: React.FC = () => {
   useEffect(() => {
     fetchPlaylists();
     fetchStreamPurchases();
+    fetchCurrentPlacements();
+
+    // Listen for campaign actions that affect current placements
+    const handleCampaignActionConfirmed = (event: CustomEvent) => {
+      console.log('🔄 SYSTEM-SETTINGS: Campaign action detected, refreshing current placements');
+      fetchCurrentPlacements();
+    };
+
+    // Listen for playlist assignment updates
+    const handlePlaylistAssignmentUpdate = () => {
+      console.log('🔄 SYSTEM-SETTINGS: Playlist assignment updated, refreshing current placements');
+      fetchCurrentPlacements();
+    };
+
+    window.addEventListener('campaignActionConfirmed', handleCampaignActionConfirmed as EventListener);
+    window.addEventListener('playlistAssignmentUpdated', handlePlaylistAssignmentUpdate);
+
+    return () => {
+      window.removeEventListener('campaignActionConfirmed', handleCampaignActionConfirmed as EventListener);
+      window.removeEventListener('playlistAssignmentUpdated', handlePlaylistAssignmentUpdate);
+    };
   }, []);
+
+  // Helper function to get health status display properties
+  const getHealthStatusDisplay = (healthStatus?: string, isActive?: boolean) => {
+    // If no health status is available, fall back to isActive
+    if (!healthStatus || healthStatus === 'unknown') {
+      return {
+        text: isActive ? 'Active' : 'Inactive',
+        className: isActive 
+          ? 'bg-green-100 text-green-800 border-green-200'
+          : 'bg-red-100 text-red-800 border-red-200',
+        clickable: true
+      };
+    }
+
+    switch (healthStatus) {
+      case 'active':
+        return {
+          text: 'Active',
+          className: 'bg-green-100 text-green-800 border-green-200',
+          clickable: true
+        };
+      case 'private':
+        return {
+          text: 'Private',
+          className: 'bg-yellow-100 text-yellow-800 border-yellow-200',
+          clickable: false
+        };
+      case 'removed':
+        return {
+          text: 'Removed',
+          className: 'bg-red-100 text-red-800 border-red-200',
+          clickable: false
+        };
+      case 'error':
+        return {
+          text: 'Error',
+          className: 'bg-red-100 text-red-800 border-red-200',
+          clickable: false
+        };
+      default:
+        return {
+          text: 'Unknown',
+          className: 'bg-gray-100 text-gray-800 border-gray-200',
+          clickable: false
+        };
+    }
+  };
+
+  const fetchCurrentPlacements = async () => {
+    try {
+      const response = await fetch('/api/marketing-manager/current-placements');
+      if (response.ok) {
+        const data = await response.json();
+        setCurrentPlacements(data);
+      } else {
+        console.error('Failed to fetch current placements:', response.statusText);
+      }
+    } catch (error) {
+      console.error('Error fetching current placements:', error);
+    }
+  };
 
   const fetchStreamPurchases = async () => {
     try {
@@ -275,6 +376,7 @@ const SystemSettings: React.FC = () => {
   const handleRefresh = () => {
     fetchPlaylists(true);
     fetchStreamPurchases();
+    fetchCurrentPlacements();
   };
 
   const extractSpotifyPlaylistId = (url: string): string => {
@@ -603,6 +705,43 @@ const SystemSettings: React.FC = () => {
     }
   };
 
+  const checkPlaylistHealth = async (playlistId: string, playlistName: string) => {
+    try {
+      console.log(`🏥 HEALTH CHECK: Triggering health check for ${playlistName}`);
+      
+      const response = await fetch('/api/marketing-manager/playlist-health-check', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ playlistId }),
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        console.log(`✅ HEALTH CHECK: ${playlistName} status: ${result.healthStatus.status}`);
+        
+        // Refresh the playlists to show updated health status
+        await fetchPlaylists();
+        
+        // Show success message
+        setSuccessMessage(`Health check completed for ${playlistName}. Status: ${result.healthStatus.status}`);
+        setShowSuccessBanner(true);
+        setTimeout(() => setShowSuccessBanner(false), 5000);
+      } else {
+        console.error('Error checking playlist health:', response.statusText);
+        setSuccessMessage(`Failed to check health for ${playlistName}`);
+        setShowSuccessBanner(true);
+        setTimeout(() => setShowSuccessBanner(false), 5000);
+      }
+    } catch (error) {
+      console.error('Error checking playlist health:', error);
+      setSuccessMessage(`Error checking health for ${playlistName}`);
+      setShowSuccessBanner(true);
+      setTimeout(() => setShowSuccessBanner(false), 5000);
+    }
+  };
+
   const deletePlaylist = async (playlistId: string, playlistName: string) => {
     if (window.confirm(`Are you sure you want to delete "${playlistName}"? This action cannot be undone.`)) {
       try {
@@ -641,7 +780,7 @@ const SystemSettings: React.FC = () => {
     return (
       <div className="space-y-6">
         <div className="bg-white rounded-xl p-6 shadow-lg border border-gray-100">
-          <h2 className="text-lg font-semibold text-gray-900 mb-4">Playlist Network</h2>
+            <h2 className="text-2xl font-bold text-purple-800 mb-4">Playlist Network</h2>
           <div className="animate-pulse space-y-4">
             {[1, 2, 3].map(i => (
               <div key={i} className="h-16 bg-gray-200 rounded"></div>
@@ -654,8 +793,8 @@ const SystemSettings: React.FC = () => {
 
   return (
     <div className="space-y-6">
-      {/* Campaign Totals Section */}
-      <CampaignTotals />
+      {/* Campaign Totals Section - only show in System Settings */}
+      {!onlyPlaylistNetwork && <CampaignTotals />}
       
       {/* Playlist Network Section */}
       <div className="bg-white rounded-xl p-6 shadow-lg border border-gray-100">
@@ -679,7 +818,7 @@ const SystemSettings: React.FC = () => {
         
         <div className="flex items-center justify-between mb-6">
           <div>
-            <h2 className="text-lg font-semibold text-gray-900">Playlist Network</h2>
+            <h2 className="text-2xl font-bold text-purple-800">Playlist Network</h2>
             <p className="text-sm text-gray-500 mt-1">
               Manage your Spotify playlist network for marketing campaigns
             </p>
@@ -947,18 +1086,19 @@ const SystemSettings: React.FC = () => {
             <p className="mt-1 text-sm text-gray-500">Get started by adding your first playlist to the network.</p>
           </div>
         ) : (
-                  <div className="overflow-x-auto">
+          <div className="border border-gray-200 rounded-lg overflow-hidden">
+            <div className="relative max-h-[600px] overflow-auto">
           <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
+                <thead className="bg-gray-50 sticky top-0 z-10 border-b border-black/20 shadow-md">
               <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-2 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-8 bg-gray-50">
                   
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-2 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-12 bg-gray-50">
                   Image
                 </th>
                 <th 
-                  className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 select-none"
+                      className="px-2 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 select-none w-40 bg-gray-50"
                   onClick={() => handleSort('playlistName')}
                 >
                   <div className="flex items-center space-x-1">
@@ -966,11 +1106,11 @@ const SystemSettings: React.FC = () => {
                     {getSortIcon('playlistName')}
                   </div>
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-2 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-20 bg-gray-50">
                   Genre
                 </th>
                 <th 
-                  className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 select-none"
+                      className="px-2 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 select-none w-32 bg-gray-50"
                   onClick={() => handleSort('accountEmail')}
                 >
                   <div className="flex items-center space-x-1">
@@ -979,30 +1119,33 @@ const SystemSettings: React.FC = () => {
                   </div>
                 </th>
                 <th 
-                  className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 select-none"
+                      className="px-2 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 select-none w-16 bg-gray-50"
                   onClick={() => handleSort('songCount')}
                 >
-                  <div className="flex items-center space-x-1">
-                    <span>Song Count</span>
+                      <div className="flex items-center justify-center space-x-1">
+                        <span>Songs</span>
                     {getSortIcon('songCount')}
                   </div>
                 </th>
+                    <th className="px-2 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider w-16 bg-gray-50">
+                      Placements
+                    </th>
                 <th 
-                  className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 select-none"
+                      className="px-2 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 select-none w-24 bg-gray-50"
                   onClick={() => handleSort('nextStreamPurchase')}
                 >
                   <div className="flex items-center space-x-1">
-                    <span>Next Stream Purchase</span>
+                        <span>Next Stream</span>
                     {getSortIcon('nextStreamPurchase')}
                   </div>
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-2 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider w-16 bg-gray-50">
                   Last QTY
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-2 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider w-16 bg-gray-50">
                   Status
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-2 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider w-20 bg-gray-50">
                   Actions
                 </th>
               </tr>
@@ -1024,16 +1167,16 @@ const SystemSettings: React.FC = () => {
                         className="hover:bg-gray-50 cursor-pointer transition-colors duration-150"
                         onClick={() => togglePlaylistExpansion(playlist.id)}
                       >
-                        <td className="px-6 py-4 whitespace-nowrap">
+                        <td className="px-2 py-4 whitespace-nowrap w-8">
                           <button
                             onClick={(e) => {
                               e.stopPropagation();
                               togglePlaylistExpansion(playlist.id);
                             }}
-                            className="flex items-center justify-center w-6 h-6 text-gray-400 hover:text-gray-600 transition-transform duration-200"
+                            className="flex items-center justify-center w-5 h-5 text-gray-400 hover:text-gray-600 transition-transform duration-200"
                           >
                             <svg 
-                              className={`w-4 h-4 transform transition-transform duration-200 ${isExpanded ? 'rotate-90' : ''}`}
+                              className={`w-3 h-3 transform transition-transform duration-200 ${isExpanded ? 'rotate-90' : ''}`}
                               fill="none" 
                               stroke="currentColor" 
                               viewBox="0 0 24 24"
@@ -1042,16 +1185,16 @@ const SystemSettings: React.FC = () => {
                             </svg>
                           </button>
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="flex-shrink-0 h-12 w-12">
+                        <td className="px-2 py-4 whitespace-nowrap w-12">
+                          <div className="flex-shrink-0 h-8 w-8">
                             <img
-                              className="h-12 w-12 rounded-lg object-cover border border-gray-200"
-                              src={playlist.imageUrl || 'https://via.placeholder.com/48x48/1DB954/FFFFFF?text=♪'}
+                              className="h-8 w-8 rounded object-cover border border-gray-200"
+                              src={playlist.imageUrl || 'https://via.placeholder.com/32x32/1DB954/FFFFFF?text=♪'}
                               alt={`${playlist.playlistName} cover`}
                               onError={(e) => {
                                 const target = e.target as HTMLImageElement;
                                 console.log('🖼️ IMAGE ERROR: Failed to load:', playlist.imageUrl);
-                                target.src = 'https://via.placeholder.com/48x48/1DB954/FFFFFF?text=♪';
+                                target.src = 'https://via.placeholder.com/32x32/1DB954/FFFFFF?text=♪';
                               }}
                               onLoad={(e) => {
                                 const target = e.target as HTMLImageElement;
@@ -1062,72 +1205,88 @@ const SystemSettings: React.FC = () => {
                             />
                           </div>
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="text-sm font-medium text-gray-900">
+                        <td className="px-2 py-4 whitespace-nowrap w-40">
+                          <div className="text-sm font-medium text-gray-900 truncate" title={playlist.playlistName}>
                             {playlist.playlistName}
                           </div>
                           <div className="text-xs text-gray-500">
-                            Max: {playlist.maxSongs} songs
+                            Max: {playlist.maxSongs}
                           </div>
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <span className="inline-flex px-2 py-1 text-xs font-medium rounded-full bg-gray-100 text-gray-800">
+                        <td className="px-2 py-4 whitespace-nowrap w-20">
+                          <span className="inline-flex px-1 py-1 text-xs font-medium rounded bg-gray-100 text-gray-800">
                             {playlist.genre}
                           </span>
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        <td className="px-2 py-4 whitespace-nowrap w-32 text-sm text-gray-900 truncate" title={playlist.accountEmail}>
                           {playlist.accountEmail}
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="flex items-center space-x-2">
-                            <span className="text-sm font-medium text-gray-900">
+                        <td className="px-2 py-4 whitespace-nowrap w-16">
+                          <div className="text-center">
+                            <div className="text-sm font-medium text-gray-900">
                               {playlist.songCount}
-                            </span>
+                            </div>
                             <div className="text-xs text-gray-500">
-                              ({playlist.maxSongs > 0 ? ((playlist.songCount / playlist.maxSongs) * 100).toFixed(1) : 0}% full)
+                              {playlist.maxSongs > 0 ? ((playlist.songCount / playlist.maxSongs) * 100).toFixed(0) : 0}%
                             </div>
                           </div>
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
+                        <td className="px-2 py-4 whitespace-nowrap w-16">
+                          <div className="text-center">
+                            <span className="text-sm font-medium text-blue-600">
+                              {(currentPlacements[playlist.id] || []).length}
+                            </span>
+                          </div>
+                        </td>
+                        <td className="px-2 py-4 whitespace-nowrap w-24">
                           {latestPurchase ? (
                             (() => {
                               const urgency = getDateUrgency(latestPurchase.nextPurchaseDate);
                               return (
-                                <div className={`text-sm ${urgency.colorClass} flex items-center space-x-1`}>
+                                <div className={`text-xs ${urgency.colorClass} flex items-center space-x-1`}>
                                   <span>{formatNextPurchaseDate(latestPurchase.nextPurchaseDate)}</span>
                                   {urgency.isOverdue && <span>⚠️</span>}
                                 </div>
                               );
                             })()
                           ) : (
-                            <span className="text-sm text-gray-400">No data</span>
+                            <span className="text-xs text-gray-400">No data</span>
                           )}
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
+                        <td className="px-2 py-4 whitespace-nowrap w-16 text-center">
                           {latestPurchase ? (
-                            <div className="text-sm font-medium text-gray-900">
+                            <div className="text-xs font-medium text-gray-900">
                               {(latestPurchase.streamQty * latestPurchase.drips).toLocaleString()}
                             </div>
                           ) : (
-                            <span className="text-sm text-gray-400">No data</span>
+                            <span className="text-xs text-gray-400">-</span>
                           )}
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              togglePlaylistStatus(playlist.id, playlist.isActive);
-                            }}
-                            className={`inline-flex px-2 py-1 text-xs font-medium rounded-full border ${
-                              playlist.isActive
-                                ? 'bg-green-100 text-green-800 border-green-200'
-                                : 'bg-red-100 text-red-800 border-red-200'
-                            }`}
-                          >
-                            {playlist.isActive ? 'Active' : 'Inactive'}
-                          </button>
+                        <td className="px-2 py-4 whitespace-nowrap w-16 text-center">
+                          {(() => {
+                            const statusDisplay = getHealthStatusDisplay(playlist.healthStatus, playlist.isActive);
+                            return statusDisplay.clickable ? (
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  togglePlaylistStatus(playlist.id, playlist.isActive);
+                                }}
+                                className={`inline-flex px-1 py-1 text-xs font-medium rounded border ${statusDisplay.className}`}
+                                title={playlist.healthErrorMessage || `Last checked: ${playlist.healthLastChecked ? new Date(playlist.healthLastChecked).toLocaleDateString() : 'Never'}`}
+                              >
+                                {statusDisplay.text}
+                              </button>
+                            ) : (
+                              <span
+                                className={`inline-flex px-1 py-1 text-xs font-medium rounded border ${statusDisplay.className}`}
+                                title={playlist.healthErrorMessage || `Last checked: ${playlist.healthLastChecked ? new Date(playlist.healthLastChecked).toLocaleDateString() : 'Never'}`}
+                              >
+                                {statusDisplay.text}
+                              </span>
+                            );
+                          })()}
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                        <td className="px-2 py-4 whitespace-nowrap w-20 text-center text-sm font-medium">
                           <div className="flex items-center space-x-2">
                             <button
                               onClick={(e) => {
@@ -1158,6 +1317,18 @@ const SystemSettings: React.FC = () => {
                             <button
                               onClick={(e) => {
                                 e.stopPropagation();
+                                checkPlaylistHealth(playlist.id, playlist.playlistName);
+                              }}
+                              className="text-blue-600 hover:text-blue-900"
+                              title="Check playlist health"
+                            >
+                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                              </svg>
+                            </button>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
                                 deletePlaylist(playlist.id, playlist.playlistName);
                               }}
                               className="text-red-600 hover:text-red-900"
@@ -1174,9 +1345,102 @@ const SystemSettings: React.FC = () => {
                       {/* Accordion Details Section */}
                       {isExpanded && (
                         <tr>
-                          <td colSpan={10} className="px-0 py-0">
-                            <div className="bg-gray-50 border-t border-gray-200 animate-slide-down">
-                              <div className="px-6 py-4">
+                          <td colSpan={11} className="px-0 py-0">
+                            <div className="bg-gray-50 border-t border-gray-200 animate-slide-down w-full">
+                              <div className="px-4 py-4 max-h-96 overflow-y-auto w-full">
+                                {/* Current Placements Section */}
+                                <h4 className="text-sm font-medium text-gray-900 mb-3">Current Placements</h4>
+                                {(() => {
+                                  const playlistPlacements = currentPlacements[playlist.id] || [];
+                                  return playlistPlacements.length === 0 ? (
+                                    <div className="text-center py-4 mb-6">
+                                      <svg className="mx-auto h-6 w-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                                      </svg>
+                                      <p className="mt-1 text-xs text-gray-500">No songs currently placed</p>
+                                    </div>
+                                  ) : (
+                                    <div className="overflow-x-auto mb-6">
+                                      <table className="min-w-full divide-y divide-gray-200">
+                                        <thead className="bg-blue-50">
+                                          <tr>
+                                            <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                              Order Number
+                                            </th>
+                                            <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                              Song
+                                            </th>
+                                            <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                              Package
+                                            </th>
+                                            <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                              Placement Date
+                                            </th>
+                                            <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                              Status
+                                            </th>
+                                          </tr>
+                                        </thead>
+                                        <tbody className="bg-white divide-y divide-gray-200">
+                                          {playlistPlacements.map((placement) => (
+                                            <tr key={placement.id}>
+                                              <td className="px-3 py-2 whitespace-nowrap text-xs">
+                                                <button
+                                                  onClick={() => window.open(`/admin/order/${placement.orderId}`, '_blank')}
+                                                  className="text-blue-600 hover:text-blue-800 font-medium"
+                                                  title="View order details"
+                                                >
+                                                  {placement.orderNumber}
+                                                </button>
+                                              </td>
+                                              <td className="px-3 py-2 text-xs">
+                                                <div>
+                                                  <div className="font-medium text-gray-900 truncate max-w-[120px]" title={placement.songName}>
+                                                    {placement.songName}
+                                                  </div>
+                                                  <button
+                                                    onClick={async () => {
+                                                      try {
+                                                        await navigator.clipboard.writeText(placement.songLink);
+                                                        // You could add a toast notification here
+                                                      } catch (err) {
+                                                        console.error('Failed to copy link:', err);
+                                                      }
+                                                    }}
+                                                    className="text-blue-500 hover:text-blue-700 text-xs underline"
+                                                    title="Copy song link"
+                                                  >
+                                                    copy link
+                                                  </button>
+                                                </div>
+                                              </td>
+                                              <td className="px-3 py-2 whitespace-nowrap text-xs text-gray-900">
+                                                {placement.packageName}
+                                              </td>
+                                              <td className="px-3 py-2 whitespace-nowrap text-xs text-gray-900">
+                                                {formatNextPurchaseDate(placement.placementDate)}
+                                              </td>
+                                              <td className="px-3 py-2 whitespace-nowrap text-xs">
+                                                <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${
+                                                  placement.status === 'Running' 
+                                                    ? 'bg-green-100 text-green-800'
+                                                    : placement.status === 'Removal Needed'
+                                                    ? 'bg-red-100 text-red-800' 
+                                                    : placement.status === 'Action Needed'
+                                                    ? 'bg-yellow-100 text-yellow-800'
+                                                    : 'bg-gray-100 text-gray-800'
+                                                }`}>
+                                                  {placement.status}
+                                                </span>
+                                              </td>
+                                            </tr>
+                                          ))}
+                                        </tbody>
+                                      </table>
+                                    </div>
+                                  );
+                                })()}
+
                                 <h4 className="text-sm font-medium text-gray-900 mb-3">Stream Purchase History</h4>
                                 {playlistPurchases.length === 0 ? (
                                   <div className="text-center py-6">
@@ -1267,6 +1531,7 @@ const SystemSettings: React.FC = () => {
                 })}
               </tbody>
             </table>
+            </div>
           </div>
         )}
       </div>
@@ -1283,3 +1548,4 @@ const SystemSettings: React.FC = () => {
 };
 
 export default SystemSettings;
+

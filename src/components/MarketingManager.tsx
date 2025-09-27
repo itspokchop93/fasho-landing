@@ -3,6 +3,7 @@ import { useRouter } from 'next/router';
 import CounterCards from './marketing-manager/CounterCards';
 import ActionQueue from './marketing-manager/ActionQueue';
 import ActiveCampaigns from './marketing-manager/ActiveCampaigns';
+import PlaylistPurchasesNeeded from './marketing-manager/PlaylistPurchasesNeeded';
 import PlaylistUtilization from './marketing-manager/PlaylistUtilization';
 import SystemSettings from './marketing-manager/SystemSettings';
 const MarketingManager: React.FC = () => {
@@ -43,6 +44,12 @@ const MarketingManager: React.FC = () => {
         
         {/* Active Campaigns */}
         <ActiveCampaigns />
+        
+        {/* Playlist Purchases Needed */}
+        <PlaylistPurchasesNeeded />
+        
+        {/* Playlist Network */}
+        <SystemSettings onlyPlaylistNetwork={true} />
         
         {/* Playlist Utilization */}
         <PlaylistUtilization />

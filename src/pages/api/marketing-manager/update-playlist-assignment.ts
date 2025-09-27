@@ -33,36 +33,47 @@ async function handler(req: NextApiRequest, res: NextApiResponse, adminUser: Adm
       return res.status(404).json({ error: 'Campaign not found' });
     }
 
-    // Get the new playlist details
-    const { data: newPlaylistData, error: playlistError } = await supabase
-      .from('playlist_network')
-      .select(`
-        id,
-        playlist_name,
-        genre,
-        is_active
-      `)
-      .eq('id', newPlaylistId)
-      .eq('is_active', true)
-      .single();
-
-    if (playlistError || !newPlaylistData) {
-      console.error('Error fetching new playlist:', playlistError);
-      return res.status(404).json({ error: 'New playlist not found or inactive' });
-    }
-
     // Update playlist assignments
     let playlistAssignments = Array.isArray(campaignData.playlist_assignments) 
       ? [...campaignData.playlist_assignments] 
       : [];
 
     if (playlistIndex >= 0 && playlistIndex < playlistAssignments.length) {
-      // Update existing assignment
-      playlistAssignments[playlistIndex] = {
-        id: newPlaylistData.id,
-        name: newPlaylistData.playlist_name,
-        genre: newPlaylistData.genre
-      };
+      // Handle special "removed" case
+      if (newPlaylistId === 'removed') {
+        playlistAssignments[playlistIndex] = {
+          id: 'removed',
+          name: '✅ Removed',
+          genre: 'removed'
+        };
+        console.log(`🔴 PLAYLIST-ASSIGNMENT: Campaign ${campaignId} - playlist slot ${playlistIndex} marked as REMOVED`);
+      } else {
+        // Get the new playlist details for normal playlist assignment
+        const { data: newPlaylistData, error: playlistError } = await supabase
+          .from('playlist_network')
+          .select(`
+            id,
+            playlist_name,
+            genre,
+            is_active
+          `)
+          .eq('id', newPlaylistId)
+          .eq('is_active', true)
+          .single();
+
+        if (playlistError || !newPlaylistData) {
+          console.error('Error fetching new playlist:', playlistError);
+          return res.status(404).json({ error: 'New playlist not found or inactive' });
+        }
+
+        // Update existing assignment with real playlist
+        playlistAssignments[playlistIndex] = {
+          id: newPlaylistData.id,
+          name: newPlaylistData.playlist_name,
+          genre: newPlaylistData.genre
+        };
+        console.log(`🎵 PLAYLIST-ASSIGNMENT: Campaign ${campaignId} - updated playlist slot ${playlistIndex} to ${newPlaylistData.playlist_name}`);
+      }
     } else {
       return res.status(400).json({ error: 'Invalid playlist index' });
     }

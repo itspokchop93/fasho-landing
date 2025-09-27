@@ -427,7 +427,7 @@ const ActionQueue: React.FC = () => {
   if (isLoading) {
     return (
       <div className="bg-white rounded-xl p-6 shadow-lg border border-gray-100">
-        <h2 className="text-lg font-semibold text-gray-900 mb-4">Action Queue (Immediate)</h2>
+        <h2 className="text-2xl font-bold text-blue-800 mb-4">Action Queue (Immediate)</h2>
         <div className="animate-pulse space-y-4">
           {[1, 2, 3].map(i => (
             <div key={i} className="h-16 bg-gray-200 rounded"></div>
@@ -441,7 +441,7 @@ const ActionQueue: React.FC = () => {
     <div className="bg-white rounded-xl p-6 shadow-lg border border-gray-100">
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h2 className="text-lg font-semibold text-gray-900">Action Queue (Immediate)</h2>
+          <h2 className="text-2xl font-bold text-blue-800">Action Queue (Immediate)</h2>
           <p className="text-sm text-gray-500 mt-1">
             {visibleItems.length} action{visibleItems.length !== 1 ? 's' : ''} requiring attention
           </p>

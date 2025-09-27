@@ -170,7 +170,7 @@ const PlaylistUtilization: React.FC = () => {
   if (isLoading) {
     return (
       <div className="bg-white rounded-xl p-6 shadow-lg border border-gray-100">
-        <h2 className="text-lg font-semibold text-gray-900 mb-4">Playlist Utilization</h2>
+        <h2 className="text-2xl font-bold text-orange-800 mb-4">Playlist Utilization</h2>
         <div className="animate-pulse space-y-4">
           {[1, 2, 3, 4, 5].map(i => (
             <div key={i} className="h-16 bg-gray-200 rounded"></div>
@@ -184,7 +184,7 @@ const PlaylistUtilization: React.FC = () => {
     <div className="bg-white rounded-xl p-6 shadow-lg border border-gray-100">
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h2 className="text-lg font-semibold text-gray-900">Playlist Utilization</h2>
+          <h2 className="text-2xl font-bold text-orange-800">Playlist Utilization</h2>
           <p className="text-sm text-gray-500 mt-1">
             Live data from Spotify Web API • {playlists.length} playlists in network
           </p>

@@ -134,6 +134,15 @@ export interface SpotifyPlaylistData {
     url: string;
   };
   url: string;
+  healthStatus?: PlaylistHealthStatus;
+}
+
+// Interface for playlist health status
+export interface PlaylistHealthStatus {
+  status: 'active' | 'private' | 'removed' | 'error' | 'unknown';
+  isPublic?: boolean;
+  errorMessage?: string;
+  lastChecked: string;
 }
 
 // Get Spotify access token using client credentials flow
@@ -215,6 +224,163 @@ export async function getSpotifyPlaylistData(playlistUrl: string): Promise<Spoti
 
   } catch (error) {
     console.error('Error fetching Spotify playlist data:', error);
+    return null;
+  }
+}
+
+// Check playlist health status using Spotify Web API
+export async function checkPlaylistHealth(playlistUrl: string): Promise<PlaylistHealthStatus> {
+  const timestamp = new Date().toISOString();
+  
+  try {
+    console.log('🏥 HEALTH CHECK: Checking playlist health for:', playlistUrl);
+
+    // Extract playlist ID from URL
+    const playlistId = extractSpotifyPlaylistId(playlistUrl);
+    if (!playlistId) {
+      console.error('Invalid Spotify playlist URL:', playlistUrl);
+      return {
+        status: 'error',
+        errorMessage: 'Invalid Spotify playlist URL',
+        lastChecked: timestamp
+      };
+    }
+
+    // Get access token
+    const accessToken = await getSpotifyAccessToken();
+
+    // Fetch playlist data from Spotify API with specific fields for health checking
+    const response = await fetch(`https://api.spotify.com/v1/playlists/${playlistId}?fields=name,public,owner.display_name,tracks.total`, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${accessToken}`,
+        'Accept': 'application/json',
+      }
+    });
+
+    console.log(`🏥 HEALTH CHECK: API Response status: ${response.status}`);
+
+    if (response.status === 404) {
+      // Playlist not found - removed or deleted
+      return {
+        status: 'removed',
+        errorMessage: 'Playlist not found - may have been deleted or removed',
+        lastChecked: timestamp
+      };
+    }
+
+    if (response.status === 403) {
+      // Forbidden - likely private playlist with no access
+      return {
+        status: 'private',
+        errorMessage: 'Playlist is private or access is forbidden',
+        lastChecked: timestamp
+      };
+    }
+
+    if (!response.ok) {
+      // Other API errors
+      const errorBody = await response.text();
+      console.error(`🏥 HEALTH CHECK: Spotify API error: ${response.status} ${response.statusText}`, errorBody);
+      return {
+        status: 'error',
+        errorMessage: `Spotify API error: ${response.status} ${response.statusText}`,
+        lastChecked: timestamp
+      };
+    }
+
+    const data: SpotifyPlaylistResponse = await response.json();
+    console.log('🏥 HEALTH CHECK: Received response:', data);
+
+    // Check if the playlist has essential data
+    if (!data.name) {
+      return {
+        status: 'error',
+        errorMessage: 'Playlist data is incomplete or corrupted',
+        lastChecked: timestamp
+      };
+    }
+
+    // Check public status
+    const isPublic = data.public;
+    if (isPublic === false) {
+      return {
+        status: 'private',
+        isPublic: false,
+        errorMessage: 'Playlist is set to private',
+        lastChecked: timestamp
+      };
+    }
+
+    // If we reach here, the playlist is accessible and appears healthy
+    console.log('✅ HEALTH CHECK: Playlist is healthy and accessible');
+    return {
+      status: 'active',
+      isPublic: isPublic,
+      lastChecked: timestamp
+    };
+
+  } catch (error) {
+    console.error('🏥 HEALTH CHECK: Error checking playlist health:', error);
+    return {
+      status: 'error',
+      errorMessage: error instanceof Error ? error.message : 'Unknown error occurred',
+      lastChecked: timestamp
+    };
+  }
+}
+
+// Enhanced playlist data function that includes health status
+export async function getSpotifyPlaylistDataWithHealth(playlistUrl: string): Promise<SpotifyPlaylistData | null> {
+  try {
+    console.log('🎵 SPOTIFY API: Fetching playlist data with health check for:', playlistUrl);
+
+    // First check the health of the playlist
+    const healthStatus = await checkPlaylistHealth(playlistUrl);
+    
+    // If the playlist is not accessible, return basic data with health status
+    if (healthStatus.status === 'removed' || healthStatus.status === 'error') {
+      return {
+        name: 'Unknown',
+        description: '',
+        trackCount: 0,
+        imageUrl: '',
+        followers: 0,
+        owner: {
+          name: 'Unknown',
+          url: ''
+        },
+        url: playlistUrl,
+        healthStatus
+      };
+    }
+
+    // Try to get full playlist data
+    const playlistData = await getSpotifyPlaylistData(playlistUrl);
+    
+    if (playlistData) {
+      // Add health status to the existing data
+      playlistData.healthStatus = healthStatus;
+      return playlistData;
+    } else {
+      // If we can't get full data but health check passed, return minimal data
+      return {
+        name: 'Unknown',
+        description: '',
+        trackCount: 0,
+        imageUrl: '',
+        followers: 0,
+        owner: {
+          name: 'Unknown',
+          url: ''
+        },
+        url: playlistUrl,
+        healthStatus
+      };
+    }
+
+  } catch (error) {
+    console.error('Error fetching Spotify playlist data with health:', error);
     return null;
   }
 }

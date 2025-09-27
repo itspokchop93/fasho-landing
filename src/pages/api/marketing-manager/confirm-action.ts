@@ -93,6 +93,19 @@ async function handler(req: NextApiRequest, res: NextApiResponse, adminUser: Adm
         updateData.removed_from_playlists_at = new Date().toISOString(); // DEDICATED COMPLETION TIMESTAMP
         updateData.campaign_status = 'Completed';
         updateData.playlist_streams_progress = campaignData.playlist_streams;
+        
+        // SAFETY-CRITICAL: Set ALL playlist assignments to "Removed" for THIS SPECIFIC CAMPAIGN ONLY
+        if (campaignData.playlist_assignments && Array.isArray(campaignData.playlist_assignments)) {
+          const removedAssignments = campaignData.playlist_assignments.map(() => ({
+            id: 'removed',
+            name: '✅ Removed',
+            genre: 'removed'
+          }));
+          updateData.playlist_assignments = removedAssignments;
+          
+          console.log(`🔴 DE-PLAYLISTED: Campaign ${campaignId} - ALL ${removedAssignments.length} playlist assignments set to REMOVED`);
+          console.log(`🔒 SAFETY CHECK: This operation affects ONLY campaign ${campaignId}, no other campaigns are modified`);
+        }
         break;
     }
 
