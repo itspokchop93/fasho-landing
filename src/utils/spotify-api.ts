@@ -7,6 +7,7 @@ interface SpotifyPlaylistResponse {
   };
   name: string;
   description: string;
+  public?: boolean;
   images: Array<{
     url: string;
     height: number;
