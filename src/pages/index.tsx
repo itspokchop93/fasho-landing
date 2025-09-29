@@ -1095,12 +1095,33 @@ export default function Home() {
     }
   }, [logoInView]);
 
-  // Scroll animation for dashboard
+  // Scroll animation for dashboard - THROTTLED to prevent excessive re-renders
   useEffect(() => {
-    const handleScroll = () => setScrollY(window.scrollY);
+    let ticking = false;
+    let lastScrollTime = 0;
+    
+    const handleScroll = () => {
+      const now = Date.now();
+      // Only update every 16ms (60fps) to prevent excessive re-renders
+      if (now - lastScrollTime < 16) return;
+      
+      if (!ticking) {
+        requestAnimationFrame(() => {
+          setScrollY(window.scrollY);
+          ticking = false;
+          lastScrollTime = now;
+        });
+        ticking = true;
+      }
+    };
+    
+    let resizeTimeout: NodeJS.Timeout;
     const handleResize = () => {
-      // Force re-render when window is resized to update scale
-      setScrollY(window.scrollY);
+      // Debounce resize events to prevent excessive re-renders
+      clearTimeout(resizeTimeout);
+      resizeTimeout = setTimeout(() => {
+        setScrollY(window.scrollY);
+      }, 100);
     };
     
     window.addEventListener('scroll', handleScroll, { passive: true });
@@ -1109,6 +1130,7 @@ export default function Home() {
     return () => {
       window.removeEventListener('scroll', handleScroll);
       window.removeEventListener('resize', handleResize);
+      clearTimeout(resizeTimeout);
     };
   }, []);
 

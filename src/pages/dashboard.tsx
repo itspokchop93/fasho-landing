@@ -117,11 +117,19 @@ export default function Dashboard({ user }: DashboardProps) {
   useEffect(() => {
     const updateMobileNavPosition = () => {
       if (typeof window !== 'undefined' && window.innerWidth <= 1024) {
-        const vh = window.innerHeight * 0.01;
+        // Get the actual viewport height difference (same method as working sales pop)
+        const currentViewportHeight = window.innerHeight;
+        const documentHeight = document.documentElement.clientHeight;
+        const bodyHeight = document.body.clientHeight;
+        
+        // Calculate the difference between actual and ideal viewport
+        const viewportDifference = Math.max(0, Math.min(currentViewportHeight, documentHeight, bodyHeight) - currentViewportHeight);
+        
+        // Get safe area inset
         const safeAreaBottom = parseInt(getComputedStyle(document.documentElement).getPropertyValue('env(safe-area-inset-bottom)') || '0');
         
-        // Calculate the bottom position to keep nav flush with bottom
-        const bottomPosition = Math.max(0, safeAreaBottom);
+        // Calculate the bottom position to keep nav flush with bottom (same as sales pop logic)
+        const bottomPosition = Math.max(0, safeAreaBottom + viewportDifference);
         
         // Set CSS custom property for mobile nav positioning
         document.documentElement.style.setProperty('--mobile-nav-bottom', `${bottomPosition}px`);
@@ -138,13 +146,19 @@ export default function Dashboard({ user }: DashboardProps) {
       setTimeout(updateMobileNavPosition, 100);
     });
 
-    // Update on scroll (for URL bar show/hide detection)
+    // Update on scroll (for URL bar show/hide detection) - THROTTLED to prevent re-renders
     let ticking = false;
+    let lastScrollTime = 0;
     const handleScroll = () => {
+      const now = Date.now();
+      // Only update every 100ms to prevent excessive re-renders
+      if (now - lastScrollTime < 100) return;
+      
       if (!ticking) {
         requestAnimationFrame(() => {
           updateMobileNavPosition();
           ticking = false;
+          lastScrollTime = now;
         });
         ticking = true;
       }

@@ -98,13 +98,19 @@ const SalesPop: React.FC = () => {
       setTimeout(updateSalesPopPosition, 100);
     });
 
-    // Update on scroll (for URL bar show/hide detection)
+    // Update on scroll (for URL bar show/hide detection) - THROTTLED to prevent re-renders
     let ticking = false;
+    let lastScrollTime = 0;
     const handleScroll = () => {
+      const now = Date.now();
+      // Only update every 100ms to prevent excessive re-renders
+      if (now - lastScrollTime < 100) return;
+      
       if (!ticking) {
         requestAnimationFrame(() => {
           updateSalesPopPosition();
           ticking = false;
+          lastScrollTime = now;
         });
         ticking = true;
       }

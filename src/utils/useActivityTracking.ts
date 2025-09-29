@@ -22,7 +22,7 @@ export function useActivityTracking(options: ActivityTrackingOptions = {}) {
   const isTrackingRef = useRef(false)
   const sessionIdRef = useRef<string | null>(null)
 
-  // Function to track activity
+  // Function to track activity - STABLE VERSION (no router dependency to prevent re-renders)
   const trackActivity = useCallback(async (page?: string) => {
     if (!enabled || isTrackingRef.current) return
 
@@ -35,7 +35,8 @@ export function useActivityTracking(options: ActivityTrackingOptions = {}) {
     isTrackingRef.current = true
 
     try {
-      const currentPage = page || router.asPath
+      // Use provided page or get current page without dependency on router.asPath
+      const currentPage = page || (typeof window !== 'undefined' ? window.location.pathname : '/')
       
       const response = await fetch('/api/track-activity', {
         method: 'POST',
@@ -44,7 +45,7 @@ export function useActivityTracking(options: ActivityTrackingOptions = {}) {
         },
         body: JSON.stringify({
           currentPage,
-          userAgent: navigator.userAgent
+          userAgent: typeof navigator !== 'undefined' ? navigator.userAgent : 'unknown'
         })
       })
 
@@ -66,7 +67,7 @@ export function useActivityTracking(options: ActivityTrackingOptions = {}) {
     } finally {
       isTrackingRef.current = false
     }
-  }, [enabled, router.asPath])
+  }, [enabled]) // REMOVED router.asPath dependency to prevent re-renders
 
   // Function to cleanup user when they leave
   const cleanupUser = useCallback(async () => {
@@ -91,23 +92,94 @@ export function useActivityTracking(options: ActivityTrackingOptions = {}) {
     }
   }, [])
 
-  // Track user interactions (mouse movement, clicks, keyboard)
+  // Track user interactions (mouse movement, clicks, keyboard) - STABLE VERSION
   const handleUserInteraction = useCallback(() => {
-    if (!enabled || !shouldTrackUserInteraction) return
-    trackActivity()
-  }, [enabled, shouldTrackUserInteraction, trackActivity])
+    if (!enabled || !shouldTrackUserInteraction || isTrackingRef.current) return
+    
+    const currentTime = Date.now()
+    const timeSinceLastTrack = currentTime - lastTrackedRef.current
+    
+    // Don't track too frequently (minimum 5 seconds between tracks)
+    if (timeSinceLastTrack < 5000) return
 
-  // Set up periodic tracking
+    // Use stable inline tracking to avoid dependency loops
+    isTrackingRef.current = true
+    
+    fetch('/api/track-activity', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        currentPage: typeof window !== 'undefined' ? window.location.pathname : '/',
+        userAgent: typeof navigator !== 'undefined' ? navigator.userAgent : 'unknown'
+      })
+    }).then(response => {
+      if (response.ok) {
+        lastTrackedRef.current = currentTime
+      }
+    }).catch(error => {
+      console.error('👥 ACTIVITY-TRACKING: Error tracking user interaction:', error)
+    }).finally(() => {
+      isTrackingRef.current = false
+    })
+  }, [enabled, shouldTrackUserInteraction]) // REMOVED trackActivity dependency
+
+  // Set up periodic tracking - STABLE VERSION (no trackActivity dependency)
   useEffect(() => {
     if (!enabled) return
 
+    // Create a stable tracking function that doesn't depend on state
+    const stableTrackActivity = async () => {
+      if (isTrackingRef.current) return
+
+      const currentTime = Date.now()
+      const timeSinceLastTrack = currentTime - lastTrackedRef.current
+      
+      // Don't track too frequently (minimum 5 seconds between tracks)
+      if (timeSinceLastTrack < 5000) return
+
+      isTrackingRef.current = true
+
+      try {
+        const currentPage = typeof window !== 'undefined' ? window.location.pathname : '/'
+        
+        const response = await fetch('/api/track-activity', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            currentPage,
+            userAgent: typeof navigator !== 'undefined' ? navigator.userAgent : 'unknown'
+          })
+        })
+
+        if (response.ok) {
+          const data = await response.json()
+          // Store session ID for cleanup
+          if (data.sessionId && !sessionIdRef.current) {
+            sessionIdRef.current = data.sessionId
+          }
+          lastTrackedRef.current = currentTime
+          if (process.env.NODE_ENV === 'development') {
+            console.log('👥 ACTIVITY-TRACKING: Activity tracked successfully')
+          }
+        } else {
+          console.warn('👥 ACTIVITY-TRACKING: Failed to track activity:', response.status)
+        }
+      } catch (error) {
+        console.error('👥 ACTIVITY-TRACKING: Error tracking activity:', error)
+      } finally {
+        isTrackingRef.current = false
+      }
+    }
+
     // Initial track
-    trackActivity()
+    stableTrackActivity()
 
     // Set up interval for periodic tracking
-    trackingIntervalRef.current = setInterval(() => {
-      trackActivity()
-    }, trackInterval * 1000)
+    trackingIntervalRef.current = setInterval(stableTrackActivity, trackInterval * 1000)
 
     return () => {
       if (trackingIntervalRef.current) {
@@ -115,14 +187,28 @@ export function useActivityTracking(options: ActivityTrackingOptions = {}) {
         trackingIntervalRef.current = null
       }
     }
-  }, [enabled, trackInterval, trackActivity])
+  }, [enabled, trackInterval]) // REMOVED trackActivity dependency to prevent re-renders
 
-  // Track page changes
+  // Track page changes - STABLE VERSION (minimal dependencies)
   useEffect(() => {
     if (!enabled || !trackPageChanges) return
 
     const handleRouteChange = (url: string) => {
-      trackActivity(url)
+      // Use the stable trackActivity function with explicit page parameter
+      if (typeof window !== 'undefined') {
+        fetch('/api/track-activity', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            currentPage: url,
+            userAgent: navigator.userAgent || 'unknown'
+          })
+        }).catch(error => {
+          console.error('👥 ACTIVITY-TRACKING: Error tracking route change:', error)
+        })
+      }
     }
 
     router.events.on('routeChangeComplete', handleRouteChange)
@@ -130,7 +216,7 @@ export function useActivityTracking(options: ActivityTrackingOptions = {}) {
     return () => {
       router.events.off('routeChangeComplete', handleRouteChange)
     }
-  }, [enabled, trackPageChanges, router.events, trackActivity])
+  }, [enabled, trackPageChanges]) // REMOVED trackActivity dependency to prevent re-renders
 
   // Track user interactions
   useEffect(() => {
