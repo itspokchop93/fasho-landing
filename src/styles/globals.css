@@ -1786,10 +1786,11 @@ button, a, [role="button"] {
   line-height: 1.4;
   color: #1f2937;
   font-weight: 500;
-  /* Ensure consistent height - minimum height for 2 lines of text */
-  min-height: calc((14px + 0.05rem) * 1.4 * 2);
-  display: flex;
-  align-items: center;
+  /* Fixed height for exactly 2 lines of text - NO FLEX */
+  height: calc((14px + 0.05rem) * 1.4 * 2);
+  overflow: hidden;
+  /* Ensure text wraps naturally */
+  display: block;
 }
 
 /* Customer name styling */
@@ -1881,10 +1882,11 @@ button, a, [role="button"] {
   
   .sales-pop-text {
     font-size: calc(12px + 0.1rem);
-    /* Ensure consistent height for mobile - minimum height for 2 lines of text */
-    min-height: calc((12px + 0.1rem) * 1.4 * 2);
-    display: flex;
-    align-items: center;
+    /* Fixed height for exactly 2 lines of text on mobile - NO FLEX */
+    height: calc((12px + 0.1rem) * 1.4 * 2);
+    overflow: hidden;
+    /* Ensure text wraps naturally */
+    display: block;
   }
   
   .sales-pop-timestamp {

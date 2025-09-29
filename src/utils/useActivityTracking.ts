@@ -218,14 +218,22 @@ export function useActivityTracking(options: ActivityTrackingOptions = {}) {
     }
   }, [enabled, trackPageChanges]) // REMOVED trackActivity dependency to prevent re-renders
 
-  // Track user interactions
+  // Track user interactions - PREVENT tab switching from triggering tracking
   useEffect(() => {
     if (!enabled || !shouldTrackUserInteraction) return
 
+    // Track only meaningful user interactions, NOT focus/blur/visibility
     const events = ['mousemove', 'click', 'keydown', 'scroll', 'touchstart']
     
+    // Throttle interactions and prevent tab-switching triggers
+    let lastInteractionTime = 0
     const handleInteraction = () => {
-      handleUserInteraction()
+      const now = Date.now()
+      // Only track once every 10 seconds from actual interactions
+      if (now - lastInteractionTime > 10000) {
+        lastInteractionTime = now
+        handleUserInteraction()
+      }
     }
 
     events.forEach(event => {
@@ -238,6 +246,39 @@ export function useActivityTracking(options: ActivityTrackingOptions = {}) {
       })
     }
   }, [enabled, shouldTrackUserInteraction, handleUserInteraction])
+
+  // PREVENT tab switching from triggering activity tracking
+  useEffect(() => {
+    if (!enabled) return
+
+    const handleVisibilityChange = (e: Event) => {
+      // Prevent default behavior and stop propagation to avoid triggering re-renders
+      e.preventDefault()
+      e.stopPropagation()
+      // Do NOT track activity on visibility changes to prevent tab switching refreshes
+    }
+
+    const handleFocusEvents = (e: Event) => {
+      // Prevent focus/blur from triggering activity tracking
+      e.preventDefault()
+      e.stopPropagation()
+    }
+
+    // Listen for and neutralize problematic events
+    document.addEventListener('visibilitychange', handleVisibilityChange, { passive: false })
+    window.addEventListener('focus', handleFocusEvents, { passive: false })
+    window.addEventListener('blur', handleFocusEvents, { passive: false })
+    window.addEventListener('pageshow', handleFocusEvents, { passive: false })
+    window.addEventListener('pagehide', handleFocusEvents, { passive: false })
+
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange)
+      window.removeEventListener('focus', handleFocusEvents)
+      window.removeEventListener('blur', handleFocusEvents)
+      window.removeEventListener('pageshow', handleFocusEvents)
+      window.removeEventListener('pagehide', handleFocusEvents)
+    }
+  }, [enabled])
 
   // Track when page becomes visible (user returns to tab)
   useEffect(() => {
