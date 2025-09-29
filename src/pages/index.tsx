@@ -2014,173 +2014,189 @@ export default function Home() {
             </svg>
           </div>
 
-          {/* PAS Framework Section */}
-          <div className="max-w-4xl mx-auto px-6 py-20 mt-5 md:mt-10">
-            {/* PAS Final Draft Section - User Provided */}
-            <div className="text-center mb-20">
-              <p ref={musicFireRef} className={`text-[calc(1.5rem+0.4rem)] md:text-3xl lg:text-[2.9rem] font-black text-white pb-1 lg:pb-3 text-center ${musicFireInView ? 'animate-fade-in-up' : 'opacity-0'} leading-tight lg:leading-tight`} suppressHydrationWarning={true}>
-                <span className="block md:inline">Your Music Is Fire,</span>
-              </p>
-              <p ref={nobodyHearingRef} className={`text-[calc(1.5rem+0.25rem)] md:text-3xl lg:text-[2.9rem] font-black text-white pb-12 lg:pb-[3.5rem] text-center ${nobodyHearingInView ? 'animate-fade-in-up' : 'opacity-0'} leading-tight lg:leading-tight`} suppressHydrationWarning={true}>
-                <span className="block md:inline">But <span className="bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] bg-clip-text text-transparent">Nobody's</span> Hearing It...</span>
-              </p>
-              <p ref={text1Ref} className={`text-[calc(1.125rem+0.25rem)] sm:text-lg md:text-xl lg:text-[1.75rem] text-gray-300 pb-12 lg:pb-[3.5rem] font-medium text-center ${text1InView ? 'animate-fade-in-up' : 'opacity-0'} leading-relaxed lg:leading-relaxed`} suppressHydrationWarning={true}>
-                You spent days making the best song of your life. Created the dopest cover art for it. All your friends said it slaps harder than Will Smith at the Oscars....
-              </p>
-              <p ref={text2Ref} className={`text-[calc(1.5rem+0.4rem)] md:text-3xl lg:text-4xl font-bold pb-12 text-center ${text2InView ? 'animate-fade-in-up' : 'opacity-0'} leading-tight`} suppressHydrationWarning={true}>
-                <span className="block md:inline">But your Spotify still</span>{' '}
-                <span className="block md:inline">says " <span className="bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] bg-clip-text text-transparent">&lt; 1,000</span> " plays</span>
-              </p>
-              <p ref={text3Ref} className={`text-[calc(1.125rem+0.25rem)] sm:text-lg md:text-xl lg:text-[1.75rem] text-gray-300 pb-12 lg:pb-[3.5rem] font-medium text-center ${text3InView ? 'animate-fade-in-up' : 'opacity-0'} leading-relaxed lg:leading-relaxed`} suppressHydrationWarning={true}>
-                Meanwhile, some dude who recorded his whole album <b>on an iPhone</b> just hit <b>2 million</b> streams and <b>got signed.</b>
-              </p>
-              <p ref={text4Ref} className={`text-[calc(2.25rem+0.20rem)] sm:text-4xl md:text-5xl lg:text-[3.5rem] font-black pb-5 lg:pb-[2rem] bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] bg-clip-text text-transparent ${text4InView ? 'animate-fade-in-up' : 'opacity-0'} leading-tight mb-[11px] sm:mb-0`}>
-                Damn…
-              </p>
-              <p ref={text5Ref} className={`text-3xl md:text-4xl lg:text-[2.15rem] font-black text-white pb-12 lg:pb-[3.5rem] pt-1 lg:pt-[2rem] ${text5InView ? 'animate-fade-in-up' : 'opacity-0'} leading-tight lg:leading-tight`}>
-                Ready to know the truth?
-              </p>
-              <p ref={text6bRef} className={`text-[calc(1.25rem+0.25rem)] sm:text-xl md:text-2xl lg:text-[2.0rem] font-black text-white pb-8 lg:pb-[2rem] text-center ${text6bInView ? 'animate-fade-in-up' : 'opacity-0'} leading-tight lg:leading-tight`}>
-                Talent and hard work DOES NOT guarantee<br className="hidden lg:block" /> success on Spotify.
-              </p>
-              <p ref={text6Ref} className={`text-[calc(1.125rem+0.25rem)] sm:text-lg md:text-xl lg:text-[1.75rem] text-gray-300 pb-12 lg:pb-[3.5rem] font-medium text-center ${text6InView ? 'animate-fade-in-up' : 'opacity-0'} leading-relaxed lg:leading-relaxed pt-[9px] sm:pt-0 mb-[5px] sm:mb-0`}>
-                The platform only pushes artists who <b><i>ALREADY</i></b> have momentum. Big streams, high engagement, and playlist placements. If you've got them, Spotify's algorithm <b>LOVES</b> you. But if you don't? <b>You're invisible.</b>
-              </p>
-              <div ref={text7Ref} className={`text-center pb-12 ${text7InView ? 'animate-fade-in-up' : 'opacity-0'}`}>
-                <p className="text-[calc(1.5rem+0.3rem)] sm:text-2xl md:text-3xl lg:text-[2.4rem] font-black text-white mb-2 lg:mt-3 leading-tight lg:leading-normal">
-                  Here's the <span className="bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] bg-clip-text text-transparent">CATCH</span> that's
-                </p>
-                <p className="text-[calc(1.5rem+0.3rem)] sm:text-2xl md:text-3xl lg:text-[2.4rem] font-black text-white lg:mb-3 leading-tight lg:leading-normal">
-                  <span className="bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] bg-clip-text text-transparent">KILLING</span> independent artists…
+          {/* New Hero Section - 60/40 Split */}
+          <div className="max-w-[90rem] mx-auto px-3 sm:px-6 py-20 -mt-2 sm:mt-5 md:mt-10 mb-[110px]">
+            <div className="relative">
+              {/* Gradient container with rounded corners and glow */}
+              <div className="bg-gradient-to-br from-[#18192a]/80 via-[#1a1b3a]/60 to-[#0a0a13]/90 backdrop-blur-xl rounded-3xl p-6 sm:p-8 md:p-16 lg:p-20 border border-white/25 shadow-[0_20px_60px_0_rgba(20,192,255,0.3)] relative overflow-hidden">
+                {/* Subtle glow overlay */}
+                <div className="absolute inset-0 bg-gradient-to-br from-[#59e3a5]/5 via-transparent to-[#14c0ff]/5 rounded-3xl"></div>
+                
+                {/* Grid layout for 60/40 split on desktop, stacked on mobile */}
+                <div className="grid lg:grid-cols-5 gap-8 lg:gap-12 items-center relative z-10">
+                  {/* Left side - 60% on desktop, full width centered headline on mobile */}
+                  <div className="lg:col-span-3 text-center lg:text-left">
+                    <h2 className="text-4xl sm:text-4xl md:text-3xl lg:text-4xl xl:text-5xl font-black text-white mb-6 leading-tight lg:leading-relaxed pt-5 sm:pt-0">
+                      <span className="block sm:hidden">We Don't Buy<br /><span className="bg-gradient-to-l from-[#59e3a5] to-[#14c0ff] bg-clip-text text-transparent text-[1.1em]">Fake Plays.</span><br />We Get You On<br /><span className="bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] bg-clip-text text-transparent">REAL Playlists.</span></span>
+                      <span className="hidden sm:block">We Don't Buy <span className="bg-gradient-to-l from-[#59e3a5] to-[#14c0ff] bg-clip-text text-transparent">Fake Plays.</span><br />We Get You On <span className="bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] bg-clip-text text-transparent">REAL Playlists.</span></span>
+                    </h2>
+                    <p className="text-lg md:text-xl lg:text-2xl text-gray-300 leading-relaxed mb-4 sm:mb-8 lg:mb-0">
+                      While other companies flood your song with bot streams from fake accounts, we do something completely different. We get your music placed on the largest playlists in the world with <b>MILLIONS</b> of real listeners who discover new music every single day.
                 </p>
               </div>
-              <p ref={text8Ref} className={`text-[calc(1.125rem+0.25rem)] sm:text-lg md:text-xl lg:text-[1.75rem] text-gray-300 pb-6 lg:pb-[1.75rem] font-medium text-center ${text8InView ? 'animate-fade-in-up' : 'opacity-0'} leading-relaxed lg:leading-relaxed`}>
-                Spotify won't promote you if you <b><i><u>DON'T</u></i></b> have streams. But you can't get streams if Spotify <b><i><u>WON'T</u></i></b> promote you!
-              </p>
-              <p ref={text8bRef} className={`text-[calc(1.125rem+0.25rem)] sm:text-lg md:text-xl lg:text-[1.75rem] text-gray-300 pb-12 lg:pb-[3.5rem] font-medium text-center ${text8bInView ? 'animate-fade-in-up' : 'opacity-0'} leading-relaxed lg:leading-relaxed`}>
-                You're trapped in a death loop where the only way to win is to <i><b><span className="bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] bg-clip-text text-transparent">ALREADY</span></b></i> be winning.
-              </p>
-              <p ref={text9Ref} className={`text-[calc(1.5rem+0.2rem)] sm:text-2xl md:text-3xl lg:text-4xl font-bold text-white pb-12 ${text9InView ? 'animate-fade-in-up' : 'opacity-0'} leading-tight`}>
-                Trust us, we know the struggle.
-              </p>
-              <h2 ref={heading3Ref} className={`text-4xl md:text-5xl lg:text-[3.65rem] font-black pb-1 lg:pb-[1.25rem] pt-2 bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] bg-clip-text text-transparent ${heading3InView ? 'animate-fade-in-up' : 'opacity-0'} leading-tight`}>
-                But it gets worse….
-              </h2>
+                  
+                  {/* Right side - 40% on desktop, 2x2 grid centered on mobile */}
+                  <div className="lg:col-span-2">
+                    {/* Desktop layout - vertical list */}
+                    <div className="hidden lg:block space-y-6">
+                      <div className="flex items-start space-x-4">
+                        <div className="flex-shrink-0 w-8 h-8 flex items-center justify-center">
+                          <svg className="w-8 h-8" viewBox="0 0 24 24" fill="none">
+                            <circle cx="12" cy="12" r="12" fill="url(#gradient1)" />
+                            <path d="M8 12l2 2 6-6" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+                            <defs>
+                              <linearGradient id="gradient1" x1="0%" y1="0%" x2="100%" y2="100%">
+                                <stop offset="0%" stopColor="#59e3a5" />
+                                <stop offset="100%" stopColor="#14c0ff" />
+                              </linearGradient>
+                            </defs>
+                          </svg>
             </div>
-            {/* New Icon List */}
-            <div ref={iconListRef} className={`grid md:grid-cols-1 gap-8 lg:gap-10 mb-16 lg:mb-20 -mt-12 ${iconListInView ? 'animate-fade-in-up' : 'opacity-0'}`}>
-              <div className="flex items-start space-x-4 text-left">
-                <div className="flex-shrink-0 w-16 h-16 flex items-center justify-center mt-1">
-                  <span className="bg-gradient-to-r from-red-500 via-red-400 to-red-500 bg-clip-text text-transparent font-bold text-5xl">✗</span>
+                        <div>
+                          <p className="text-white font-semibold text-xl mb-1">Direct Access to Major Playlists</p>
+                          <p className="text-gray-400 text-sm">We work directly with curators from Rap Caviar, OnEverything, and thousands more of the world's largest playlists</p>
                 </div>
-                <p className="text-white font-medium text-[calc(1.125rem+0.20rem)] sm:text-lg md:text-xl lg:text-[1.65rem] leading-relaxed lg:leading-relaxed">
-                  <b>60,000 new songs drop on Spotify EVERY single day</b> - and you're competing against ALL of them (42 new songs were uploaded in the time it took you to read this sentence)
-                </p>
               </div>
-              <div className="flex items-start space-x-4 text-left">
-                <div className="flex-shrink-0 w-16 h-16 flex items-center justify-center mt-1">
-                  <span className="bg-gradient-to-r from-red-500 via-red-400 to-red-500 bg-clip-text text-transparent font-bold text-5xl">✗</span>
+                      
+                      <div className="flex items-start space-x-4">
+                        <div className="flex-shrink-0 w-8 h-8 flex items-center justify-center">
+                          <svg className="w-8 h-8" viewBox="0 0 24 24" fill="none">
+                            <circle cx="12" cy="12" r="12" fill="url(#gradient2)" />
+                            <path d="M8 12l2 2 6-6" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+                            <defs>
+                              <linearGradient id="gradient2" x1="0%" y1="0%" x2="100%" y2="100%">
+                                <stop offset="0%" stopColor="#59e3a5" />
+                                <stop offset="100%" stopColor="#14c0ff" />
+                              </linearGradient>
+                            </defs>
+                          </svg>
                 </div>
-                <p className="text-white font-medium text-[calc(1.125rem+0.20rem)] sm:text-lg md:text-xl lg:text-[1.65rem] leading-relaxed lg:leading-relaxed">
-                  Without getting placed on the <b>RIGHT</b> playlists, you're <b>INVISIBLE</b> to Spotify's algorithm (and everyone else)
-                </p>
+                        <div>
+                          <p className="text-white font-semibold text-xl mb-1">Real Listeners, Real Results</p>
+                          <p className="text-gray-400 text-sm">Every stream comes from genuine music fans actively discovering new artists just like you</p>
               </div>
-              <div className="flex items-start space-x-4 text-left">
-                <div className="flex-shrink-0 w-16 h-16 flex items-center justify-center mt-1">
-                  <span className="bg-gradient-to-r from-red-500 via-red-400 to-red-500 bg-clip-text text-transparent font-bold text-5xl">✗</span>
                 </div>
-                <p className="text-white font-medium text-[calc(1.125rem+0.20rem)] sm:text-lg md:text-xl lg:text-[1.65rem] leading-relaxed lg:leading-relaxed">
-                  It's not 2019 anymore - posting <b>"LINK IN BIO"</b> on Instagram works just as bad as buying an Ad in the newspaper
-                </p>
+                      
+                      <div className="flex items-start space-x-4">
+                        <div className="flex-shrink-0 w-8 h-8 flex items-center justify-center">
+                          <svg className="w-8 h-8" viewBox="0 0 24 24" fill="none">
+                            <circle cx="12" cy="12" r="12" fill="url(#gradient3)" />
+                            <path d="M8 12l2 2 6-6" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+                            <defs>
+                              <linearGradient id="gradient3" x1="0%" y1="0%" x2="100%" y2="100%">
+                                <stop offset="0%" stopColor="#59e3a5" />
+                                <stop offset="100%" stopColor="#14c0ff" />
+                              </linearGradient>
+                            </defs>
+                          </svg>
               </div>
-              <div className="flex items-start space-x-4 text-left">
-                <div className="flex-shrink-0 w-16 h-16 flex items-center justify-center mt-1">
-                  <span className="bg-gradient-to-r from-red-500 via-red-400 to-red-500 bg-clip-text text-transparent font-bold text-5xl">✗</span>
+                        <div>
+                          <p className="text-white font-semibold text-xl mb-1">Industry Connections That Matter</p>
+                          <p className="text-gray-400 text-sm">Over 10+ years of close relationships with the playlist owners who can change your career</p>
                 </div>
-                <p className="text-white font-medium text-[calc(1.125rem+0.20rem)] sm:text-lg md:text-xl lg:text-[1.65rem] leading-relaxed lg:leading-relaxed">
-                  It takes the average artist <b>4.7 YEARS</b> of trial and error to finally break into the industry (and most quit after year 2)
-                </p>
               </div>
-              <div className="flex items-start space-x-4 text-left">
-                <div className="flex-shrink-0 w-16 h-16 flex items-center justify-center mt-1">
-                  <span className="bg-gradient-to-r from-red-500 via-red-400 to-red-500 bg-clip-text text-transparent font-bold text-5xl">✗</span>
+                      
+                      <div className="flex items-start space-x-4">
+                        <div className="flex-shrink-0 w-8 h-8 flex items-center justify-center">
+                          <svg className="w-8 h-8" viewBox="0 0 24 24" fill="none">
+                            <circle cx="12" cy="12" r="12" fill="url(#gradient4)" />
+                            <path d="M8 12l2 2 6-6" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+                            <defs>
+                              <linearGradient id="gradient4" x1="0%" y1="0%" x2="100%" y2="100%">
+                                <stop offset="0%" stopColor="#59e3a5" />
+                                <stop offset="100%" stopColor="#14c0ff" />
+                              </linearGradient>
+                            </defs>
+                          </svg>
                 </div>
-                <p className="text-white font-medium text-[calc(1.125rem+0.20rem)] sm:text-lg md:text-xl lg:text-[1.65rem] leading-relaxed lg:leading-relaxed">
-                  Artists with <b>HALF your talent</b> are going viral DAILY because they learned how to work <b>SMARTER</b> than you do
-                </p>
+                        <div>
+                          <p className="text-white font-semibold text-xl mb-1">Results in Only 48-72 Hours</p>
+                          <p className="text-gray-400 text-sm">No waiting months, not even weeks - your campaign starts working immediately and results roll in rapidly</p>
               </div>
             </div>
-            <div ref={bottomSectionRef}>
-            <p className={`text-2xl md:text-3xl lg:text-[1.9rem] font-bold text-white pb-12 text-center ${bottomSectionInView ? 'animate-fade-in-up' : 'opacity-0'} leading-tight lg:leading-relaxed`}>
-              And while you're still wondering if playlist placements are <i>"worth it"</i>, other artists are busy booking their first tours.
-            </p>
-            <h2 ref={worstPartRef} className={`text-[calc(2.25rem-0.30rem)] md:text-5xl lg:text-[3.35rem] font-black pb-12 pt-8 bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] bg-clip-text text-transparent text-center ${worstPartInView ? 'animate-fade-in-up' : 'opacity-0'} leading-tight`}>
-              But The WORST Part Is...
-            </h2>
-            <p ref={fakeAgenciesRef} className={`text-[calc(1.5rem+0.20rem)] sm:text-2xl md:text-3xl lg:text-[2.05rem] font-bold text-white pb-12 text-center ${fakeAgenciesInView ? 'animate-fade-in-up' : 'opacity-0'} leading-tight lg:leading-relaxed`}>
-              REAL Spotify growth is trapped behind a field of landmines.
-            </p>
-            <p ref={fakeAgenciesParaRef} className={`text-[calc(1.125rem+0.25rem)] sm:text-lg md:text-xl lg:text-[1.75rem] text-gray-300 pb-12 lg:pb-[3.5rem] font-medium text-center ${fakeAgenciesParaInView ? 'animate-fade-in-up' : 'opacity-0'} leading-relaxed lg:leading-relaxed`}>
-              Fake agencies charging <b>$99</b> for <b>bot plays</b> from <b>Kazakstan.</b> Scammers in your DMs with <b>"PROMO 4 SALE"</b> messages. Snake oil companies on <b>Google</b> who put you on <b>handmade playlists</b> with only <b>52 followers.</b>
-            </p>
-            <p ref={noCapRef} className={`text-[calc(1.5rem+0.20rem)] sm:text-2xl md:text-3xl lg:text-4xl font-bold text-white pb-12 text-center ${noCapInView ? 'animate-fade-in-up' : 'opacity-0'} leading-tight lg:leading-relaxed`}>
-              No Cap - Finding <span className="bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] bg-clip-text text-transparent">REAL</span> Spotify Marketing is Harder Than Finding a PS5 to Buy During COVID
-            </p>
-            <h2 ref={thatsWhyRef} className={`text-4xl md:text-5xl lg:text-[2.55rem] font-black pb-12 pt-2 lg:pt-[2rem] bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] bg-clip-text text-transparent text-center ${thatsWhyInView ? 'animate-fade-in-up' : 'opacity-0'} leading-tight`}>
-              That's Why Over 25K Creators Use…
-            </h2>
-            <div ref={logoRef} className={`flex justify-center items-center pb-12 pt-2 relative ${logoInView ? 'animate-bounce-in-spectacular' : 'opacity-0'}`}>
-              <img src="/fasho-logo-wide.png" alt="Fasho Logo" className="w-[384px] sm:w-[480px] max-w-full h-auto relative z-10" />
-              {/* Confetti Animation - Positioned relative to logo */}
-              {confettiLottie && showConfetti && (
-                <div className="absolute inset-0 pointer-events-none z-50 flex justify-center items-center" style={{ width: '800px', height: '600px', left: '50%', top: '50%', transform: 'translate(-50%, -50%)' }}>
-                  <Lottie
-                    autoplay
-                    loop={false}
-                    animationData={confettiLottie}
-                    style={{ width: '100%', height: '100%' }}
-                    rendererSettings={{ preserveAspectRatio: 'xMidYMid slice' }}
-                  />
                 </div>
-              )}
-            </div>
-            <p ref={onlySpotifyRef} className={`text-2xl md:text-3xl lg:text-[2.0rem] font-bold text-white pb-12 text-center ${onlySpotifyInView ? 'animate-fade-in-up' : 'opacity-0'} leading-tight lg:leading-tight`}>
-              The ONLY Spotify marketing service with DIRECT access to the world's BIGGEST playlists.
-            </p>
-            <p ref={dontMessRef} className={`text-[calc(1.125rem+0.25rem)] sm:text-lg md:text-xl lg:text-[1.75rem] text-gray-300 pb-12 lg:pb-[3.5rem] font-medium text-center ${dontMessInView ? 'animate-fade-in-up' : 'opacity-0'} leading-relaxed lg:leading-relaxed`}>
-              We don't mess with <b>bots.</b> We don't own <b>sketchy playlists.</b> We don't make <b>empty promises.</b>
-            </p>
-            <p ref={getMusicRef} className={`text-[calc(1.125rem+0.25rem)] sm:text-lg md:text-xl lg:text-[1.75rem] text-gray-300 pb-12 lg:pb-[3.5rem] font-medium text-center ${getMusicInView ? 'animate-fade-in-up' : 'opacity-0'} leading-relaxed lg:leading-relaxed`}>
-              We get your music directly in front of playlist curators who control <b><i><span className="bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] bg-clip-text text-transparent">MILLIONS</span></i></b> of real listeners.
-            </p>
-            <p ref={rapCaviarRef} className={`text-2xl md:text-3xl lg:text-[2.0rem] font-bold text-white pb-12 text-center ${rapCaviarInView ? 'animate-fade-in-up' : 'opacity-0'} leading-tight lg:leading-tight`}>
-              RapCaviar. Today's Top Hits. Viva Latino. The playlists that actually move the needle on careers.
-            </p>
-            <p ref={whileOtherRef} className={`text-[calc(1.125rem+0.25rem)] sm:text-lg md:text-xl lg:text-[1.75rem] text-gray-300 pb-12 lg:pb-[3.5rem] font-medium text-center ${whileOtherInView ? 'animate-fade-in-up' : 'opacity-0'} leading-relaxed lg:leading-relaxed`}>
-              While other companies are cold emailing <b>random</b> curators hoping for a response, we're on <b>first name basis</b> with the people who matter. We've spent <b>10 years</b> building these relationships so <b>you don't have to.</b>
-            </p>
-            <h2 ref={whoIsFashoRef} className={`text-3xl md:text-4xl lg:text-5xl font-black pt-2 pb-14 bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] bg-clip-text text-transparent text-center ${whoIsFashoInView ? 'animate-fade-in-up' : 'opacity-0'} leading-tight`}>
-              Welcome to the A-Team...
-            </h2>
-                        <p ref={ourTeamRef} className={`text-[calc(1.125rem+0.25rem)] sm:text-lg md:text-xl lg:text-[1.75rem] text-gray-300 pb-6 lg:pb-[1.75rem] font-medium text-center ${ourTeamInView ? 'animate-fade-in-up' : 'opacity-0'} leading-relaxed lg:leading-relaxed`}>
-              Our team is stacked with former directors and executives from labels like <b>Universal, Sony, RCA, Atlantic,</b> and <b>Roc Nation.</b>
-            </p>
-            <p ref={teamCampaignsRef} className={`text-[calc(1.125rem+0.25rem)] sm:text-lg md:text-xl lg:text-[1.75rem] text-gray-300 pb-12 lg:pb-[3.5rem] font-medium text-center ${teamCampaignsInView ? 'animate-fade-in-up' : 'opacity-0'} leading-relaxed lg:leading-relaxed mt-[15px]`}>
-              The same people who built marketing campaigns for <b>Beyonce, Justin Bieber, Billie Eilish,</b> and <b>Kendrick Lamar</b> now work for <b>YOU.</b>
-            </p>
-            <p ref={gotTiredRef} className={`text-[calc(1.125rem+0.25rem)] sm:text-lg md:text-xl lg:text-[1.75rem] text-gray-300 pb-6 lg:pb-[1.5rem] font-medium text-center ${gotTiredInView ? 'animate-fade-in-up' : 'opacity-0'} leading-relaxed lg:leading-relaxed`}>
-              We got tired of watching talented artists get <b>chewed up</b> and <b>spit out</b> by an industry that only cares about <b>who you know.</b> Gatekeepers controlling <b>everything.</b> Labels taking <b>80%</b> of your revenue.
-            </p>
-            <p ref={gameRiggedRef} className={`text-[calc(1.5rem+0.25rem)] md:text-3xl lg:text-4xl font-bold text-white pt-1.5 lg:pt-[2rem] pb-14 text-center ${gameRiggedInView ? 'animate-fade-in-up' : 'opacity-0'} leading-tight pt-[calc(6px+5px)] sm:pt-1.5 lg:pt-[2rem]`}>
-              The game was rigged from the start.
-            </p>
-            <p ref={builtFashoRef} className={`text-[calc(1.125rem+0.25rem)] sm:text-lg md:text-xl lg:text-[1.75rem] text-gray-300 pb-12 lg:pb-[3.5rem] font-medium text-center ${builtFashoInView ? 'animate-fade-in-up' : 'opacity-0'} leading-relaxed lg:leading-relaxed`}>
-              So we built <b className="bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] bg-clip-text text-transparent font-black">FASHO.co</b> to flip the script. To give independent artists <b>direct</b> access to the <b>same tools</b> and <b>connections</b> that major labels pay <b><i>millions</i></b> for.
-            </p>
 
-            <p ref={isntHopeRef} className={`text-2xl md:text-3xl lg:text-[2.1rem] font-bold text-white pb-16 text-center -mb-9 md:mb-0 ${isntHopeInView ? 'animate-fade-in-up' : 'opacity-0'} leading-tight lg:leading-tight`}>
-              This isn't hope. It's a guarantee. Your music, on major playlists, reaching massive audiences, starting TODAY.
-            </p>
+                    {/* Mobile layout - left-aligned list */}
+                    <div className="lg:hidden space-y-5 pb-6">
+                      <div className="flex items-center space-x-4 text-left">
+                        <div className="flex-shrink-0 w-8 h-8 flex items-center justify-center">
+                          <svg className="w-8 h-8" viewBox="0 0 24 24" fill="none">
+                            <circle cx="12" cy="12" r="12" fill="url(#gradient1m)" />
+                            <path d="M8 12l2 2 6-6" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+                            <defs>
+                              <linearGradient id="gradient1m" x1="0%" y1="0%" x2="100%" y2="100%">
+                                <stop offset="0%" stopColor="#59e3a5" />
+                                <stop offset="100%" stopColor="#14c0ff" />
+                              </linearGradient>
+                            </defs>
+                          </svg>
+            </div>
+                        <div>
+                          <p className="text-white font-semibold text-lg mb-1">Direct Access to Major Playlists</p>
+                          <p className="text-gray-400 text-sm">We work directly with curators from Rap Caviar, OnEverything, and thousands more</p>
+                        </div>
+                      </div>
+                      
+                      <div className="flex items-center space-x-4 text-left">
+                        <div className="flex-shrink-0 w-8 h-8 flex items-center justify-center">
+                          <svg className="w-8 h-8" viewBox="0 0 24 24" fill="none">
+                            <circle cx="12" cy="12" r="12" fill="url(#gradient2m)" />
+                            <path d="M8 12l2 2 6-6" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+                            <defs>
+                              <linearGradient id="gradient2m" x1="0%" y1="0%" x2="100%" y2="100%">
+                                <stop offset="0%" stopColor="#59e3a5" />
+                                <stop offset="100%" stopColor="#14c0ff" />
+                              </linearGradient>
+                            </defs>
+                          </svg>
+                        </div>
+                        <div>
+                          <p className="text-white font-semibold text-lg mb-1">Real Listeners, Real Results</p>
+                          <p className="text-gray-400 text-sm">Every stream comes from genuine music fans actively discovering new artists</p>
+                        </div>
+                      </div>
+                      
+                      <div className="flex items-center space-x-4 text-left">
+                        <div className="flex-shrink-0 w-8 h-8 flex items-center justify-center">
+                          <svg className="w-8 h-8" viewBox="0 0 24 24" fill="none">
+                            <circle cx="12" cy="12" r="12" fill="url(#gradient3m)" />
+                            <path d="M8 12l2 2 6-6" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+                            <defs>
+                              <linearGradient id="gradient3m" x1="0%" y1="0%" x2="100%" y2="100%">
+                                <stop offset="0%" stopColor="#59e3a5" />
+                                <stop offset="100%" stopColor="#14c0ff" />
+                              </linearGradient>
+                            </defs>
+                          </svg>
+                        </div>
+                        <div>
+                          <p className="text-white font-semibold text-lg mb-1">Industry Connections That Matter</p>
+                          <p className="text-gray-400 text-sm">Over 10+ years of close relationships with playlist owners who can change careers</p>
+                        </div>
+                      </div>
+                      
+                      <div className="flex items-center space-x-4 text-left">
+                        <div className="flex-shrink-0 w-8 h-8 flex items-center justify-center">
+                          <svg className="w-8 h-8" viewBox="0 0 24 24" fill="none">
+                            <circle cx="12" cy="12" r="12" fill="url(#gradient4m)" />
+                            <path d="M8 12l2 2 6-6" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+                            <defs>
+                              <linearGradient id="gradient4m" x1="0%" y1="0%" x2="100%" y2="100%">
+                                <stop offset="0%" stopColor="#59e3a5" />
+                                <stop offset="100%" stopColor="#14c0ff" />
+                              </linearGradient>
+                            </defs>
+                          </svg>
+                        </div>
+                        <div>
+                          <p className="text-white font-semibold text-lg mb-1">Results in Only 48-72 Hours</p>
+                          <p className="text-gray-400 text-sm">No waiting months, not even weeks - your campaign starts working immediately</p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
           {/* Shape Divider */}
