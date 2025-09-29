@@ -89,12 +89,20 @@ export default function PowerToolCard({ tool, className = '' }: PowerToolCardPro
       {/* Product Image - 3:1.8 Aspect Ratio */}
       <div className="relative w-full aspect-[3/1.8] overflow-hidden bg-black/20">
         <img
-          src={tool.productImage}
+          src={tool.productName.toLowerCase().includes('tubebuddy') 
+            ? 'https://www.tubebuddy.com/wp-content/uploads/2019/07/TubeBuddy-Pro.jpg'
+            : tool.productImage
+          }
           alt={tool.productName}
           className="w-full h-full object-cover transition-transform duration-300 hover:scale-110"
           onError={(e) => {
             const target = e.target as HTMLImageElement
-            target.src = '/default-tool.png' // fallback image
+            // If TubeBuddy image fails, use the backup TubeBuddy URL
+            if (tool.productName.toLowerCase().includes('tubebuddy')) {
+              target.src = 'https://www.tubebuddy.com/wp-content/uploads/2019/07/TubeBuddy-Pro.jpg'
+            } else {
+              target.src = '/default-tool.png' // fallback image for other tools
+            }
           }}
         />
         

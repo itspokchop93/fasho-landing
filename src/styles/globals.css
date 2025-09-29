@@ -1704,13 +1704,16 @@ button, a, [role="button"] {
 /* Mobile positioning - bottom of viewport with minimal spacing */
 @media (max-width: 768px) {
   .sales-pop-container {
-    bottom: 3px;
-    left: 10%;
-    right: 10%;
-    width: 80%;
+    /* Use CSS custom property that will be set by JavaScript for URL bar handling */
+    bottom: var(--sales-pop-bottom, env(safe-area-inset-bottom, 3px));
+    left: 5%;
+    right: 5%;
+    width: 90%;
     max-width: none;
     margin: 0 auto;
     transform: translateY(100%) scale(0.95);
+    /* Ensure smooth transitions when URL bar appears/disappears */
+    transition: all 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94), bottom 0.2s ease-out;
   }
 }
 
@@ -1956,6 +1959,55 @@ button, a, [role="button"] {
   
   .sales-pop-content:hover {
     transform: none;
+  }
+}
+
+/* Mobile Bottom Navigation - Fixed positioning that handles URL bar show/hide */
+.mobile-nav-bottom {
+  /* Use CSS custom property that will be set by JavaScript */
+  bottom: var(--mobile-nav-bottom, env(safe-area-inset-bottom, 0));
+  position: fixed;
+  /* Ensure smooth transitions when URL bar appears/disappears */
+  transition: bottom 0.2s ease-out;
+}
+
+/* Modern browsers with dynamic viewport height support */
+@supports (height: 100dvh) {
+  .mobile-nav-bottom {
+    /* Use dynamic viewport height for better mobile browser support */
+    bottom: calc(100vh - 100dvh + env(safe-area-inset-bottom, 0));
+    /* Override the JavaScript solution if dvh is supported */
+    bottom: env(safe-area-inset-bottom, 0) !important;
+  }
+}
+
+/* iOS Safari specific fixes */
+@supports (-webkit-touch-callout: none) {
+  .mobile-nav-bottom {
+    /* iOS Safari needs special handling */
+    bottom: var(--mobile-nav-bottom, env(safe-area-inset-bottom, 0));
+  }
+}
+
+/* Sales Pop Mobile Browser URL Bar Fix */
+@supports (height: 100dvh) {
+  @media (max-width: 768px) {
+    .sales-pop-container {
+      /* Use dynamic viewport height for better mobile browser support */
+      bottom: calc(100vh - 100dvh + env(safe-area-inset-bottom, 3px));
+      /* Override the JavaScript solution if dvh is supported */
+      bottom: env(safe-area-inset-bottom, 3px) !important;
+    }
+  }
+}
+
+/* iOS Safari specific fixes for Sales Pop */
+@supports (-webkit-touch-callout: none) {
+  @media (max-width: 768px) {
+    .sales-pop-container {
+      /* iOS Safari needs special handling */
+      bottom: var(--sales-pop-bottom, env(safe-area-inset-bottom, 3px));
+    }
   }
 }
 

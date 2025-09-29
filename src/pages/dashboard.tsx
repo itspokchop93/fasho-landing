@@ -113,6 +113,51 @@ export default function Dashboard({ user }: DashboardProps) {
   // Track when component is mounted for portal
   useEffect(() => { setIsMounted(true); }, [])
 
+  // Handle mobile viewport height changes for bottom navigation (MOBILE ONLY FIX)
+  useEffect(() => {
+    const updateMobileNavPosition = () => {
+      if (typeof window !== 'undefined' && window.innerWidth <= 1024) {
+        const vh = window.innerHeight * 0.01;
+        const safeAreaBottom = parseInt(getComputedStyle(document.documentElement).getPropertyValue('env(safe-area-inset-bottom)') || '0');
+        
+        // Calculate the bottom position to keep nav flush with bottom
+        const bottomPosition = Math.max(0, safeAreaBottom);
+        
+        // Set CSS custom property for mobile nav positioning
+        document.documentElement.style.setProperty('--mobile-nav-bottom', `${bottomPosition}px`);
+      }
+    };
+
+    // Update on mount
+    updateMobileNavPosition();
+
+    // Update on resize and orientation change
+    window.addEventListener('resize', updateMobileNavPosition);
+    window.addEventListener('orientationchange', () => {
+      // Delay to account for browser UI changes
+      setTimeout(updateMobileNavPosition, 100);
+    });
+
+    // Update on scroll (for URL bar show/hide detection)
+    let ticking = false;
+    const handleScroll = () => {
+      if (!ticking) {
+        requestAnimationFrame(() => {
+          updateMobileNavPosition();
+          ticking = false;
+        });
+        ticking = true;
+      }
+    };
+    window.addEventListener('scroll', handleScroll, { passive: true });
+
+    return () => {
+      window.removeEventListener('resize', updateMobileNavPosition);
+      window.removeEventListener('orientationchange', updateMobileNavPosition);
+      window.removeEventListener('scroll', handleScroll);
+    };
+  }, [])
+
   // Power Tools state
   const [powerTools, setPowerTools] = useState<PowerTool[]>([])
   const [powerToolsLoading, setPowerToolsLoading] = useState(true)
@@ -5001,7 +5046,7 @@ Thank you,
         </div>
         
         {/* Mobile Bottom Navigation */}
-        <div className="lg:hidden fixed bottom-0 left-0 right-0 bg-gray-950/95 backdrop-blur-sm border-t border-gray-800/30 px-2 py-2 z-30 safe-area-inset-bottom">
+        <div className="lg:hidden fixed left-0 right-0 bg-gray-950/95 backdrop-blur-sm border-t border-gray-800/30 px-2 py-2 z-30 mobile-nav-bottom">
           <div className="flex items-center max-w-full">
             {mobileNavItems.map((item, index) => {
               // Get mobile-specific label

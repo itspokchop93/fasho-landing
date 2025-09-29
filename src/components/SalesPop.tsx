@@ -74,6 +74,50 @@ const SalesPop: React.FC = () => {
     }
   }, []);
 
+  // Handle mobile viewport height changes for sales pop positioning (MOBILE ONLY FIX)
+  useEffect(() => {
+    const updateSalesPopPosition = () => {
+      if (typeof window !== 'undefined' && window.innerWidth <= 768) {
+        const safeAreaBottom = parseInt(getComputedStyle(document.documentElement).getPropertyValue('env(safe-area-inset-bottom)') || '0');
+        
+        // Calculate the bottom position to keep sales pop flush with bottom
+        const bottomPosition = Math.max(3, safeAreaBottom);
+        
+        // Set CSS custom property for sales pop positioning
+        document.documentElement.style.setProperty('--sales-pop-bottom', `${bottomPosition}px`);
+      }
+    };
+
+    // Update on mount
+    updateSalesPopPosition();
+
+    // Update on resize and orientation change
+    window.addEventListener('resize', updateSalesPopPosition);
+    window.addEventListener('orientationchange', () => {
+      // Delay to account for browser UI changes
+      setTimeout(updateSalesPopPosition, 100);
+    });
+
+    // Update on scroll (for URL bar show/hide detection)
+    let ticking = false;
+    const handleScroll = () => {
+      if (!ticking) {
+        requestAnimationFrame(() => {
+          updateSalesPopPosition();
+          ticking = false;
+        });
+        ticking = true;
+      }
+    };
+    window.addEventListener('scroll', handleScroll, { passive: true });
+
+    return () => {
+      window.removeEventListener('resize', updateSalesPopPosition);
+      window.removeEventListener('orientationchange', updateSalesPopPosition);
+      window.removeEventListener('scroll', handleScroll);
+    };
+  }, []);
+
   // Master instance coordination - only one tab controls the timer
   useEffect(() => {
     if (!isVisible) return;
