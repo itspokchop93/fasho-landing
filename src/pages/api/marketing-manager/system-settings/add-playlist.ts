@@ -8,7 +8,6 @@ async function handler(req: NextApiRequest, res: NextApiResponse, adminUser: Adm
   }
 
   const { 
-    playlistName, 
     genre, 
     accountEmail, 
     playlistLink, 
@@ -16,10 +15,10 @@ async function handler(req: NextApiRequest, res: NextApiResponse, adminUser: Adm
     maxSongs 
   } = req.body;
 
-  // Validate required fields
-  if (!playlistName || !genre || !accountEmail || !playlistLink) {
+  // Validate required fields (playlist name will be fetched automatically)
+  if (!genre || !accountEmail || !playlistLink) {
     return res.status(400).json({ 
-      error: 'Playlist name, genre, account email, and playlist link are required' 
+      error: 'Genre, account email, and playlist link are required' 
     });
   }
 
@@ -54,22 +53,30 @@ async function handler(req: NextApiRequest, res: NextApiResponse, adminUser: Adm
       });
     }
 
-    // Get initial data from Spotify API when adding new playlist
+    // Fetch playlist data from Spotify API (including name)
+    let playlistName = '';
     let initialSongCount = 0;
     let initialImageUrl = '';
     
     try {
-      console.log('🎵 FETCH: Getting initial data for new playlist...');
+      console.log('🎵 FETCH: Getting playlist data from Spotify...');
       const { getSpotifyPlaylistData } = await import('../../../../utils/spotify-api');
       const playlistData = await getSpotifyPlaylistData(playlistLink.trim());
       if (playlistData) {
+        playlistName = playlistData.name;
         initialSongCount = playlistData.trackCount;
         initialImageUrl = playlistData.imageUrl;
-        console.log(`✅ INITIAL: ${playlistName} - Songs: ${initialSongCount}, Image: ${initialImageUrl ? 'Yes' : 'No'}`);
+        console.log(`✅ FETCHED: ${playlistName} - Songs: ${initialSongCount}, Image: ${initialImageUrl ? 'Yes' : 'No'}`);
+      } else {
+        return res.status(400).json({ 
+          error: 'Could not fetch playlist information from Spotify. Please check the URL and try again.' 
+        });
       }
     } catch (error) {
-      console.error('Error fetching initial playlist data:', error);
-      // Continue with 0 values
+      console.error('Error fetching playlist data:', error);
+      return res.status(500).json({ 
+        error: 'Failed to fetch playlist information from Spotify. Please try again.' 
+      });
     }
 
     // Insert new playlist with initial cached data

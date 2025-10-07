@@ -40,12 +40,54 @@ async function handler(req: NextApiRequest, res: NextApiResponse, adminUser: Adm
 
     console.log(`🗑️ DELETE: Found ${campaignsUsingPlaylist.length} campaigns using this playlist`);
 
+    // If there are campaigns using this playlist, we'll proceed with deletion but update assignments to "Removed"
     if (campaignsUsingPlaylist && campaignsUsingPlaylist.length > 0) {
-      console.log(`🗑️ DELETE: Cannot delete - playlist in use by campaigns:`, campaignsUsingPlaylist.map(c => c.order_number));
-      return res.status(409).json({ 
-        error: `Cannot delete playlist. It is currently being used in ${campaignsUsingPlaylist.length} active campaign(s).`,
-        activeCampaigns: campaignsUsingPlaylist.map(c => c.order_number)
-      });
+      console.log(`🗑️ DELETE: Playlist in use by ${campaignsUsingPlaylist.length} campaigns - will auto-update to Removed:`, campaignsUsingPlaylist.map(c => c.order_number));
+      
+      // Update all campaigns that use this playlist to mark those assignments as "Removed"
+      const updateResults = [];
+      for (let i = 0; i < campaignsUsingPlaylist.length; i++) {
+        const campaign = campaignsUsingPlaylist[i];
+        const assignments = Array.isArray(campaign.playlist_assignments) ? campaign.playlist_assignments : [];
+        const updatedAssignments = assignments.map((assignment: any) => {
+          if (assignment.id === playlistId) {
+            console.log(`🗑️ DELETE: Updating campaign ${campaign.order_number} - marking playlist assignment as Removed (${i + 1}/${campaignsUsingPlaylist.length})`);
+            return {
+              id: 'removed',
+              name: '✅ Removed',
+              genre: 'removed'
+            };
+          }
+          return assignment;
+        });
+
+        // Update the campaign with the modified assignments
+        const { error: updateError } = await supabase
+          .from('marketing_campaigns')
+          .update({ 
+            playlist_assignments: updatedAssignments,
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', campaign.id);
+
+        if (updateError) {
+          console.error(`Error updating campaign ${campaign.id}:`, updateError);
+          return res.status(500).json({ error: 'Failed to update campaign assignments' });
+        }
+
+        updateResults.push({
+          campaignId: campaign.id,
+          orderNumber: campaign.order_number,
+          updated: true
+        });
+
+        // Add a small delay to make the progress visible (optional)
+        if (i < campaignsUsingPlaylist.length - 1) {
+          await new Promise(resolve => setTimeout(resolve, 100));
+        }
+      }
+      
+      console.log(`🗑️ DELETE: Successfully updated ${campaignsUsingPlaylist.length} campaigns to mark playlist as Removed`);
     }
 
     // Get playlist info before deletion for response
@@ -75,7 +117,9 @@ async function handler(req: NextApiRequest, res: NextApiResponse, adminUser: Adm
 
     res.status(200).json({ 
       success: true, 
-      message: `Playlist "${playlistInfo.playlist_name}" deleted successfully`
+      message: `Playlist "${playlistInfo.playlist_name}" deleted successfully`,
+      affectedCampaigns: campaignsUsingPlaylist.length,
+      campaignNumbers: campaignsUsingPlaylist.map(c => c.order_number)
     });
   } catch (error) {
     console.error('Error in delete-playlist API:', error);

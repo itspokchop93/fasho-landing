@@ -795,6 +795,7 @@ const ActiveCampaigns: React.FC = () => {
                                   className="text-xs border border-gray-300 rounded px-1 py-1 flex-1 min-w-0"
                                 >
                                   <option value="removed">✅ Removed</option>
+                                  <option value="empty">📭 -Empty-</option>
                                   {availablePlaylists.map(p => (
                                     <option key={p.id} value={p.id}>{p.name}</option>
                                   ))}

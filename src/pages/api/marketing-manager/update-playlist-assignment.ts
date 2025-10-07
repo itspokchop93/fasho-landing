@@ -47,6 +47,13 @@ async function handler(req: NextApiRequest, res: NextApiResponse, adminUser: Adm
           genre: 'removed'
         };
         console.log(`🔴 PLAYLIST-ASSIGNMENT: Campaign ${campaignId} - playlist slot ${playlistIndex} marked as REMOVED`);
+      } else if (newPlaylistId === 'empty') {
+        playlistAssignments[playlistIndex] = {
+          id: 'empty',
+          name: '-Empty-',
+          genre: 'empty'
+        };
+        console.log(`📭 PLAYLIST-ASSIGNMENT: Campaign ${campaignId} - playlist slot ${playlistIndex} marked as EMPTY`);
       } else {
         // Get the new playlist details for normal playlist assignment
         const { data: newPlaylistData, error: playlistError } = await supabase

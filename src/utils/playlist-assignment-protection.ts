@@ -3,6 +3,8 @@
  * Prevents assigning the same playlists to campaigns with identical tracks
  */
 
+import { getSpotifyPlaylistDataWithHealth } from './spotify-api';
+
 // Extract Spotify track ID from song URL
 export function extractTrackIdFromUrl(url: string): string | null {
   if (!url || typeof url !== 'string') {
@@ -88,7 +90,84 @@ export async function getExcludedPlaylistsForTrack(
   }
 }
 
-// Enhanced playlist assignment function with duplicate protection
+// Function to refresh playlist health status before assignment
+async function refreshPlaylistHealthStatus(supabase: any): Promise<void> {
+  try {
+    console.log('🔄 HEALTH-REFRESH: Starting playlist health status refresh...');
+    
+    // Get all active playlists that haven't been checked recently (within last hour)
+    const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000).toISOString();
+    
+    const { data: playlistsToCheck, error: fetchError } = await supabase
+      .from('playlist_network')
+      .select('id, playlist_name, playlist_link, health_last_checked')
+      .eq('is_active', true)
+      .or(`health_last_checked.is.null,health_last_checked.lt.${oneHourAgo}`)
+      .limit(20); // Limit to avoid API rate limits
+    
+    if (fetchError) {
+      console.error('🚫 HEALTH-REFRESH: Error fetching playlists to check:', fetchError);
+      return;
+    }
+    
+    if (!playlistsToCheck || playlistsToCheck.length === 0) {
+      console.log('✅ HEALTH-REFRESH: All playlists are up to date');
+      return;
+    }
+    
+    console.log(`🔄 HEALTH-REFRESH: Checking ${playlistsToCheck.length} playlists...`);
+    
+    // Check each playlist health status
+    for (const playlist of playlistsToCheck) {
+      try {
+        console.log(`🔍 HEALTH-REFRESH: Checking ${playlist.playlist_name}...`);
+        const playlistData = await getSpotifyPlaylistDataWithHealth(playlist.playlist_link);
+        
+        if (playlistData && playlistData.healthStatus) {
+          const healthStatus = playlistData.healthStatus;
+          
+          // Update database with health status
+          await supabase
+            .from('playlist_network')
+            .update({
+              health_status: healthStatus.status,
+              health_last_checked: healthStatus.lastChecked,
+              health_error_message: healthStatus.errorMessage || null,
+              last_known_public: healthStatus.isPublic,
+              updated_at: new Date().toISOString()
+            })
+            .eq('id', playlist.id);
+            
+          console.log(`✅ HEALTH-REFRESH: Updated ${playlist.playlist_name} status: ${healthStatus.status}`);
+        }
+        
+        // Small delay to avoid rate limiting
+        await new Promise(resolve => setTimeout(resolve, 100));
+        
+      } catch (error) {
+        console.error(`🚫 HEALTH-REFRESH: Error checking ${playlist.playlist_name}:`, error);
+        
+        // Mark as error in database
+        await supabase
+          .from('playlist_network')
+          .update({
+            health_status: 'error',
+            health_last_checked: new Date().toISOString(),
+            health_error_message: error instanceof Error ? error.message : 'Unknown error',
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', playlist.id);
+      }
+    }
+    
+    console.log('✅ HEALTH-REFRESH: Playlist health status refresh completed');
+    
+  } catch (error) {
+    console.error('🚫 HEALTH-REFRESH: Error in refreshPlaylistHealthStatus:', error);
+  }
+}
+
+// Enhanced playlist assignment function with duplicate protection and health status checking
 export async function getAvailablePlaylistsWithProtection(
   supabase: any,
   userGenre: string,
@@ -96,17 +175,25 @@ export async function getAvailablePlaylistsWithProtection(
   trackId: string,
   excludeCampaignId?: string
 ): Promise<any[]> {
+  console.log(`🎵 PLAYLIST-ASSIGNMENT: Starting assignment for ${playlistsNeeded} playlists, genre "${userGenre}"`);
+  
+  // STEP 1: Refresh playlist health status before assignment
+  console.log(`🔄 HEALTH-REFRESH: Updating playlist health status before assignment...`);
+  await refreshPlaylistHealthStatus(supabase);
+  
   // Get excluded playlists for this track
   const excludedPlaylistIds = await getExcludedPlaylistsForTrack(supabase, trackId, excludeCampaignId);
   
   console.log(`🎵 PLAYLIST-ASSIGNMENT: Looking for ${playlistsNeeded} playlists for genre "${userGenre}" with ${excludedPlaylistIds.length} exclusions`);
 
   // Get available playlists matching the user's genre, excluding duplicate assignments
+  // IMPORTANT: Only select playlists with 'active' health status (not 'removed', 'private', or 'error')
   let genreQuery = supabase
     .from('playlist_network')
-    .select('id, playlist_name, genre, cached_song_count, max_songs')
+    .select('id, playlist_name, genre, cached_song_count, max_songs, health_status')
     .eq('is_active', true)
     .eq('genre', userGenre)
+    .in('health_status', ['active', 'public']) // Only healthy playlists
     .order('playlist_name', { ascending: true });
 
   // Exclude playlists already assigned to running campaigns with same track
@@ -147,9 +234,10 @@ export async function getAvailablePlaylistsWithProtection(
 
     let generalQuery = supabase
       .from('playlist_network')
-      .select('id, playlist_name, genre, cached_song_count, max_songs')
+      .select('id, playlist_name, genre, cached_song_count, max_songs, health_status')
       .eq('is_active', true)
       .eq('genre', 'General')
+      .in('health_status', ['active', 'public']) // Only healthy playlists
       .order('playlist_name', { ascending: true })
       .limit(remainingNeeded);
 
@@ -180,6 +268,20 @@ export async function getAvailablePlaylistsWithProtection(
     }
   }
 
-  console.log(`🎵 PLAYLIST-ASSIGNMENT: Final selection: ${selectedPlaylists.length} playlists assigned with duplicate protection for track ${trackId}`);
+  // If we still don't have enough playlists, fill remaining slots with "Empty" option
+  if (selectedPlaylists.length < playlistsNeeded) {
+    const remainingSlots = playlistsNeeded - selectedPlaylists.length;
+    console.log(`📭 EMPTY-SLOTS: Adding ${remainingSlots} empty slots - no more eligible playlists available`);
+    
+    for (let i = 0; i < remainingSlots; i++) {
+      selectedPlaylists.push({
+        id: 'empty',
+        name: '-Empty-',
+        genre: 'empty'
+      });
+    }
+  }
+
+  console.log(`🎵 PLAYLIST-ASSIGNMENT: Final selection: ${selectedPlaylists.length} playlists assigned (${selectedPlaylists.filter(p => p.id !== 'empty').length} real playlists, ${selectedPlaylists.filter(p => p.id === 'empty').length} empty slots) with health status checking for track ${trackId}`);
   return selectedPlaylists;
 }

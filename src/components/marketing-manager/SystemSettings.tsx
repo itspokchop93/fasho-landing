@@ -183,6 +183,32 @@ const SystemSettings: React.FC<SystemSettingsProps> = ({ onlyPlaylistNetwork = f
     direction: 'asc' | 'desc';
   } | null>(null);
   const [copiedPlaylistId, setCopiedPlaylistId] = useState<string | null>(null);
+  const [deleteConfirmation, setDeleteConfirmation] = useState<{
+    isOpen: boolean;
+    playlistId: string;
+    playlistName: string;
+    usageCount: number;
+    position: { top: number; left: number } | null;
+  }>({
+    isOpen: false,
+    playlistId: '',
+    playlistName: '',
+    usageCount: 0,
+    position: null
+  });
+  const [deleteSuccess, setDeleteSuccess] = useState<{
+    isVisible: boolean;
+    playlistName: string;
+    totalCampaigns: number;
+    remainingCampaigns: number;
+    isProcessing: boolean;
+  }>({
+    isVisible: false,
+    playlistName: '',
+    totalCampaigns: 0,
+    remainingCampaigns: 0,
+    isProcessing: false
+  });
   const [newPlaylist, setNewPlaylist] = useState<NewPlaylistForm>({
     playlistName: '',
     genre: '',
@@ -408,7 +434,7 @@ const SystemSettings: React.FC<SystemSettingsProps> = ({ onlyPlaylistNetwork = f
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!newPlaylist.playlistName || !newPlaylist.genre || !newPlaylist.accountEmail || !newPlaylist.playlistLink) {
+    if (!newPlaylist.genre || !newPlaylist.accountEmail || !newPlaylist.playlistLink) {
       alert('Please fill in all required fields.');
       return;
     }
@@ -424,7 +450,10 @@ const SystemSettings: React.FC<SystemSettingsProps> = ({ onlyPlaylistNetwork = f
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          ...newPlaylist,
+          genre: newPlaylist.genre,
+          accountEmail: newPlaylist.accountEmail,
+          playlistLink: newPlaylist.playlistLink,
+          maxSongs: newPlaylist.maxSongs,
           spotifyPlaylistId
         }),
       });
@@ -742,33 +771,125 @@ const SystemSettings: React.FC<SystemSettingsProps> = ({ onlyPlaylistNetwork = f
     }
   };
 
-  const deletePlaylist = async (playlistId: string, playlistName: string) => {
-    if (window.confirm(`Are you sure you want to delete "${playlistName}"? This action cannot be undone.`)) {
-      try {
-        console.log(`🗑️ FRONTEND: Attempting to delete playlist "${playlistName}" (ID: ${playlistId})`);
-        
-        const response = await fetch('/api/marketing-manager/system-settings/delete-playlist', {
-          method: 'DELETE',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ playlistId }),
-        });
+  const deletePlaylist = async (playlistId: string, playlistName: string, event: React.MouseEvent) => {
+    try {
+      console.log(`🔍 FRONTEND: Checking usage count for playlist "${playlistName}" (ID: ${playlistId})`);
+      
+      // Modal will be centered, so we don't need complex positioning
+      const position = { top: 0, left: 0 };
+      
+      // First, get the usage count
+      const usageResponse = await fetch('/api/marketing-manager/system-settings/playlist-usage-count', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ playlistId }),
+      });
 
-        const result = await response.json();
-        console.log(`🗑️ FRONTEND: Delete response:`, result);
+      const usageResult = await usageResponse.json();
+      console.log(`🔍 FRONTEND: Usage count response:`, usageResult);
 
-        if (response.ok) {
-          alert(`✅ Successfully deleted "${playlistName}"`);
-          fetchPlaylists();
-        } else {
-          alert(`❌ Failed to delete playlist: ${result.error || response.statusText}`);
-          console.error('Failed to delete playlist:', result);
-        }
-      } catch (error) {
-        console.error('Error deleting playlist:', error);
-        alert('❌ Error occurred while deleting playlist');
+      if (!usageResponse.ok) {
+        alert(`❌ Failed to check playlist usage: ${usageResult.error || usageResponse.statusText}`);
+        return;
       }
+
+      // Show custom confirmation modal
+      console.log('🎯 MODAL: Setting modal state', { playlistId, playlistName, usageCount: usageResult.usageCount, position });
+      setDeleteConfirmation({
+        isOpen: true,
+        playlistId,
+        playlistName,
+        usageCount: usageResult.usageCount,
+        position
+      });
+
+    } catch (error) {
+      console.error('Error checking playlist usage:', error);
+      alert('❌ Error occurred while checking playlist usage');
+    }
+  };
+
+  const confirmDeletePlaylist = async () => {
+    try {
+      console.log(`🗑️ FRONTEND: User confirmed deletion of playlist "${deleteConfirmation.playlistName}" (ID: ${deleteConfirmation.playlistId})`);
+      
+      // Close the confirmation modal
+      const playlistName = deleteConfirmation.playlistName;
+      const usageCount = deleteConfirmation.usageCount;
+      setDeleteConfirmation({
+        isOpen: false,
+        playlistId: '',
+        playlistName: '',
+        usageCount: 0,
+        position: null
+      });
+
+      // Show success notification immediately
+      setDeleteSuccess({
+        isVisible: true,
+        playlistName,
+        totalCampaigns: usageCount,
+        remainingCampaigns: usageCount,
+        isProcessing: usageCount > 0
+      });
+
+      // If there are campaigns to update, start the countdown
+      if (usageCount > 0) {
+        // Simulate real-time progress countdown
+        const countdownInterval = setInterval(() => {
+          setDeleteSuccess(prev => {
+            const newRemaining = prev.remainingCampaigns - 1;
+            if (newRemaining <= 0) {
+              clearInterval(countdownInterval);
+              // Start the 6-second auto-hide timer
+              setTimeout(() => {
+                setDeleteSuccess(prev => ({ ...prev, isVisible: false }));
+              }, 6000);
+              return {
+                ...prev,
+                remainingCampaigns: 0,
+                isProcessing: false
+              };
+            }
+            return {
+              ...prev,
+              remainingCampaigns: newRemaining
+            };
+          });
+        }, 200); // Update every 200ms for smooth countdown
+      } else {
+        // No campaigns to update, start 6-second timer immediately
+        setTimeout(() => {
+          setDeleteSuccess(prev => ({ ...prev, isVisible: false }));
+        }, 6000);
+      }
+      
+      // Actually perform the deletion
+      const response = await fetch('/api/marketing-manager/system-settings/delete-playlist', {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ playlistId: deleteConfirmation.playlistId }),
+      });
+
+      const result = await response.json();
+      console.log(`🗑️ FRONTEND: Delete response:`, result);
+
+      if (response.ok) {
+        fetchPlaylists();
+      } else {
+        // Hide success notification and show error
+        setDeleteSuccess(prev => ({ ...prev, isVisible: false }));
+        alert(`❌ Failed to delete playlist: ${result.error || response.statusText}`);
+        console.error('Failed to delete playlist:', result);
+      }
+    } catch (error) {
+      console.error('Error deleting playlist:', error);
+      setDeleteSuccess(prev => ({ ...prev, isVisible: false }));
+      alert('❌ Error occurred while deleting playlist');
     }
   };
 
@@ -856,7 +977,19 @@ const SystemSettings: React.FC<SystemSettingsProps> = ({ onlyPlaylistNetwork = f
               <span>Add Stream Purchase</span>
             </button>
             <button
-              onClick={() => setShowAddForm(!showAddForm)}
+              onClick={() => {
+                if (!showAddForm) {
+                  // Reset form state when opening
+                  setNewPlaylist({
+                    playlistName: '',
+                    genre: '',
+                    accountEmail: '',
+                    playlistLink: '',
+                    maxSongs: 25
+                  });
+                }
+                setShowAddForm(!showAddForm);
+              }}
               className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg font-medium flex items-center space-x-2"
             >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -981,20 +1114,23 @@ const SystemSettings: React.FC<SystemSettingsProps> = ({ onlyPlaylistNetwork = f
           <div className="mb-6 bg-gray-50 rounded-lg p-4 border border-gray-200">
             <h3 className="text-md font-medium text-gray-900 mb-4">Add New Playlist</h3>
             <form onSubmit={handleSubmit} className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Playlist Link *
+                </label>
+                <input
+                  type="url"
+                  required
+                  value={newPlaylist.playlistLink}
+                  onChange={(e) => handleInputChange('playlistLink', e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                  placeholder="https://open.spotify.com/playlist/..."
+                />
+                <p className="text-xs text-gray-500 mt-1">
+                  Accepts Spotify playlist URLs or spotify: URIs. Playlist name will be fetched automatically.
+                </p>
+              </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Playlist Name *
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    value={newPlaylist.playlistName}
-                    onChange={(e) => handleInputChange('playlistName', e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-                    placeholder="Enter playlist name"
-                  />
-                </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     Genre *
@@ -1040,22 +1176,6 @@ const SystemSettings: React.FC<SystemSettingsProps> = ({ onlyPlaylistNetwork = f
                   />
                 </div>
               </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Playlist Link *
-                </label>
-                <input
-                  type="url"
-                  required
-                  value={newPlaylist.playlistLink}
-                  onChange={(e) => handleInputChange('playlistLink', e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-                  placeholder="https://open.spotify.com/playlist/..."
-                />
-                <p className="text-xs text-gray-500 mt-1">
-                  Accepts Spotify playlist URLs or spotify: URIs
-                </p>
-              </div>
               <div className="flex justify-end space-x-3">
                 <button
                   type="button"
@@ -1075,6 +1195,139 @@ const SystemSettings: React.FC<SystemSettingsProps> = ({ onlyPlaylistNetwork = f
             </form>
           </div>
         )}
+
+        {/* Delete Confirmation Modal */}
+        {deleteConfirmation.isOpen && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center">
+            {/* Backdrop */}
+            <div 
+              className="absolute inset-0 bg-black bg-opacity-50"
+              onClick={() => setDeleteConfirmation({ ...deleteConfirmation, isOpen: false })}
+            />
+            
+            {/* Modal */}
+            <div className="relative bg-white rounded-lg shadow-2xl border border-gray-200 p-6 w-96 max-w-sm mx-4">
+              
+              <div className="space-y-3">
+                <div className="flex items-center space-x-2">
+                  <div className="flex-shrink-0">
+                    <svg className="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z" />
+                    </svg>
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-medium text-gray-900">Delete Playlist</h3>
+                  </div>
+                </div>
+                
+                <div className="text-sm text-gray-600">
+                  <p className="mb-2">
+                    Are you sure you'd like to delete <strong>"{deleteConfirmation.playlistName}"</strong>?
+                  </p>
+                  
+                  {deleteConfirmation.usageCount > 0 && (
+                    <div className="bg-yellow-50 border border-yellow-200 rounded p-2 mb-2">
+                      <p className="text-yellow-800 text-xs">
+                        <strong>⚠️ Warning:</strong> There are currently <strong>{deleteConfirmation.usageCount}</strong> songs assigned to this playlist.
+                      </p>
+                      <p className="text-yellow-700 text-xs mt-1">
+                        All assignments will be automatically changed to "Removed" in the Active Campaigns section.
+                      </p>
+                    </div>
+                  )}
+                  
+                  <p className="text-xs text-gray-500">This action cannot be undone.</p>
+                </div>
+                
+                <div className="flex justify-end space-x-2 pt-2">
+                  <button
+                    onClick={() => setDeleteConfirmation({ ...deleteConfirmation, isOpen: false })}
+                    className="px-3 py-1.5 text-sm text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-md transition-colors"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={confirmDeletePlaylist}
+                    className="px-3 py-1.5 text-sm text-white bg-red-600 hover:bg-red-700 rounded-md transition-colors"
+                  >
+                    Delete Playlist
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Success Notification */}
+        <div className={`fixed top-4 right-4 z-50 transform transition-all duration-500 ease-in-out ${
+          deleteSuccess.isVisible 
+            ? 'translate-x-0 opacity-100' 
+            : 'translate-x-full opacity-0'
+        }`}>
+          <div className="bg-green-500 text-white rounded-lg shadow-2xl p-4 min-w-80 max-w-96">
+            <div className="flex items-start space-x-3">
+              <div className="flex-shrink-0 mt-0.5">
+                <svg className="w-6 h-6 text-green-100" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                </svg>
+              </div>
+              <div className="flex-1">
+                <div className="font-semibold text-green-50 mb-1">
+                  Playlist Deleted Successfully
+                </div>
+                <div className="text-green-100 text-sm mb-2">
+                  "{deleteSuccess.playlistName}" has been removed from your network
+                </div>
+                
+                {deleteSuccess.isProcessing && deleteSuccess.remainingCampaigns > 0 && (
+                  <div className="bg-green-400 bg-opacity-30 rounded-md p-2 mt-2">
+                    <div className="flex items-center justify-between">
+                      <span className="text-green-50 text-sm font-medium">
+                        Removing from campaigns
+                      </span>
+                      <div className="flex items-center space-x-2">
+                        <div className="animate-spin rounded-full h-4 w-4 border-2 border-green-100 border-t-transparent"></div>
+                        <span className="text-green-50 font-bold text-lg">
+                          {deleteSuccess.remainingCampaigns}
+                        </span>
+                      </div>
+                    </div>
+                    <div className="mt-1 bg-green-600 bg-opacity-50 rounded-full h-1.5">
+                      <div 
+                        className="bg-green-200 h-1.5 rounded-full transition-all duration-200 ease-out"
+                        style={{
+                          width: `${((deleteSuccess.totalCampaigns - deleteSuccess.remainingCampaigns) / deleteSuccess.totalCampaigns) * 100}%`
+                        }}
+                      />
+                    </div>
+                  </div>
+                )}
+                
+                {!deleteSuccess.isProcessing && deleteSuccess.totalCampaigns > 0 && (
+                  <div className="bg-green-400 bg-opacity-30 rounded-md p-2 mt-2">
+                    <div className="flex items-center space-x-2">
+                      <svg className="w-4 h-4 text-green-100" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                      </svg>
+                      <span className="text-green-50 text-sm">
+                        Updated {deleteSuccess.totalCampaigns} campaign{deleteSuccess.totalCampaigns !== 1 ? 's' : ''} to "Removed"
+                      </span>
+                    </div>
+                  </div>
+                )}
+              </div>
+              
+              <button
+                onClick={() => setDeleteSuccess(prev => ({ ...prev, isVisible: false }))}
+                className="flex-shrink-0 text-green-200 hover:text-white transition-colors"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+          </div>
+        </div>
 
         {/* Playlists Table */}
         {playlists.length === 0 ? (
@@ -1329,7 +1582,7 @@ const SystemSettings: React.FC<SystemSettingsProps> = ({ onlyPlaylistNetwork = f
                             <button
                               onClick={(e) => {
                                 e.stopPropagation();
-                                deletePlaylist(playlist.id, playlist.playlistName);
+                                deletePlaylist(playlist.id, playlist.playlistName, e);
                               }}
                               className="text-red-600 hover:text-red-900"
                               title="Delete playlist"
