@@ -3347,6 +3347,366 @@ export default function Home() {
             </svg>
           </div>
 
+          {/* Testimonials Section */}
+          <section className="pt-12 md:pt-24 pb-24 md:pb-24 px-4 relative z-30 overflow-visible" style={{ background: 'transparent' }}>
+            <div className="max-w-screen-2xl mx-auto overflow-visible">
+              {/* Section Header */}
+              <div className="text-center mb-12">
+                <h2 
+                  ref={testimonialsHeadingRef}
+                  className={`text-4xl md:text-5xl lg:text-6xl font-black mb-8 bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] bg-clip-text text-transparent ${testimonialsHeadingInView ? 'animate-fade-in-up' : 'opacity-0'}`} 
+                  style={{ 
+                    lineHeight: '1.3', 
+                    marginTop: typeof window !== 'undefined' && window.innerWidth < 640 ? '0px' : '-50px',
+                    fontSize: typeof window !== 'undefined' && window.innerWidth < 640 ? 'calc(2.25rem + 0.25rem)' : undefined
+                  }}
+                >
+                  Real Artists. Real Results. Real Talk.
+                </h2>
+                <p 
+                  ref={testimonialsSubheadingRef}
+                  className={`text-[1.275rem] md:text-[1.4rem] text-gray-300 max-w-4xl mx-auto leading-relaxed font-bold ${testimonialsSubheadingInView ? 'animate-fade-in-up' : 'opacity-0'}`}
+                  style={{
+                    fontSize: typeof window !== 'undefined' && window.innerWidth < 640 ? 'calc(1.275rem - 0.15rem)' : undefined
+                  }}
+                >
+                  Don't just take our word for it. Here's what creators who actually use FASHO.co have to say about their experience.
+                </p>
+              </div>
+
+              {/* Testimonials Carousel */}
+              <div className="relative overflow-visible mb-16 pr-8 pt-8 z-40">
+                {/* Fixed Background Glow Layers - Stay in place while testimonials slide over */}
+                <div className="absolute inset-0 pointer-events-none" style={{ zIndex: 1 }}>
+                  {/* Create multiple gradient spots positioned at different locations - taller to match testimonial cards */}
+                  <div className="absolute top-0 left-[10%] w-80 bg-gradient-to-br from-[#59e3a5]/30 to-[#14c0ff]/20 rounded-full blur-xl opacity-60" style={{ height: '544px' }}></div>
+                  <div className="absolute top-0 left-[40%] w-80 bg-gradient-to-br from-[#8b5cf6]/25 to-[#59e3a5]/15 rounded-full blur-xl opacity-50" style={{ height: '496px' }}></div>
+                  <div className="absolute top-0 left-[70%] w-80 bg-gradient-to-br from-[#14c0ff]/30 to-[#8b5cf6]/20 rounded-full blur-xl opacity-55" style={{ height: '488px' }}></div>
+                  <div className="absolute top-0 left-[90%] w-80 bg-gradient-to-br from-[#59e3a5]/25 to-[#14c0ff]/15 rounded-full blur-xl opacity-45" style={{ height: '488px' }}></div>
+                </div>
+                
+                <div 
+                  className="testimonial-carousel flex transition-transform duration-[2000ms] ease-in-out relative"
+                  style={{ 
+                    transform: `translateX(-${currentTestimonialIndex * (isMobile ? 66.67 : 24.5)}vw)`,
+                    width: `${(testimonials.length * 2) * (isMobile ? 66.67 : 24.5)}vw`,
+                    zIndex: 2
+                  }}
+                >
+                  {/* Render testimonials twice for seamless loop */}
+                  {[...testimonials, ...testimonials].map((testimonial, index) => (
+                    <div key={index} className="flex-shrink-0 px-2 w-[66.67vw] md:w-[24.5vw]">
+                      <div 
+                        className="relative group max-w-xs mx-auto"
+                        onMouseEnter={() => {
+                          // Clear any existing resume timeout
+                          if (resumeTimeout) {
+                            clearTimeout(resumeTimeout);
+                            setResumeTimeout(null);
+                          }
+                          setIsCarouselPaused(true);
+                        }}
+                        onMouseLeave={() => {
+                          // Resume after 250ms delay
+                          const timeout = setTimeout(() => {
+                            setIsCarouselPaused(false);
+                            setResumeTimeout(null);
+                          }, 250);
+                          setResumeTimeout(timeout);
+                        }}
+                      >
+                        <div className={`relative bg-gradient-to-br from-[#1a1a2e]/95 via-[#16213e]/90 to-[#0a0a13]/95 rounded-3xl p-4 border-2 border-white/10 backdrop-blur-sm hover:${testimonial.border} transition-all duration-500 group-hover:transform group-hover:scale-105 shadow-2xl`}>
+                          {/* Large Profile Image */}
+                          <div className="w-36 h-36 mx-auto mb-4 rounded-2xl overflow-hidden shadow-2xl">
+                            <img 
+                              src={testimonial.image}
+                              alt={testimonial.name}
+                              className="w-full h-full object-cover"
+                            />
+                          </div>
+                          
+                          {/* 5-Star Rating - Gradient with Glow */}
+                          <div className="flex justify-center mb-4 space-x-1">
+                            {[...Array(5)].map((_, i) => (
+                              <div key={i} className="relative">
+                                <div className={`absolute inset-0 bg-gradient-to-r ${testimonial.starGradient} rounded-full blur-md opacity-60`}></div>
+                                <svg className="relative w-6 h-6 fill-current drop-shadow-lg" viewBox="0 0 24 24">
+                                  <defs>
+                                    <linearGradient id={`starGradient${index}-${i}`} x1="0%" y1="0%" x2="100%" y2="100%">
+                                      <stop offset="0%" stopColor={testimonial.starGradient.includes('59e3a5') ? '#59e3a5' : testimonial.starGradient.includes('8b5cf6') ? '#8b5cf6' : '#14c0ff'} />
+                                      <stop offset="100%" stopColor={testimonial.starGradient.includes('14c0ff') ? '#14c0ff' : testimonial.starGradient.includes('59e3a5') ? '#59e3a5' : '#8b5cf6'} />
+                                    </linearGradient>
+                                  </defs>
+                                  <path fill={`url(#starGradient${index}-${i})`} d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+                                </svg>
+                              </div>
+                            ))}
+                          </div>
+
+                          {/* Name and Title */}
+                          <div className="text-center mb-6">
+                            <h3 className="text-xl font-bold text-white mb-0.5">{testimonial.name}</h3>
+                            <p className="text-gray-400 text-base">{testimonial.title}</p>
+                          </div>
+
+                          {/* Testimonial */}
+                          <blockquote 
+                            className="text-gray-300 leading-relaxed text-center italic" 
+                            style={{ fontSize: isMobile ? '0.97rem' : '1.07rem' }}
+                          >
+                            "{testimonial.quote}"
+                          </blockquote>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* CTA Button */}
+              <div className="text-center mt-8 md:mt-12">
+                <button
+                  onClick={scrollToTrackInput}
+                  className="px-16 py-5 bg-gradient-to-r from-[#59e3a5] via-[#14c0ff] to-[#8b5cf6] text-white font-bold rounded-2xl hover:shadow-2xl hover:shadow-[#14c0ff]/30 transition-all duration-300 transform hover:scale-105 active:scale-95 relative overflow-hidden group text-xl"
+                >
+                  <span className="relative z-10">I'M READY TO BE NEXT!</span>
+                  <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-700"></div>
+                </button>
+              </div>
+            </div>
+          </section>
+
+          {/* Shape Divider - Under Testimonials CTA */}
+          <div className="relative z-30 pb-16 mt-40 md:mt-0 -mb-20 md:mb-0" style={{ height: '200px', width: '120vw', left: '-10vw', position: 'relative', transform: typeof window !== 'undefined' && window.innerWidth < 640 ? 'rotate(-8deg) translateY(-120px)' : 'rotate(-8deg) translateY(5px)', background: 'transparent' }}>
+            {/* All background elements removed for full transparency */}
+            
+            {/* Base layer - darkest */}
+            <svg
+              className="absolute inset-0 w-full h-full z-40"
+              viewBox="0 0 1440 200"
+              preserveAspectRatio="none"
+              style={{ filter: 'drop-shadow(0 4px 20px rgba(20, 192, 255, 0.4))' }}
+            >
+              <defs>
+                <linearGradient id="testimonialShapeGradient1" x1="0%" y1="0%" x2="100%" y2="0%">
+                  <stop offset="0%" stopColor="#59e3a5" stopOpacity="0.9" />
+                  <stop offset="50%" stopColor="#14c0ff" stopOpacity="0.95" />
+                  <stop offset="100%" stopColor="#8b5cf6" stopOpacity="0.9" />
+                </linearGradient>
+              </defs>
+              <path
+                d="M-200,30 C100,120 300,10 500,90 C700,170 900,20 1100,100 C1300,180 1500,15 1640,70 L1640,150 C1500,120 1300,160 1100,140 C900,120 700,180 500,160 C300,140 100,190 -200,170 Z"
+                fill="url(#testimonialShapeGradient1)"
+              />
+            </svg>
+
+            {/* Middle layer */}
+            <svg
+              className="absolute inset-0 w-full h-full z-40"
+              viewBox="0 0 1440 200"
+              preserveAspectRatio="none"
+              style={{ filter: 'drop-shadow(0 4px 16px rgba(89, 227, 165, 0.4))' }}
+            >
+              <defs>
+                <linearGradient id="testimonialShapeGradient2" x1="0%" y1="0%" x2="100%" y2="0%">
+                  <stop offset="0%" stopColor="#59e3a5" stopOpacity="0.85" />
+                  <stop offset="50%" stopColor="#14c0ff" stopOpacity="0.9" />
+                  <stop offset="100%" stopColor="#8b5cf6" stopOpacity="0.85" />
+                </linearGradient>
+              </defs>
+              <path
+                d="M-200,45 C150,140 400,15 650,110 C900,190 1150,25 1400,125 C1550,165 1640,55 1640,55 L1640,145 C1550,115 1400,185 1150,125 C900,75 650,195 400,145 C150,95 -200,195 -200,195 Z"
+                fill="url(#testimonialShapeGradient2)"
+              />
+            </svg>
+
+            {/* Top layer - brightest */}
+            <svg
+              className="absolute inset-0 w-full h-full z-40"
+              viewBox="0 0 1440 200"
+              preserveAspectRatio="none"
+              style={{ filter: 'drop-shadow(0 2px 12px rgba(139, 92, 246, 0.5))' }}
+            >
+              <defs>
+                <linearGradient id="testimonialShapeGradient3" x1="0%" y1="0%" x2="100%" y2="0%">
+                  <stop offset="0%" stopColor="#59e3a5" stopOpacity="0.8" />
+                  <stop offset="50%" stopColor="#14c0ff" stopOpacity="0.85" />
+                  <stop offset="100%" stopColor="#8b5cf6" stopOpacity="0.8" />
+                </linearGradient>
+              </defs>
+              <path
+                d="M-200,65 C200,155 450,20 700,120 C950,185 1200,30 1450,135 C1600,175 1640,70 1640,70 L1640,125 C1600,95 1450,180 1200,125 C950,55 700,185 450,135 C200,75 -200,75 -200,75 Z"
+                fill="url(#testimonialShapeGradient3)"
+              />
+            </svg>
+
+            {/* Additional accent layer */}
+            <svg
+              className="absolute inset-0 w-full h-full z-40"
+              viewBox="0 0 1440 200"
+              preserveAspectRatio="none"
+              style={{ filter: 'drop-shadow(0 1px 8px rgba(89, 227, 165, 0.3))' }}
+            >
+              <defs>
+                <linearGradient id="testimonialShapeGradient4" x1="0%" y1="0%" x2="100%" y2="0%">
+                  <stop offset="0%" stopColor="#8b5cf6" stopOpacity="0.82" />
+                  <stop offset="50%" stopColor="#59e3a5" stopOpacity="0.88" />
+                  <stop offset="100%" stopColor="#14c0ff" stopOpacity="0.82" />
+                </linearGradient>
+              </defs>
+              <path
+                d="M-200,55 C120,15 280,150 440,65 C600,20 760,165 920,75 C1080,25 1240,145 1400,85 C1520,55 1640,115 1640,115 L1640,165 C1520,135 1400,185 1240,165 C1080,135 920,195 760,175 C600,155 440,195 280,175 C120,155 -200,185 -200,185 Z"
+                fill="url(#testimonialShapeGradient4)"
+              />
+            </svg>
+
+            {/* Enhanced sparkles layer - bright white/silver sparkles */}
+            <svg
+              className="absolute inset-0 w-full h-full z-41"
+              viewBox="0 0 1440 200"
+              preserveAspectRatio="none"
+            >
+              {/* Inner sparkle dots - bright white/silver */}
+              <circle cx="180" cy="95" r="1.5" fill="#ffffff" opacity="0.9" />
+              <circle cx="280" cy="80" r="1.2" fill="#f0f0f0" opacity="0.85" />
+              <circle cx="485" cy="105" r="1.5" fill="#ffffff" opacity="0.95" />
+              <circle cx="780" cy="115" r="1.6" fill="#ffffff" opacity="0.9" />
+              <circle cx="1080" cy="100" r="1.4" fill="#ffffff" opacity="0.9" />
+              <circle cx="1220" cy="90" r="1.1" fill="#e0e0e0" opacity="0.8" />
+              <circle cx="1350" cy="110" r="1.7" fill="#ffffff" opacity="0.95" />
+              
+              {/* Additional inner sparkles */}
+              <circle cx="320" cy="130" r="1.1" fill="#ffffff" opacity="0.8" />
+              <circle cx="420" cy="60" r="0.9" fill="#f8f8f8" opacity="0.75" />
+              <circle cx="550" cy="135" r="1.2" fill="#ffffff" opacity="0.85" />
+              <circle cx="720" cy="55" r="0.9" fill="#f0f0f0" opacity="0.75" />
+              <circle cx="880" cy="140" r="1.1" fill="#ffffff" opacity="0.9" />
+              <circle cx="1180" cy="145" r="1.3" fill="#ffffff" opacity="0.8" />
+              
+              {/* Top exterior sparkles - above the shape */}
+              <circle cx="250" cy="18" r="1.3" fill="#ffffff" opacity="0.85" />
+              <circle cx="380" cy="25" r="1.1" fill="#f0f0f0" opacity="0.8" />
+              <circle cx="520" cy="10" r="1.8" fill="#ffffff" opacity="0.9" />
+              <circle cx="900" cy="5" r="1.6" fill="#ffffff" opacity="0.85" />
+              <circle cx="1300" cy="12" r="1.4" fill="#ffffff" opacity="0.9" />
+              
+              {/* Bottom exterior sparkles - below the shape */}
+              <circle cx="200" cy="188" r="1.4" fill="#ffffff" opacity="0.8" />
+              <circle cx="350" cy="185" r="1.2" fill="#f5f5f5" opacity="0.75" />
+              <circle cx="640" cy="180" r="1.7" fill="#ffffff" opacity="0.85" />
+              <circle cx="1040" cy="175" r="1.5" fill="#ffffff" opacity="0.9" />
+              <circle cx="1380" cy="182" r="1.6" fill="#ffffff" opacity="0.85" />
+              
+              {/* Bright star sparkles - within shape */}
+              <g transform="translate(240,110)" opacity="0.85">
+                <path d="M0,-1.8 L0.5,-0.5 L1.8,0 L0.5,0.5 L0,1.8 L-0.5,0.5 L-1.8,0 L-0.5,-0.5 Z" fill="#ffffff" />
+              </g>
+              <g transform="translate(360,85)" opacity="0.8">
+                <path d="M0,-1.6 L0.45,-0.45 L1.6,0 L0.45,0.45 L0,1.6 L-0.45,0.45 L-1.6,0 L-0.45,-0.45 Z" fill="#f0f0f0" />
+              </g>
+              <g transform="translate(680,125)" opacity="0.9">
+                <path d="M0,-2.2 L0.65,-0.65 L2.2,0 L0.65,0.65 L0,2.2 L-0.65,0.65 L-2.2,0 L-0.65,-0.65 Z" fill="#ffffff" />
+              </g>
+              <g transform="translate(1050,135)" opacity="0.9">
+                <path d="M0,-2.3 L0.7,-0.7 L2.3,0 L0.7,0.7 L0,2.3 L-0.7,0.7 L-2.3,0 L-0.7,-0.7 Z" fill="#ffffff" />
+              </g>
+              
+              {/* Star sparkles on exterior - top */}
+              <g transform="translate(160,8)" opacity="0.8">
+                <path d="M0,-1.4 L0.4,-0.4 L1.4,0 L0.4,0.4 L0,1.4 L-0.4,0.4 L-1.4,0 L-0.4,-0.4 Z" fill="#ffffff" />
+              </g>
+              <g transform="translate(1000,22)" opacity="0.85">
+                <path d="M0,-1.6 L0.45,-0.45 L1.6,0 L0.45,0.45 L0,1.6 L-0.45,0.45 L-1.6,0 L-0.45,-0.45 Z" fill="#ffffff" />
+              </g>
+              
+              {/* Star sparkles on exterior - bottom */}
+              <g transform="translate(150,192)" opacity="0.75">
+                <path d="M0,-1.5 L0.4,-0.4 L1.5,0 L0.4,0.4 L0,1.5 L-0.4,0.4 L-1.5,0 L-0.4,-0.4 Z" fill="#ffffff" />
+              </g>
+              <g transform="translate(1160,194)" opacity="0.85">
+                <path d="M0,-1.9 L0.55,-0.55 L1.9,0 L0.55,0.55 L0,1.9 L-0.55,0.55 L-1.9,0 L-0.55,-0.55 Z" fill="#ffffff" />
+              </g>
+            </svg>
+
+            {/* Top Layer Sparkles - High Z-Index */}
+            <svg
+              className="absolute inset-0 w-full h-full z-50 pointer-events-none"
+              viewBox="0 0 1440 200"
+              preserveAspectRatio="none"
+            >
+              {/* Large bright sparkle dots - on top of shape (reduced by 30%) */}
+              <circle cx="380" cy="95" r="1.8" fill="#f0f0f0" opacity="0.59">
+                <animate attributeName="opacity" values="0.59;0.33;0.59" dur="2.5s" repeatCount="indefinite" />
+              </circle>
+              <circle cx="820" cy="90" r="1.9" fill="#ffffff" opacity="0.57">
+                <animate attributeName="opacity" values="0.57;0.33;0.57" dur="2.8s" repeatCount="indefinite" />
+              </circle>
+              <circle cx="1080" cy="110" r="2.1" fill="#ffffff" opacity="0.6">
+                <animate attributeName="opacity" values="0.6;0.39;0.6" dur="3.5s" repeatCount="indefinite" />
+              </circle>
+              <circle cx="1280" cy="95" r="1.7" fill="#f8f8f8" opacity="0.55">
+                <animate attributeName="opacity" values="0.55;0.26;0.55" dur="2.2s" repeatCount="indefinite" />
+              </circle>
+
+              {/* Medium sparkle dots (reduced by 30%) */}
+              <circle cx="480" cy="75" r="1.2" fill="#f0f0f0" opacity="0.49">
+                <animate attributeName="opacity" values="0.49;0.2;0.49" dur="3.1s" repeatCount="indefinite" />
+              </circle>
+              <circle cx="920" cy="70" r="1.3" fill="#f5f5f5" opacity="0.51">
+                <animate attributeName="opacity" values="0.51;0.23;0.51" dur="2.4s" repeatCount="indefinite" />
+              </circle>
+              <circle cx="1180" cy="130" r="1.6" fill="#ffffff" opacity="0.56">
+                <animate attributeName="opacity" values="0.56;0.29;0.56" dur="3.3s" repeatCount="indefinite" />
+              </circle>
+
+              {/* Animated star sparkles - on top of shape (reduced by 30%) */}
+              <g transform="translate(520,90)" opacity="0.55">
+                <path d="M0,-2.2 L0.6,-0.6 L2.2,0 L0.6,0.6 L0,2.2 L-0.6,0.6 L-2.2,0 L-0.6,-0.6 Z" fill="#f0f0f0">
+                  <animateTransform attributeName="transform" type="rotate" values="360;0" dur="10s" repeatCount="indefinite" />
+                  <animate attributeName="opacity" values="0.55;0.23;0.55" dur="3.4s" repeatCount="indefinite" />
+                </path>
+              </g>
+              <g transform="translate(1020,85)" opacity="0.57">
+                <path d="M0,-2.5 L0.7,-0.7 L2.5,0 L0.7,0.7 L0,2.5 L-0.7,0.7 L-2.5,0 L-0.7,-0.7 Z" fill="#ffffff">
+                  <animateTransform attributeName="transform" type="rotate" values="0;360" dur="12s" repeatCount="indefinite" />
+                  <animate attributeName="opacity" values="0.57;0.26;0.57" dur="2.9s" repeatCount="indefinite" />
+                </path>
+              </g>
+              <g transform="translate(1380,125)" opacity="0.53">
+                <path d="M0,-2.1 L0.6,-0.6 L2.1,0 L0.6,0.6 L0,2.1 L-0.6,0.6 L-2.1,0 L-0.6,-0.6 Z" fill="#f8f8f8">
+                  <animateTransform attributeName="transform" type="rotate" values="360;0" dur="8s" repeatCount="indefinite" />
+                  <animate attributeName="opacity" values="0.53;0.2;0.53" dur="3.7s" repeatCount="indefinite" />
+                </path>
+              </g>
+
+              {/* Animated star sparkles - exterior locations (reduced by 30%) */}
+              <g transform="translate(120,25)" opacity="0.49">
+                <path d="M0,-1.9 L0.55,-0.55 L1.9,0 L0.55,0.55 L0,1.9 L-0.55,0.55 L-1.9,0 L-0.55,-0.55 Z" fill="#f0f0f0">
+                  <animateTransform attributeName="transform" type="rotate" values="0;360" dur="15s" repeatCount="indefinite" />
+                  <animate attributeName="opacity" values="0.49;0.14;0.49" dur="4.2s" repeatCount="indefinite" />
+                </path>
+              </g>
+              <g transform="translate(1450,35)" opacity="0.51">
+                <path d="M0,-2.0 L0.6,-0.6 L2.0,0 L0.6,0.6 L0,2.0 L-0.6,0.6 L-2.0,0 L-0.6,-0.6 Z" fill="#ffffff">
+                  <animateTransform attributeName="transform" type="rotate" values="360;0" dur="11s" repeatCount="indefinite" />
+                  <animate attributeName="opacity" values="0.51;0.17;0.51" dur="3.8s" repeatCount="indefinite" />
+                </path>
+              </g>
+              <g transform="translate(80,185)" opacity="0.47">
+                <path d="M0,-1.7 L0.5,-0.5 L1.7,0 L0.5,0.5 L0,1.7 L-0.5,0.5 L-1.7,0 L-0.5,-0.5 Z" fill="#f5f5f5">
+                  <animateTransform attributeName="transform" type="rotate" values="0;360" dur="13s" repeatCount="indefinite" />
+                  <animate attributeName="opacity" values="0.47;0.11;0.47" dur="4.5s" repeatCount="indefinite" />
+                </path>
+              </g>
+              <g transform="translate(1380,190)" opacity="0.5">
+                <path d="M0,-2.1 L0.6,-0.6 L2.1,0 L0.6,0.6 L0,2.1 L-0.6,0.6 L-2.1,0 L-0.6,-0.6 Z" fill="#ffffff">
+                  <animateTransform attributeName="transform" type="rotate" values="360;0" dur="9s" repeatCount="indefinite" />
+                  <animate attributeName="opacity" values="0.5;0.2;0.5" dur="3.1s" repeatCount="indefinite" />
+                </path>
+              </g>
+            </svg>
+          </div>
+
           {/* Dashboard Preview Section */}
           <section className="py-0 md:py-24 px-4 md:px-12 lg:px-20 pb-24 md:pb-48 relative z-15 overflow-hidden">
             {/* Extended gradient overlay that flows into next section */}
@@ -5190,135 +5550,6 @@ export default function Home() {
                 <div className="absolute top-8 left-8 w-2 h-2 bg-white rounded-full opacity-60 animate-ping"></div>
                 <div className="absolute top-1/3 right-8 w-3 h-3 bg-[#14c0ff] rounded-full opacity-40 animate-ping" style={{ animationDelay: '2s' }}></div>
                 <div className="absolute bottom-1/4 left-1/4 w-2 h-2 bg-[#59e3a5] rounded-full opacity-50 animate-ping" style={{ animationDelay: '3s' }}></div>
-              </div>
-            </div>
-          </section>
-
-          {/* Testimonials Section */}
-          <section className="pt-44 pb-64 px-4 relative z-30 overflow-visible" style={{ background: 'transparent' }}>
-            <div className="max-w-screen-2xl mx-auto overflow-visible">
-              {/* Section Header */}
-              <div className="text-center mb-12">
-                <h2 
-                  ref={testimonialsHeadingRef}
-                  className={`text-4xl md:text-5xl lg:text-6xl font-black mb-8 bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] bg-clip-text text-transparent ${testimonialsHeadingInView ? 'animate-fade-in-up' : 'opacity-0'}`} 
-                  style={{ 
-                    lineHeight: '1.3', 
-                    marginTop: '-50px',
-                    fontSize: typeof window !== 'undefined' && window.innerWidth < 640 ? 'calc(2.25rem + 0.25rem)' : undefined
-                  }}
-                >
-                  Real Artists. Real Results. Real Talk.
-                </h2>
-                <p 
-                  ref={testimonialsSubheadingRef}
-                  className={`text-[1.275rem] md:text-[1.4rem] text-gray-300 max-w-4xl mx-auto leading-relaxed font-bold ${testimonialsSubheadingInView ? 'animate-fade-in-up' : 'opacity-0'}`}
-                  style={{
-                    fontSize: typeof window !== 'undefined' && window.innerWidth < 640 ? 'calc(1.275rem - 0.15rem)' : undefined
-                  }}
-                >
-                  Don't just take our word for it. Here's what creators who actually use FASHO.co have to say about their experience.
-                </p>
-              </div>
-
-              {/* Testimonials Carousel */}
-              <div className="relative overflow-visible mb-16 pr-8 pt-8 z-40">
-                {/* Fixed Background Glow Layers - Stay in place while testimonials slide over */}
-                <div className="absolute inset-0 pointer-events-none" style={{ zIndex: 1 }}>
-                  {/* Create multiple gradient spots positioned at different locations - taller to match testimonial cards */}
-                  <div className="absolute top-0 left-[10%] w-80 bg-gradient-to-br from-[#59e3a5]/30 to-[#14c0ff]/20 rounded-full blur-xl opacity-60" style={{ height: '544px' }}></div>
-                  <div className="absolute top-0 left-[40%] w-80 bg-gradient-to-br from-[#8b5cf6]/25 to-[#59e3a5]/15 rounded-full blur-xl opacity-50" style={{ height: '496px' }}></div>
-                  <div className="absolute top-0 left-[70%] w-80 bg-gradient-to-br from-[#14c0ff]/30 to-[#8b5cf6]/20 rounded-full blur-xl opacity-55" style={{ height: '488px' }}></div>
-                  <div className="absolute top-0 left-[90%] w-80 bg-gradient-to-br from-[#59e3a5]/25 to-[#14c0ff]/15 rounded-full blur-xl opacity-45" style={{ height: '488px' }}></div>
-                </div>
-                
-                <div 
-                  className="testimonial-carousel flex transition-transform duration-[2000ms] ease-in-out relative"
-                  style={{ 
-                    transform: `translateX(-${currentTestimonialIndex * (isMobile ? 66.67 : 24.5)}vw)`,
-                    width: `${(testimonials.length * 2) * (isMobile ? 66.67 : 24.5)}vw`,
-                    zIndex: 2
-                  }}
-                >
-                  {/* Render testimonials twice for seamless loop */}
-                  {[...testimonials, ...testimonials].map((testimonial, index) => (
-                    <div key={index} className="flex-shrink-0 px-2 w-[66.67vw] md:w-[24.5vw]">
-                      <div 
-                        className="relative group max-w-xs mx-auto"
-                        onMouseEnter={() => {
-                          // Clear any existing resume timeout
-                          if (resumeTimeout) {
-                            clearTimeout(resumeTimeout);
-                            setResumeTimeout(null);
-                          }
-                          setIsCarouselPaused(true);
-                        }}
-                        onMouseLeave={() => {
-                          // Resume after 250ms delay
-                          const timeout = setTimeout(() => {
-                            setIsCarouselPaused(false);
-                            setResumeTimeout(null);
-                          }, 250);
-                          setResumeTimeout(timeout);
-                        }}
-                      >
-                        <div className={`relative bg-gradient-to-br from-[#1a1a2e]/95 via-[#16213e]/90 to-[#0a0a13]/95 rounded-3xl p-4 border-2 border-white/10 backdrop-blur-sm hover:${testimonial.border} transition-all duration-500 group-hover:transform group-hover:scale-105 shadow-2xl`}>
-                          {/* Large Profile Image */}
-                          <div className="w-36 h-36 mx-auto mb-4 rounded-2xl overflow-hidden shadow-2xl">
-                            <img 
-                              src={testimonial.image}
-                              alt={testimonial.name}
-                              className="w-full h-full object-cover"
-                            />
-                          </div>
-                          
-                          {/* 5-Star Rating - Gradient with Glow */}
-                          <div className="flex justify-center mb-4 space-x-1">
-                            {[...Array(5)].map((_, i) => (
-                              <div key={i} className="relative">
-                                <div className={`absolute inset-0 bg-gradient-to-r ${testimonial.starGradient} rounded-full blur-md opacity-60`}></div>
-                                <svg className="relative w-6 h-6 fill-current drop-shadow-lg" viewBox="0 0 24 24">
-                                  <defs>
-                                    <linearGradient id={`starGradient${index}-${i}`} x1="0%" y1="0%" x2="100%" y2="100%">
-                                      <stop offset="0%" stopColor={testimonial.starGradient.includes('59e3a5') ? '#59e3a5' : testimonial.starGradient.includes('8b5cf6') ? '#8b5cf6' : '#14c0ff'} />
-                                      <stop offset="100%" stopColor={testimonial.starGradient.includes('14c0ff') ? '#14c0ff' : testimonial.starGradient.includes('59e3a5') ? '#59e3a5' : '#8b5cf6'} />
-                                    </linearGradient>
-                                  </defs>
-                                  <path fill={`url(#starGradient${index}-${i})`} d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
-                                </svg>
-                              </div>
-                            ))}
-                          </div>
-
-                          {/* Name and Title */}
-                          <div className="text-center mb-6">
-                            <h3 className="text-xl font-bold text-white mb-0.5">{testimonial.name}</h3>
-                            <p className="text-gray-400 text-base">{testimonial.title}</p>
-                          </div>
-
-                          {/* Testimonial */}
-                          <blockquote 
-                            className="text-gray-300 leading-relaxed text-center italic" 
-                            style={{ fontSize: isMobile ? '0.97rem' : '1.07rem' }}
-                          >
-                            "{testimonial.quote}"
-                          </blockquote>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* CTA Button */}
-              <div className="text-center">
-                <button
-                  onClick={scrollToTrackInput}
-                  className="px-16 py-5 bg-gradient-to-r from-[#59e3a5] via-[#14c0ff] to-[#8b5cf6] text-white font-bold rounded-2xl hover:shadow-2xl hover:shadow-[#14c0ff]/30 transition-all duration-300 transform hover:scale-105 active:scale-95 relative overflow-hidden group text-xl"
-                >
-                  <span className="relative z-10">I'M READY TO BE NEXT!</span>
-                  <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-700"></div>
-                </button>
               </div>
             </div>
           </section>
