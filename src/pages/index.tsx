@@ -57,7 +57,7 @@ const responsiveFontStyles = `
   
   /* Access Curator Connect Button spacing - MOBILE ONLY */
   .curator-connect-button-spacing {
-    margin-top: 200px;
+    margin-top: 400px;
   }
   @media (min-width: 640px) {
     .curator-connect-button-spacing {
@@ -996,7 +996,7 @@ export default function Home() {
   const scrollToTrackInput = () => {
     const element = document.getElementById('track-input-section');
     if (element) {
-      const headerOffset = 80;
+      const headerOffset = 200;
       const elementPosition = element.getBoundingClientRect().top;
       const offsetPosition = elementPosition + window.pageYOffset - headerOffset;
 
@@ -2014,189 +2014,125 @@ export default function Home() {
             </svg>
           </div>
 
-          {/* New Hero Section - 60/40 Split */}
-          <div className="max-w-[90rem] mx-auto px-3 sm:px-6 py-20 -mt-2 sm:mt-5 md:mt-10 mb-[110px]">
-            <div className="relative">
-              {/* Gradient container with rounded corners and glow */}
-              <div className="bg-gradient-to-br from-[#18192a]/80 via-[#1a1b3a]/60 to-[#0a0a13]/90 backdrop-blur-xl rounded-3xl p-6 sm:p-8 md:p-16 lg:p-20 border border-white/25 shadow-[0_20px_60px_0_rgba(20,192,255,0.3)] relative overflow-hidden">
-                {/* Subtle glow overlay */}
-                <div className="absolute inset-0 bg-gradient-to-br from-[#59e3a5]/5 via-transparent to-[#14c0ff]/5 rounded-3xl"></div>
-                
-                {/* Grid layout for 60/40 split on desktop, stacked on mobile */}
-                <div className="grid lg:grid-cols-5 gap-8 lg:gap-12 items-center relative z-10">
-                  {/* Left side - 60% on desktop, full width centered headline on mobile */}
-                  <div className="lg:col-span-3 text-center lg:text-left">
-                    <h2 className="text-4xl sm:text-4xl md:text-3xl lg:text-4xl xl:text-5xl font-black text-white mb-6 leading-tight lg:leading-relaxed pt-5 sm:pt-0">
-                      <span className="block sm:hidden">We Don't Buy<br /><span className="bg-gradient-to-l from-[#59e3a5] to-[#14c0ff] bg-clip-text text-transparent text-[1.1em]">Fake Plays.</span><br />We Get You On<br /><span className="bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] bg-clip-text text-transparent">REAL Playlists.</span></span>
-                      <span className="hidden sm:block">We Don't Buy <span className="bg-gradient-to-l from-[#59e3a5] to-[#14c0ff] bg-clip-text text-transparent">Fake Plays.</span><br />We Get You On <span className="bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] bg-clip-text text-transparent">REAL Playlists.</span></span>
+          {/* New Hero Section - Headings Above Box */}
+          <div className="max-w-[90rem] mx-auto px-3 sm:px-6 py-20 -mt-2 sm:mt-5 md:mt-10 mb-8 sm:mb-[110px]">
+            {/* Headings above the box */}
+            <div className="text-center mb-0 sm:mb-12">
+              <h2 className="text-[clamp(2rem,5vw,2.75rem)] sm:text-[clamp(1.5rem,5vw,2.5rem)] font-black text-white mb-6 leading-tight">
+                <span className="block sm:hidden">Forget <span className="bg-gradient-to-l from-[#59e3a5] to-[#14c0ff] bg-clip-text text-transparent">EVERYTHING</span><br />You've Tried So Far.<br />This Is How Artists <span className="bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] bg-clip-text text-transparent">ACTUALLY</span><br />Blow Up On Spotify.</span>
+                <span className="hidden sm:block">Forget <span className="bg-gradient-to-l from-[#59e3a5] to-[#14c0ff] bg-clip-text text-transparent">EVERYTHING</span> You've Tried So Far.<br />This Is How Artists <span className="bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] bg-clip-text text-transparent">ACTUALLY</span> Blow Up On Spotify.</span>
                     </h2>
-                    <p className="text-lg md:text-xl lg:text-2xl text-gray-300 leading-relaxed mb-4 sm:mb-8 lg:mb-0">
-                      While other companies flood your song with bot streams from fake accounts, we do something completely different. We get your music placed on the largest playlists in the world with <b>MILLIONS</b> of real listeners who discover new music every single day.
+              <p className="text-[clamp(1.125rem,2.5vw,1.5rem)] sm:text-[clamp(1rem,2vw,1.5rem)] text-gray-300 leading-relaxed max-w-5xl mx-auto mb-[-6.5rem] sm:mb-0 px-4 sm:px-0">
+                You already know Spotify playlists are the key to <b>massive success.</b> You've seen <b>unknown</b> artists appear on major playlists like Rap Caviar and explode <b>overnight.</b> What's the trick? They have direct access to the curators who run these <b>career making</b> playlists....<br /><br /><span className="text-[clamp(1.5rem,2.5vw,2rem)] sm:text-[clamp(1.25rem,2.5vw,2rem)] font-bold text-white">And now so do you.</span>
                 </p>
               </div>
                   
-                  {/* Right side - 40% on desktop, 2x2 grid centered on mobile */}
-                  <div className="lg:col-span-2">
-                    {/* Desktop layout - vertical list */}
-                    <div className="hidden lg:block space-y-6">
-                      <div className="flex items-start space-x-4">
-                        <div className="flex-shrink-0 w-8 h-8 flex items-center justify-center">
-                          <svg className="w-8 h-8" viewBox="0 0 24 24" fill="none">
-                            <circle cx="12" cy="12" r="12" fill="url(#gradient1)" />
-                            <path d="M8 12l2 2 6-6" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
-                            <defs>
-                              <linearGradient id="gradient1" x1="0%" y1="0%" x2="100%" y2="100%">
-                                <stop offset="0%" stopColor="#59e3a5" />
-                                <stop offset="100%" stopColor="#14c0ff" />
-                              </linearGradient>
-                            </defs>
-                          </svg>
-            </div>
-                        <div>
-                          <p className="text-white font-semibold text-xl mb-1">Direct Access to Major Playlists</p>
-                          <p className="text-gray-400 text-sm">We work directly with curators from Rap Caviar, OnEverything, and thousands more of the world's largest playlists</p>
-                </div>
-              </div>
-                      
-                      <div className="flex items-start space-x-4">
-                        <div className="flex-shrink-0 w-8 h-8 flex items-center justify-center">
-                          <svg className="w-8 h-8" viewBox="0 0 24 24" fill="none">
-                            <circle cx="12" cy="12" r="12" fill="url(#gradient2)" />
-                            <path d="M8 12l2 2 6-6" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
-                            <defs>
-                              <linearGradient id="gradient2" x1="0%" y1="0%" x2="100%" y2="100%">
-                                <stop offset="0%" stopColor="#59e3a5" />
-                                <stop offset="100%" stopColor="#14c0ff" />
-                              </linearGradient>
-                            </defs>
-                          </svg>
-                </div>
-                        <div>
-                          <p className="text-white font-semibold text-xl mb-1">Real Listeners, Real Results</p>
-                          <p className="text-gray-400 text-sm">Every stream comes from genuine music fans actively discovering new artists just like you</p>
+            {/* Icon Box Cards - Independent Design */}
+            <div className="max-w-[90rem] mx-auto px-1 sm:px-6 mb-4 sm:mb-12 scale-90 origin-center">
+              {/* Grid layout for 6 icon boxes - 2 columns on desktop, 1 on mobile */}
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-8">
+                
+                {/* Icon Box Card 1 - Wake Up To Thousands of New Listeners */}
+                <div className="group relative bg-gradient-to-br from-[#18192a]/90 via-[#1a1b3a]/70 to-[#0a0a13]/90 backdrop-blur-xl rounded-3xl p-8 lg:p-10 border-2 border-white/20 hover:border-[#59e3a5]/50 transition-all duration-500 hover:shadow-[0_20px_60px_0_rgba(89,227,165,0.3)] hover:-translate-y-2">
+                  <div className="absolute inset-0 bg-gradient-to-br from-[#59e3a5]/10 via-transparent to-[#14c0ff]/10 rounded-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+                  <div className="relative z-10">
+                    <div className="w-16 h-16 mb-6 flex items-center justify-center bg-gradient-to-br from-[#59e3a5] to-[#14c0ff] rounded-2xl shadow-[0_10px_30px_0_rgba(89,227,165,0.4)] transform group-hover:scale-110 transition-transform duration-300">
+                      <svg className="w-9 h-9 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                      </svg>
+                    </div>
+                    <h3 className="text-white font-black text-[1.6875rem] sm:text-[1.9375rem] mb-4 leading-tight">Wake Up To <span className="bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] bg-clip-text text-transparent">Thousands</span> of New Listeners Who <span className="bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] bg-clip-text text-transparent">Love You</span></h3>
+                    <p className="text-gray-300 text-[1.25rem] sm:text-[1.1875rem] leading-relaxed">Your song lands on playlists with <b className="text-white">massive engaged audiences</b> who save tracks, follow artists, and come back for more. Which means you're gaining <b className="text-white">actual fans</b> who'll stream your entire catalog, show up to your shows, and tell their friends about you. We don't use bots, so you're building <b className="text-white">real momentum</b> that compounds instead of getting flagged for fake engagement and watching your account get buried.</p>
               </div>
                 </div>
                       
-                      <div className="flex items-start space-x-4">
-                        <div className="flex-shrink-0 w-8 h-8 flex items-center justify-center">
-                          <svg className="w-8 h-8" viewBox="0 0 24 24" fill="none">
-                            <circle cx="12" cy="12" r="12" fill="url(#gradient3)" />
-                            <path d="M8 12l2 2 6-6" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
-                            <defs>
-                              <linearGradient id="gradient3" x1="0%" y1="0%" x2="100%" y2="100%">
-                                <stop offset="0%" stopColor="#59e3a5" />
-                                <stop offset="100%" stopColor="#14c0ff" />
-                              </linearGradient>
-                            </defs>
-                          </svg>
-              </div>
-                        <div>
-                          <p className="text-white font-semibold text-xl mb-1">Industry Connections That Matter</p>
-                          <p className="text-gray-400 text-sm">Over 10+ years of close relationships with the playlist owners who can change your career</p>
+                {/* Icon Box Card 2 - Your Song Submitted To Our Full Network Overnight */}
+                <div className="group relative bg-gradient-to-br from-[#18192a]/90 via-[#1a1b3a]/70 to-[#0a0a13]/90 backdrop-blur-xl rounded-3xl p-8 lg:p-10 border-2 border-white/20 hover:border-[#14c0ff]/50 transition-all duration-500 hover:shadow-[0_20px_60px_0_rgba(20,192,255,0.3)] hover:-translate-y-2">
+                  <div className="absolute inset-0 bg-gradient-to-br from-[#14c0ff]/10 via-transparent to-[#59e3a5]/10 rounded-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+                  <div className="relative z-10">
+                    <div className="w-16 h-16 mb-6 flex items-center justify-center bg-gradient-to-br from-[#14c0ff] to-[#59e3a5] rounded-2xl shadow-[0_10px_30px_0_rgba(20,192,255,0.4)] transform group-hover:scale-110 transition-transform duration-300">
+                      <svg className="w-9 h-9 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                      </svg>
+                    </div>
+                    <h3 className="text-white font-black text-[1.6875rem] sm:text-[1.9375rem] mb-4 leading-tight">Your Song Submitted To Our <span className="bg-gradient-to-r from-[#14c0ff] to-[#59e3a5] bg-clip-text text-transparent">Massive Network</span> Overnight</h3>
+                    <p className="text-gray-300 text-[1.25rem] sm:text-[1.1875rem] leading-relaxed">We pitch your track to every matching curator in our database <b className="text-white">before tomorrow ends.</b> While other artists are still researching playlist contact info and writing their third draft of a pitch email, you're <b className="text-white">already</b> getting heard by <b className="text-white">decision-makers,</b> and you're not losing the critical first-week momentum window when Spotify's algorithm pays the most attention.</p>
                 </div>
               </div>
                       
-                      <div className="flex items-start space-x-4">
-                        <div className="flex-shrink-0 w-8 h-8 flex items-center justify-center">
-                          <svg className="w-8 h-8" viewBox="0 0 24 24" fill="none">
-                            <circle cx="12" cy="12" r="12" fill="url(#gradient4)" />
-                            <path d="M8 12l2 2 6-6" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
-                            <defs>
-                              <linearGradient id="gradient4" x1="0%" y1="0%" x2="100%" y2="100%">
-                                <stop offset="0%" stopColor="#59e3a5" />
-                                <stop offset="100%" stopColor="#14c0ff" />
-                              </linearGradient>
-                            </defs>
-                          </svg>
-                </div>
-                        <div>
-                          <p className="text-white font-semibold text-xl mb-1">Results in Only 48-72 Hours</p>
-                          <p className="text-gray-400 text-sm">No waiting months, not even weeks - your campaign starts working immediately and results roll in rapidly</p>
-              </div>
+                {/* Icon Box Card 3 - Placements Start Within 48-72 Hours */}
+                <div className="group relative bg-gradient-to-br from-[#18192a]/90 via-[#1a1b3a]/70 to-[#0a0a13]/90 backdrop-blur-xl rounded-3xl p-8 lg:p-10 border-2 border-white/20 hover:border-[#59e3a5]/50 transition-all duration-500 hover:shadow-[0_20px_60px_0_rgba(89,227,165,0.3)] hover:-translate-y-2">
+                  <div className="absolute inset-0 bg-gradient-to-br from-[#59e3a5]/10 via-transparent to-[#14c0ff]/10 rounded-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+                  <div className="relative z-10">
+                    <div className="w-16 h-16 mb-6 flex items-center justify-center bg-gradient-to-br from-[#59e3a5] to-[#14c0ff] rounded-2xl shadow-[0_10px_30px_0_rgba(89,227,165,0.4)] transform group-hover:scale-110 transition-transform duration-300">
+                      <svg className="w-9 h-9 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                    </div>
+                    <h3 className="text-white font-black text-[1.6875rem] sm:text-[1.9375rem] mb-4 leading-tight">Placements Start In Only <span className="bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] bg-clip-text text-transparent">48-72 Hours</span></h3>
+                    <p className="text-gray-300 text-[1.25rem] sm:text-[1.1875rem] leading-relaxed">You'll see your first <b className="text-white">playlist adds</b> rolling in before the weekend hits. No more <b className="text-white">lying awake</b> wondering if you wasted your money, no more <b className="text-white">refreshing</b> Spotify for Artists every hour hoping something happened—just <b className="text-white">immediate proof</b> that your campaign is working and the <b className="text-white">"hell yea"</b> moment of finally hitting <b className="text-white">big streaming numbers</b> on your music.</p>
             </div>
                 </div>
 
-                    {/* Mobile layout - left-aligned list */}
-                    <div className="lg:hidden space-y-5 pb-6">
-                      <div className="flex items-center space-x-4 text-left">
-                        <div className="flex-shrink-0 w-8 h-8 flex items-center justify-center">
-                          <svg className="w-8 h-8" viewBox="0 0 24 24" fill="none">
-                            <circle cx="12" cy="12" r="12" fill="url(#gradient1m)" />
-                            <path d="M8 12l2 2 6-6" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
-                            <defs>
-                              <linearGradient id="gradient1m" x1="0%" y1="0%" x2="100%" y2="100%">
-                                <stop offset="0%" stopColor="#59e3a5" />
-                                <stop offset="100%" stopColor="#14c0ff" />
-                              </linearGradient>
-                            </defs>
-                          </svg>
-            </div>
-                        <div>
-                          <p className="text-white font-semibold text-lg mb-1">Direct Access to Major Playlists</p>
-                          <p className="text-gray-400 text-sm">We work directly with curators from Rap Caviar, OnEverything, and thousands more</p>
-                        </div>
-                      </div>
-                      
-                      <div className="flex items-center space-x-4 text-left">
-                        <div className="flex-shrink-0 w-8 h-8 flex items-center justify-center">
-                          <svg className="w-8 h-8" viewBox="0 0 24 24" fill="none">
-                            <circle cx="12" cy="12" r="12" fill="url(#gradient2m)" />
-                            <path d="M8 12l2 2 6-6" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
-                            <defs>
-                              <linearGradient id="gradient2m" x1="0%" y1="0%" x2="100%" y2="100%">
-                                <stop offset="0%" stopColor="#59e3a5" />
-                                <stop offset="100%" stopColor="#14c0ff" />
-                              </linearGradient>
-                            </defs>
-                          </svg>
-                        </div>
-                        <div>
-                          <p className="text-white font-semibold text-lg mb-1">Real Listeners, Real Results</p>
-                          <p className="text-gray-400 text-sm">Every stream comes from genuine music fans actively discovering new artists</p>
-                        </div>
-                      </div>
-                      
-                      <div className="flex items-center space-x-4 text-left">
-                        <div className="flex-shrink-0 w-8 h-8 flex items-center justify-center">
-                          <svg className="w-8 h-8" viewBox="0 0 24 24" fill="none">
-                            <circle cx="12" cy="12" r="12" fill="url(#gradient3m)" />
-                            <path d="M8 12l2 2 6-6" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
-                            <defs>
-                              <linearGradient id="gradient3m" x1="0%" y1="0%" x2="100%" y2="100%">
-                                <stop offset="0%" stopColor="#59e3a5" />
-                                <stop offset="100%" stopColor="#14c0ff" />
-                              </linearGradient>
-                            </defs>
-                          </svg>
-                        </div>
-                        <div>
-                          <p className="text-white font-semibold text-lg mb-1">Industry Connections That Matter</p>
-                          <p className="text-gray-400 text-sm">Over 10+ years of close relationships with playlist owners who can change careers</p>
-                        </div>
-                      </div>
-                      
-                      <div className="flex items-center space-x-4 text-left">
-                        <div className="flex-shrink-0 w-8 h-8 flex items-center justify-center">
-                          <svg className="w-8 h-8" viewBox="0 0 24 24" fill="none">
-                            <circle cx="12" cy="12" r="12" fill="url(#gradient4m)" />
-                            <path d="M8 12l2 2 6-6" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
-                            <defs>
-                              <linearGradient id="gradient4m" x1="0%" y1="0%" x2="100%" y2="100%">
-                                <stop offset="0%" stopColor="#59e3a5" />
-                                <stop offset="100%" stopColor="#14c0ff" />
-                              </linearGradient>
-                            </defs>
-                          </svg>
-                        </div>
-                        <div>
-                          <p className="text-white font-semibold text-lg mb-1">Results in Only 48-72 Hours</p>
-                          <p className="text-gray-400 text-sm">No waiting months, not even weeks - your campaign starts working immediately</p>
-                        </div>
-                      </div>
+                {/* Icon Box Card 4 - Works For Every Genre And For Every Artist */}
+                <div className="group relative bg-gradient-to-br from-[#18192a]/90 via-[#1a1b3a]/70 to-[#0a0a13]/90 backdrop-blur-xl rounded-3xl p-8 lg:p-10 border-2 border-white/20 hover:border-[#14c0ff]/50 transition-all duration-500 hover:shadow-[0_20px_60px_0_rgba(20,192,255,0.3)] hover:-translate-y-2">
+                  <div className="absolute inset-0 bg-gradient-to-br from-[#14c0ff]/10 via-transparent to-[#59e3a5]/10 rounded-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+                  <div className="relative z-10">
+                    <div className="w-16 h-16 mb-6 flex items-center justify-center bg-gradient-to-br from-[#14c0ff] to-[#59e3a5] rounded-2xl shadow-[0_10px_30px_0_rgba(20,192,255,0.4)] transform group-hover:scale-110 transition-transform duration-300">
+                      <svg className="w-9 h-9 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3" />
+                      </svg>
                     </div>
+                    <h3 className="text-white font-black text-[1.6875rem] sm:text-[1.9375rem] mb-4 leading-tight">Works For <span className="bg-gradient-to-r from-[#14c0ff] to-[#59e3a5] bg-clip-text text-transparent">Every</span> Genre And For <span className="bg-gradient-to-r from-[#14c0ff] to-[#59e3a5] bg-clip-text text-transparent">Every</span> Artist</h3>
+                    <p className="text-gray-300 text-[1.25rem] sm:text-[1.1875rem] leading-relaxed">Whether you're making <b className="text-white">drill, indie pop,</b> or <b className="text-white">lo-fi beats,</b> whether you're at <b className="text-white">500 streams</b> or <b className="text-white">500,000,</b> we've got curators who specialize in your <b className="text-white">exact sound</b> and work with artists at <b className="text-white">all experience levels.</b> You're not getting thrown into random playlists that don't fit your vibe. You're getting <b className="text-white">strategic placements</b> that actually build your <b className="text-white">real fanbase</b> with listeners who'll love your songs and come back for more.</p>
                   </div>
                 </div>
+                      
+                {/* Icon Box Card 5 - Guaranteed Results On Every Package */}
+                <div className="group relative bg-gradient-to-br from-[#18192a]/90 via-[#1a1b3a]/70 to-[#0a0a13]/90 backdrop-blur-xl rounded-3xl p-8 lg:p-10 border-2 border-white/20 hover:border-[#59e3a5]/50 transition-all duration-500 hover:shadow-[0_20px_60px_0_rgba(89,227,165,0.3)] hover:-translate-y-2">
+                  <div className="absolute inset-0 bg-gradient-to-br from-[#59e3a5]/10 via-transparent to-[#14c0ff]/10 rounded-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+                  <div className="relative z-10">
+                    <div className="w-16 h-16 mb-6 flex items-center justify-center bg-gradient-to-br from-[#59e3a5] to-[#14c0ff] rounded-2xl shadow-[0_10px_30px_0_rgba(89,227,165,0.4)] transform group-hover:scale-110 transition-transform duration-300">
+                      <svg className="w-9 h-9 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+                      </svg>
+                    </div>
+                    <h3 className="text-white font-black text-[1.6875rem] sm:text-[1.9375rem] mb-4 leading-tight">Guaranteed <span className="bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] bg-clip-text text-transparent">Results</span> On Every Package</h3>
+                    <p className="text-gray-300 text-[1.25rem] sm:text-[1.1875rem] leading-relaxed">You'll know the <b className="text-white">exact</b> range of <b className="text-white">placements</b> and <b className="text-white">streams</b> you're getting before you spend a dollar, so you're not gambling or crossing your fingers or hoping for the best. You're making a <b className="text-white">calculated investment</b> with a guaranteed floor, which means you can finally budget your music career like a <b className="text-white">real business</b> instead of throwing money at the wall.</p>
+                  </div>
+                </div>
+
+                {/* Icon Box Card 6 - 10+ Years of Curator Relationships */}
+                <div className="group relative bg-gradient-to-br from-[#18192a]/90 via-[#1a1b3a]/70 to-[#0a0a13]/90 backdrop-blur-xl rounded-3xl p-8 lg:p-10 border-2 border-white/20 hover:border-[#14c0ff]/50 transition-all duration-500 hover:shadow-[0_20px_60px_0_rgba(20,192,255,0.3)] hover:-translate-y-2">
+                  <div className="absolute inset-0 bg-gradient-to-br from-[#14c0ff]/10 via-transparent to-[#59e3a5]/10 rounded-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+                  <div className="relative z-10">
+                    <div className="w-16 h-16 mb-6 flex items-center justify-center bg-gradient-to-br from-[#14c0ff] to-[#59e3a5] rounded-2xl shadow-[0_10px_30px_0_rgba(20,192,255,0.4)] transform group-hover:scale-110 transition-transform duration-300">
+                      <svg className="w-9 h-9 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                      </svg>
+                    </div>
+                    <h3 className="text-white font-black text-[1.6875rem] sm:text-[1.9375rem] mb-4 leading-tight"><span className="bg-gradient-to-r from-[#14c0ff] to-[#59e3a5] bg-clip-text text-transparent">10+ Years</span> of Curator <span className="bg-gradient-to-r from-[#14c0ff] to-[#59e3a5] bg-clip-text text-transparent">Relationships</span> You Can't Build Yourself</h3>
+                    <p className="text-gray-300 text-[1.25rem] sm:text-[1.1875rem] leading-relaxed">You're getting <b className="text-white">instant access</b> to the same playlist network major labels spend <b className="text-white">six figures</b> accessing. That means you skip the <b className="text-white">7-8 years</b> of cold emails, ghosted DMs, and rejected submissions it would take to build these connections yourself. Spend that time actually <b className="text-white">making music</b> instead of begging curators to even <i className="text-white">listen</i> to your song.</p>
+                  </div>
+                </div>
+                      
               </div>
+            </div>
+            
+            {/* CTA Button After Icon Boxes */}
+            <div className="text-center mt-[-5rem] sm:mt-12">
+              <button
+                onClick={scrollToTrackInput}
+                className="px-16 py-5 bg-gradient-to-r from-[#59e3a5] via-[#14c0ff] to-[#8b5cf6] text-white font-bold rounded-2xl hover:shadow-2xl hover:shadow-[#14c0ff]/30 transition-all duration-700 transform hover:scale-105 active:scale-95 relative overflow-hidden group text-xl"
+              >
+                <span className="relative z-10 flex items-center justify-center gap-3">
+                  Get My Song On Playlists
+                  <svg className="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                  </svg>
+                </span>
+                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-700"></div>
+              </button>
             </div>
           </div>
           {/* Shape Divider */}
@@ -3181,7 +3117,7 @@ export default function Home() {
           {/* Mobile CTA Section */}
           <section className="block lg:hidden py-16 px-4 relative z-20">
             <div className="max-w-4xl mx-auto text-center">
-              <h3 className="text-[calc(1.25rem+0.25rem)] sm:text-xl md:text-2xl font-black text-white max-w-3xl mx-auto leading-relaxed mb-[calc(2rem+5px)] sm:mb-8 -mt-[15px] sm:-mt-5">
+              <h3 className="text-[calc(1.25rem+0.25rem)] sm:text-xl md:text-2xl font-black text-white max-w-3xl mx-auto leading-relaxed mb-[calc(1rem+5px)] sm:mb-8 -mt-[25px] sm:-mt-5">
                 Forget everything you think you know about playlist marketing. We've made it stupid simple. You submit, we connect, you grow. That's it.
               </h3>
               
@@ -3732,7 +3668,7 @@ export default function Home() {
               </div>
 
               {/* CTA Button */}
-              <div className="relative z-50 text-center mt-4 lg:mt-16 cta-button-spacing show-packages-btn-z">
+              <div className="relative z-50 text-center mt-12 lg:mt-16 cta-button-spacing show-packages-btn-z">
                 <button
                   onClick={scrollToTrackInput}
                   className="px-12 py-4 bg-gradient-to-r from-[#59e3a5] via-[#14c0ff] to-[#8b5cf6] text-white font-bold rounded-2xl hover:shadow-2xl hover:shadow-[#14c0ff]/30 transition-all duration-700 transform hover:scale-105 active:scale-95 relative overflow-hidden group text-lg sm:mt-[50px]"
@@ -4211,7 +4147,7 @@ export default function Home() {
               </div>
 
               {/* CTA Button */}
-              <div className="text-center mb-20 md:mb-0 lg:mt-16 curator-connect-button-spacing" style={{ marginBottom: '180px' }}>
+              <div className="text-center mb-20 md:mb-0 mt-16 lg:mt-16" style={{ marginBottom: '180px' }}>
                 <button
                   onClick={scrollToTrackInput}
                   className="px-12 py-4 bg-gradient-to-r from-[#8b5cf6] via-[#59e3a5] to-[#14c0ff] text-white font-bold rounded-2xl hover:shadow-2xl hover:shadow-[#59e3a5]/30 transition-all duration-700 transform hover:scale-105 active:scale-95 relative overflow-hidden group text-lg lg:mt-[110px] lg:mb-[130px] mt-0 sm:mt-0"

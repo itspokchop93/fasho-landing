@@ -135,6 +135,42 @@ export default function Header({ transparent = false, hideSignUp = false, extraC
     setUserFirstName(cleanName.charAt(0).toUpperCase() + cleanName.slice(1));
   };
 
+  // Scroll to track input section with proper offset
+  const scrollToTrackInput = (e?: React.MouseEvent) => {
+    if (e) {
+      e.preventDefault();
+    }
+    
+    // If we're not on the homepage, navigate to it first
+    if (!isHomepage) {
+      router.push('/#start-campaign');
+      // Wait for navigation then scroll
+      setTimeout(() => {
+        const element = document.getElementById('track-input-section');
+        if (element) {
+          const headerOffset = 200;
+          const elementPosition = element.getBoundingClientRect().top;
+          const offsetPosition = elementPosition + window.pageYOffset - headerOffset;
+          window.scrollTo({
+            top: offsetPosition,
+            behavior: 'smooth'
+          });
+        }
+      }, 100);
+    } else {
+      const element = document.getElementById('track-input-section');
+      if (element) {
+        const headerOffset = 200;
+        const elementPosition = element.getBoundingClientRect().top;
+        const offsetPosition = elementPosition + window.pageYOffset - headerOffset;
+        window.scrollTo({
+          top: offsetPosition,
+          behavior: 'smooth'
+        });
+      }
+    }
+  };
+
   const getUserProfileImage = () => {
     return artistProfile?.artist_image_url || null;
   };
@@ -512,9 +548,12 @@ export default function Header({ transparent = false, hideSignUp = false, extraC
                     {showProfileDropdown && renderProfileDropdown()}
                   </div>
                 ) : !authLoading ? (
-                  <Link href="/#start-campaign" className="bg-gradient-to-r from-[#8b5cf6] to-[#6366f1] text-white font-bold px-3 py-2 rounded-lg hover:opacity-90 hover:scale-105 transition-all duration-300 shadow-lg backdrop-blur-sm border border-white/20">
+                  <button 
+                    onClick={scrollToTrackInput}
+                    className="bg-gradient-to-r from-[#8b5cf6] to-[#6366f1] text-white font-bold px-3 py-2 rounded-lg hover:opacity-90 hover:scale-105 transition-all duration-300 shadow-lg backdrop-blur-sm border border-white/20"
+                  >
                     START CAMPAIGN
-                  </Link>
+                  </button>
                 ) : (
                   <div className="bg-gradient-to-r from-[#8b5cf6] to-[#6366f1] text-white font-bold px-3 py-2 rounded-lg opacity-50">
                     Loading...
@@ -759,13 +798,15 @@ export default function Header({ transparent = false, hideSignUp = false, extraC
                       )}
                     </div>
                   ) : !authLoading ? (
-                    <Link 
-                      href="/#start-campaign" 
-                      onClick={() => setIsMobileMenuOpen(false)}
+                    <button 
+                      onClick={() => {
+                        setIsMobileMenuOpen(false);
+                        scrollToTrackInput();
+                      }}
                       className="w-full mx-2 bg-gradient-to-r from-[#8b5cf6] to-[#6366f1] text-white font-bold px-3 py-4 rounded-lg hover:opacity-90 hover:scale-[1.02] transition-all duration-300 text-center shadow-lg"
                     >
                       START CAMPAIGN
-                    </Link>
+                    </button>
                   ) : (
                     <div className="w-full mx-2 bg-gradient-to-r from-[#8b5cf6] to-[#6366f1] text-white font-bold px-3 py-4 rounded-lg opacity-50 text-center">
                       Loading...
