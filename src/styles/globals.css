@@ -2218,5 +2218,13 @@ button, a, [role="button"] {
   }
 }
 
+/* Shape Divider Transform - Mobile-specific positioning */
+.shape-divider-testimonials {
+  transform: rotate(-8deg) translateY(-180px);
+}
 
-
+@media (min-width: 640px) {
+  .shape-divider-testimonials {
+    transform: rotate(-8deg) translateY(5px);
+  }
+}

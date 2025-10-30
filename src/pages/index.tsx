@@ -2123,11 +2123,11 @@ export default function Home() {
             <div className="text-center mt-[-5rem] sm:mt-12">
               <button
                 onClick={scrollToTrackInput}
-                className="px-16 py-5 bg-gradient-to-r from-[#59e3a5] via-[#14c0ff] to-[#8b5cf6] text-white font-bold rounded-2xl hover:shadow-2xl hover:shadow-[#14c0ff]/30 transition-all duration-700 transform hover:scale-105 active:scale-95 relative overflow-hidden group text-xl"
+                className="px-6 md:px-16 py-3 md:py-5 bg-gradient-to-r from-[#59e3a5] via-[#14c0ff] to-[#8b5cf6] text-white font-bold rounded-2xl hover:shadow-2xl hover:shadow-[#14c0ff]/30 transition-all duration-700 transform hover:scale-105 active:scale-95 relative overflow-hidden group text-lg md:text-xl"
               >
-                <span className="relative z-10 flex items-center justify-center gap-3">
+                <span className="relative z-10 flex items-center justify-center gap-2 md:gap-3">
                   Get My Song On Playlists
-                  <svg className="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                  <svg className="w-4 h-4 md:w-5 md:h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
                     <path strokeLinecap="round" strokeLinejoin="round" d="M13 7l5 5m0 0l-5 5m5-5H6" />
                   </svg>
                 </span>
@@ -3464,7 +3464,7 @@ export default function Home() {
               </div>
 
               {/* CTA Button */}
-              <div className="text-center mt-8 md:mt-12">
+              <div className="text-center mt-2 md:mt-12">
                 <button
                   onClick={scrollToTrackInput}
                   className="px-16 py-5 bg-gradient-to-r from-[#59e3a5] via-[#14c0ff] to-[#8b5cf6] text-white font-bold rounded-2xl hover:shadow-2xl hover:shadow-[#14c0ff]/30 transition-all duration-300 transform hover:scale-105 active:scale-95 relative overflow-hidden group text-xl"
@@ -3477,7 +3477,7 @@ export default function Home() {
           </section>
 
           {/* Shape Divider - Under Testimonials CTA */}
-          <div className="relative z-30 pb-16 mt-40 md:mt-0 -mb-20 md:mb-0" style={{ height: '200px', width: '120vw', left: '-10vw', position: 'relative', transform: typeof window !== 'undefined' && window.innerWidth < 640 ? 'rotate(-8deg) translateY(-120px)' : 'rotate(-8deg) translateY(5px)', background: 'transparent' }}>
+          <div className="relative z-30 pb-4 md:pb-16 mt-40 md:mt-0 -mb-28 md:mb-0 shape-divider-testimonials" style={{ height: '200px', width: '120vw', left: '-10vw', position: 'relative', background: 'transparent' }}>
             {/* All background elements removed for full transparency */}
             
             {/* Base layer - darkest */}
@@ -3719,7 +3719,7 @@ export default function Home() {
               <div className="text-center mb-4 md:mb-16">
                 <h2 
                   ref={commandCenterRef}
-                  className={`text-4xl md:text-5xl lg:text-6xl font-black mb-4 md:mb-8 bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] bg-clip-text text-transparent mt-[25px] md:mt-0 pt-[10px] sm:pt-0 ${commandCenterInView ? 'animate-fade-in-up' : 'opacity-0'}`} 
+                  className={`text-4xl md:text-5xl lg:text-6xl font-black mb-4 md:mb-8 bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] bg-clip-text text-transparent mt-[10px] md:mt-0 pt-[5px] sm:pt-0 ${commandCenterInView ? 'animate-fade-in-up' : 'opacity-0'}`} 
                   style={{ lineHeight: '1.3' }}
                 >
                   <span className="block sm:inline">Your Personal</span>
@@ -4559,7 +4559,7 @@ export default function Home() {
               </div>
 
               {/* CTA Button */}
-              <div className="text-center mb-20 md:mb-0 mt-16 lg:mt-16" style={{ marginBottom: '180px' }}>
+              <div className="text-center mb-20 md:mb-0 mt-8 lg:mt-16" style={{ marginBottom: '180px' }}>
                 <button
                   onClick={scrollToTrackInput}
                   className="px-12 py-4 bg-gradient-to-r from-[#8b5cf6] via-[#59e3a5] to-[#14c0ff] text-white font-bold rounded-2xl hover:shadow-2xl hover:shadow-[#59e3a5]/30 transition-all duration-700 transform hover:scale-105 active:scale-95 relative overflow-hidden group text-lg lg:mt-[110px] lg:mb-[130px] mt-0 sm:mt-0"
