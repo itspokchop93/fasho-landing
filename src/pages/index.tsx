@@ -2363,11 +2363,17 @@ export default function Home() {
                     STEP 1
                   </h2>
                   <h3 className="text-[calc(1.875rem+0.4rem)] sm:text-3xl md:text-4xl lg:text-5xl font-black text-white mb-4 md:mb-8" style={{ lineHeight: '1.2' }}>
-                    Find Your Song
+                    Drop Your Track, We Handle The Rest
                   </h3>
                   <p className="text-[calc(0.95rem+0.2rem)] sm:text-[0.95rem] md:text-[1.4rem] text-gray-300 leading-relaxed pb-8 md:pb-12">
-                    Search your song or drop a direct link to your track and we'll analyze everything - your genre, style, energy, mood, and vibe. Our team scans through thousands of trending playlists in our exclusive network to find the EXACT ones where your music fits perfectly. We match you with curators who are actively looking for YOUR sound. Takes 30 seconds to submit, and our team immediately starts identifying opportunities that other services would never find.
+                    Paste your Spotify link or search your song title. Takes 30 seconds, then you're done. No spreadsheets to build, no curator emails to track down, no guessing which playlists might actually fit your vibe. While you go back to making music and enjoying your life, our team is analyzing your track's DNA: the genre, the subgenre, the tempo, the mood, the energy, even the vocal delivery style. We're matching your sound against thousands of curators in our network who are actively building playlists in your exact lane right now. This isn't guesswork. We know these curators personally, we know what they're adding this week, and we know exactly which ones are going to love your sound the second they hear it.
                   </p>
+                  <button
+                    onClick={scrollToTrackInput}
+                    className="text-xl md:text-2xl lg:text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] hover:from-[#14c0ff] hover:to-[#59e3a5] transition-all duration-300 flex items-center justify-end mt-2"
+                  >
+                    Get My Placements Now →
+                  </button>
                 </div>
 
                 {/* Right Column - Step 1 Phone Mockup */}
@@ -2550,11 +2556,17 @@ export default function Home() {
                     STEP 2
                   </h2>
                   <h3 className="text-[calc(1.875rem+0.4rem)] sm:text-3xl md:text-4xl lg:text-5xl font-black text-white mb-4 md:mb-8" style={{ lineHeight: '1.2' }}>
-                    Choose Your Package
+                    Pick A Package
                   </h3>
                   <p className="text-[calc(0.95rem+0.2rem)] sm:text-[0.95rem] md:text-[1.4rem] text-gray-300 leading-relaxed pb-8 md:pb-12">
-                    Pick the campaign that matches where you're at in your career. Just dropped your first single? We got you. Ready to push that track to viral status? We got that too. Each package is built different - from starter campaigns that get you those first crucial playlist placements, all the way to our highest tier packages that put you in front of MILLIONS of new listeners. Add multiple tracks for 25% off each additional song. Stack your entire EP if you want. This is YOUR campaign, built YOUR way.
+                    Choose the campaign level that matches where you're at. If you just dropped your first single and need those crucial first placements to prove this is real—we got you. If you're sitting on 10K monthly listeners and ready to 10x that number—we got that too. Every package guarantees a range of results: playlist counts, stream estimates, follower reach. No vague promises, no "we'll try our best" nonsense. You'll see the splash your music will make before you pay a single dollar. Got an EP? Stack additional tracks and save 25% on each additional song. Got an album rollout planned? Run multiple campaigns and watch each release build on the last one's momentum like clockwork.
                   </p>
+                  <button
+                    onClick={scrollToTrackInput}
+                    className="text-xl md:text-2xl lg:text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-[#14c0ff] to-[#8b5cf6] hover:from-[#8b5cf6] hover:to-[#14c0ff] transition-all duration-300 flex items-center justify-end mt-2"
+                  >
+                    Show My Package Options →
+                  </button>
                 </div>
               </div>
             </div>
@@ -2569,11 +2581,17 @@ export default function Home() {
                     STEP 3
                   </h2>
                   <h3 className="text-[calc(1.875rem+0.4rem)] sm:text-3xl md:text-4xl lg:text-5xl font-black text-white mb-4 md:mb-8" style={{ lineHeight: '1.2' }}>
-                    We Go To Work For You
+                    Our Team Goes To Work
                   </h3>
                   <p className="text-[calc(0.95rem+0.2rem)] sm:text-[0.95rem] md:text-[1.4rem] text-gray-300 leading-relaxed pb-8 md:pb-12">
-                    This is where the magic happens. Our team gets on the phone and in the emails with playlist curators who TRUST us. We're not sending mass emails into the void - we're having real conversations with real people who control the biggest playlists on Spotify. "Hey Marcus, remember that R&B track that killed it last month? We got another one." That's how we move. Personal relationships, direct communication, and a track record that makes curators actually excited to hear what we're bringing them.
+                    Here's what happens behind the scenes while you wait: Our team starts reaching out to every curator in our network who matches your sound. We're not sending desperate cold emails that every artist has tried before. We're texting Marcus who runs that 340K follower R&B playlist. We're calling Jessica who curates three different lo-fi lists with 2M combined followers. We're DMing Nicky G. who's been asking us for more Latin trap. These people actually answer when we reach out because we've been delivering them quality music for over 10 years. "Hey, remember that artist we placed last month who's now at 50K monthly listeners? Got another one in that same lane." That's the conversation happening about YOUR song. Personal relationships, real credibility, curators who trust our taste because we've never wasted their time.
                   </p>
+                  <button
+                    onClick={scrollToTrackInput}
+                    className="text-xl md:text-2xl lg:text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-[#8b5cf6] to-[#59e3a5] hover:from-[#59e3a5] hover:to-[#8b5cf6] transition-all duration-300 flex items-center justify-end mt-2"
+                  >
+                    Let's Build My Momentum →
+                  </button>
                 </div>
 
                 {/* Right Column - Step 3 Phone Mockup */}
@@ -2733,11 +2751,17 @@ export default function Home() {
                     STEP 4
                   </h2>
                   <h3 className="text-[calc(1.5rem+0.3rem)] sm:text-2xl md:text-3xl lg:text-4xl font-black text-white mb-4 md:mb-8" style={{ lineHeight: '1.2' }}>
-                    Watch Your Career Transform
+                    Watch Your Career Explode
                   </h3>
                   <p className="text-[calc(0.95rem+0.2rem)] sm:text-[0.95rem] md:text-[1.4rem] text-gray-300 leading-relaxed pb-8 md:pb-12">
-                    Within 48 hours, your campaign goes live and everything shifts. Major playlists start adding your track. Thousands of new listeners discovering your music every day. The same Spotify for Artists app that used to depress you? Now it's showing numbers you screenshot and send to your group chat. No more watching everyone else win while you wonder what you're doing wrong. You're IN the game now - getting the plays, building the fanbase, and finally seeing your music reach the audience it was meant for. This is what momentum feels like.
+                    48 to 72 hours after your campaign launches, everything changes. You wake up, open Spotify for Artists out of habit, and..... Your monthly listeners jumped like crazy overnight. You refresh. New playlist just added your track. Refresh again. Another one. That app that used to make you feel like something's missing? Now you're checking it six times a day just to watch the numbers climb. Your friends start texting you screenshots: "Yo I just heard your song on this playlist." Your TikTok video that used to get 340 views? Now it's getting 200K+ because new listeners are finding your socials. This is what actual momentum feels like—not hoping and manifesting and waiting for lightning to strike. You're watching your career move in real life, and for the first moment since you started this whole music thing, you're not wondering if you're wasting your time & energy. You're in the game now.
                   </p>
+                  <button
+                    onClick={scrollToTrackInput}
+                    className="text-xl md:text-2xl lg:text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-[#59e3a5] to-[#8b5cf6] hover:from-[#8b5cf6] hover:to-[#59e3a5] transition-all duration-300 flex items-center justify-end mt-2"
+                  >
+                    I'm Ready To Blow Up →
+                  </button>
                 </div>
               </div>
             </div>
@@ -2753,11 +2777,18 @@ export default function Home() {
                       STEP 1
                     </h2>
                 <h3 className="text-[calc(1.5rem+0.4rem)] sm:text-2xl md:text-3xl font-black text-white mb-6" style={{ lineHeight: '1.2' }}>
-                  Find Your Song
+                  Drop Your Track, We Handle The Rest
                 </h3>
                 <p className="text-[calc(1rem+0.2rem)] sm:text-base md:text-lg text-gray-300 leading-relaxed max-w-2xl mx-auto">
-                  Search your song or drop a direct link to your track and we'll analyze everything - your genre, style, energy, mood, and vibe. Our team scans through thousands of trending playlists in our exclusive network to find the EXACT ones where your music fits perfectly.
+                  Paste your Spotify link or search your song title. Takes 30 seconds, then you're done. No spreadsheets to build, no curator emails to track down, no guessing which playlists might actually fit your vibe. While you go back to making music and enjoying your life, our team is analyzing your track's DNA: the genre, the subgenre, the tempo, the mood, the energy, even the vocal delivery style. We're matching your sound against thousands of curators in our network who are actively building playlists in your exact lane right now. This isn't guesswork. We know these curators personally, we know what they're adding this week, and we know exactly which ones are going to love your sound the second they hear it.
                 </p>
+                <button
+                  onClick={scrollToTrackInput}
+                  className="font-black text-transparent bg-clip-text bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] hover:from-[#14c0ff] hover:to-[#59e3a5] transition-all duration-300 inline-flex items-center sm:text-2xl"
+                  style={{ fontSize: '1.375rem', marginTop: '2.5rem' }}
+                >
+                  Get My Placements Now →
+                </button>
               </div>
 
               {/* Mobile Phone Mockup for Step 1 */}
@@ -2857,11 +2888,18 @@ export default function Home() {
                       STEP 2
                     </h2>
                 <h3 className="text-[calc(1.5rem+0.4rem)] sm:text-2xl md:text-3xl font-black text-white mb-6" style={{ lineHeight: '1.2' }}>
-                  Choose Your Package
+                  Pick A Package
                 </h3>
                 <p className="text-[calc(1rem+0.2rem)] sm:text-base md:text-lg text-gray-300 leading-relaxed max-w-2xl mx-auto">
-                  Pick the campaign that matches where you're at in your career. Each package is built different - from starter campaigns to our highest tier packages that put you in front of MILLIONS of new listeners.
+                  Choose the campaign level that matches where you're at. If you just dropped your first single and need those crucial first placements to prove this is real—we got you. If you're sitting on 10K monthly listeners and ready to 10x that number—we got that too. Every package guarantees a range of results: playlist counts, stream estimates, follower reach. No vague promises, no "we'll try our best" nonsense. You'll see the splash your music will make before you pay a single dollar. Got an EP? Stack additional tracks and save 25% on each additional song. Got an album rollout planned? Run multiple campaigns and watch each release build on the last one's momentum like clockwork.
                 </p>
+                <button
+                  onClick={scrollToTrackInput}
+                  className="font-black text-transparent bg-clip-text bg-gradient-to-r from-[#14c0ff] to-[#8b5cf6] hover:from-[#8b5cf6] hover:to-[#14c0ff] transition-all duration-300 inline-flex items-center sm:text-2xl"
+                  style={{ fontSize: '1.375rem', marginTop: '2.5rem' }}
+                >
+                  Show My Package Options →
+                </button>
               </div>
 
               {/* Mobile Phone Mockup for Step 2 */}
@@ -2944,18 +2982,25 @@ export default function Home() {
           </section>
 
                         {/* Mobile Step 3 Section */}
-              <section className="block lg:hidden py-16 px-4 relative z-20">
+              <section className="block lg:hidden py-8 px-4 relative z-20">
                 <div className="max-w-4xl mx-auto">
                   <div className="text-center mb-12">
                     <h2 className="font-black bg-gradient-to-r from-[#8b5cf6] to-[#59e3a5] bg-clip-text text-transparent mb-4" style={{ fontSize: '3rem', lineHeight: '1.2' }}>
                       STEP 3
                     </h2>
                 <h3 className="text-[calc(1.5rem+0.4rem)] sm:text-2xl md:text-3xl font-black text-white mb-6" style={{ lineHeight: '1.2' }}>
-                  We Go To Work For You
+                  Our Team Goes To Work
                 </h3>
                 <p className="text-[calc(1rem+0.2rem)] sm:text-base md:text-lg text-gray-300 leading-relaxed max-w-2xl mx-auto">
-                  This is where the magic happens. Our team gets on the phone with playlist curators who TRUST us. We're having real conversations with real people who control the biggest playlists on Spotify.
+                  Here's what happens behind the scenes while you wait: Our team starts reaching out to every curator in our network who matches your sound. We're not sending desperate cold emails that every artist has tried before. We're texting Marcus who runs that 340K follower R&B playlist. We're calling Jessica who curates three different lo-fi lists with 2M combined followers. We're DMing Nicky G. who's been asking us for more Latin trap. These people actually answer when we reach out because we've been delivering them quality music for over 10 years. "Hey, remember that artist we placed last month who's now at 50K monthly listeners? Got another one in that same lane." That's the conversation happening about YOUR song. Personal relationships, real credibility, curators who trust our taste because we've never wasted their time.
                 </p>
+                <button
+                  onClick={scrollToTrackInput}
+                  className="font-black text-transparent bg-clip-text bg-gradient-to-r from-[#8b5cf6] to-[#59e3a5] hover:from-[#59e3a5] hover:to-[#8b5cf6] transition-all duration-300 inline-flex items-center sm:text-2xl"
+                  style={{ fontSize: '1.375rem', marginTop: '2.5rem' }}
+                >
+                  Let's Build My Momentum →
+                </button>
               </div>
 
               {/* Mobile Phone Mockup for Step 3 */}
@@ -3019,18 +3064,25 @@ export default function Home() {
             </div>
           </section>
           {/* Mobile Step 4 Section */}
-          <section className="block lg:hidden py-16 px-4 relative z-20">
+          <section className="block lg:hidden py-8 px-4 relative z-20">
             <div className="max-w-4xl mx-auto">
               <div className="text-center mb-12">
                                  <h2 className="font-black bg-gradient-to-r from-[#59e3a5] to-[#8b5cf6] bg-clip-text text-transparent mb-4" style={{ fontSize: '3rem', lineHeight: '1.2' }}>
                     STEP 4
                   </h2>
                 <h3 className="text-[calc(1.5rem+0.3rem)] sm:text-2xl md:text-3xl font-black text-white mb-6" style={{ lineHeight: '1.2' }}>
-                  Watch Your Career Transform
+                  Watch Your Career Explode
                 </h3>
                 <p className="text-[calc(1rem+0.2rem)] sm:text-base md:text-lg text-gray-300 leading-relaxed max-w-2xl mx-auto">
-                  Within 48 hours, your campaign goes live and everything shifts. Major playlists start adding your track. Thousands of new listeners discovering your music every day.
+                  48 to 72 hours after your campaign launches, everything changes. You wake up, open Spotify for Artists out of habit, and..... Your monthly listeners jumped like crazy overnight. You refresh. New playlist just added your track. Refresh again. Another one. That app that used to make you feel like something's missing? Now you're checking it six times a day just to watch the numbers climb. Your friends start texting you screenshots: "Yo I just heard your song on this playlist." Your TikTok video that used to get 340 views? Now it's getting 200K+ because new listeners are finding your socials. This is what actual momentum feels like—not hoping and manifesting and waiting for lightning to strike. You're watching your career move in real life, and for the first moment since you started this whole music thing, you're not wondering if you're wasting your time & energy. You're in the game now.
                 </p>
+                <button
+                  onClick={scrollToTrackInput}
+                  className="font-black text-transparent bg-clip-text bg-gradient-to-r from-[#59e3a5] to-[#8b5cf6] hover:from-[#8b5cf6] hover:to-[#59e3a5] transition-all duration-300 inline-flex items-center sm:text-2xl"
+                  style={{ fontSize: '1.375rem', marginTop: '2.5rem' }}
+                >
+                  I'm Ready To Blow Up →
+                </button>
               </div>
 
               {/* Mobile Phone Mockup for Step 4 */}
@@ -3117,8 +3169,8 @@ export default function Home() {
           {/* Mobile CTA Section */}
           <section className="block lg:hidden py-16 px-4 relative z-20">
             <div className="max-w-4xl mx-auto text-center">
-              <h3 className="text-[calc(1.25rem+0.25rem)] sm:text-xl md:text-2xl font-black text-white max-w-3xl mx-auto leading-relaxed mb-[calc(1rem+5px)] sm:mb-8 -mt-[25px] sm:-mt-5">
-                Forget everything you think you know about playlist marketing. We've made it stupid simple. You submit, we connect, you grow. That's it.
+              <h3 className="text-[calc(1.25rem+0.25rem)] sm:text-xl md:text-2xl font-black text-white max-w-3xl mx-auto leading-relaxed mb-[calc(1rem+5px)] sm:mb-8 -mt-8 sm:-mt-4">
+                You've been grinding for months with barely anything to show for it. That ends today. Submit your track, we activate our curators, and within 72hrs you're watching playlist placements stack up while your friends ask how the hell you're blowing up so fast.
               </h3>
               
               <button
@@ -3139,7 +3191,7 @@ export default function Home() {
                   ref={forgetTextRef}
                   className={`text-[calc(1.5rem+0.25rem)] sm:text-2xl md:text-3xl lg:text-4xl font-black text-white max-w-3xl mx-auto leading-relaxed lg:leading-[1.5] ${forgetTextInView ? 'animate-fade-in-up' : 'opacity-0'} -mt-[10px] sm:mt-0 mb-[5px] sm:mb-0`}
                 >
-                  Forget everything you think you know about playlist marketing. We've made it stupid simple. You submit, we connect, you grow. That's it.
+                  You've been grinding for months with barely anything to show for it. That ends today. Submit your track, we activate our curators, and within 72hrs you're watching playlist placements stack up while your friends ask how the hell you're blowing up so fast.
                 </h3>
               </div>
 
@@ -4617,7 +4669,7 @@ export default function Home() {
                   ref={experimentalTextRef}
                   className={`text-2xl md:text-3xl lg:text-4xl font-black text-white max-w-4xl mx-auto leading-relaxed ${experimentalTextInView ? 'animate-fade-in-up' : 'opacity-0'}`}
                 >
-                  Do you make experimental ambient-folk-trap-piano-blitz? Yup, we got playlists for that too.
+                  Do you make experimental ambient-folk-trap-piano-blitz? Yup, we've got playlists for that too.
                 </h3>
                             </div>
 
