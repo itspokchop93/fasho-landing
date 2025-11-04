@@ -2037,7 +2037,7 @@ export default function Home() {
               </div>
                   
             {/* Icon Box Cards - Independent Design */}
-            <div className="max-w-[90rem] mx-auto px-1 sm:px-6 mb-4 sm:mb-12 scale-90 origin-center">
+            <div className="max-w-[90rem] mx-auto px-1 sm:px-6 mb-0 sm:mb-12 scale-90 origin-center">
               {/* Grid layout for 6 icon boxes - 2 columns on desktop, 1 on mobile */}
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-8">
                 
@@ -2054,7 +2054,7 @@ export default function Home() {
                       </svg>
                     </div>
                     <h3 className="text-white font-black text-[1.6875rem] sm:text-[1.9375rem] mb-4 leading-tight">Wake Up To <span className="bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] bg-clip-text text-transparent">Thousands</span> of New Listeners Who <span className="bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] bg-clip-text text-transparent">Love You</span></h3>
-                    <p className="text-gray-300 text-[1.25rem] sm:text-[1.1875rem] leading-relaxed">Your song lands on playlists with <b className="text-white">massive engaged audiences</b> who save tracks, follow artists, and come back for more. Which means you're gaining <b className="text-white">actual fans</b> who'll stream your entire catalog, show up to your shows, and tell their friends about you. We don't use bots, so you're building <b className="text-white">real momentum</b> that compounds instead of getting flagged for fake engagement and watching your account get buried.</p>
+                    <p className="text-gray-300 text-[1.25rem] sm:text-[1.1875rem] leading-relaxed">Your song lands on playlists with <b className="text-white">massive audiences</b> who engage with the music they discover. Which means you're not just getting streams, you're gaining <b className="text-white">diehard fans</b> who'll dive into your entire catalog, show up when you perform, and tell their friends "bro you gotta hear this".  You've been pouring everything into your music, now it's time for it to get the <b className="text-white">audience it deserves.</b></p>
                   </div>
                 </div>
                 
@@ -2075,39 +2075,8 @@ export default function Home() {
                 {/* Row 2 Spacer - for Intersection Observer */}
                 <div ref={iconBoxRow2Ref as any} className="lg:col-span-2 h-1 -mb-7 lg:-mb-7"></div>
 
-                {/* Icon Box Card 3 - Placements Start Within 48-72 Hours */}
-                <div ref={iconBox3Ref as any} className={`group relative bg-gradient-to-br from-[#18192a]/90 via-[#1a1b3a]/70 to-[#0a0a13]/90 backdrop-blur-xl rounded-3xl p-8 lg:p-10 border-2 border-white/20 hover:border-[#59e3a5]/50 transition-all duration-500 hover:shadow-[0_20px_60px_0_rgba(89,227,165,0.3)] hover:-translate-y-2 icon-box-pending ${(isMobile ? iconBox3InView : iconBoxRow2InView) ? 'icon-box-animate-left' : ''}`}>
-                  <div className="absolute inset-0 bg-gradient-to-br from-[#59e3a5]/10 via-transparent to-[#14c0ff]/10 rounded-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
-                  <div className="relative z-10">
-                    <div className="w-16 h-16 mb-6 flex items-center justify-center bg-gradient-to-br from-[#59e3a5] to-[#14c0ff] rounded-2xl shadow-[0_10px_30px_0_rgba(89,227,165,0.4)] transform group-hover:scale-110 transition-transform duration-300">
-                      <svg className="w-9 h-9 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                      </svg>
-                    </div>
-                    <h3 className="text-white font-black text-[1.6875rem] sm:text-[1.9375rem] mb-4 leading-tight">Placements Start In Only <span className="bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] bg-clip-text text-transparent">48-72 Hours</span></h3>
-                    <p className="text-gray-300 text-[1.25rem] sm:text-[1.1875rem] leading-relaxed">You'll see your first playlist adds within <b className="text-white">only 2-3 days.</b> Rapid results in real time instead of sitting in limbo wondering if anything's even working. Your campaign delivers <b className="text-white">immediate proof</b> with placements you can screenshot and stream counts that <b className="text-white">blow through the roof.</b> Get ready for that "hell yeah" moment of finally hitting big streaming numbers on your music and landing on <b className="text-white">massive playlists</b> that will change your career forever.</p>
-                  </div>
-                </div>
-
-                {/* Icon Box Card 4 - Works For Every Genre And For Every Artist */}
-                <div ref={iconBox4Ref as any} className={`group relative bg-gradient-to-br from-[#18192a]/90 via-[#1a1b3a]/70 to-[#0a0a13]/90 backdrop-blur-xl rounded-3xl p-8 lg:p-10 border-2 border-white/20 hover:border-[#14c0ff]/50 transition-all duration-500 hover:shadow-[0_20px_60px_0_rgba(20,192,255,0.3)] hover:-translate-y-2 icon-box-pending ${(isMobile ? iconBox4InView : iconBoxRow2InView) ? 'icon-box-animate-right' : ''}`}>
-                  <div className="absolute inset-0 bg-gradient-to-br from-[#14c0ff]/10 via-transparent to-[#59e3a5]/10 rounded-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
-                  <div className="relative z-10">
-                    <div className="w-16 h-16 mb-6 flex items-center justify-center bg-gradient-to-br from-[#14c0ff] to-[#59e3a5] rounded-2xl shadow-[0_10px_30px_0_rgba(20,192,255,0.4)] transform group-hover:scale-110 transition-transform duration-300">
-                      <svg className="w-9 h-9 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3" />
-                      </svg>
-                    </div>
-                    <h3 className="text-white font-black text-[1.6875rem] sm:text-[1.9375rem] mb-4 leading-tight">Works For <span className="bg-gradient-to-r from-[#14c0ff] to-[#59e3a5] bg-clip-text text-transparent">Every</span> Genre And For <span className="bg-gradient-to-r from-[#14c0ff] to-[#59e3a5] bg-clip-text text-transparent">Every</span> Artist</h3>
-                    <p className="text-gray-300 text-[1.25rem] sm:text-[1.1875rem] leading-relaxed">Whether you're making <b className="text-white">drill, indie pop,</b> or <b className="text-white">lo-fi beats,</b> whether you're at <b className="text-white">500 streams</b> or <b className="text-white">500,000,</b> we've got curators who specialize in your <b className="text-white">exact sound</b> and work with artists at <b className="text-white">all experience levels.</b> You're not getting thrown into random playlists that don't fit your vibe. You're getting <b className="text-white">strategic placements</b> that actually build your <b className="text-white">real fanbase</b> with listeners who'll love your songs and come back for more.</p>
-                  </div>
-                </div>
-
-                {/* Row 3 Spacer - for Intersection Observer */}
-                <div ref={iconBoxRow3Ref as any} className="lg:col-span-2 h-1 -mb-7 lg:-mb-7"></div>
-
                 {/* Icon Box Card 5 - Guaranteed Results On Every Package */}
-                <div ref={iconBox5Ref as any} className={`group relative bg-gradient-to-br from-[#18192a]/90 via-[#1a1b3a]/70 to-[#0a0a13]/90 backdrop-blur-xl rounded-3xl p-8 lg:p-10 border-2 border-white/20 hover:border-[#59e3a5]/50 transition-all duration-500 hover:shadow-[0_20px_60px_0_rgba(89,227,165,0.3)] hover:-translate-y-2 icon-box-pending ${(isMobile ? iconBox5InView : iconBoxRow3InView) ? 'icon-box-animate-left' : ''}`}>
+                <div ref={iconBox5Ref as any} className={`group relative bg-gradient-to-br from-[#18192a]/90 via-[#1a1b3a]/70 to-[#0a0a13]/90 backdrop-blur-xl rounded-3xl p-8 lg:p-10 border-2 border-white/20 hover:border-[#59e3a5]/50 transition-all duration-500 hover:shadow-[0_20px_60px_0_rgba(89,227,165,0.3)] hover:-translate-y-2 icon-box-pending ${(isMobile ? iconBox5InView : iconBoxRow2InView) ? 'icon-box-animate-left' : ''}`}>
                   <div className="absolute inset-0 bg-gradient-to-br from-[#59e3a5]/10 via-transparent to-[#14c0ff]/10 rounded-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
                   <div className="relative z-10">
                     <div className="w-16 h-16 mb-6 flex items-center justify-center bg-gradient-to-br from-[#59e3a5] to-[#14c0ff] rounded-2xl shadow-[0_10px_30px_0_rgba(89,227,165,0.4)] transform group-hover:scale-110 transition-transform duration-300">
@@ -2116,7 +2085,38 @@ export default function Home() {
                       </svg>
                     </div>
                     <h3 className="text-white font-black text-[1.6875rem] sm:text-[1.9375rem] mb-4 leading-tight">Guaranteed <span className="bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] bg-clip-text text-transparent">Results</span> On Every Package</h3>
-                    <p className="text-gray-300 text-[1.25rem] sm:text-[1.1875rem] leading-relaxed">You'll know the <b className="text-white">exact</b> range of <b className="text-white">placements</b> and <b className="text-white">streams</b> you're getting before you spend a dollar, so you're not gambling or crossing your fingers or hoping for the best. You're making a <b className="text-white">calculated investment</b> with a guaranteed floor, which means you can finally budget your music career like a <b className="text-white">real business</b> instead of throwing money at the wall.</p>
+                    <p className="text-gray-300 text-[1.25rem] sm:text-[1.1875rem] leading-relaxed">You'll know the <b className="text-white">exact</b> range of <b className="text-white">placements</b> and <b className="text-white">streams</b> you're getting before you spend a dollar, so you're not gambling or crossing your fingers or hoping for the best. You're making a <b className="text-white">calculated investment</b> with locked-in guarantees, allowing you to budget your music career <b className="text-white">like a business</b> instead of  throwing money at the wall.</p>
+                  </div>
+                </div>
+
+                {/* Icon Box Card 3 - Placements Start Within 48-72 Hours */}
+                <div ref={iconBox3Ref as any} className={`group relative bg-gradient-to-br from-[#18192a]/90 via-[#1a1b3a]/70 to-[#0a0a13]/90 backdrop-blur-xl rounded-3xl p-8 lg:p-10 border-2 border-white/20 hover:border-[#59e3a5]/50 transition-all duration-500 hover:shadow-[0_20px_60px_0_rgba(89,227,165,0.3)] hover:-translate-y-2 icon-box-pending ${(isMobile ? iconBox3InView : iconBoxRow2InView) ? 'icon-box-animate-right' : ''}`}>
+                  <div className="absolute inset-0 bg-gradient-to-br from-[#59e3a5]/10 via-transparent to-[#14c0ff]/10 rounded-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+                  <div className="relative z-10">
+                    <div className="w-16 h-16 mb-6 flex items-center justify-center bg-gradient-to-br from-[#59e3a5] to-[#14c0ff] rounded-2xl shadow-[0_10px_30px_0_rgba(89,227,165,0.4)] transform group-hover:scale-110 transition-transform duration-300">
+                      <svg className="w-9 h-9 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                    </div>
+                    <h3 className="text-white font-black text-[1.6875rem] sm:text-[1.9375rem] mb-4 leading-tight">Placements Start In Only <span className="bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] bg-clip-text text-transparent">48-72 Hours</span></h3>
+                    <p className="text-gray-300 text-[1.25rem] sm:text-[1.1875rem] leading-relaxed">You'll see your first playlist adds within <b className="text-white">only 2-3 days.</b> Always rapid results in real time, so you're never sitting in limbo wondering if anything's even working. Your campaign delivers <b className="text-white">immediate proof</b> with placements you can screenshot and stream counts that <b className="text-white">blow through the roof.</b> Get ready for that "hell yeah" moment of finally hitting <b className="text-white">big streaming numbers</b> and landing on <b className="text-white">massive playlists</b> that will change your career forever.</p>
+                  </div>
+                </div>
+
+                {/* Row 3 Spacer - for Intersection Observer */}
+                <div ref={iconBoxRow3Ref as any} className="lg:col-span-2 h-1 -mb-7 lg:-mb-7"></div>
+
+                {/* Icon Box Card 4 - Works For Every Genre And For Every Artist */}
+                <div ref={iconBox4Ref as any} className={`group relative bg-gradient-to-br from-[#18192a]/90 via-[#1a1b3a]/70 to-[#0a0a13]/90 backdrop-blur-xl rounded-3xl p-8 lg:p-10 border-2 border-white/20 hover:border-[#14c0ff]/50 transition-all duration-500 hover:shadow-[0_20px_60px_0_rgba(20,192,255,0.3)] hover:-translate-y-2 icon-box-pending ${(isMobile ? iconBox4InView : iconBoxRow3InView) ? 'icon-box-animate-left' : ''}`}>
+                  <div className="absolute inset-0 bg-gradient-to-br from-[#14c0ff]/10 via-transparent to-[#59e3a5]/10 rounded-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+                  <div className="relative z-10">
+                    <div className="w-16 h-16 mb-6 flex items-center justify-center bg-gradient-to-br from-[#14c0ff] to-[#59e3a5] rounded-2xl shadow-[0_10px_30px_0_rgba(20,192,255,0.4)] transform group-hover:scale-110 transition-transform duration-300">
+                      <svg className="w-9 h-9 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3" />
+                      </svg>
+                    </div>
+                    <h3 className="text-white font-black text-[1.6875rem] sm:text-[1.9375rem] mb-4 leading-tight">Works For <span className="bg-gradient-to-r from-[#14c0ff] to-[#59e3a5] bg-clip-text text-transparent">Every</span> Genre And For <span className="bg-gradient-to-r from-[#14c0ff] to-[#59e3a5] bg-clip-text text-transparent">Every</span> Artist</h3>
+                    <p className="text-gray-300 text-[1.25rem] sm:text-[1.1875rem] leading-relaxed">Whether you're making <b className="text-white">hip-hop, indie rock,</b> or <b className="text-white">podcasts,</b> whether you're at <b className="text-white">500 streams</b> or <b className="text-white">500,000</b> — we've got curators who specialize in your <b className="text-white">exact sound</b> and work with artists at <b className="text-white">all experience levels.</b> You're not getting thrown into random playlists that don't fit your vibe. You're getting <b className="text-white">strategic placements</b> that build your <b className="text-white">core fanbase</b> with millions of new listeners who'll love your songs and keep coming back for more.</p>
                   </div>
                 </div>
 
@@ -2130,7 +2130,7 @@ export default function Home() {
                       </svg>
                     </div>
                     <h3 className="text-white font-black text-[1.6875rem] sm:text-[1.9375rem] mb-4 leading-tight"><span className="bg-gradient-to-r from-[#14c0ff] to-[#59e3a5] bg-clip-text text-transparent">10+ Years</span> of Curator <span className="bg-gradient-to-r from-[#14c0ff] to-[#59e3a5] bg-clip-text text-transparent">Relationships</span> You Can't Build Yourself</h3>
-                    <p className="text-gray-300 text-[1.25rem] sm:text-[1.1875rem] leading-relaxed">You're getting <b className="text-white">instant access</b> to the same playlist network major labels spend <b className="text-white">six figures</b> accessing. That means you skip the <b className="text-white">7-8 years</b> of cold emails, ghosted DMs, and rejected submissions it would take to build these connections yourself. Spend that time actually <b className="text-white">making music</b> instead of begging curators to even <i className="text-white">listen</i> to your song.</p>
+                    <p className="text-gray-300 text-[1.25rem] sm:text-[1.1875rem] leading-relaxed">You're getting <b className="text-white">instant access</b> to the same playlist network major labels spend <b className="text-white">six figures</b> accessing. That means you skip the <b className="text-white">10-11 years</b> of cold emails, ghosted DMs, and rejected submissions it would take to build these connections yourself. Spend your time in the studio doing <b className="text-white">what you love</b> and let us <b className="text-white">unlock doors</b> for you that we already have the keys to.</p>
                   </div>
                 </div>
                       
@@ -2138,7 +2138,7 @@ export default function Home() {
             </div>
             
             {/* CTA Button After Icon Boxes */}
-            <div className="text-center mt-[-5rem] sm:mt-12">
+            <div className="text-center mt-[-8rem] sm:mt-12">
               <button
                 onClick={scrollToTrackInput}
                 className="px-6 md:px-16 py-3 md:py-5 bg-gradient-to-r from-[#59e3a5] via-[#14c0ff] to-[#8b5cf6] text-white font-bold rounded-2xl hover:shadow-2xl hover:shadow-[#14c0ff]/30 transition-all duration-700 transform hover:scale-105 active:scale-95 relative overflow-hidden group text-lg md:text-xl"
@@ -2371,20 +2371,29 @@ export default function Home() {
 
           {/* Desktop How It Works Sections - 4 Separate Sections */}
           
+          {/* How It Works Title */}
+          <section className="py-12 px-4 pb-20 lg:pb-24 relative z-20" style={{ background: 'transparent' }}>
+            <div className="max-w-7xl mx-auto text-center px-8 sm:px-4">
+              <h2 className="font-black text-white mb-4 md:text-6xl lg:text-6xl" style={{ lineHeight: '1.2', fontSize: 'calc(2.5rem + 0.15rem)' }}>
+                Here's <span className="bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] bg-clip-text text-transparent">Exactly</span> How It Works
+              </h2>
+            </div>
+          </section>
+          
           {/* Step 1 Section - Left Column */}
           <section className="hidden lg:block py-8 px-4 relative z-20" style={{ background: 'transparent' }}>
             <div className="max-w-7xl mx-auto">
               <div className="grid lg:grid-cols-2 gap-12 items-center">
                 {/* Left Column - Step 1 Text */}
-                <div className="order-2 lg:order-1">
+                <div className="order-2 lg:order-1 lg:pl-8 xl:pl-12">
                   <h2 className="text-4xl md:text-5xl lg:text-6xl font-black bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] bg-clip-text text-transparent mb-1" style={{ lineHeight: '1.2' }}>
                     STEP 1
                   </h2>
-                  <h3 className="text-[calc(1.875rem+0.4rem)] sm:text-3xl md:text-4xl lg:text-5xl font-black text-white mb-4 md:mb-8" style={{ lineHeight: '1.2' }}>
-                    Drop Your Track, We Handle The Rest
+                  <h3 className="text-[calc(1.5rem+0.3rem)] sm:text-2xl md:text-3xl lg:text-4xl font-black text-white mb-4 md:mb-8" style={{ lineHeight: '1.2' }}>
+                    Drop Your Track
                   </h3>
                   <p className="text-[calc(0.95rem+0.2rem)] sm:text-[0.95rem] md:text-[1.4rem] text-gray-300 leading-relaxed pb-8 md:pb-12">
-                    Paste your Spotify link or search your song title. Takes 30 seconds, then you're done. No spreadsheets to build, no curator emails to track down, no guessing which playlists might actually fit your vibe. While you go back to making music and enjoying your life, our team is analyzing your track's DNA: the genre, the subgenre, the tempo, the mood, the energy, even the vocal delivery style. We're matching your sound against thousands of curators in our network who are actively building playlists in your exact lane right now. This isn't guesswork. We know these curators personally, we know what they're adding this week, and we know exactly which ones are going to love your sound the second they hear it.
+                    <b>Search & find your Spotify song.</b> Takes 30 seconds and you're done. Our team analyzes your track's <b>genre, tempo, mood,</b> and energy, then matches you with curators in our network who run <b>massive playlists</b> in your exact lane. We know these curators personally, we know what they're looking for this week, and we know exactly which ones are going to <b>love your sound</b> the second they hear it.
                   </p>
                   <button
                     onClick={scrollToTrackInput}
@@ -2569,15 +2578,15 @@ export default function Home() {
                 </div>
 
                 {/* Right Column - Step 2 Text */}
-                <div className="order-1 lg:order-2">
+                <div className="order-1 lg:order-2 lg:pr-8 xl:pr-12">
                   <h2 className="text-4xl md:text-5xl lg:text-6xl font-black bg-gradient-to-r from-[#14c0ff] to-[#8b5cf6] bg-clip-text text-transparent mb-1" style={{ lineHeight: '1.2' }}>
                     STEP 2
                   </h2>
-                  <h3 className="text-[calc(1.875rem+0.4rem)] sm:text-3xl md:text-4xl lg:text-5xl font-black text-white mb-4 md:mb-8" style={{ lineHeight: '1.2' }}>
+                  <h3 className="text-[calc(1.5rem+0.3rem)] sm:text-2xl md:text-3xl lg:text-4xl font-black text-white mb-4 md:mb-8" style={{ lineHeight: '1.2' }}>
                     Pick A Package
                   </h3>
                   <p className="text-[calc(0.95rem+0.2rem)] sm:text-[0.95rem] md:text-[1.4rem] text-gray-300 leading-relaxed pb-8 md:pb-12">
-                    Choose the campaign level that matches where you're at. If you just dropped your first single and need those crucial first placements to prove this is real—we got you. If you're sitting on 10K monthly listeners and ready to 10x that number—we got that too. Every package guarantees a range of results: playlist counts, stream estimates, follower reach. No vague promises, no "we'll try our best" nonsense. You'll see the splash your music will make before you pay a single dollar. Got an EP? Stack additional tracks and save 25% on each additional song. Got an album rollout planned? Run multiple campaigns and watch each release build on the last one's momentum like clockwork.
+                    Choose the campaign level that matches <b>where you're at.</b> Just dropped your first single and need those crucial first placements? <b>We got you.</b> Sitting on 10K monthly listeners and ready to 10x it? <b>We got that too.</b> Every package shows results upfront: how many <b>playlists,</b> how many <b>streams,</b> how much <b>reach.</b> No vague promises. You'll see the <b>impact</b> your music will make before you even hit submit. Dropping an album? Stack additional songs and save <b>25% on each one.</b> Every campaign builds on the last one's momentum <b>like clockwork.</b>
                   </p>
                   <button
                     onClick={scrollToTrackInput}
@@ -2594,15 +2603,15 @@ export default function Home() {
             <div className="max-w-7xl mx-auto">
               <div className="grid lg:grid-cols-2 gap-12 items-center">
                 {/* Left Column - Step 3 Text */}
-                <div className="order-2 lg:order-1">
+                <div className="order-2 lg:order-1 lg:pl-8 xl:pl-12">
                   <h2 className="text-4xl md:text-5xl lg:text-6xl font-black bg-gradient-to-r from-[#8b5cf6] to-[#59e3a5] bg-clip-text text-transparent mb-1" style={{ lineHeight: '1.2' }}>
                     STEP 3
                   </h2>
-                  <h3 className="text-[calc(1.875rem+0.4rem)] sm:text-3xl md:text-4xl lg:text-5xl font-black text-white mb-4 md:mb-8" style={{ lineHeight: '1.2' }}>
+                  <h3 className="text-[calc(1.5rem+0.3rem)] sm:text-2xl md:text-3xl lg:text-4xl font-black text-white mb-4 md:mb-8" style={{ lineHeight: '1.2' }}>
                     Our Team Goes To Work
                   </h3>
                   <p className="text-[calc(0.95rem+0.2rem)] sm:text-[0.95rem] md:text-[1.4rem] text-gray-300 leading-relaxed pb-8 md:pb-12">
-                    Here's what happens behind the scenes while you wait: Our team starts reaching out to every curator in our network who matches your sound. We're not sending desperate cold emails that every artist has tried before. We're texting Marcus who runs that 340K follower R&B playlist. We're calling Jessica who curates three different lo-fi lists with 2M combined followers. We're DMing Nicky G. who's been asking us for more Latin trap. These people actually answer when we reach out because we've been delivering them quality music for over 10 years. "Hey, remember that artist we placed last month who's now at 50K monthly listeners? Got another one in that same lane." That's the conversation happening about YOUR song. Personal relationships, real credibility, curators who trust our taste because we've never wasted their time.
+                    <b>Here's what happens behind the scenes: </b>We reach out to every curator in our network who matches your sound. We're not sending cold emails. We're texting Marcus who runs that <b>340K follower R&B playlist.</b> We're calling Jessica who curates three different lo-fi lists with <b>2M combined followers.</b> We're DMing Nicky who's been asking us for more Latin trap. These people actually <b>answer when we call</b> because we've been delivering them quality music for over <b>10 years.</b> "Hey, remember that artist we placed last month who's now at 50K monthly listeners? We got another one in that same lane for you." That's the conversation happening about <b>YOUR</b> song. This is how major labels get their artists placed, and exactly why we can <b>guarantee results</b> for our clients.
                   </p>
                   <button
                     onClick={scrollToTrackInput}
@@ -2764,7 +2773,7 @@ export default function Home() {
                 </div>
 
                 {/* Right Column - Step 4 Text */}
-                <div className="order-1 lg:order-2">
+                <div className="order-1 lg:order-2 lg:pr-8 xl:pr-12">
                   <h2 className="text-4xl md:text-5xl lg:text-6xl font-black bg-gradient-to-r from-[#59e3a5] to-[#8b5cf6] bg-clip-text text-transparent mb-1" style={{ lineHeight: '1.2' }}>
                     STEP 4
                   </h2>
@@ -2772,7 +2781,7 @@ export default function Home() {
                     Watch Your Career Explode
                   </h3>
                   <p className="text-[calc(0.95rem+0.2rem)] sm:text-[0.95rem] md:text-[1.4rem] text-gray-300 leading-relaxed pb-8 md:pb-12">
-                    Within 48-72 hours, results hit your dashboard like nothing you've seen before. Placements on playlists with massive followers. Your song being flooded with new streams and likes. Your monthly listeners shooting through the roof. Spotify's algorithm locks onto your momentum and automatically starts pushing your track to even MORE users through Discover Weekly and Radio. Real fans who genuinely love your sound start following your socials, sharing your content, and waiting for what's next. The doubt and the fear that maybe your music career won't work — is gone forever. You're in the GAME now. You were born for this. And now it's time to show the world what you're made of.
+                    Within only <b>48-72 hours,</b> results hit your dashboard like nothing you've seen before. Placements on playlists with <b>massive followers.</b> Your song being flooded with <b>new streams</b> and <b>likes.</b> Your <b>monthly listeners</b> shooting through the roof. Spotify's algorithm locks onto your momentum and <b>automatically</b> starts <b>pushing your track </b>to even <b>MORE</b> users through algorithmic playlists like <b>Discover Weekly. </b>Real fans who genuinely love your sound start following <b>your socials,</b> sharing <b>your content,</b> and waiting for what's next. The doubt and the fear that maybe your music career won't work — <b>is gone forever.</b> You're in the <b>GAME</b> now. You were <b>born for this. </b>And now it's time to show the world what you're made of.
                   </p>
                   <button
                     onClick={scrollToTrackInput}
@@ -2795,7 +2804,7 @@ export default function Home() {
                       STEP 1
                     </h2>
                 <h3 className="text-[calc(1.5rem+0.4rem)] sm:text-2xl md:text-3xl font-black text-white mb-6" style={{ lineHeight: '1.2' }}>
-                  Drop Your Track, We Handle The Rest
+                  Drop Your Track
                 </h3>
                 <p className="text-[calc(1rem+0.2rem)] sm:text-base md:text-lg text-gray-300 leading-relaxed max-w-2xl mx-auto">
                   Paste your Spotify link or search your song title. Takes 30 seconds, then you're done. No spreadsheets to build, no curator emails to track down, no guessing which playlists might actually fit your vibe. While you go back to making music and enjoying your life, our team is analyzing your track's DNA: the genre, the subgenre, the tempo, the mood, the energy, even the vocal delivery style. We're matching your sound against thousands of curators in our network who are actively building playlists in your exact lane right now. This isn't guesswork. We know these curators personally, we know what they're adding this week, and we know exactly which ones are going to love your sound the second they hear it.
