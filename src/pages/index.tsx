@@ -3197,7 +3197,7 @@ export default function Home() {
           <section className="block lg:hidden py-16 px-4 relative z-20">
             <div className="max-w-4xl mx-auto text-center">
               <h3 className="text-[calc(1.25rem+0.25rem)] sm:text-xl md:text-2xl font-black text-white max-w-3xl mx-auto leading-relaxed mb-[calc(1rem+5px)] sm:mb-8 -mt-8 sm:-mt-4">
-                You've been grinding for months with barely anything to show for it. That ends today. Submit your track, we activate our curators, and within 72hrs you're watching playlist placements stack up while your friends ask how the hell you're blowing up so fast.
+                You've been grinding for months with barely anything to show for it. That ends today. Submit your track, we activate our curators, and within 72hrs you're watching playlist placements stack up while your friends ask how the heck you're blowing up so fast.
               </h3>
               
               <button
@@ -3223,7 +3223,7 @@ export default function Home() {
                   ref={forgetTextRef}
                   className={`text-[calc(1.5rem+0.25rem)] sm:text-2xl md:text-3xl lg:text-3xl font-black text-white max-w-3xl lg:max-w-6xl mx-auto leading-relaxed lg:leading-[1.5] ${forgetTextInView ? 'animate-fade-in-up' : 'opacity-0'} -mt-[10px] sm:mt-0 mb-[5px] sm:mb-0`}
                 >
-                  You've been grinding for months with barely anything to show for it. That ends today. Submit your track, we activate our curators, and within 72hrs you're watching playlist placements stack up while your friends ask how the hell you're blowing up so fast.
+                  You've been grinding for months with barely anything to show for it. That ends today. Submit your track, we activate our curators, and within 72hrs you're watching playlist placements stack up while your friends ask how the heck you're blowing up so fast.
                 </h3>
               </div>
 
@@ -3385,7 +3385,7 @@ export default function Home() {
           </div>
 
           {/* Testimonials Section */}
-          <section className="pt-12 md:pt-24 pb-24 md:pb-24 px-4 relative z-30 overflow-visible" style={{ background: 'transparent' }}>
+          <section className="pt-2 md:pt-24 pb-24 md:pb-24 px-4 relative z-30 overflow-visible" style={{ background: 'transparent' }}>
             <div className="max-w-screen-2xl mx-auto overflow-visible">
               {/* Section Header */}
               <div className="text-center mb-12">
@@ -3514,7 +3514,7 @@ export default function Home() {
           </section>
 
           {/* Shape Divider - Under Testimonials CTA */}
-          <div className="relative z-30 pb-4 md:pb-16 mt-40 md:mt-0 -mb-28 md:mb-0 shape-divider-testimonials" style={{ height: '200px', width: '120vw', left: '-10vw', position: 'relative', background: 'transparent' }}>
+          <div className="relative z-30 pb-4 md:pb-16 mt-40 md:mt-0 -mb-40 md:mb-0 shape-divider-testimonials" style={{ height: '200px', width: '120vw', left: '-10vw', position: 'relative', background: 'transparent' }}>
             {/* All background elements removed for full transparency */}
             
             {/* Base layer - darkest */}
@@ -3745,18 +3745,21 @@ export default function Home() {
           </div>
 
           {/* Dashboard Preview Section */}
-          <section className="py-0 md:py-24 px-4 md:px-12 lg:px-20 pb-24 md:pb-48 relative z-15 overflow-hidden">
+          <section className="pt-0 md:py-24 px-4 md:px-12 lg:px-20 pb-24 md:pb-48 relative z-15 overflow-hidden -mt-32 md:mt-0">
             {/* Extended gradient overlay that flows into next section */}
             <div className="absolute inset-0 bg-gradient-to-b from-[#18192a] via-[#16213e] to-[#0a0a13] -z-10"></div>
             <div className="absolute bottom-0 left-0 right-0 h-64 bg-gradient-to-b from-transparent to-[#18192a] -z-5"></div>
             
-            {/* Mobile-only smooth gradient transition overlay */}
-            <div className="sm:hidden absolute bottom-0 left-0 right-0 h-48 bg-gradient-to-b from-transparent to-[#0a0a13] z-20"></div>
-            <div className="max-w-7xl mx-auto">
+            {/* Mobile-only smooth gradient transition overlay at top - blends with wavy background above */}
+            <div className="sm:hidden absolute top-0 left-0 right-0 h-48 bg-gradient-to-b from-transparent via-[#18192a]/80 to-[#18192a] z-0"></div>
+            
+            {/* Mobile-only smooth gradient transition overlay at bottom */}
+            <div className="sm:hidden absolute bottom-0 left-0 right-0 h-48 bg-gradient-to-b from-transparent to-[#0a0a13] z-10"></div>
+            <div className="max-w-7xl mx-auto relative z-20">
               <div className="text-center mb-4 md:mb-16">
                 <h2 
                   ref={commandCenterRef}
-                  className={`text-4xl md:text-5xl lg:text-6xl font-black mb-4 md:mb-8 bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] bg-clip-text text-transparent mt-[10px] md:mt-0 pt-[5px] sm:pt-0 ${commandCenterInView ? 'animate-fade-in-up' : 'opacity-0'}`} 
+                  className={`text-4xl md:text-5xl lg:text-6xl font-black mb-4 md:mb-8 bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] bg-clip-text text-transparent mt-8 md:mt-0 pt-[5px] sm:pt-0 ${commandCenterInView ? 'animate-fade-in-up' : 'opacity-0'}`} 
                   style={{ lineHeight: '1.3' }}
                 >
                   <span className="block sm:inline">Your Personal</span>
