@@ -8,11 +8,20 @@ import AdminEmailManagement from '../components/AdminEmailManagement'
 import AdminCouponsManagement from '../components/AdminCouponsManagement'
 import AdminSettingsManagement from '../components/AdminSettingsManagement'
 import MarketingManager from '../components/MarketingManager'
-import MonthlyOrdersChart from '../components/MonthlyOrdersChart'
 import ActiveUsersSection from '../components/ActiveUsersSection'
 import AdminAccessDenied from '../components/AdminAccessDenied'
 import BlogDashboard from '../../plugins/blog/components/BlogDashboard'
 import { verifyAdminToken, getAdminTokenFromRequest, AdminUser } from '../utils/admin/auth'
+import dynamic from 'next/dynamic'
+
+const MonthlyOrdersChart = dynamic(() => import('../components/MonthlyOrdersChart'), {
+  ssr: false,
+  loading: () => (
+    <div className="bg-white rounded-xl p-6 shadow-lg border border-gray-100">
+      <p className="text-gray-600" style={{ fontSize: '1.2rem' }}>Loading chart…</p>
+    </div>
+  )
+})
 
 interface AdminDashboardProps {
   adminUser: AdminUser | null
