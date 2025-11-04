@@ -2068,7 +2068,7 @@ export default function Home() {
                       </svg>
                     </div>
                     <h3 className="text-white font-black text-[1.6875rem] sm:text-[1.9375rem] mb-4 leading-tight">Your Song Submitted To Our <span className="bg-gradient-to-r from-[#14c0ff] to-[#59e3a5] bg-clip-text text-transparent">Massive Network</span> Overnight</h3>
-                    <p className="text-gray-300 text-[1.25rem] sm:text-[1.1875rem] leading-relaxed">We pitch your track to every matching curator in our database <b className="text-white">before tomorrow ends.</b> While other artists are still researching playlist contact info and writing their third draft of a pitch email, you're <b className="text-white">already</b> getting heard by <b className="text-white">decision-makers,</b> and you're not losing the critical first-week momentum window when Spotify's algorithm pays the most attention.</p>
+                    <p className="text-gray-300 text-[1.25rem] sm:text-[1.1875rem] leading-relaxed">We pitch your track to every matching curator in our database<b className="text-white"> before tomorrow ends.</b> Your song gets heard by the exact people who control <b className="text-white">major playlists</b> with MILLIONS of hungry listeners, all without you lifting a finger. No more sitting there paralyzed trying to figure out how to even find these people or what to say to them. No more watching days slip by while your track gets older and the excitement fades. Your release is getting <b className="text-white">real professional representation</b> and <b className="text-white">guaranteed placements</b> starting tonight.</p>
                   </div>
                 </div>
 
@@ -2085,7 +2085,7 @@ export default function Home() {
                       </svg>
                     </div>
                     <h3 className="text-white font-black text-[1.6875rem] sm:text-[1.9375rem] mb-4 leading-tight">Placements Start In Only <span className="bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] bg-clip-text text-transparent">48-72 Hours</span></h3>
-                    <p className="text-gray-300 text-[1.25rem] sm:text-[1.1875rem] leading-relaxed">You'll see your first <b className="text-white">playlist adds</b> rolling in before the weekend hits. No more <b className="text-white">lying awake</b> wondering if you wasted your money, no more <b className="text-white">refreshing</b> Spotify for Artists every hour hoping something happened—just <b className="text-white">immediate proof</b> that your campaign is working and the <b className="text-white">"hell yea"</b> moment of finally hitting <b className="text-white">big streaming numbers</b> on your music.</p>
+                    <p className="text-gray-300 text-[1.25rem] sm:text-[1.1875rem] leading-relaxed">You'll see your first playlist adds within <b className="text-white">only 2-3 days.</b> Rapid results in real time instead of sitting in limbo wondering if anything's even working. Your campaign delivers <b className="text-white">immediate proof</b> with placements you can screenshot and stream counts that <b className="text-white">blow through the roof.</b> Get ready for that "hell yeah" moment of finally hitting big streaming numbers on your music and landing on <b className="text-white">massive playlists</b> that will change your career forever.</p>
                   </div>
                 </div>
 
@@ -3195,7 +3195,12 @@ export default function Home() {
                 onClick={scrollToTrackInput}
                 className="px-12 py-4 bg-gradient-to-r from-[#59e3a5] via-[#14c0ff] to-[#8b5cf6] text-white font-bold rounded-2xl hover:shadow-2xl hover:shadow-[#14c0ff]/30 transition-all duration-700 transform hover:scale-105 active:scale-95 relative overflow-hidden group text-lg"
               >
-                <span className="relative z-10">I'M READY TO BLOW UP</span>
+                <span className="relative z-10 flex items-center gap-2">
+                  I'M READY TO BLOW UP
+                  <svg className="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                  </svg>
+                </span>
                 <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-700"></div>
               </button>
             </div>
@@ -3220,7 +3225,12 @@ export default function Home() {
                   onClick={scrollToTrackInput}
                   className={`px-12 py-4 bg-gradient-to-r from-[#59e3a5] via-[#14c0ff] to-[#8b5cf6] text-white font-bold rounded-2xl hover:shadow-2xl hover:shadow-[#14c0ff]/30 transform hover:scale-105 active:scale-95 relative overflow-hidden group text-lg ${blowUpButtonInView ? 'animate-fade-in-up' : 'opacity-0'}`}
                 >
-                  <span className="relative z-10">I'M READY TO BLOW UP</span>
+                  <span className="relative z-10 flex items-center gap-2">
+                    I'M READY TO BLOW UP
+                    <svg className="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                    </svg>
+                  </span>
                   <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-700"></div>
                 </button>
               </div>
