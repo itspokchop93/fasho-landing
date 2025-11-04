@@ -18,12 +18,13 @@ async function handler(req: NextApiRequest, res: NextApiResponse, adminUser: Adm
   try {
     const supabase = createAdminClient();
 
-    // Get current campaign data
+    // Get current campaign data (including package_name for initializing empty arrays)
     const { data: campaignData, error: fetchError } = await supabase
       .from('marketing_campaigns')
       .select(`
         id,
-        playlist_assignments
+        playlist_assignments,
+        package_name
       `)
       .eq('id', campaignId)
       .single();
@@ -38,6 +39,56 @@ async function handler(req: NextApiRequest, res: NextApiResponse, adminUser: Adm
       ? [...campaignData.playlist_assignments] 
       : [];
 
+    // Handle adding the first playlist assignment when array is empty
+    if (playlistAssignments.length === 0 && playlistIndex === 0) {
+      // When adding the first playlist, we need to determine how many slots to create
+      // Map old package names to new ones
+      const packageNameMapping: { [key: string]: string } = {
+        'ULTRA': 'LEGENDARY',
+        'DIAMOND': 'UNSTOPPABLE', 
+        'DOMINATE': 'DOMINATE',
+        'MOMENTUM': 'MOMENTUM',
+        'BREAKTHROUGH': 'BREAKTHROUGH',
+        'STARTER': 'BREAKTHROUGH',
+        'TEST CAMPAIGN': 'BREAKTHROUGH'
+      };
+
+      const mappedPackageName = packageNameMapping[campaignData.package_name.toUpperCase()] || campaignData.package_name.toUpperCase();
+
+      // Get package configuration to determine how many playlists are needed
+      const { data: packageConfig, error: packageError } = await supabase
+        .from('campaign_totals')
+        .select('playlist_assignments_needed')
+        .eq('package_name', mappedPackageName)
+        .single();
+
+      let playlistsNeeded = 2; // Default fallback
+      if (!packageError && packageConfig) {
+        playlistsNeeded = packageConfig.playlist_assignments_needed;
+      } else {
+        // Fallback assignments
+        const fallbackAssignments: { [key: string]: number } = {
+          'LEGENDARY': 4,
+          'UNSTOPPABLE': 4,
+          'DOMINATE': 3,
+          'MOMENTUM': 2,
+          'BREAKTHROUGH': 2
+        };
+        playlistsNeeded = fallbackAssignments[mappedPackageName] || 2;
+      }
+
+      // Initialize array with empty slots
+      for (let i = 0; i < playlistsNeeded; i++) {
+        playlistAssignments.push({
+          id: 'empty',
+          name: '-Empty-',
+          genre: 'empty'
+        });
+      }
+      console.log(`🎵 PLAYLIST-ASSIGNMENT: Initialized ${playlistsNeeded} empty slots for campaign ${campaignId}`);
+    }
+
+    // Now handle the assignment update
     if (playlistIndex >= 0 && playlistIndex < playlistAssignments.length) {
       // Handle special "removed" case
       if (newPlaylistId === 'removed') {

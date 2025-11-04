@@ -823,7 +823,39 @@ const ActiveCampaigns: React.FC = () => {
                           </div>
                         ))
                       ) : (
-                        <div className="text-xs text-gray-400 italic">No assignments</div>
+                        <div className="space-y-1">
+                          <div className="text-xs text-gray-400 italic mb-1">No assignments</div>
+                          {editingPlaylist?.campaignId === campaign.id && editingPlaylist?.playlistIndex === 0 ? (
+                            <div className="flex items-center space-x-1 w-full">
+                              <select
+                                defaultValue="empty"
+                                onChange={(e) => {
+                                  updatePlaylistAssignment(campaign.id, 0, e.target.value);
+                                }}
+                                className="text-xs border border-gray-300 rounded px-1 py-1 flex-1 min-w-0"
+                              >
+                                <option value="empty">📭 -Empty-</option>
+                                {availablePlaylists.map(p => (
+                                  <option key={p.id} value={p.id}>{p.name}</option>
+                                ))}
+                              </select>
+                              <button
+                                onClick={() => setEditingPlaylist(null)}
+                                className="text-xs text-gray-500 hover:text-gray-700 px-1"
+                              >
+                                ✕
+                              </button>
+                            </div>
+                          ) : (
+                            <button
+                              onClick={() => setEditingPlaylist({ campaignId: campaign.id, playlistIndex: 0 })}
+                              className="text-xs px-2 py-1 rounded bg-indigo-50 text-indigo-600 hover:text-indigo-800 hover:bg-indigo-100 w-full text-left"
+                              title="Click to add playlist assignment"
+                            >
+                              + Add Playlist
+                            </button>
+                          )}
+                        </div>
                       )}
                     </div>
                   </td>
