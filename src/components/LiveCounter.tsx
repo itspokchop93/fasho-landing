@@ -82,7 +82,7 @@ export default function LiveCounter({ className = '' }: LiveCounterProps) {
           </span>
         </div>
         
-        <div className="flex items-center space-x-2 sm:space-x-4">
+        <div className="flex items-center justify-center sm:justify-start space-x-2 sm:space-x-4">
           {/* Live monitoring dot with glow animation */}
           <div className="flex-shrink-0 relative">
             <div className="w-3 h-3 sm:w-4 sm:h-4 bg-[#59e3a5] rounded-full animate-pulse"></div>
@@ -96,8 +96,8 @@ export default function LiveCounter({ className = '' }: LiveCounterProps) {
               {count}
             </span>
             <span className="text-gray-300 text-[0.735rem] sm:text-[0.9rem] whitespace-nowrap">
-              <span className="block sm:hidden">artists got add-ons in the last 24hrs</span>
-              <span className="hidden sm:block">artists got add-on campaigns in the last 24hrs</span>
+              <span className="block sm:hidden">artists got add-ons in the last 48hrs</span>
+              <span className="hidden sm:block">artists got add-on campaigns in the last 48hrs</span>
             </span>
           </div>
 

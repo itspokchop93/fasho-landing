@@ -1038,33 +1038,51 @@ export default function AddSongsPage() {
             <div className="space-y-4 md:space-y-8">
               {/* Quote 1 */}
               <div className="relative bg-gradient-to-br from-gray-900/70 to-gray-800/50 backdrop-blur-xl rounded-2xl p-4 md:p-8 border border-white/10">
-                <div className="flex items-start space-x-3 md:space-x-4">
-                  <div className="text-3xl md:text-4xl lg:text-5xl text-[#59e3a5] font-serif">"</div>
+                <div className="flex items-center space-x-3 md:space-x-4">
+                  <div className="w-12 h-12 md:w-14 md:h-14 lg:w-16 lg:h-16 rounded-full bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] flex items-center justify-center shrink-0">
+                    <div className="text-lg md:text-xl lg:text-2xl">🎵</div>
+                  </div>
                   <div className="flex-1">
-                    <p className="text-lg sm:text-xl md:text-2xl lg:text-3xl text-gray-300 mb-2 md:mb-3">That track you think is mid?</p>
-                    <p className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-bold text-white">Could be your breakthrough hit.</p>
+                    <p className="text-base sm:text-lg md:text-xl lg:text-2xl font-bold bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] bg-clip-text text-transparent leading-relaxed">
+                      That song you recorded in one session and almost didn't release?
+                    </p>
+                    <p className="text-base sm:text-lg md:text-xl lg:text-2xl text-white leading-relaxed mt-2">
+                      Could be the exact vibe a major curator is searching for right now. Your "filler" song might be someone else's favorite song of the year.
+                    </p>
                   </div>
                 </div>
               </div>
 
               {/* Quote 2 */}
               <div className="relative bg-gradient-to-br from-gray-900/70 to-gray-800/50 backdrop-blur-xl rounded-2xl p-4 md:p-8 border border-white/10">
-                <div className="flex items-start space-x-3 md:space-x-4">
-                  <div className="text-3xl md:text-4xl lg:text-5xl text-[#14c0ff] font-serif">"</div>
+                <div className="flex items-center space-x-3 md:space-x-4">
+                  <div className="w-12 h-12 md:w-14 md:h-14 lg:w-16 lg:h-16 rounded-full bg-gradient-to-r from-[#14c0ff] to-[#8b5cf6] flex items-center justify-center shrink-0">
+                    <div className="text-lg md:text-xl lg:text-2xl">🔥</div>
+                  </div>
                   <div className="flex-1">
-                    <p className="text-lg sm:text-xl md:text-2xl lg:text-3xl text-gray-300 mb-2 md:mb-3">That deep cut on your EP?</p>
-                    <p className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-bold text-white">Might be the one that catches fire.</p>
+                    <p className="text-base sm:text-lg md:text-xl lg:text-2xl font-bold bg-gradient-to-r from-[#14c0ff] to-[#8b5cf6] bg-clip-text text-transparent leading-relaxed">
+                      That track you dropped six months ago and forgot about?
+                    </p>
+                    <p className="text-base sm:text-lg md:text-xl lg:text-2xl text-white leading-relaxed mt-2">
+                      It's still sitting there with untapped potential, waiting for real promotion to show what it can actually do. Old releases can blow up just as hard as new ones.
+                    </p>
                   </div>
                 </div>
               </div>
 
               {/* Quote 3 */}
               <div className="relative bg-gradient-to-br from-gray-900/70 to-gray-800/50 backdrop-blur-xl rounded-2xl p-4 md:p-8 border border-white/10">
-                <div className="flex items-start space-x-3 md:space-x-4">
-                  <div className="text-3xl md:text-4xl lg:text-5xl text-[#8b5cf6] font-serif">"</div>
+                <div className="flex items-center space-x-3 md:space-x-4">
+                  <div className="w-12 h-12 md:w-14 md:h-14 lg:w-16 lg:h-16 rounded-full bg-gradient-to-r from-[#8b5cf6] to-[#59e3a5] flex items-center justify-center shrink-0">
+                    <div className="text-lg md:text-xl lg:text-2xl">⭐</div>
+                  </div>
                   <div className="flex-1">
-                    <p className="text-lg sm:text-xl md:text-2xl lg:text-3xl text-gray-300 mb-2 md:mb-3">That feature you did last year?</p>
-                    <p className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-bold text-white">Perfect time to give it new life.</p>
+                    <p className="text-base sm:text-lg md:text-xl lg:text-2xl font-bold bg-gradient-to-r from-[#8b5cf6] to-[#59e3a5] bg-clip-text text-transparent leading-relaxed">
+                      That track you didn't think was "good enough" to promote?
+                    </p>
+                    <p className="text-base sm:text-lg md:text-xl lg:text-2xl text-white leading-relaxed mt-2">
+                      Could be the exact song that resonates with fans around the world and becomes your breakthrough hit. There are listeners out there who love exactly what you create—it's just about getting your music in front of the right ears at the right time.
+                    </p>
                   </div>
                 </div>
               </div>
@@ -1072,11 +1090,32 @@ export default function AddSongsPage() {
             
             {/* Final CTA */}
             <div className="text-center mt-16">
-              <div className="bg-gradient-to-r from-[#59e3a5]/20 via-[#14c0ff]/20 to-[#8b5cf6]/20 backdrop-blur-xl rounded-3xl p-8 border border-white/20 mb-8">
-                <p className="text-xl md:text-2xl font-bold text-white mb-4">
-                  Don't leave money on the table. Don't let potential hits die in your catalog.
-                </p>
-                <div className="w-full h-1 bg-gradient-to-r from-[#59e3a5] via-[#14c0ff] to-[#8b5cf6] rounded-full"></div>
+              <div className="relative overflow-hidden rounded-3xl p-8 md:p-12 border border-white/20 mb-8">
+                {/* Animated gradient background */}
+                <div className="absolute inset-0 bg-gradient-to-br from-[#59e3a5]/10 via-[#14c0ff]/10 to-[#8b5cf6]/10"></div>
+                <div className="absolute inset-0 bg-gradient-to-tr from-[#8b5cf6]/5 via-transparent to-[#59e3a5]/5"></div>
+                
+                {/* Animated glow effects */}
+                <div className="absolute -top-20 -left-20 w-40 h-40 bg-[#59e3a5]/20 rounded-full blur-3xl animate-pulse"></div>
+                <div className="absolute -bottom-20 -right-20 w-40 h-40 bg-[#14c0ff]/20 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '1s' }}></div>
+                <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-32 h-32 bg-[#8b5cf6]/20 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '2s' }}></div>
+                
+                {/* Content */}
+                <div className="relative z-10">
+                  <div className="inline-block mb-6">
+                    <div className="flex justify-center mb-6 relative z-10">
+                      <div className="relative w-12 h-12 md:w-14 md:h-14 rounded-full bg-gradient-to-br from-[#59e3a5] via-[#14c0ff] to-[#8b5cf6] flex items-center justify-center animate-pulse">
+                        <div className="absolute inset-0 rounded-full bg-gradient-to-br from-[#59e3a5]/50 via-[#14c0ff]/50 to-[#8b5cf6]/50 blur-xl opacity-75 animate-ping"></div>
+                        <svg className="w-6 h-6 md:w-7 md:h-7 text-white relative z-10 animate-spin" style={{ animationDuration: '3s' }} fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+                          <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.538 1.118l-2.8-2.034a1 1 0 00-1.176 0l-2.8 2.034c-.783.57-1.838-.197-1.538-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.381-1.81.588-1.81h3.462a1 1 0 00.95-.69l1.07-3.292z" />
+                        </svg>
+                      </div>
+                    </div>
+                    <p className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-bold text-white leading-relaxed max-w-4xl mx-auto">
+                      You've already put in the work to create these songs. Now it's time let them do the work of building your fanbase while you focus on what's next. Let's turn your catalog into a career foundation that generates momentum for years.
+                    </p>
+                  </div>
+                </div>
               </div>
               
               {/* Button to scroll back to search */}
@@ -1088,9 +1127,15 @@ export default function AddSongsPage() {
                     setTimeout(() => inputField.focus(), 500);
                   }
                 }}
-                className="bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] text-black font-bold px-6 sm:px-8 md:px-12 py-3 md:py-4 rounded-xl md:rounded-2xl text-base md:text-lg hover:shadow-2xl hover:shadow-[#14c0ff]/30 transition-all duration-300 transform hover:scale-105 active:scale-95"
+                className="relative overflow-hidden bg-gradient-to-r from-[#59e3a5] via-[#14c0ff] to-[#8b5cf6] text-black font-bold px-8 sm:px-10 md:px-14 py-4 md:py-5 rounded-2xl text-lg md:text-xl hover:shadow-2xl hover:shadow-[#14c0ff]/50 transition-all duration-300 transform hover:scale-105 active:scale-95 group"
               >
-                ADD ON MORE SONGS NOW!
+                <span className="relative z-10 flex items-center justify-center gap-2">
+                  ADD ON MORE SONGS NOW!
+                  <svg className="w-5 h-5 md:w-6 md:h-6 transition-transform group-hover:translate-x-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                  </svg>
+                </span>
+                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-700"></div>
               </button>
             </div>
           </div>
