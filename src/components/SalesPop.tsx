@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
+import usePageVisibility from '../hooks/use-page-visibility';
 
 // Sales Pop Data Arrays
 const FIRST_NAMES = [
@@ -64,6 +65,7 @@ const SalesPop: React.FC = () => {
   const [popData, setPopData] = useState<SalesPopData | null>(null);
   const [isVisible, setIsVisible] = useState(false);
   const [isMasterInstance, setIsMasterInstance] = useState(false);
+  const isPageVisible = usePageVisibility();
 
   // Check if this popup should be visible on the current page
   useEffect(() => {
@@ -93,10 +95,10 @@ const SalesPop: React.FC = () => {
 
     // Update on resize and orientation change
     window.addEventListener('resize', updateSalesPopPosition);
-    window.addEventListener('orientationchange', () => {
-      // Delay to account for browser UI changes
+    const handleOrientationChange = () => {
       setTimeout(updateSalesPopPosition, 100);
-    });
+    };
+    window.addEventListener('orientationchange', handleOrientationChange);
 
     // Update on scroll (for URL bar show/hide detection) - THROTTLED to prevent re-renders
     let ticking = false;
@@ -119,7 +121,7 @@ const SalesPop: React.FC = () => {
 
     return () => {
       window.removeEventListener('resize', updateSalesPopPosition);
-      window.removeEventListener('orientationchange', updateSalesPopPosition);
+      window.removeEventListener('orientationchange', handleOrientationChange);
       window.removeEventListener('scroll', handleScroll);
     };
   }, []);
@@ -217,7 +219,7 @@ const SalesPop: React.FC = () => {
 
   // Master instance timer logic - only master controls the popup cycle
   useEffect(() => {
-    if (!isMasterInstance || !isVisible) return;
+    if (!isMasterInstance || !isVisible || !isPageVisible) return;
 
     let currentTimer: NodeJS.Timeout;
     let hideTimer: NodeJS.Timeout;
@@ -263,7 +265,13 @@ const SalesPop: React.FC = () => {
       clearTimeout(currentTimer);
       clearTimeout(hideTimer);
     };
-  }, [isMasterInstance, isVisible, generatePopData]);
+  }, [isMasterInstance, isVisible, generatePopData, isPageVisible]);
+
+  useEffect(() => {
+    if (!isPageVisible) {
+      setShowPop(false);
+    }
+  }, [isPageVisible]);
 
   // Don't render if not visible or no data
   if (!isVisible || !popData) return null;

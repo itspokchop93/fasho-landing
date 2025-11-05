@@ -19,6 +19,7 @@ import SalesPop from '../components/SalesPop';
 import Lottie from 'lottie-react';
 import * as gtag from '../utils/gtag';
 import { fetchSiteSettings, SiteSettings, defaultSiteSettings } from '../utils/siteSettings';
+import usePageVisibility from '../hooks/use-page-visibility';
 
 // CSS for responsive font sizing
 const responsiveFontStyles = `
@@ -379,6 +380,8 @@ export default function Home() {
   const [isCarouselPaused, setIsCarouselPaused] = useState(false);
   const [resumeTimeout, setResumeTimeout] = useState<NodeJS.Timeout | null>(null);
   const [isMobile, setIsMobile] = useState(false);
+  const isPageVisible = usePageVisibility();
+  const autoPausedCarouselRef = useRef(false);
 
   // Logo carousel state
   const [logoIndex, setLogoIndex] = useState(0);
@@ -555,6 +558,28 @@ export default function Home() {
       return () => clearTimeout(timer);
     }
   }, [currentTestimonialIndex, testimonials.length]);
+
+  useEffect(() => {
+    if (!isPageVisible) {
+      if (resumeTimeout) {
+        clearTimeout(resumeTimeout);
+        setResumeTimeout(null);
+      }
+
+      if (!isCarouselPaused) {
+        setIsCarouselPaused(true);
+        autoPausedCarouselRef.current = true;
+      }
+
+      setShowConfetti(false);
+      return;
+    }
+
+    if (autoPausedCarouselRef.current) {
+      setIsCarouselPaused(false);
+      autoPausedCarouselRef.current = false;
+    }
+  }, [isPageVisible, isCarouselPaused, resumeTimeout]);
 
   // Mobile detection for responsive carousel and icon box animations
   useEffect(() => {
@@ -815,8 +840,11 @@ export default function Home() {
 
     setIsSearching(true);
     setShowSearchResults(true);
+    setError(null);
+    setHasSearched(false);
     
     try {
+      console.log('🔍 Searching for:', query.trim());
       const response = await fetch('/api/spotify/search', {
         method: 'POST',
         headers: {
@@ -825,22 +853,31 @@ export default function Home() {
         body: JSON.stringify({ query: query.trim(), limit: 8 }),
       });
       
+      console.log('🔍 Search response status:', response.status);
+      
       if (!response.ok) {
-        throw new Error('Search failed');
+        const errorData = await response.json().catch(() => ({ error: 'Search failed' }));
+        throw new Error(errorData.error || `Search failed with status ${response.status}`);
       }
       
       const data = await response.json();
+      console.log('🔍 Search response data:', data);
       
       if (data.success) {
         setSearchResults(data.tracks || []);
         setHasSearched(true);
+        setError(null);
+        console.log('🔍 Found', data.tracks?.length || 0, 'tracks');
       } else {
         throw new Error(data.error || 'Search failed');
       }
-    } catch (error) {
-      console.error('Search error:', error);
+    } catch (error: any) {
+      console.error('🔍 Search error:', error);
       setSearchResults([]);
-      setError('Search failed. Please try again.');
+      setHasSearched(true);
+      const errorMessage = error?.message || 'Search failed. Please try again.';
+      setError(errorMessage);
+      console.error('🔍 Error message:', errorMessage);
     } finally {
       setIsSearching(false);
     }
@@ -876,6 +913,7 @@ export default function Home() {
     // Clear previous timeout
     if (searchTimeout) {
       clearTimeout(searchTimeout);
+      setSearchTimeout(null);
     }
 
     if (isSpotifyUrl) {
@@ -896,11 +934,19 @@ export default function Home() {
       setPreviewTrack(null);
       
       const newTimeout = setTimeout(() => {
+        console.log('🔍 useEffect: Triggering search for:', url);
         searchSpotifyTracks(url);
       }, 300);
       
       setSearchTimeout(newTimeout);
     }
+
+    // Cleanup function
+    return () => {
+      if (searchTimeout) {
+        clearTimeout(searchTimeout);
+      }
+    };
   }, [url]);
 
   const fetchTrackInfo = async (spotifyUrl: string) => {
@@ -1333,19 +1379,21 @@ export default function Home() {
             <div className="absolute inset-0 w-full h-full z-0 pointer-events-none">
               <HeroParticles />
             </div>
-            {/* WebGL Particles overlay - higher z-index */}
-            <div className="absolute inset-0 w-full h-full z-5 pointer-events-none">
-              <Particles
-                particleColors={['#ffffff', '#59e3a5', '#14c0ff']}
-                particleCount={700}
-                particleSpread={30}
-                speed={0.1}
-                particleBaseSize={300}
-                moveParticlesOnHover={true}
-                alphaParticles={true}
-                disableRotation={false}
-              />
-            </div>
+            {/* WebGL Particles overlay - higher z-index (desktop only to reduce mobile memory pressure) */}
+            {!isMobile && isPageVisible && (
+              <div className="absolute inset-0 w-full h-full z-5 pointer-events-none">
+                <Particles
+                  particleColors={['#ffffff', '#59e3a5', '#14c0ff']}
+                  particleCount={520}
+                  particleSpread={26}
+                  speed={0.08}
+                  particleBaseSize={240}
+                  moveParticlesOnHover
+                  alphaParticles
+                  disableRotation={false}
+                />
+              </div>
+            )}
             <div className="w-full max-w-7xl mx-auto relative z-10 px-4 sm:px-6 lg:px-8">
               <div className="text-center mb-20 max-w-5xl mx-auto">
                 {/* Client Testimonial Feature */}
@@ -1598,13 +1646,23 @@ export default function Home() {
                                 {/* Header */}
                                 <div className="px-4 py-3 border-b border-white/10 bg-gradient-to-r from-[#59e3a5]/10 to-[#14c0ff]/10">
                                   <h3 className="text-white font-semibold text-sm">
-                                    {isSearching ? 'Searching...' : `Found ${searchResults.length} tracks`}
+                                    {isSearching ? 'Searching...' : error ? `Error: ${error}` : `Found ${searchResults.length} tracks`}
                                   </h3>
                                 </div>
                                 
                                 {/* Results */}
                                 <div className="max-h-80 overflow-y-auto custom-scrollbar">
-                                  {isSearching ? (
+                                  {error ? (
+                                    <div className="p-8 text-center">
+                                      <div className="w-16 h-16 bg-red-900/20 rounded-full flex items-center justify-center mx-auto mb-4">
+                                        <svg className="w-8 h-8 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                        </svg>
+                                      </div>
+                                      <p className="text-red-400 mb-2 font-semibold">Search Error</p>
+                                      <p className="text-gray-400 text-sm">{error}</p>
+                                    </div>
+                                  ) : isSearching ? (
                                     <div className="p-8 text-center">
                                       <div className="w-8 h-8 border-2 border-[#14c0ff] border-t-transparent rounded-full animate-spin mx-auto mb-3"></div>
                                       <p className="text-gray-400">Searching Spotify...</p>
@@ -1726,6 +1784,32 @@ export default function Home() {
                           artistData={previewTrack.artistInsights}
                           isMobile={isMobile}
                         />
+                      )}
+
+                      {/* Secondary Launch Campaign Button - Bottom of card section */}
+                      {previewTrack && isSpotifyUrlCheck(url) && (
+                        <div className="mt-6 w-full">
+                          <button
+                            onClick={handleSubmit}
+                            disabled={loading}
+                            className={`relative w-full px-6 sm:px-8 py-4 bg-gradient-to-r from-[#59e3a5] via-[#14c0ff] to-[#8b5cf6] text-white font-bold rounded-2xl hover:shadow-2xl hover:shadow-[#14c0ff]/30 transition-all duration-300 transform hover:scale-105 active:scale-95 overflow-hidden group flex items-center justify-center gap-2 whitespace-nowrap`}
+                          >
+                            {/* Button content */}
+                            <span className="relative z-10 text-white text-base sm:text-lg">
+                              {loading ? 'Loading...' : 'LAUNCH CAMPAIGN'}
+                            </span>
+                            {/* Right arrow icon */}
+                            {!loading && (
+                              <svg className="relative z-10 w-5 h-5 sm:w-6 sm:h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                              </svg>
+                            )}
+                            {/* Shimmer effect */}
+                            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-700"></div>
+                            {/* Glow effect */}
+                            <div className="absolute inset-0 bg-gradient-to-r from-[#59e3a5] via-[#14c0ff] to-[#8b5cf6] opacity-0 group-hover:opacity-20 transition-opacity duration-300 blur-xl"></div>
+                          </button>
+                        </div>
                       )}
                     </div>
                   </div>
@@ -2372,10 +2456,10 @@ export default function Home() {
           {/* Desktop How It Works Sections - 4 Separate Sections */}
           
           {/* How It Works Title */}
-          <section className="py-12 px-4 pb-20 lg:pb-24 relative z-20" style={{ background: 'transparent' }}>
+          <section className="pt-1 pb-14 sm:pt-8 sm:pb-20 lg:pt-12 lg:pb-24 px-4 relative z-20" style={{ background: 'transparent' }}>
             <div className="max-w-7xl mx-auto text-center px-8 sm:px-4">
               <h2 className="font-black text-white mb-4 md:text-6xl lg:text-6xl" style={{ lineHeight: '1.2', fontSize: 'calc(2.5rem + 0.15rem)' }}>
-                Here's <span className="bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] bg-clip-text text-transparent">Exactly</span> How It Works
+                Here's <span className="bg-gradient-to-r from-[#8b5cf6] via-[#e879f9] to-[#14c0ff] bg-clip-text text-transparent">Exactly</span> How It Works
               </h2>
             </div>
           </section>
@@ -2797,7 +2881,7 @@ export default function Home() {
           {/* Mobile How It Works Sections (individual static sections) - Only visible on Mobile */}
           
                         {/* Mobile Step 1 Section */}
-              <section className="block lg:hidden py-4 px-4 relative z-20">
+              <section className="block lg:hidden pt-0 pb-4 sm:pt-2 lg:pt-4 px-4 relative z-20">
                 <div className="max-w-4xl mx-auto">
                   <div className="text-center mb-12">
                     <h2 className="font-black bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] bg-clip-text text-transparent mb-4" style={{ fontSize: '3rem', lineHeight: '1.2' }}>
@@ -2807,7 +2891,7 @@ export default function Home() {
                   Drop Your Track
                 </h3>
                 <p className="text-[calc(1rem+0.2rem)] sm:text-base md:text-lg text-gray-300 leading-relaxed max-w-2xl mx-auto">
-                  Paste your Spotify link or search your song title. Takes 30 seconds, then you're done. No spreadsheets to build, no curator emails to track down, no guessing which playlists might actually fit your vibe. While you go back to making music and enjoying your life, our team is analyzing your track's DNA: the genre, the subgenre, the tempo, the mood, the energy, even the vocal delivery style. We're matching your sound against thousands of curators in our network who are actively building playlists in your exact lane right now. This isn't guesswork. We know these curators personally, we know what they're adding this week, and we know exactly which ones are going to love your sound the second they hear it.
+                  <b>Search & find your Spotify song.</b> Takes 30 seconds and you're done. Our team analyzes your track's <b>genre, tempo, mood,</b> and energy, then matches you with curators in our network who run <b>massive playlists</b> in your exact lane. We know these curators personally, we know what they're looking for this week, and we know exactly which ones are going to <b>love your sound</b> the second they hear it.
                 </p>
                 <button
                   onClick={scrollToTrackInput}
@@ -2918,7 +3002,7 @@ export default function Home() {
                   Pick A Package
                 </h3>
                 <p className="text-[calc(1rem+0.2rem)] sm:text-base md:text-lg text-gray-300 leading-relaxed max-w-2xl mx-auto">
-                  Choose the campaign level that matches where you're at. If you just dropped your first single and need those crucial first placements to prove this is real—we got you. If you're sitting on 10K monthly listeners and ready to 10x that number—we got that too. Every package guarantees a range of results: playlist counts, stream estimates, follower reach. No vague promises, no "we'll try our best" nonsense. You'll see the splash your music will make before you pay a single dollar. Got an EP? Stack additional tracks and save 25% on each additional song. Got an album rollout planned? Run multiple campaigns and watch each release build on the last one's momentum like clockwork.
+                  Choose the campaign level that matches <b>where you're at.</b> Just dropped your first single and need those crucial first placements? <b>We got you.</b> Sitting on 10K monthly listeners and ready to 10x it? <b>We got that too.</b> Every package shows results upfront: how many <b>playlists,</b> how many <b>streams,</b> how much <b>reach.</b> No vague promises. You'll see the <b>impact</b> your music will make before you even hit submit. Dropping an album? Stack additional songs and save <b>25% on each one.</b> Every campaign builds on the last one's momentum <b>like clockwork.</b>
                 </p>
                 <button
                   onClick={scrollToTrackInput}
@@ -3019,7 +3103,7 @@ export default function Home() {
                   Our Team Goes To Work
                 </h3>
                 <p className="text-[calc(1rem+0.2rem)] sm:text-base md:text-lg text-gray-300 leading-relaxed max-w-2xl mx-auto">
-                  Here's what happens behind the scenes while you wait: Our team starts reaching out to every curator in our network who matches your sound. We're not sending desperate cold emails that every artist has tried before. We're texting Marcus who runs that 340K follower R&B playlist. We're calling Jessica who curates three different lo-fi lists with 2M combined followers. We're DMing Nicky G. who's been asking us for more Latin trap. These people actually answer when we reach out because we've been delivering them quality music for over 10 years. "Hey, remember that artist we placed last month who's now at 50K monthly listeners? Got another one in that same lane." That's the conversation happening about YOUR song. Personal relationships, real credibility, curators who trust our taste because we've never wasted their time.
+                  <b>Here's what happens behind the scenes: </b>We reach out to every curator in our network who matches your sound. We're not sending cold emails. We're texting Marcus who runs that <b>340K follower R&B playlist.</b> We're calling Jessica who curates three different lo-fi lists with <b>2M combined followers.</b> We're DMing Nicky who's been asking us for more Latin trap. These people actually <b>answer when we call</b> because we've been delivering them quality music for over <b>10 years.</b> "Hey, remember that artist we placed last month who's now at 50K monthly listeners? We got another one in that same lane for you." That's the conversation happening about <b>YOUR</b> song. This is how major labels get their artists placed, and exactly why we can <b>guarantee results</b> for our clients.
                 </p>
                 <button
                   onClick={scrollToTrackInput}
@@ -3101,7 +3185,7 @@ export default function Home() {
                   Watch Your Career Explode
                 </h3>
                 <p className="text-[calc(1rem+0.2rem)] sm:text-base md:text-lg text-gray-300 leading-relaxed max-w-2xl mx-auto">
-                  Within 48-72 hours, results hit your dashboard like nothing you've seen before. Placements on playlists with massive followers. Your song being flooded with new streams and likes. Your monthly listeners shooting through the roof. Spotify's algorithm locks onto your momentum and automatically starts pushing your track to even MORE users through Discover Weekly and Radio. Real fans who genuinely love your sound start following your socials, sharing your content, and waiting for what's next. The doubt and the fear that maybe your music career won't work — is gone forever. You're in the GAME now. You were born for this. And now it's time to show the world what you're made of.
+                  Within only <b>48-72 hours,</b> results hit your dashboard like nothing you've seen before. Placements on playlists with <b>massive followers.</b> Your song being flooded with <b>new streams</b> and <b>likes.</b> Your <b>monthly listeners</b> shooting through the roof. Spotify's algorithm locks onto your momentum and <b>automatically</b> starts <b>pushing your track </b>to even <b>MORE</b> users through algorithmic playlists like <b>Discover Weekly. </b>Real fans who genuinely love your sound start following <b>your socials,</b> sharing <b>your content,</b> and waiting for what's next. The doubt and the fear that maybe your music career won't work — <b>is gone forever.</b> You're in the <b>GAME</b> now. You were <b>born for this. </b>And now it's time to show the world what you're made of.
                 </p>
                 <button
                   onClick={scrollToTrackInput}
@@ -3391,14 +3475,14 @@ export default function Home() {
               <div className="text-center mb-12">
                 <h2 
                   ref={testimonialsHeadingRef}
-                  className={`text-4xl md:text-5xl lg:text-6xl font-black mb-8 bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] bg-clip-text text-transparent ${testimonialsHeadingInView ? 'animate-fade-in-up' : 'opacity-0'}`} 
+                  className={`text-4xl md:text-5xl lg:text-6xl font-black mb-8 ${testimonialsHeadingInView ? 'animate-fade-in-up' : 'opacity-0'}`} 
                   style={{ 
                     lineHeight: '1.3', 
                     marginTop: typeof window !== 'undefined' && window.innerWidth < 640 ? '0px' : '-50px',
                     fontSize: typeof window !== 'undefined' && window.innerWidth < 640 ? 'calc(2.25rem + 0.25rem)' : undefined
                   }}
                 >
-                  Real Artists. Real Results. Real Talk.
+                  <span className="bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] bg-clip-text text-transparent">Real Artists. </span><span className="bg-gradient-to-r from-[#8b5cf6] via-[#e879f9] to-[#14c0ff] bg-clip-text text-transparent">Real Results.</span> <span className="bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] bg-clip-text text-transparent"> Real Talk.</span>
                 </h2>
                 <p 
                   ref={testimonialsSubheadingRef}
@@ -3511,6 +3595,144 @@ export default function Home() {
                 </button>
               </div>
             </div>
+          </section>
+
+          {/* What Playlists We Have Section */}
+          <section className="py-32 px-4 pb-16 relative overflow-visible">
+            {/* Animated Background Elements */}
+            <div className="absolute inset-0 bg-gradient-to-br from-[#0a0a13] via-[#16213e] to-[#1a1a2e]"></div>
+            
+            {/* Primary gradient overlay - matches main page gradient */}
+            <div className="absolute inset-0 bg-gradient-to-b from-[#18192a] via-[#16213e] to-[#0a0a13] -z-10"></div>
+            
+            {/* Transition overlay - smooth blend at bottom */}
+            <div className="absolute bottom-0 left-0 right-0 h-64 bg-gradient-to-b from-transparent to-[#0a0a13] -z-5"></div>
+            
+            {/* Floating Music Note Particles */}
+            <div className="absolute top-10 left-10 text-3xl text-[#59e3a5] opacity-60 animate-bounce" style={{ animationDelay: '0s' }}>♪</div>
+            <div className="absolute top-32 right-5 text-4xl text-[#14c0ff] opacity-40 animate-bounce" style={{ animationDelay: '1s' }}>♫</div>
+            <div className="absolute bottom-20 left-32 text-2xl text-[#8b5cf6] opacity-50 animate-bounce" style={{ animationDelay: '2s' }}>♪</div>
+            <div className="absolute bottom-40 right-10 text-3xl text-[#59e3a5] opacity-30 animate-bounce" style={{ animationDelay: '0.5s' }}>♫</div>
+            
+            {/* Massive Glow Effects */}
+            <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-gradient-to-r from-[#59e3a5]/20 to-[#14c0ff]/20 rounded-full blur-3xl animate-pulse"></div>
+            <div className="absolute bottom-1/4 right-1/4 w-80 h-80 bg-gradient-to-r from-[#8b5cf6]/15 to-[#59e3a5]/15 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '2s' }}></div>
+            
+            <div className="relative z-10 max-w-7xl mx-auto">
+              {/* Section Header */}
+              <div className="text-center mb-14 sm:mb-20">
+                <h2 
+                  ref={playlistsHeadingRef}
+                  className={`md:text-6xl lg:text-6xl font-black mb-8 bg-gradient-to-r from-[#59e3a5] via-[#14c0ff] to-[#8b5cf6] bg-clip-text text-transparent drop-shadow-2xl ${playlistsHeadingInView ? 'animate-fade-in-up' : 'opacity-0'}`}
+                  style={{ lineHeight: '1.2', fontSize: 'clamp(2.6rem, 8vw, 4rem)' }}
+                >
+                  The Playlists That Actually Matter
+                </h2>
+                <p 
+                  ref={playlistsSubheadingRef}
+                  className={`text-xl md:text-2xl text-gray-300 max-w-4xl mx-auto leading-relaxed font-bold ${playlistsSubheadingInView ? 'animate-fade-in-up' : 'opacity-0'}`}
+                >
+                  We have direct relationships with curators who control the world's biggest playlists.
+                </p>
+                            </div>
+
+              {/* Playlist Grid with Creative Layout */}
+              <div 
+                ref={playlistsGridRef}
+                className={`grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-8 mb-16 relative z-20 opacity-100 md:opacity-100 ${playlistsGridInView ? 'animate-fade-in-up' : 'md:opacity-0'}`}
+                style={{ minHeight: '200px' }}
+              >
+                {[
+                  { name: 'RapCaviar', followers: '11M+ followers', gradient: 'from-[#e6d3b7] to-[#d4c5a9]', icon: '🎤' },
+                  { name: "Today's Top Hits", followers: '33M+ followers', gradient: 'from-[#feca57] to-[#ff9ff3]', icon: '🔥' },
+                  { name: 'Viva Latino', followers: '11M+ followers', gradient: 'from-[#48dbfb] to-[#0abde3]', icon: '💃' },
+                  { name: 'Hot Country', followers: '7M+ followers', gradient: 'from-[#f0932b] to-[#eb4d4b]', icon: '🤠' },
+                  { name: 'Beast Mode', followers: '5M+ followers', gradient: 'from-[#6c5ce7] to-[#a29bfe]', icon: '💪' },
+                  { name: 'mint', followers: '6M+ followers', gradient: 'from-[#00b894] to-[#00cec9]', icon: '🌿' },
+                  { name: 'Are & Be', followers: '3M+ followers', gradient: 'from-[#fd79a8] to-[#fdcb6e]', icon: '✨' },
+                  { name: 'Chill Hits', followers: '6M+ followers', gradient: 'from-[#74b9ff] to-[#0984e3]', icon: '😌' },
+                  { name: 'Anti Pop', followers: '2M+ followers', gradient: 'from-[#a0a0a0] to-[#ffffff]', icon: '🎸' },
+                  { name: 'Jazz Vibes', followers: '3M+ followers', gradient: 'from-[#fdcb6e] to-[#e17055]', icon: '🎷' },
+                  { name: 'Indie Pop', followers: '4M+ followers', gradient: 'from-[#fd79a8] to-[#6c5cf6]', icon: '🎹' },
+                  { name: 'New Music Friday', followers: '6M+ followers', gradient: 'from-[#55a3ff] to-[#003d82]', icon: '🆕' },
+                  { name: 'Rock This', followers: '5M+ followers', gradient: 'from-[#ff4757] to-[#c44569]', icon: '🤘' },
+                  { name: 'Power Gaming', followers: '4M+ followers', gradient: 'from-[#7bed9f] to-[#2ed573]', icon: '🎮' },
+                  { name: 'Mood Booster', followers: '5M+ followers', gradient: 'from-[#ffa502] to-[#ff6348]', icon: '☀️' },
+                  { name: 'Mega Hit Mix', followers: '7M+ followers', gradient: 'from-[#ff3838] to-[#ff9500]', icon: '💥' }
+                ].map((playlist, index) => (
+                  <div key={index} className="relative group w-full max-w-sm mx-auto">
+                    {/* Glow Effect Background */}
+                    <div className={`absolute inset-0 bg-gradient-to-r ${playlist.gradient} rounded-2xl blur-xl opacity-30 group-hover:opacity-60 transition-all duration-500 transform group-hover:scale-110`}></div>
+                    
+                    {/* Card Content */}
+                    <div className="relative bg-gradient-to-br from-[#1a1a2e]/95 via-[#16213e]/90 to-[#0a0a13]/95 rounded-2xl p-4 md:p-6 border-2 border-white/10 backdrop-blur-sm hover:border-white/30 transition-all duration-500 group-hover:transform group-hover:scale-105 shadow-2xl min-h-[180px] flex flex-col justify-center">
+                      {/* Playlist Icon */}
+                      <div className="text-3xl md:text-4xl mb-3 md:mb-4 text-center">{playlist.icon}</div>
+                      
+                      {/* Playlist Name */}
+                      <h3 className={`${playlist.name === 'New Music Friday' || playlist.name === "Today's Top Hits" ? 'text-lg md:text-2xl' : 'text-xl md:text-3xl'} font-black text-center mb-2 bg-gradient-to-r ${playlist.gradient} bg-clip-text text-transparent leading-tight`}>
+                        {playlist.name}
+                      </h3>
+                      
+                      {/* Follower Count */}
+                      <p className="text-gray-300 text-center font-bold text-sm md:text-lg">
+                        {playlist.followers}
+                      </p>
+                      
+                      {/* Animated Pulse Dot */}
+                      <div className="flex justify-center mt-4">
+                        <div className={`w-3 h-3 bg-gradient-to-r ${playlist.gradient} rounded-full animate-pulse`}></div>
+                            </div>
+                          </div>
+                        </div>
+                ))}
+                      </div>
+
+              {/* "Thousands More" Statement */}
+              <div 
+                ref={thousandsMoreRef}
+                className={`text-center mb-16 mt-5 ${thousandsMoreInView ? 'animate-fade-in-up' : 'opacity-0'}`}
+              >
+                <div className="relative inline-block">
+                  {/* Glow Effect Behind Text - Hidden on mobile */}
+                  <div className="hidden md:block absolute inset-0 bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] blur-xl" style={{ 
+                    opacity: typeof window !== 'undefined' && window.innerWidth >= 1024 ? '0.04' : '0.2'
+                  }}></div>
+                  
+                  <p 
+                    className="relative text-[1.575rem] lg:text-[2.925rem] font-black text-white leading-relaxed lg:mt-[15px] lg:mb-[15px]"
+                  >
+                    + Literally{' '}
+                    <span className="bg-gradient-to-r from-[#59e3a5] via-[#14c0ff] to-[#8b5cf6] bg-clip-text text-transparent drop-shadow-lg animate-pulse">
+                      THOUSANDS
+                    </span>
+                    {' '}more!
+                  </p>
+                    </div>
+                  </div>
+
+              {/* CTA Button */}
+              <div 
+                ref={playlistsButtonRef}
+                className={`text-center mb-0 ${playlistsButtonInView ? 'animate-fade-in-up' : 'opacity-0'}`}
+              >
+                <button
+                  onClick={scrollToTrackInput}
+                  className="px-16 py-5 bg-gradient-to-r from-[#59e3a5] via-[#14c0ff] to-[#8b5cf6] text-white font-bold rounded-2xl hover:shadow-2xl hover:shadow-[#14c0ff]/30 transition-all duration-300 transform hover:scale-105 active:scale-95 relative overflow-hidden group text-xl flex items-center justify-center gap-2 mx-auto"
+                >
+                  <span className="relative z-10">PUT ME ON PLAYLISTS</span>
+                  <svg className="relative z-10 w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                  </svg>
+                  <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-700"></div>
+                </button>
+                </div>
+              </div>
+            
+            {/* Additional Floating Elements */}
+            <div className="absolute top-1/2 left-5 w-4 h-4 bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] rounded-full opacity-40 animate-ping"></div>
+            <div className="absolute top-1/3 right-8 w-6 h-6 bg-gradient-to-r from-[#8b5cf6] to-[#59e3a5] rounded-full opacity-30 animate-ping" style={{ animationDelay: '1s' }}></div>
+            <div className="absolute bottom-1/3 left-1/4 w-5 h-5 bg-gradient-to-r from-[#14c0ff] to-[#8b5cf6] rounded-full opacity-35 animate-ping" style={{ animationDelay: '2s' }}></div>
           </section>
 
           {/* Shape Divider - Under Testimonials CTA */}
@@ -3749,9 +3971,6 @@ export default function Home() {
             {/* Extended gradient overlay that flows into next section */}
             <div className="absolute inset-0 bg-gradient-to-b from-[#18192a] via-[#16213e] to-[#0a0a13] -z-10"></div>
             <div className="absolute bottom-0 left-0 right-0 h-64 bg-gradient-to-b from-transparent to-[#18192a] -z-5"></div>
-            
-            {/* Mobile-only smooth gradient transition overlay at top - blends with wavy background above */}
-            <div className="sm:hidden absolute top-0 left-0 right-0 h-48 bg-gradient-to-b from-transparent via-[#18192a]/80 to-[#18192a] z-0"></div>
             
             {/* Mobile-only smooth gradient transition overlay at bottom */}
             <div className="sm:hidden absolute bottom-0 left-0 right-0 h-48 bg-gradient-to-b from-transparent to-[#0a0a13] z-10"></div>
@@ -5086,141 +5305,6 @@ export default function Home() {
                             </div>
                           </div>
           </section>
-          {/* What Playlists We Have Section */}
-          <section className="py-32 px-4 pb-48 relative overflow-visible">
-            {/* Animated Background Elements */}
-            <div className="absolute inset-0 bg-gradient-to-br from-[#0a0a13] via-[#16213e] to-[#1a1a2e]"></div>
-            
-            {/* Primary gradient overlay - matches main page gradient */}
-            <div className="absolute inset-0 bg-gradient-to-b from-[#18192a] via-[#16213e] to-[#0a0a13] -z-10"></div>
-            
-            {/* Transition overlay - smooth blend at bottom */}
-            <div className="absolute bottom-0 left-0 right-0 h-64 bg-gradient-to-b from-transparent to-[#0a0a13] -z-5"></div>
-            
-            {/* Floating Music Note Particles */}
-            <div className="absolute top-10 left-10 text-3xl text-[#59e3a5] opacity-60 animate-bounce" style={{ animationDelay: '0s' }}>♪</div>
-            <div className="absolute top-32 right-5 text-4xl text-[#14c0ff] opacity-40 animate-bounce" style={{ animationDelay: '1s' }}>♫</div>
-            <div className="absolute bottom-20 left-32 text-2xl text-[#8b5cf6] opacity-50 animate-bounce" style={{ animationDelay: '2s' }}>♪</div>
-            <div className="absolute bottom-40 right-10 text-3xl text-[#59e3a5] opacity-30 animate-bounce" style={{ animationDelay: '0.5s' }}>♫</div>
-            
-            {/* Massive Glow Effects */}
-            <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-gradient-to-r from-[#59e3a5]/20 to-[#14c0ff]/20 rounded-full blur-3xl animate-pulse"></div>
-            <div className="absolute bottom-1/4 right-1/4 w-80 h-80 bg-gradient-to-r from-[#8b5cf6]/15 to-[#59e3a5]/15 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '2s' }}></div>
-            
-            <div className="relative z-10 max-w-7xl mx-auto">
-              {/* Section Header */}
-              <div className="text-center mb-20">
-                <h2 
-                  ref={playlistsHeadingRef}
-                  className={`md:text-6xl lg:text-6xl font-black mb-8 bg-gradient-to-r from-[#59e3a5] via-[#14c0ff] to-[#8b5cf6] bg-clip-text text-transparent drop-shadow-2xl ${playlistsHeadingInView ? 'animate-fade-in-up' : 'opacity-0'}`}
-                  style={{ lineHeight: '1.2', fontSize: 'clamp(2.6rem, 8vw, 4rem)' }}
-                >
-                  The Playlists That Actually Matter
-                </h2>
-                <p 
-                  ref={playlistsSubheadingRef}
-                  className={`text-xl md:text-2xl text-gray-300 max-w-4xl mx-auto leading-relaxed font-bold ${playlistsSubheadingInView ? 'animate-fade-in-up' : 'opacity-0'}`}
-                >
-                  We have direct relationships with curators who control the world's biggest playlists.
-                </p>
-                            </div>
-
-              {/* Playlist Grid with Creative Layout */}
-              <div 
-                ref={playlistsGridRef}
-                className={`grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-8 mb-16 relative z-20 opacity-100 md:opacity-100 ${playlistsGridInView ? 'animate-fade-in-up' : 'md:opacity-0'}`}
-                style={{ minHeight: '200px' }}
-              >
-                {[
-                  { name: 'RapCaviar', followers: '11M+ followers', gradient: 'from-[#e6d3b7] to-[#d4c5a9]', icon: '🎤' },
-                  { name: "Today's Top Hits", followers: '33M+ followers', gradient: 'from-[#feca57] to-[#ff9ff3]', icon: '🔥' },
-                  { name: 'Viva Latino', followers: '11M+ followers', gradient: 'from-[#48dbfb] to-[#0abde3]', icon: '💃' },
-                  { name: 'Hot Country', followers: '7M+ followers', gradient: 'from-[#f0932b] to-[#eb4d4b]', icon: '🤠' },
-                  { name: 'Beast Mode', followers: '5M+ followers', gradient: 'from-[#6c5ce7] to-[#a29bfe]', icon: '💪' },
-                  { name: 'mint', followers: '6M+ followers', gradient: 'from-[#00b894] to-[#00cec9]', icon: '🌿' },
-                  { name: 'Are & Be', followers: '3M+ followers', gradient: 'from-[#fd79a8] to-[#fdcb6e]', icon: '✨' },
-                  { name: 'Chill Hits', followers: '6M+ followers', gradient: 'from-[#74b9ff] to-[#0984e3]', icon: '😌' },
-                  { name: 'Anti Pop', followers: '2M+ followers', gradient: 'from-[#a0a0a0] to-[#ffffff]', icon: '🎸' },
-                  { name: 'Jazz Vibes', followers: '3M+ followers', gradient: 'from-[#fdcb6e] to-[#e17055]', icon: '🎷' },
-                  { name: 'Indie Pop', followers: '4M+ followers', gradient: 'from-[#fd79a8] to-[#6c5cf6]', icon: '🎹' },
-                  { name: 'New Music Friday', followers: '6M+ followers', gradient: 'from-[#55a3ff] to-[#003d82]', icon: '🆕' },
-                  { name: 'Rock This', followers: '5M+ followers', gradient: 'from-[#ff4757] to-[#c44569]', icon: '🤘' },
-                  { name: 'Power Gaming', followers: '4M+ followers', gradient: 'from-[#7bed9f] to-[#2ed573]', icon: '🎮' },
-                  { name: 'Mood Booster', followers: '5M+ followers', gradient: 'from-[#ffa502] to-[#ff6348]', icon: '☀️' },
-                  { name: 'Mega Hit Mix', followers: '7M+ followers', gradient: 'from-[#ff3838] to-[#ff9500]', icon: '💥' }
-                ].map((playlist, index) => (
-                  <div key={index} className="relative group w-full max-w-sm mx-auto">
-                    {/* Glow Effect Background */}
-                    <div className={`absolute inset-0 bg-gradient-to-r ${playlist.gradient} rounded-2xl blur-xl opacity-30 group-hover:opacity-60 transition-all duration-500 transform group-hover:scale-110`}></div>
-                    
-                    {/* Card Content */}
-                    <div className="relative bg-gradient-to-br from-[#1a1a2e]/95 via-[#16213e]/90 to-[#0a0a13]/95 rounded-2xl p-4 md:p-6 border-2 border-white/10 backdrop-blur-sm hover:border-white/30 transition-all duration-500 group-hover:transform group-hover:scale-105 shadow-2xl min-h-[180px] flex flex-col justify-center">
-                      {/* Playlist Icon */}
-                      <div className="text-3xl md:text-4xl mb-3 md:mb-4 text-center">{playlist.icon}</div>
-                      
-                      {/* Playlist Name */}
-                      <h3 className={`${playlist.name === 'New Music Friday' || playlist.name === "Today's Top Hits" ? 'text-lg md:text-2xl' : 'text-xl md:text-3xl'} font-black text-center mb-2 bg-gradient-to-r ${playlist.gradient} bg-clip-text text-transparent leading-tight`}>
-                        {playlist.name}
-                      </h3>
-                      
-                      {/* Follower Count */}
-                      <p className="text-gray-300 text-center font-bold text-sm md:text-lg">
-                        {playlist.followers}
-                      </p>
-                      
-                      {/* Animated Pulse Dot */}
-                      <div className="flex justify-center mt-4">
-                        <div className={`w-3 h-3 bg-gradient-to-r ${playlist.gradient} rounded-full animate-pulse`}></div>
-                            </div>
-                          </div>
-                        </div>
-                ))}
-                      </div>
-
-              {/* "Thousands More" Statement */}
-              <div 
-                ref={thousandsMoreRef}
-                className={`text-center mb-16 mt-5 ${thousandsMoreInView ? 'animate-fade-in-up' : 'opacity-0'}`}
-              >
-                <div className="relative inline-block">
-                  {/* Glow Effect Behind Text - Hidden on mobile */}
-                  <div className="hidden md:block absolute inset-0 bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] blur-xl" style={{ 
-                    opacity: typeof window !== 'undefined' && window.innerWidth >= 1024 ? '0.04' : '0.2'
-                  }}></div>
-                  
-                  <p 
-                    className="relative text-[1.575rem] lg:text-[2.925rem] font-black text-white leading-relaxed lg:mt-[15px] lg:mb-[15px]"
-                  >
-                    + Literally{' '}
-                    <span className="bg-gradient-to-r from-[#59e3a5] via-[#14c0ff] to-[#8b5cf6] bg-clip-text text-transparent drop-shadow-lg animate-pulse">
-                      THOUSANDS
-                    </span>
-                    {' '}more!
-                  </p>
-                    </div>
-                  </div>
-
-              {/* CTA Button */}
-              <div 
-                ref={playlistsButtonRef}
-                className={`text-center ${playlistsButtonInView ? 'animate-fade-in-up' : 'opacity-0'}`}
-              >
-                <button
-                  onClick={scrollToTrackInput}
-                  className="px-16 py-5 bg-gradient-to-r from-[#59e3a5] via-[#14c0ff] to-[#8b5cf6] text-white font-bold rounded-2xl hover:shadow-2xl hover:shadow-[#14c0ff]/30 transition-all duration-300 transform hover:scale-105 active:scale-95 relative overflow-hidden group text-xl"
-                >
-                  <span className="relative z-10">PUT ME ON PLAYLISTS</span>
-                  <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-700"></div>
-                </button>
-                </div>
-              </div>
-            
-            {/* Additional Floating Elements */}
-            <div className="absolute top-1/2 left-5 w-4 h-4 bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] rounded-full opacity-40 animate-ping"></div>
-            <div className="absolute top-1/3 right-8 w-6 h-6 bg-gradient-to-r from-[#8b5cf6] to-[#59e3a5] rounded-full opacity-30 animate-ping" style={{ animationDelay: '1s' }}></div>
-            <div className="absolute bottom-1/3 left-1/4 w-5 h-5 bg-gradient-to-r from-[#14c0ff] to-[#8b5cf6] rounded-full opacity-35 animate-ping" style={{ animationDelay: '2s' }}></div>
-          </section>
-
           {/* Shape Divider - Copied from phoneShapeGradient */}
           <div className="relative z-30 pb-48" style={{ height: '200px', width: '110vw', left: '-5vw', position: 'relative', transform: 'rotate(8deg)', background: 'transparent', marginTop: '-60px', marginBottom: '85px' }}>
             {/* All background elements removed for full transparency */}
@@ -6151,13 +6235,23 @@ export default function Home() {
               {/* Header */}
               <div className="px-4 py-3 border-b border-white/10 bg-gradient-to-r from-[#59e3a5]/10 to-[#14c0ff]/10">
                 <h3 className="text-white font-semibold text-sm">
-                  {isSearching ? 'Searching...' : `Found ${searchResults.length} tracks`}
+                  {isSearching ? 'Searching...' : error ? `Error: ${error}` : `Found ${searchResults.length} tracks`}
                 </h3>
               </div>
               
               {/* Results */}
               <div className="max-h-80 overflow-y-auto custom-scrollbar">
-                {isSearching ? (
+                {error ? (
+                  <div className="p-8 text-center">
+                    <div className="w-16 h-16 bg-red-900/20 rounded-full flex items-center justify-center mx-auto mb-4">
+                      <svg className="w-8 h-8 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                    </div>
+                    <p className="text-red-400 mb-2 font-semibold">Search Error</p>
+                    <p className="text-gray-400 text-sm">{error}</p>
+                  </div>
+                ) : isSearching ? (
                   <div className="p-8 text-center">
                     <div className="w-8 h-8 border-2 border-[#14c0ff] border-t-transparent rounded-full animate-spin mx-auto mb-3"></div>
                     <p className="text-gray-400">Searching Spotify...</p>

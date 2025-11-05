@@ -5,21 +5,11 @@ import { useRouter } from "next/router";
 import * as gtag from "../utils/gtag";
 import LeadTracker from "../utils/leadTracking";
 import { AuthProvider } from "../utils/authContext";
-import { useActivityTracking } from "../utils/useActivityTracking";
-import dynamic from 'next/dynamic';
 
 
 
 export default function App({ Component, pageProps }: AppProps) {
   const router = useRouter();
-
-  // Initialize activity tracking for all users
-  useActivityTracking({
-    enabled: true,
-    trackInterval: 30, // Track every 30 seconds
-    trackPageChanges: true,
-    trackUserInteraction: true
-  });
 
   useEffect(() => {
     // Google Analytics page view tracking

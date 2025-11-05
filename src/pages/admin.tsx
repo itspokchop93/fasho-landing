@@ -8,7 +8,6 @@ import AdminEmailManagement from '../components/AdminEmailManagement'
 import AdminCouponsManagement from '../components/AdminCouponsManagement'
 import AdminSettingsManagement from '../components/AdminSettingsManagement'
 import MarketingManager from '../components/MarketingManager'
-import ActiveUsersSection from '../components/ActiveUsersSection'
 import AdminAccessDenied from '../components/AdminAccessDenied'
 import BlogDashboard from '../../plugins/blog/components/BlogDashboard'
 import { verifyAdminToken, getAdminTokenFromRequest, AdminUser } from '../utils/admin/auth'
@@ -353,8 +352,6 @@ export default function AdminDashboard({ adminUser, authError }: AdminDashboardP
         />
       )}
 
-      {/* Active Users Section */}
-      <ActiveUsersSection />
     </div>
   )
 

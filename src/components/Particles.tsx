@@ -181,7 +181,7 @@ const Particles: React.FC<ParticlesProps> = ({
 
     const particles = new Mesh(gl, { mode: gl.POINTS, geometry, program });
 
-    let animationFrameId: number;
+    let animationFrameId: number | null = null;
     let lastTime = performance.now();
     let elapsed = 0;
 
@@ -210,14 +210,39 @@ const Particles: React.FC<ParticlesProps> = ({
       renderer.render({ scene: particles, camera });
     };
 
-    animationFrameId = requestAnimationFrame(update);
+    const stopAnimation = () => {
+      if (animationFrameId !== null) {
+        cancelAnimationFrame(animationFrameId);
+        animationFrameId = null;
+      }
+    };
+
+    const startAnimation = () => {
+      if (animationFrameId !== null) {
+        return;
+      }
+      lastTime = performance.now();
+      animationFrameId = requestAnimationFrame(update);
+    };
+
+    const handleVisibilityChange = () => {
+      if (typeof document !== 'undefined' && document.hidden) {
+        stopAnimation();
+      } else {
+        startAnimation();
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    startAnimation();
 
     return () => {
       window.removeEventListener("resize", resize);
       if (moveParticlesOnHover) {
         container.removeEventListener("mousemove", handleMouseMove);
       }
-      cancelAnimationFrame(animationFrameId);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      stopAnimation();
       if (container.contains(gl.canvas)) {
         container.removeChild(gl.canvas);
       }

@@ -896,21 +896,21 @@ export default function AddSongsPage() {
             {/* Section Title */}
             <div className="text-center mb-[-10px] md:mb-16 px-2 md:px-4 py-6 md:py-12">
               <h2 className="text-3xl sm:text-4xl md:text-4xl lg:text-5xl font-black mb-4 bg-gradient-to-r from-[#59e3a5] via-[#14c0ff] to-[#8b5cf6] bg-clip-text text-transparent leading-tight px-4 py-2 -mb-[20px] md:-mb-[45px]">
-                Why Artists Add<br className="sm:hidden" /> Multiple Songs<br className="sm:hidden" /> (And Win Big)
+                Why Smart Artists Stack Multiple Campaigns
               </h2>
             </div>
 
             {/* Three Cards Grid */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-8">
-              {/* Card 1: Compound Growth */}
+              {/* Card 1: Build Momentum */}
               <div className="group relative bg-gradient-to-br from-gray-900/80 to-gray-800/60 backdrop-blur-xl rounded-2xl p-4 md:p-8 border border-white/10 hover:border-[#59e3a5]/30 transition-all duration-500 hover:scale-105">
                 <div className="absolute inset-0 bg-gradient-to-br from-[#59e3a5]/10 via-transparent to-transparent rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
                 
                 <div className="relative z-10">
-                  <div className="text-3xl md:text-4xl mb-3 md:mb-4">📈</div>
-                  <h3 className="text-xl md:text-2xl font-bold mb-3 md:mb-4 text-[#59e3a5]">Compound Your Growth</h3>
+                  <div className="text-3xl md:text-4xl mb-3 md:mb-4">🚀</div>
+                  <h3 className="text-xl md:text-2xl font-bold mb-3 md:mb-4 text-[#59e3a5]">Build Momentum That Lasts A Lifetime</h3>
                   <p className="text-sm md:text-base text-gray-300 leading-relaxed">
-                    When you run multiple campaigns simultaneously, your monthly listeners don't just add up - they <span className="text-white font-semibold">MULTIPLY</span>. Fans discover one song, then dive into your whole catalog.
+                    You <b>already know</b> what happens when you drop a song and <b>barely</b> promote it. You've lived that cycle. Fifty bucks boosting an Instagram post. Begging friends to share. Watching it sit at <b>1,200 streams forever.</b> This is your chance to <b>do it different.</b> Stack campaigns. Create <b>actual traction.</b> Finally see what happens when <b>your music</b> becomes a true <b>wave of influence.</b>
                   </p>
                 </div>
               </div>
@@ -920,23 +920,23 @@ export default function AddSongsPage() {
                 <div className="absolute inset-0 bg-gradient-to-br from-[#14c0ff]/10 via-transparent to-transparent rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
                 
                 <div className="relative z-10">
-                  <div className="text-3xl md:text-4xl mb-3 md:mb-4">🎯</div>
-                  <h3 className="text-xl md:text-2xl font-bold mb-3 md:mb-4 text-[#14c0ff]">Dominate The Algorithm</h3>
+                  <div className="text-3xl md:text-4xl mb-3 md:mb-4">📊</div>
+                  <h3 className="text-xl md:text-2xl font-bold mb-3 md:mb-4 text-[#14c0ff]">Spotify's Algorithm Rewards Volume</h3>
                   <p className="text-sm md:text-base text-gray-300 leading-relaxed">
-                    Spotify's algorithm loves consistency. Multiple active songs = multiple data points showing you're an artist worth pushing. It's basically <span className="text-white font-semibold">cheat codes</span> for organic growth.
+                    Every active song is a <b>separate</b> signal to <b>Spotify's algorithm.</b> One song = one recommendation signal. Three songs = <b>three signals</b> working <b>simultaneously.</b> When you stack campaigns, you <b>rapidly</b> trigger the signals that unlock those massive Algorithmic Playlists like <b>Discover Weekly</b> and <b>Release Radar.</b> This is literally how major label artists <b>dominate</b> streaming, and now <b>you've got the same system.</b>
                   </p>
                 </div>
               </div>
 
-              {/* Card 3: Revenue */}
+              {/* Card 3: Fans */}
               <div className="group relative bg-gradient-to-br from-gray-900/80 to-gray-800/60 backdrop-blur-xl rounded-2xl p-4 md:p-8 border border-white/10 hover:border-[#8b5cf6]/30 transition-all duration-500 hover:scale-105">
                 <div className="absolute inset-0 bg-gradient-to-br from-[#8b5cf6]/10 via-transparent to-transparent rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
                 
                 <div className="relative z-10">
-                  <div className="text-3xl md:text-4xl mb-3 md:mb-4">💰</div>
-                  <h3 className="text-xl md:text-2xl font-bold mb-3 md:mb-4 text-[#8b5cf6]">Stack Your Streams</h3>
+                  <div className="text-3xl md:text-4xl mb-3 md:mb-4">💜</div>
+                  <h3 className="text-xl md:text-2xl font-bold mb-3 md:mb-4 text-[#8b5cf6]">Turn Casual Listeners Into Actual Fans</h3>
                   <p className="text-sm md:text-base text-gray-300 leading-relaxed">
-                    Why settle for one revenue stream when you could have 5? Every song earning royalties. Every track building your fanbase. This is how you turn music into a <span className="text-white font-semibold">real income</span>.
+                    Someone hears one song, thinks <b>"that's fire,"</b> and forgets about you by tomorrow. But when they discover you and see <b>three</b> or <b>four</b> songs that are <b>ALL</b> doing numbers? They hit <b>follow.</b> They check for <b>new releases.</b> They tell their friends <b>"yo, I found this artist."</b> You stop being a song they liked and become an <b>ARTIST they follow.</b> That's the shift that changes everything.
                   </p>
                 </div>
               </div>
@@ -959,15 +959,15 @@ export default function AddSongsPage() {
             <div className="relative bg-gradient-to-r from-gray-900/90 to-gray-800/80 backdrop-blur-xl rounded-2xl p-4 md:p-6 border border-white/10">
               <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-3 md:space-x-4">
-                  <div className="w-10 h-10 md:w-12 md:h-12 bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] rounded-full flex items-center justify-center text-black font-bold text-lg md:text-xl">1</div>
-                  <div>
-                    <h3 className="text-lg md:text-xl font-bold text-white">1 Song Campaign</h3>
-                    <p className="text-sm md:text-base text-gray-400">Great start, solid growth</p>
+                  <div className="w-10 h-10 md:w-12 md:h-12 bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] rounded-full flex items-center justify-center text-black font-bold text-lg md:text-xl shrink-0">1</div>
+                  <div className="mr-4 md:mr-0">
+                    <h3 className="text-xl md:text-2xl font-bold text-white">1 Song Campaign</h3>
+                    <p className="text-base md:text-lg text-gray-400">Get your foot in the door and your entry point onto massive playlists</p>
                   </div>
                 </div>
-                <div className="text-right">
-                  <div className="text-xl md:text-2xl font-bold text-[#59e3a5]">1x</div>
-                  <div className="text-xs text-gray-400 whitespace-nowrap">Growth Rate</div>
+                <div className="flex flex-col items-center">
+                  <div className="text-4xl md:text-5xl font-bold text-[#59e3a5]">1x</div>
+                  <div className="text-[0.625rem] md:text-sm text-gray-400 whitespace-nowrap">Growth Rate</div>
                 </div>
               </div>
             </div>
@@ -977,14 +977,14 @@ export default function AddSongsPage() {
               <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-3 md:space-x-4">
                   <div className="w-10 h-10 md:w-12 md:h-12 bg-gradient-to-r from-[#14c0ff] to-[#8b5cf6] rounded-full flex items-center justify-center text-black font-bold text-lg md:text-xl shrink-0">3</div>
-                  <div>
-                    <h3 className="text-xl font-bold text-white">3 Song Campaign</h3>
-                    <p className="text-sm md:text-base text-gray-300">3x the playlist placements, 3x the discovery potential, only 2.25x the cost</p>
+                  <div className="mr-4 md:mr-0">
+                    <h3 className="text-xl md:text-2xl font-bold text-white">3 Song Campaign</h3>
+                    <p className="text-base md:text-lg text-gray-300">Create compounding momentum where each song feeds the others and your whole catalog catches fire</p>
                   </div>
                 </div>
-                <div className="text-right">
-                  <div className="text-2xl font-bold text-[#14c0ff]">3x</div>
-                  <div className="text-xs text-gray-400 whitespace-nowrap">Growth Rate</div>
+                <div className="flex flex-col items-center">
+                  <div className="text-4xl md:text-5xl font-bold text-[#14c0ff]">7x</div>
+                  <div className="text-[0.625rem] md:text-sm text-gray-400 whitespace-nowrap">Growth Rate</div>
                 </div>
               </div>
             </div>
@@ -994,14 +994,14 @@ export default function AddSongsPage() {
               <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-3 md:space-x-4">
                   <div className="w-10 h-10 md:w-12 md:h-12 bg-gradient-to-r from-[#8b5cf6] to-[#59e3a5] rounded-full flex items-center justify-center text-black font-bold text-lg md:text-xl shrink-0">5</div>
-                  <div>
-                    <h3 className="text-xl font-bold text-white">5 Song Campaign</h3>
-                    <p className="text-sm md:text-base text-gray-300">Full catalog exposure, maximum algorithm leverage, unstoppable momentum</p>
+                  <div className="mr-4 md:mr-0">
+                    <h3 className="text-xl md:text-2xl font-bold text-white">5 Song Campaign</h3>
+                    <p className="text-base md:text-lg text-gray-300">Dominate the algorithm and become the name everyone brings up when they talk about who's next.</p>
                   </div>
                 </div>
-                <div className="text-right">
-                  <div className="text-2xl font-bold text-[#8b5cf6]">5x</div>
-                  <div className="text-xs text-gray-400 whitespace-nowrap">Growth Rate</div>
+                <div className="flex flex-col items-center">
+                  <div className="text-4xl md:text-5xl font-bold text-[#8b5cf6]">18x</div>
+                  <div className="text-[0.625rem] md:text-sm text-gray-400 whitespace-nowrap">Growth Rate</div>
                 </div>
               </div>
             </div>
@@ -1030,8 +1030,7 @@ export default function AddSongsPage() {
             {/* Section Title */}
             <div className="text-center mb-8 md:mb-16">
               <h2 className="text-3xl sm:text-4xl md:text-4xl lg:text-5xl xl:text-6xl font-black mb-6 bg-gradient-to-r from-[#8b5cf6] via-[#59e3a5] to-[#14c0ff] bg-clip-text text-transparent px-2">
-                Real Artists Know:<br />
-                <span className="text-2xl sm:text-2xl md:text-3xl lg:text-4xl xl:text-5xl">Your Best Song Might Not Be Your First</span>
+                The Song You're Sleeping On Could Be The One That Blows Up
               </h2>
             </div>
 

@@ -1,5 +1,7 @@
 # Active Users Tracking System
 
+> **Status Update (2025-11-04):** The Active Users tracking system has been fully deactivated. The admin dashboard no longer renders this feature, the tracking middleware and hooks have been removed, and all related API routes are offline. Retain this document for historical reference only.
+
 ## Overview
 
 The Active Users tracking system provides real-time monitoring of users currently on the website, including their IP addresses, current pages, browser information, and activity status. This system is designed for the admin dashboard to provide live analytics.
