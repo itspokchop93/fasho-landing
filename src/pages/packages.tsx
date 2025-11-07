@@ -1142,7 +1142,7 @@ export default function PackagesPage() {
                                 <div className="w-3 h-3 bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] rounded-full flex items-center justify-center flex-shrink-0">
                                   <span className="text-black text-xs font-black">✓</span>
                                 </div>
-                                <span className="text-white/90 font-medium" style={{ fontSize: '0.7rem' }}>
+                                <span className="text-white/90 font-medium" style={{ fontSize: '0.8rem' }}>
                                   {pkg.plays}
                                 </span>
                               </div>
@@ -1150,7 +1150,7 @@ export default function PackagesPage() {
                                 <div className="w-3 h-3 bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] rounded-full flex items-center justify-center flex-shrink-0">
                                   <span className="text-black text-xs font-black">✓</span>
                                 </div>
-                                <span className="text-white/90 font-medium" style={{ fontSize: '0.7rem' }}>
+                                <span className="text-white/90 font-medium" style={{ fontSize: '0.8rem' }}>
                                   {pkg.placements}
                                 </span>
                               </div>
@@ -1263,7 +1263,7 @@ export default function PackagesPage() {
                 </div>
                 
                 <div className="relative">
-                  <div className="text-sm text-white/70 mb-3">30-Day Growth Projection</div>
+                  <div className="text-sm text-white/70 mb-3">14-Day Growth Projection</div>
                   <div className="relative h-32 bg-black/20 rounded-lg p-4 ml-8">
                     <svg className="w-full h-full" viewBox="0 0 300 100" preserveAspectRatio="none">
                       <defs>
@@ -1343,8 +1343,8 @@ export default function PackagesPage() {
                     {/* X-axis labels */}
                     <div className="absolute bottom-0 left-0 w-full flex justify-between text-xs text-white/50 -mb-6">
                       <span>Day 1</span>
-                      <span>Day 15</span>
-                      <span>Day 30</span>
+                      <span>Day 5</span>
+                      <span>Day 14</span>
                     </div>
                   </div>
                 </div>
@@ -1827,7 +1827,7 @@ export default function PackagesPage() {
                    </div>
                    
                    <div className="relative">
-                     <div className="text-sm text-white/70 mb-3">30-Day Growth Projection</div>
+                     <div className="text-sm text-white/70 mb-3">14-Day Growth Projection</div>
                      <div className="relative h-32 bg-black/20 rounded-lg p-4 ml-8">
                        <svg className="w-full h-full" viewBox="0 0 300 100" preserveAspectRatio="none">
                          <defs>
@@ -1907,8 +1907,8 @@ export default function PackagesPage() {
                        {/* X-axis labels */}
                        <div className="absolute bottom-0 left-0 w-full flex justify-between text-xs text-white/50 -mb-6">
                          <span>Day 1</span>
-                         <span>Day 15</span>
-                         <span>Day 30</span>
+                         <span>Day 5</span>
+                         <span>Day 14</span>
                        </div>
                      </div>
                    </div>
