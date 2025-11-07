@@ -99,8 +99,12 @@ export default function PackagesPage() {
   const [currentUser, setCurrentUser] = useState<any>(null); // Track authentication state
   const [isAuthLoading, setIsAuthLoading] = useState(true); // Track if auth is still loading
   const [existingSessionId, setExistingSessionId] = useState<string | null>(null); // Track existing session for renewal
+  const [drawerClosed, setDrawerClosed] = useState(false); // Track if drawer is closed (mobile only)
+  const [showChangeSongPopup, setShowChangeSongPopup] = useState(false); // Track change song popup visibility
   const carouselRef = useRef<HTMLDivElement>(null);
   const lottieRef = useRef<any>(null);
+  const selectedPackageRef = useRef<HTMLDivElement>(null);
+  const changeSongButtonRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
     if (!router.isReady) return;
@@ -233,6 +237,14 @@ export default function PackagesPage() {
           }]
         });
       }
+
+      // Mobile drawer effect: Close drawer after 200ms delay
+      setTimeout(() => {
+        setDrawerClosed(true);
+      }, 200);
+    } else {
+      // If deselecting, open drawer immediately
+      setDrawerClosed(false);
     }
     
     setPreviousPackage(selectedPackage);
@@ -241,6 +253,13 @@ export default function PackagesPage() {
       ...prev,
       [currentSongIndex]: newPackageId
     }));
+  };
+
+  const handleChangePackage = () => {
+    // Wait 200ms then open drawer
+    setTimeout(() => {
+      setDrawerClosed(false);
+    }, 200);
   };
 
   // Animate chart data when package changes
@@ -409,6 +428,33 @@ export default function PackagesPage() {
     };
   }, [selectedPackage]);
 
+  // Reset drawer when song changes (mobile only)
+  useEffect(() => {
+    // When song changes, reset drawer state based on whether package is selected
+    // If no package is selected for the current song, ensure drawer is open
+    if (!selectedPackage) {
+      setDrawerClosed(false);
+    }
+    // If a package is selected, drawer can remain closed (user already made selection)
+  }, [currentSongIndex, selectedPackage]);
+
+  // Auto-scroll to selected package when drawer closes (mobile only)
+  useEffect(() => {
+    if (drawerClosed && selectedPackage) {
+      // Wait for drawer animation to complete (500ms) + buffer
+      const scrollTimeout = setTimeout(() => {
+        if (selectedPackageRef.current) {
+          selectedPackageRef.current.scrollIntoView({
+            behavior: 'smooth',
+            block: 'center'
+          });
+        }
+      }, 600);
+      
+      return () => clearTimeout(scrollTimeout);
+    }
+  }, [drawerClosed, selectedPackage]);
+
   const handleNext = async () => {
     if (!selectedPackage) {
       alert("Please select a package before continuing");
@@ -528,7 +574,12 @@ export default function PackagesPage() {
       // Go to next song
       const newIndex = currentSongIndex + 1;
       setCurrentSongIndex(newIndex);
-      setSelectedPackage(selectedPackages[newIndex] || "");
+      const nextSongPackage = selectedPackages[newIndex] || "";
+      setSelectedPackage(nextSongPackage);
+      
+      // Reset drawer to open state for new song (mobile only)
+      // Always reset drawer when changing songs - open if no package selected
+      setDrawerClosed(!nextSongPackage);
       
       // Force scroll to top for visual cue that song changed (all devices)
       if (typeof window !== 'undefined') {
@@ -568,7 +619,12 @@ export default function PackagesPage() {
     if (currentSongIndex > 0) {
       const newIndex = currentSongIndex - 1;
       setCurrentSongIndex(newIndex);
-      setSelectedPackage(selectedPackages[newIndex] || "");
+      const prevSongPackage = selectedPackages[newIndex] || "";
+      setSelectedPackage(prevSongPackage);
+      
+      // Reset drawer to open state for previous song (mobile only)
+      // Always reset drawer when changing songs - open if no package selected
+      setDrawerClosed(!prevSongPackage);
       
       // Force scroll to top for visual cue that song changed (all devices)
       if (typeof window !== 'undefined') {
@@ -862,237 +918,166 @@ export default function PackagesPage() {
         {/* Step Indicator - Inside main content */}
         <StepIndicator currentStep={2} />
         <div className="max-w-7xl mx-auto">
-          <h1 className={`${isDiscountedSong ? 'text-3xl' : 'text-4xl'} md:text-5xl font-extrabold text-center mb-12 -mt-5`}>
+          <h1 className={`${isDiscountedSong ? 'text-3xl' : 'text-4xl'} md:text-5xl font-extrabold text-center mb-6 md:mb-12 -mt-5`}>
             <span className="text-white">Choose Your Campaign</span>{isDiscountedSong && <> for <span className="text-[#59e3a5]">25% OFF</span></>}
           </h1>
 
           {/* Mobile Layout */}
           <div className="block md:hidden">
-            {/* Mobile: Album art and track info at top */}
-            <div className="text-center mb-8">
-                            {tracks.length > 1 && (
-                <div className="mb-6">
-                  <p 
-                    key={songIndicatorKey}
-                    className="text-white/70 mb-2 text-lg font-semibold animate-drop-bounce"
-                  >
-                    Song {currentSongIndex + 1} of {tracks.length}
-                  </p>
-                  <div className="w-2 h-2 bg-[#59e3a5] rounded-full mx-auto"></div>
-                </div>
-              )}
-
-              <div className={`relative inline-block group ${tracks.length === 1 ? 'pt-5' : ''}`}>
-                {/* 25% OFF badge for discounted songs */}
-                {isDiscountedSong && (
-                  <div className="absolute -top-3 -right-3 bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] text-black text-sm font-bold px-3 py-1 rounded-full shadow-lg z-10 animate-pulse">
-                    25% OFF
+            {/* Mobile: Song Info Card - Mobile App Style */}
+            <div className="mb-6 px-4 pt-2">
+              <div className="relative bg-gradient-to-br from-[#59e3a5]/20 via-[#14c0ff]/15 to-[#8b5cf6]/20 backdrop-blur-sm rounded-2xl border border-[#59e3a5]/30 shadow-xl shadow-[#59e3a5]/10 p-5 overflow-visible">
+                {/* Subtle animated background glow */}
+                <div className="absolute inset-0 bg-gradient-to-r from-[#59e3a5]/5 via-transparent to-[#14c0ff]/5 animate-pulse rounded-2xl overflow-hidden"></div>
+                
+                {/* Song Indicator Badge - Top Right Corner, Halfway In/Out */}
+                {tracks.length > 1 && (
+                  <div className="absolute -top-2 -right-2 z-30">
+                    <span 
+                      key={songIndicatorKey}
+                      className="inline-flex items-center gap-1.5 bg-[#59e3a5] border-2 border-[#59e3a5] text-black px-2.5 py-1 rounded-full text-xs font-bold shadow-lg"
+                    >
+                      <span className="w-1.5 h-1.5 bg-black rounded-full"></span>
+                      Song {currentSongIndex + 1} of {tracks.length}
+                    </span>
                   </div>
                 )}
-                {/* Gradient border container that moves with the image */}
-                <div className="relative bg-gradient-to-r from-[#59e3a5] via-[#14c0ff] to-[#8b5cf6] p-[3px] rounded-2xl transition-transform duration-300 group-hover:-translate-y-2 album-warp-3d overflow-hidden">
-                  {/* Spark animation overlay */}
-                  <div className="absolute inset-0 rounded-2xl overflow-hidden">
-                    <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/80 to-transparent w-[200%] h-full animate-spark-travel rounded-2xl"></div>
+                
+                {/* Content Container */}
+                <div className="relative flex items-center gap-4 min-h-[180px]">
+                  {/* Album Art - Left Side - Centered and Larger */}
+                  <div className="relative flex-shrink-0 flex items-center">
+                    {/* 25% OFF badge for discounted songs */}
+                    {isDiscountedSong && (
+                      <div className="absolute -top-2 -right-2 bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] text-black text-xs font-bold px-2 py-0.5 rounded-full shadow-lg z-20 animate-pulse">
+                        25% OFF
+                      </div>
+                    )}
+                    {/* Gradient border container */}
+                    <div className="relative bg-gradient-to-r from-[#59e3a5] via-[#14c0ff] to-[#8b5cf6] p-[2px] rounded-xl overflow-hidden">
+                      <div className="relative w-[180px] h-[180px] rounded-xl overflow-hidden bg-black/20">
+                        <Image
+                          src={currentTrack.imageUrl}
+                          alt={currentTrack.title}
+                          width={180}
+                          height={180}
+                          className="w-full h-full object-cover"
+                          unoptimized
+                        />
+                      </div>
+                    </div>
                   </div>
-                  <Image
-                    src={currentTrack.imageUrl}
-                    alt={currentTrack.title}
-                    width={300}
-                    height={300}
-                    className="rounded-2xl shadow-2xl mx-auto relative z-10"
-                    unoptimized
-                  />
+
+                  {/* Song Info - Right Side - Centered Vertically and Horizontally */}
+                  <div className="flex-1 min-w-0 flex flex-col justify-center items-center text-center">
+                    {/* Song Title */}
+                    <h2 className="text-white font-black mb-2" style={{ fontSize: '1.5rem' }}>
+                      {currentTrack.title}
+                    </h2>
+                    
+                    {/* Artist Name */}
+                    <p className="text-white/70" style={{ fontSize: '1rem' }}>
+                      {currentTrack.artist}
+                    </p>
+                  </div>
                 </div>
-              </div>
-              
-              <div className="mt-6 mb-8">
-                <h2 className="text-2xl font-black mb-2">{currentTrack.title}</h2>
-                <p className="text-sm text-white/60">{currentTrack.artist}</p>
+
+                {/* Change Song Pill Button - Bottom Right Corner */}
+                <button
+                  ref={changeSongButtonRef}
+                  onClick={() => setShowChangeSongPopup(true)}
+                  className="absolute bottom-3 right-3 bg-gray-800/40 backdrop-blur-sm text-white/50 font-medium px-1.5 py-0.5 rounded-full border border-white/15 z-30 flex items-center gap-0.5 transition-all duration-300 hover:bg-gray-800/60 hover:text-white/70 hover:border-white/25"
+                  style={{ fontSize: '0.6rem' }}
+                >
+                  <span>Change Song</span>
+                  <svg className="w-1.5 h-1.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+                  </svg>
+                </button>
+
+                {/* Change Song Popup */}
+                {showChangeSongPopup && (
+                  <div className="absolute bottom-12 right-3 z-40 w-[280px]">
+                    {/* Popup Container */}
+                    <div className="relative bg-gray-800/95 backdrop-blur-md rounded-lg border border-white/30 shadow-xl p-4">
+                      {/* Chevron Corner pointing down */}
+                      <div className="absolute -bottom-2 right-6 w-4 h-4 bg-gray-800/95 border-r border-b border-white/30 transform rotate-45"></div>
+                      
+                      {/* Close Button */}
+                      <button
+                        onClick={() => setShowChangeSongPopup(false)}
+                        className="absolute top-2 right-2 text-white/60 hover:text-white transition-colors"
+                      >
+                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                      </button>
+
+                      {/* Popup Content */}
+                      <div className="pr-6">
+                        <h3 className="text-white font-semibold mb-2" style={{ fontSize: '0.875rem' }}>
+                          Want to change your song?
+                        </h3>
+                        <p className="text-white/70 leading-relaxed mb-4" style={{ fontSize: '0.75rem' }}>
+                          This will remove it from your lineup and take you back to the song selection screen.
+                        </p>
+
+                        {/* Action Buttons */}
+                        <div className="flex gap-2">
+                          <button
+                            onClick={() => setShowChangeSongPopup(false)}
+                            className="flex-1 bg-red-500/20 hover:bg-red-500/30 border border-red-500/50 text-red-400 font-medium px-3 py-2 rounded-md transition-all duration-200"
+                            style={{ fontSize: '0.75rem' }}
+                          >
+                            Cancel
+                          </button>
+                          <button
+                            onClick={() => {
+                              setShowChangeSongPopup(false);
+                              handleChangeSong();
+                            }}
+                            className="flex-1 bg-green-500/20 hover:bg-green-500/30 border border-green-500/50 text-green-400 font-medium px-3 py-2 rounded-md transition-all duration-200"
+                            style={{ fontSize: '0.75rem' }}
+                          >
+                            Confirm
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
 
-            {/* Mobile: Package carousel */}
-            <div className="md:hidden mb-8 relative">
-              {/* Left arrow */}
-              {canScrollLeft && (
-                <button
-                  onClick={() => scrollCarousel('left')}
-                  className="absolute left-2 top-1/2 -translate-y-1/2 z-50 bg-black/80 backdrop-blur-sm rounded-full p-2 border border-white/20 shadow-lg hover:bg-black/90 transition-all duration-300"
-                >
-                  <svg className="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-                  </svg>
-                </button>
-              )}
-              
-              {/* Right arrow */}
-              {canScrollRight && (
-                <button
-                  onClick={() => scrollCarousel('right')}
-                  className="absolute right-2 top-1/2 -translate-y-1/2 z-50 bg-black/80 backdrop-blur-sm rounded-full p-2 border border-white/20 shadow-lg hover:bg-black/90 transition-all duration-300"
-                >
-                  <svg className="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                  </svg>
-                </button>
-              )}
-              
-              <div 
-                ref={carouselRef}
-                className="overflow-x-auto scrollbar-hide cursor-grab active:cursor-grabbing pb-3 relative"
-                style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
-                onScroll={checkScrollArrows}
-              >
-                {/* Subtle gradient glow behind mobile cards */}
-                <div className="absolute inset-0 bg-gradient-to-r from-[#59e3a5]/10 via-[#14c0ff]/10 to-[#8b5cf6]/10 rounded-2xl blur-xl -z-10"></div>
-                <div className="flex gap-4 px-4 py-6" style={{ width: 'max-content' }}>
-                  {packages.map((pkg) => {
-                    // Special mobile design for BREAKTHROUGH package
-                    if (pkg.id === 'breakthrough') {
-                      return (
+            {/* Mobile: Package List - Vertical Mobile App Style */}
+            <div className="md:hidden mb-8 px-1">
+              {/* Master Section Box */}
+              <div className={`bg-gradient-to-br from-gray-700/50 via-gray-800/45 to-gray-900/50 rounded-2xl border border-white/30 backdrop-blur-sm overflow-visible relative transition-all duration-500 ease-in-out ${
+                drawerClosed 
+                  ? 'px-2 pt-2 pb-9 flex flex-col h-auto min-h-0' 
+                  : 'p-4 space-y-4'
+              }`}>
+                {packages.map((pkg) => {
+                  const isSelected = selectedPackage === pkg.id;
+                  const shouldShow = !drawerClosed || isSelected;
+                  
+                  return (
                     <div
                       key={pkg.id}
+                      ref={isSelected ? selectedPackageRef : null}
                       onClick={() => handlePackageSelect(pkg.id)}
-                          className={`relative cursor-pointer transition-all duration-300 flex-shrink-0 hover:-translate-y-1 hover:scale-105 group ${
-                            selectedPackage === pkg.id
-                              ? 'shadow-xl shadow-[#59e3a5]/25'
-                              : 'shadow-lg shadow-black/15 hover:shadow-xl hover:shadow-[#59e3a5]/15'
+                      className={`relative cursor-pointer rounded-xl overflow-visible transition-all duration-500 ease-in-out ${
+                        shouldShow 
+                          ? 'opacity-100 max-h-[600px]' 
+                          : 'opacity-0 max-h-0 overflow-hidden pointer-events-none h-0'
+                      } ${!drawerClosed && shouldShow ? 'mb-4 p-4' : drawerClosed && isSelected ? 'mb-0 p-4 w-full flex-shrink-0' : drawerClosed ? 'p-0 m-0 h-0' : 'p-4'} ${
+                        pkg.popular
+                          ? 'bg-gradient-to-br from-gray-800/80 via-gray-900/80 to-black/80 border-2 border-[#8b5cf6]/60 shadow-lg shadow-[#8b5cf6]/30'
+                          : isSelected
+                          ? 'bg-gradient-to-br from-gray-800/80 via-gray-900/80 to-black/80 border-2 border-[#59e3a5]/70 shadow-md'
+                          : 'bg-gradient-to-br from-gray-800/60 via-gray-900/60 to-black/60 border-2 border-white/25 hover:border-white/35'
                       }`}
-                      style={{ 
-                            width: '220px',
-                            height: isDiscountedSong ? '320px' : '310px',
-                            zIndex: selectedPackage === pkg.id ? 20 : 10
-                          }}
-                          suppressHydrationWarning={true}
-                        >
-                          {/* Gradient Background with Border */}
-                          <div className={`absolute inset-0 rounded-xl transition-all duration-300 ${
-                            selectedPackage === pkg.id
-                              ? 'bg-gradient-to-br from-gray-800/98 via-gray-900/98 to-black/98 border-2 border-[#59e3a5]/80'
-                              : 'bg-gradient-to-br from-gray-800/95 via-gray-900/95 to-black/95 border border-white/15 group-hover:border-white/25'
-                          }`} style={{ zIndex: 2 }}></div>
-
-                          {/* Subtle outline */}
-                          <div className="absolute inset-0 rounded-xl border border-white/5" style={{ zIndex: 3 }}></div>
-
-                          {/* Subtle inner glow */}
-                          <div className="absolute inset-0 rounded-xl bg-gradient-to-br from-[#59e3a5]/5 via-transparent to-[#14c0ff]/5 opacity-50" style={{ zIndex: 4 }}></div>
-
-                          {/* Confetti Animation Overlay */}
-                          {confettiAnimation === pkg.id && confettiData && (
-                            <div 
-                              key={confettiKey}
-                              className="absolute inset-0 z-50 pointer-events-none rounded-xl overflow-hidden"
-                            >
-                              <Lottie
-                                ref={lottieRef}
-                                animationData={confettiData}
-                                loop={false}
-                                autoplay={true}
-                                style={{
-                                  width: '100%',
-                                  height: '100%',
-                                  position: 'absolute',
-                                  top: 0,
-                                  left: 0,
-                                }}
-                              />
-                            </div>
-                          )}
-                          
-                          {/* Selection checkmark */}
-                          {selectedPackage === pkg.id && (
-                            <div className="absolute -top-2 -left-2 w-6 h-6 bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] rounded-full flex items-center justify-center z-30 shadow-md">
-                              <span className="text-black text-xs font-bold">✓</span>
-                            </div>
-                          )}
-                          
-                          {/* Content container */}
-                          <div className="relative h-full px-4 pt-4 pb-4 flex flex-col" style={{ zIndex: 10 }}>
-                            {/* Top - Emoji in gradient circle */}
-                            <div className="flex flex-col items-center text-center mb-3">
-                              <div className="w-12 h-12 bg-gradient-to-br from-[#59e3a5]/20 to-[#14c0ff]/20 rounded-full flex items-center justify-center mb-3 border border-white/10 backdrop-blur-sm shadow-md">
-                                <span className="text-2xl filter drop-shadow-lg">{pkg.icon}</span>
-                              </div>
-                              
-                              {/* Price */}
-                              <div className="mb-0">
-                                {isDiscountedSong ? (
-                                  <div className="space-y-1">
-                                    <div className="text-xs text-white/40 line-through">${pkg.price}</div>
-                                    <div className="font-black text-2xl text-white filter drop-shadow-sm">
-                                      ${getDiscountedPrice(pkg.price)}
-                                    </div>
-                                  </div>
-                                ) : (
-                                  <span className="font-black text-2xl text-white filter drop-shadow-sm">${pkg.price}</span>
-                                )}
-                              </div>
-                            </div>
-                            
-                            {/* Package Name */}
-                            <div className="text-center mb-2">
-                              <h3 className="font-black text-base bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] bg-clip-text text-transparent tracking-wide filter drop-shadow-sm">{pkg.name}</h3>
-                            </div>
-
-                            {/* Hook Description */}
-                            <div className="text-center mb-3">
-                              <p className="text-xs text-white/60 leading-relaxed px-1 font-medium">{pkg.description}</p>
-                            </div>
-                            
-                            {/* Features container */}
-                            <div className="bg-gradient-to-br from-white/6 to-white/3 rounded-lg px-2 py-3 backdrop-blur-sm border border-white/15 shadow-md space-y-2">
-                              <div className="flex items-center text-white">
-                                <div className="w-3 h-3 bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] rounded-full flex items-center justify-center mr-1.5 flex-shrink-0 shadow-sm">
-                                  <span className="text-black text-xs font-black">✓</span>
-                                </div>
-                                <span className="font-bold tracking-wide" style={{fontSize: 'calc(0.75rem + 0.05rem)'}}>{pkg.plays}</span>
-                              </div>
-                              <div className="flex items-center text-white">
-                                <div className="w-3 h-3 bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] rounded-full flex items-center justify-center mr-1.5 flex-shrink-0 shadow-sm">
-                                  <span className="text-black text-xs font-black">✓</span>
-                                </div>
-                                <span className={`font-bold tracking-wide ${['legendary', 'unstoppable'].includes(pkg.id) ? 'text-xs' : 'text-xs'}`} style={['legendary', 'unstoppable'].includes(pkg.id) ? {fontSize: 'calc(0.75rem - 0.1rem)'} : {}}>{pkg.placements}</span>
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                      );
-                    }
-
-                                        // Default mobile design for other packages (now using same styling as BREAKTHROUGH)
-                      return (
-                        <div
-                          key={pkg.id}
-                          onClick={() => handlePackageSelect(pkg.id)}
-                          className={`relative cursor-pointer transition-all duration-300 flex-shrink-0 hover:-translate-y-1 hover:scale-105 group ${
-                            selectedPackage === pkg.id
-                              ? 'shadow-xl shadow-[#59e3a5]/25'
-                              : 'shadow-lg shadow-black/15 hover:shadow-xl hover:shadow-[#59e3a5]/15'
-                          }`}
-                          style={{ 
-                            width: '220px',
-                            height: isDiscountedSong ? '320px' : '310px',
-                            zIndex: selectedPackage === pkg.id ? 20 : 10
-                          }}
-                          suppressHydrationWarning={true}
-                        >
-                          {/* Gradient Background with Border */}
-                          <div className={`absolute inset-0 rounded-xl transition-all duration-300 ${
-                            selectedPackage === pkg.id
-                              ? pkg.id === 'dominate' 
-                                ? 'bg-gray-900 border-2 border-[#59e3a5]/80'
-                                : 'bg-gradient-to-br from-gray-800/98 via-gray-900/98 to-black/98 border-2 border-[#59e3a5]/80'
-                              : 'bg-gradient-to-br from-gray-800/95 via-gray-900/95 to-black/95 border border-white/15 group-hover:border-white/25'
-                          }`} style={{ zIndex: 2 }}></div>
-
-                          {/* Subtle outline */}
-                          <div className="absolute inset-0 rounded-xl border border-white/5" style={{ zIndex: 3 }}></div>
-
-                          {/* Subtle inner glow */}
-                          <div className="absolute inset-0 rounded-xl bg-gradient-to-br from-[#59e3a5]/5 via-transparent to-[#14c0ff]/5 opacity-50" style={{ zIndex: 4 }}></div>
-
+                    >
                       {/* Confetti Animation Overlay */}
                       {confettiAnimation === pkg.id && confettiData && (
                         <div 
@@ -1114,106 +1099,148 @@ export default function PackagesPage() {
                           />
                         </div>
                       )}
-                      
-                      {/* Lens flare animation for Popular package */}
+
+                      {/* Most Popular Badge */}
                       {pkg.popular && (
-                        <>
-                          {/* Outer glow layer */}
-                          <div className="absolute -inset-0.5 bg-gradient-to-r from-blue-400 via-cyan-500 to-blue-600 rounded-2xl blur-sm opacity-30 animate-pulse"></div>
-                          
-                          {/* Animated border layer */}
-                          <div className="absolute -inset-0.5 rounded-xl overflow-hidden">
-                            <div className="absolute inset-0 border-container-blue">
-                              <div className="absolute -inset-[20px] animate-spin-slow border-highlight-blue"></div>
-                            </div>
-                          </div>
-                        </>
-                      )}
-                      
-                      {/* Most Popular flag */}
-                      {pkg.popular && (
-                        <div className="absolute -top-3 -right-3 bg-gradient-to-r from-[#14c0ff] to-[#59e3a5] text-white text-xs font-semibold px-3 py-1 rounded-md shadow-lg z-30">
+                        <div className="absolute -top-2 -left-2 bg-gradient-to-r from-[#8b5cf6] to-[#a855f7] text-white font-bold px-1.5 py-0.5 rounded-full shadow-lg z-30" style={{ fontSize: '0.65rem' }}>
                           Most Popular
                         </div>
                       )}
-                      
-                          {/* Selection checkmark */}
+
+                      {/* Selection Checkmark */}
                       {selectedPackage === pkg.id && (
-                            <div className="absolute -top-2 -left-2 w-6 h-6 bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] rounded-full flex items-center justify-center z-30 shadow-md">
-                              <span className="text-black text-xs font-bold">✓</span>
+                        <div className="absolute -top-2 -right-2 bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] text-black text-xs font-bold px-2 py-0.5 rounded-full shadow-md z-30 flex items-center gap-1.5">
+                          <span>✓</span>
+                          <span>Selected Campaign</span>
                         </div>
                       )}
-                      
-                          {/* Content container */}
-                          <div className="relative h-full px-4 pt-4 pb-4 flex flex-col" style={{ zIndex: 10 }}>
-                            {/* Top - Emoji in gradient circle */}
-                            <div className="flex flex-col items-center text-center mb-3">
-                              <div className="w-12 h-12 bg-gradient-to-br from-[#59e3a5]/20 to-[#14c0ff]/20 rounded-full flex items-center justify-center mb-3 border border-white/10 backdrop-blur-sm shadow-md">
-                                <span className="text-2xl filter drop-shadow-lg">{pkg.icon}</span>
+
+                      {/* Card Content */}
+                      <div className="relative">
+                        {/* Top Section - Icon and Main Content */}
+                        <div className="flex items-center gap-3">
+                          {/* Icon - Left Side */}
+                          <div className="flex-shrink-0 w-12 h-12 bg-gradient-to-br from-[#59e3a5]/20 to-[#14c0ff]/20 rounded-xl flex items-center justify-center border border-white/10 backdrop-blur-sm">
+                            <span className="text-2xl">{pkg.icon}</span>
                           </div>
-                              
-                              {/* Price */}
-                              <div className="mb-0">
-                            {isDiscountedSong ? (
-                                  <div className="space-y-1">
-                                    <div className="text-xs text-white/40 line-through">${pkg.price}</div>
-                                    <div className="font-black text-2xl text-white filter drop-shadow-sm">
-                                  ${getDiscountedPrice(pkg.price)}
-                                </div>
-                              </div>
-                            ) : (
-                                  <span className="font-black text-2xl text-white filter drop-shadow-sm">${pkg.price}</span>
-                            )}
-                          </div>
-                        </div>
-                        
+
+                          {/* Main Content - Middle */}
+                          <div className="flex-1 min-w-0 pr-20">
                             {/* Package Name */}
-                            <div className="text-center mb-2">
-                              <h3 className="font-black text-base bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] bg-clip-text text-transparent tracking-wide filter drop-shadow-sm">{pkg.name}</h3>
-                        </div>
-                        
-                            {/* Hook Description - Only for packages that have description */}
-                            {pkg.description && (
-                              <div className="text-center mb-3">
-                                <p className="text-xs text-white/60 leading-relaxed px-1 font-medium">{pkg.description}</p>
-                              </div>
-                            )}
-                            
-                            {/* Features container */}
-                            <div className="bg-gradient-to-br from-white/6 to-white/3 rounded-lg px-2 py-3 backdrop-blur-sm border border-white/15 shadow-md space-y-2">
-                              <div className="flex items-center text-white">
-                                <div className="w-3 h-3 bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] rounded-full flex items-center justify-center mr-1.5 flex-shrink-0 shadow-sm">
+                            <h3 className="text-white font-black mb-1" style={{ fontSize: '1.125rem' }}>
+                              {pkg.name}
+                            </h3>
+
+                            {/* Description */}
+                            <p className="text-white/60 mb-2.5" style={{ fontSize: '0.75rem' }}>
+                              {pkg.description}
+                            </p>
+
+                            {/* Features - SAME LINE - NO WRAP */}
+                            <div className="flex items-center gap-4 whitespace-nowrap">
+                              <div className="flex items-center gap-1.5 flex-shrink-0">
+                                <div className="w-3 h-3 bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] rounded-full flex items-center justify-center flex-shrink-0">
                                   <span className="text-black text-xs font-black">✓</span>
-                            </div>
-                                <span className="font-bold tracking-wide" style={{fontSize: 'calc(0.75rem + 0.05rem)'}}>{pkg.plays}</span>
+                                </div>
+                                <span className="text-white/90 font-medium" style={{ fontSize: '0.7rem' }}>
+                                  {pkg.plays}
+                                </span>
                               </div>
-                              <div className="flex items-center text-white">
-                                <div className="w-3 h-3 bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] rounded-full flex items-center justify-center mr-1.5 flex-shrink-0 shadow-sm">
+                              <div className="flex items-center gap-1.5 flex-shrink-0">
+                                <div className="w-3 h-3 bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] rounded-full flex items-center justify-center flex-shrink-0">
                                   <span className="text-black text-xs font-black">✓</span>
+                                </div>
+                                <span className="text-white/90 font-medium" style={{ fontSize: '0.7rem' }}>
+                                  {pkg.placements}
+                                </span>
+                              </div>
                             </div>
-                                <span className={`font-bold tracking-wide ${['legendary', 'unstoppable'].includes(pkg.id) ? 'text-xs' : 'text-xs'}`} style={['legendary', 'unstoppable'].includes(pkg.id) ? {fontSize: 'calc(0.75rem - 0.1rem)'} : {}}>{pkg.placements}</span>
                           </div>
+                        </div>
+
+                        {/* Price - Top Right Corner */}
+                        <div className="absolute top-1 right-2 text-right z-20">
+                          {isDiscountedSong ? (
+                            <div>
+                              <div className="text-white/40 line-through text-xs mb-0.5">${pkg.price}</div>
+                              <div className="font-black text-white" style={{ fontSize: '1.25rem' }}>
+                                ${getDiscountedPrice(pkg.price)}
+                              </div>
+                            </div>
+                          ) : (
+                            <div className="font-black text-white" style={{ fontSize: '1.25rem' }}>
+                              ${pkg.price}
+                            </div>
+                          )}
                         </div>
                       </div>
                     </div>
-                    );
-                  })}
-                </div>
-              </div>
-              
-              {/* Scrollbar */}
-              <div className="relative mx-4 mt-2">
-                <div className="h-1 bg-white/10 rounded-full relative overflow-hidden">
-                  <div 
-                    className="absolute h-full bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] rounded-full transition-all duration-300"
-                    style={{
-                      width: '30%', // Fixed width for the scrollbar thumb
-                      left: `${Math.min(70, (scrollProgress * 70))}%` // Move along the track
-                    }}
-                  />
-                </div>
+                  );
+                })}
+                
+                {/* Change Package Button - Shows when drawer is closed */}
+                {drawerClosed && selectedPackage && (
+                  <button
+                    onClick={handleChangePackage}
+                    className="absolute -bottom-3 left-1/2 -translate-x-1/2 bg-gray-800/80 backdrop-blur-sm text-white/80 font-medium px-3 py-1.5 rounded-full border border-white/30 z-30 flex items-center gap-1.5 transition-all duration-300 hover:bg-gray-700/80 hover:text-white hover:border-white/40"
+                    style={{ fontSize: '0.75rem' }}
+                  >
+                    <span>Change Package</span>
+                    <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+                    </svg>
+                  </button>
+                )}
               </div>
             </div>
+
+            {/* Mobile: Next Song/Step Button */}
+            <div className="md:hidden mb-8 px-4 mt-12">
+              <div className="relative">
+                {/* Pulsing gradient glow background - only when button is active */}
+                {selectedPackage && !isAuthLoading && (
+                  <div 
+                    className="absolute inset-0 bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] rounded-md animate-fast-pulse-glow"
+                    style={{ zIndex: 1 }}
+                    suppressHydrationWarning={true}
+                  ></div>
+                )}
+                
+                <button
+                  onClick={handleNext}
+                  disabled={!selectedPackage || isAuthLoading}
+                  className="relative w-full bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] text-black font-semibold px-8 py-4 rounded-md disabled:opacity-50 hover:opacity-90 hover:-translate-y-1 transition-all duration-300 text-lg flex items-center justify-center gap-2"
+                  style={{ zIndex: 2 }}
+                  suppressHydrationWarning={true}
+                >
+                  {isAuthLoading ? (
+                    <>
+                      <div className="w-5 h-5 border-2 border-black border-t-transparent rounded-full animate-spin"></div>
+                      Checking account...
+                    </>
+                  ) : (
+                    <>
+                      {isLastSong || isOnlySong ? 'Next Step' : 'Next Song'} →
+                    </>
+                  )}
+                </button>
+              </div>
+            </div>
+
+            {/* Mobile: Previous Song Button */}
+            {currentSongIndex > 0 && (
+              <div className="md:hidden px-4 mb-8">
+                <button
+                  onClick={handlePreviousSong}
+                  className="w-full text-white/70 hover:text-white text-sm py-2 flex items-center justify-center gap-2 transition-colors"
+                >
+                  <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                  </svg>
+                  Previous Song
+                </button>
+              </div>
+            )}
 
             {/* Mobile: Chart section */}
             <div className="md:hidden bg-white/5 rounded-xl p-6 border border-white/20 mb-8">
@@ -1326,52 +1353,12 @@ export default function PackagesPage() {
 
             {/* Mobile: Action buttons */}
             <div className="md:hidden space-y-4">
-              <div className="relative">
-                {/* Pulsing gradient glow background - only when button is active */}
-                {selectedPackage && !isAuthLoading && (
-                  <div 
-                    className="absolute inset-0 bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] rounded-md animate-fast-pulse-glow"
-                    style={{ zIndex: 1 }}
-                    suppressHydrationWarning={true}
-                  ></div>
-                )}
-                
-                <button
-                  onClick={handleNext}
-                  disabled={!selectedPackage || isAuthLoading}
-                  className="relative w-full bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] text-black font-semibold px-8 py-4 rounded-md disabled:opacity-50 hover:opacity-90 hover:-translate-y-1 transition-all duration-300 text-lg flex items-center justify-center gap-2"
-                  style={{ zIndex: 2 }}
-                  suppressHydrationWarning={true}
-                >
-                  {isAuthLoading ? (
-                    <>
-                      <div className="w-5 h-5 border-2 border-black border-t-transparent rounded-full animate-spin"></div>
-                      Checking account...
-                    </>
-                  ) : (
-                    <>
-                      {isLastSong || isOnlySong ? 'Next Step' : 'Next Song'} →
-                    </>
-                  )}
-                </button>
-              </div>
               <button
                 onClick={handleChangeSong}
-                className="w-full bg-white/10 border border-white/20 text-white font-semibold px-8 py-4 rounded-md hover:bg-white/20 hover:-translate-y-1 transition-all duration-300 text-lg"
+                className="hidden md:block w-full bg-white/10 border border-white/20 text-white font-semibold px-8 py-4 rounded-md hover:bg-white/20 hover:-translate-y-1 transition-all duration-300 text-lg"
               >
                 Change Songs
               </button>
-              {currentSongIndex > 0 && (
-                <button
-                  onClick={handlePreviousSong}
-                  className="w-full text-white/70 hover:text-white text-sm py-2 flex items-center justify-center gap-2 transition-colors"
-                >
-                  <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-                  </svg>
-                  Previous Song
-                </button>
-              )}
 
               {/* Mobile Campaign Features Section */}
               <div className="mt-6 bg-gradient-to-br from-white/5 via-white/3 to-white/5 rounded-2xl px-4 py-[20px] md:p-4 border border-white/10 backdrop-blur-sm relative overflow-hidden">
@@ -1386,8 +1373,8 @@ export default function PackagesPage() {
                       Inside Your Campaign 🚀
                     </h3>
                   </div>
-                  {/* Featured list - 1 column, center-aligned on mobile, with 15px left padding */}
-                  <div className="grid grid-cols-1 gap-y-3.5 justify-items-center text-center pl-[15px] md:grid-cols-2 md:gap-x-6 md:gap-y-3 md:justify-items-start md:text-left md:pl-0">
+                  {/* Featured list - 2 columns on mobile, center-aligned */}
+                  <div className="grid grid-cols-2 gap-x-3 gap-y-3.5 justify-items-start text-left pl-0 md:grid-cols-2 md:gap-x-6 md:gap-y-3 md:justify-items-start md:text-left md:pl-0">
                     {[
                       'Campaign starts within only 24-48 hours',
                       'All streams achieved in only 7-10 days', 
@@ -1400,15 +1387,15 @@ export default function PackagesPage() {
                       'VIP curator network access',
                       'Dedicated account manager'
                     ].map((feature, index) => (
-                      <div key={index} className="flex items-start space-x-2 group justify-center md:justify-start">
+                      <div key={index} className="flex items-center md:items-start space-x-2 group justify-start">
                         {/* Green checkmark icon */}
-                        <div className="w-4 h-4 bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] rounded-full flex items-center justify-center flex-shrink-0 mt-1 md:mt-0.5 shadow-md group-hover:scale-110 transition-transform duration-200">
-                          <svg className="w-2.5 h-2.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <div className="w-5 h-5 md:w-4 md:h-4 bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] rounded-full flex items-center justify-center flex-shrink-0 md:mt-0.5 shadow-md group-hover:scale-110 transition-transform duration-200">
+                          <svg className="w-3.5 h-3.5 md:w-2.5 md:h-2.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
                           </svg>
                         </div>
                         <span 
-                          className="text-white/90 text-xs leading-relaxed group-hover:text-white transition-colors duration-200 text-center md:text-left feature-text-mobile" 
+                          className="text-white/90 text-xs leading-relaxed group-hover:text-white transition-colors duration-200 text-left feature-text-mobile" 
                         >
                           {feature.includes('<gradient>') ? (
                             <>
@@ -2037,8 +2024,8 @@ export default function PackagesPage() {
                        Inside Your Campaign 🚀
                      </h3>
                    </div>
-                   {/* Featured list - 1 column, center-aligned on mobile, with 15px left padding */}
-                   <div className="grid grid-cols-1 gap-y-3.5 justify-items-center text-center pl-[15px] md:grid-cols-2 md:gap-x-6 md:gap-y-3 md:justify-items-start md:text-left md:pl-0">
+                   {/* Featured list - 2 columns on mobile, center-aligned */}
+                   <div className="grid grid-cols-2 gap-x-3 gap-y-3.5 justify-items-start text-left pl-0 md:grid-cols-2 md:gap-x-6 md:gap-y-3 md:justify-items-start md:text-left md:pl-0">
                      {[
                        'Campaign starts within only 24-48 hours',
                        'All streams achieved in only 7-10 days', 
@@ -2051,14 +2038,14 @@ export default function PackagesPage() {
                        'VIP curator network access',
                        'Dedicated account manager'
                      ].map((feature, index) => (
-                       <div key={index} className="flex items-start space-x-2 group justify-center md:justify-start">
+                       <div key={index} className="flex items-center md:items-start space-x-2 group justify-start">
                          {/* Green checkmark icon */}
-                         <div className="w-4 h-4 bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] rounded-full flex items-center justify-center flex-shrink-0 mt-1 md:mt-0.5 shadow-md group-hover:scale-110 transition-transform duration-200">
-                           <svg className="w-2.5 h-2.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                         <div className="w-5 h-5 md:w-4 md:h-4 bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] rounded-full flex items-center justify-center flex-shrink-0 md:mt-0.5 shadow-md group-hover:scale-110 transition-transform duration-200">
+                           <svg className="w-3.5 h-3.5 md:w-2.5 md:h-2.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
                            </svg>
                          </div>
-                         <span className="text-white/90 text-xs leading-relaxed group-hover:text-white transition-colors duration-200 text-center md:text-left feature-text-mobile">
+                         <span className="text-white/90 text-xs leading-relaxed group-hover:text-white transition-colors duration-200 text-left feature-text-mobile">
                            {feature.includes('<gradient>') ? (
                              <>
                                {feature.split('<gradient>')[0]}
@@ -2082,7 +2069,7 @@ export default function PackagesPage() {
         </div>
 
         {/* Read More indicator */}
-        <div className="text-center mb-12 md:mb-20 relative z-10 mt-16 md:mt-20">
+        <div className="text-center -mb-20 md:mb-20 relative z-10 mt-8 md:mt-20">
           <button
             onClick={() => {
               const compareSection = document.querySelector('.compare-subheading-mobile');
