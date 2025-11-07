@@ -11,7 +11,7 @@ import dynamic from 'next/dynamic';
 import { createClient } from '../utils/supabase/client';
 import * as gtag from '../utils/gtag';
 
-
+// Packages page component
 const Lottie = dynamic(() => import('lottie-react'), { ssr: false });
 
 interface Package {

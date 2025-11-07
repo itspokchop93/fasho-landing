@@ -1,4 +1,5 @@
 /** @type {import('next').NextConfig} */
+// Config file for Next.js application
 const nextConfig = {
   // Image optimization for Core Web Vitals
   images: {
