@@ -594,10 +594,10 @@ export default function PackagesPage() {
         });
       }
       
-      // Delay animation to allow scroll to complete
+      // Delay animation to allow scroll to complete, then trigger flip animation
       setTimeout(() => {
         setSongIndicatorKey(prev => prev + 1); // Trigger animation
-      }, 350);
+      }, 100);
     }
   };
 
@@ -639,10 +639,10 @@ export default function PackagesPage() {
         });
       }
       
-      // Delay animation to allow scroll to complete
+      // Delay animation to allow scroll to complete, then trigger flip animation
       setTimeout(() => {
         setSongIndicatorKey(prev => prev + 1); // Trigger animation
-      }, 350);
+      }, 100);
     }
   };
 
@@ -935,7 +935,7 @@ export default function PackagesPage() {
                   <div className="absolute -top-2 -right-2 z-30">
                     <span 
                       key={songIndicatorKey}
-                      className="inline-flex items-center gap-1.5 bg-[#59e3a5] border-2 border-[#59e3a5] text-black px-2.5 py-1 rounded-full text-xs font-bold shadow-lg"
+                      className="inline-flex items-center gap-1.5 bg-[#59e3a5] border-2 border-[#59e3a5] text-black px-2.5 py-1 rounded-full text-xs font-bold shadow-lg animate-flip-down"
                     >
                       <span className="w-1.5 h-1.5 bg-black rounded-full"></span>
                       Song {currentSongIndex + 1} of {tracks.length}
@@ -1136,9 +1136,9 @@ export default function PackagesPage() {
                               {pkg.description}
                             </p>
 
-                            {/* Features - SAME LINE - NO WRAP */}
-                            <div className="flex items-center gap-4 whitespace-nowrap">
-                              <div className="flex items-center gap-1.5 flex-shrink-0">
+                            {/* Features - Stacked vertically */}
+                            <div className="flex flex-col gap-2">
+                              <div className="flex items-center gap-1.5">
                                 <div className="w-3 h-3 bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] rounded-full flex items-center justify-center flex-shrink-0">
                                   <span className="text-black text-xs font-black">✓</span>
                                 </div>
@@ -1146,7 +1146,7 @@ export default function PackagesPage() {
                                   {pkg.plays}
                                 </span>
                               </div>
-                              <div className="flex items-center gap-1.5 flex-shrink-0">
+                              <div className="flex items-center gap-1.5">
                                 <div className="w-3 h-3 bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] rounded-full flex items-center justify-center flex-shrink-0">
                                   <span className="text-black text-xs font-black">✓</span>
                                 </div>
@@ -2884,6 +2884,31 @@ export default function PackagesPage() {
 
         .animate-drop-bounce {
           animation: drop-bounce 0.8s ease-out forwards;
+        }
+
+        @keyframes flip-down {
+          0% {
+            transform: rotateX(0deg);
+            opacity: 1;
+          }
+          50% {
+            transform: rotateX(90deg);
+            opacity: 0;
+          }
+          51% {
+            transform: rotateX(-90deg);
+            opacity: 0;
+          }
+          100% {
+            transform: rotateX(0deg);
+            opacity: 1;
+          }
+        }
+
+        .animate-flip-down {
+          animation: flip-down 0.6s ease-in-out forwards;
+          transform-style: preserve-3d;
+          perspective: 1000px;
         }
 
         .animate-spin-slow {
