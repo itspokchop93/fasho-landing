@@ -124,31 +124,21 @@ export default function ArtistInsightsCard({ artistData, isMobile = false }: Pro
                 <img
                   src={artistData.imageUrl}
                   alt={artistData.name}
-                  className="w-16 h-16 rounded-full object-cover shadow-md border border-white/10 mb-2"
+                  className="w-20 h-20 rounded-full object-cover shadow-md border border-white/10 mb-2"
                   style={{ zIndex: 53 }}
                 />
                 <div className="w-full">
-                  <div className="font-semibold text-white text-center truncate" style={{ fontSize: '1.1rem', zIndex: 52 }}>
+                  <div className="font-semibold text-white text-center truncate" style={{ fontSize: '1.3rem', zIndex: 52 }}>
                     {artistData.name}
                   </div>
                   {/* Hide "Artist" label on mobile */}
                 </div>
               </div>
 
-              {/* Mobile: Stats Row - All 3 on same row, scaled to fit */}
-              <div className="grid grid-cols-3 gap-2 mb-6" style={{ zIndex: 52 }}>
-                {/* Followers */}
-                <div className="bg-white/5 rounded-xl p-2 border border-white/10" style={{ zIndex: 52 }}>
-                  <div className="text-[#59e3a5] font-bold text-base text-center" style={{ zIndex: 52 }}>
-                    {formatFollowerCount(animatedFollowers)}
-                  </div>
-                  <div className="text-gray-400 text-xs text-center" style={{ zIndex: 52 }}>
-                    Followers
-                  </div>
-                </div>
-
-                {/* Genre */}
-                <div className="bg-white/5 rounded-xl p-2 border border-white/10" style={{ zIndex: 52 }}>
+              {/* Mobile: Stats Layout - Genre on top row, Followers and Popularity on second row */}
+              <div className="space-y-2 mb-6" style={{ zIndex: 52 }}>
+                {/* Genre - Full width on its own row */}
+                <div className="bg-white/5 rounded-xl p-2 border border-white/10 w-full" style={{ zIndex: 52 }}>
                   <div className="text-[#14c0ff] font-bold text-base text-center truncate" style={{ zIndex: 52 }}>
                     {getPrimaryGenre(artistData.genres)}
                   </div>
@@ -157,13 +147,26 @@ export default function ArtistInsightsCard({ artistData, isMobile = false }: Pro
                   </div>
                 </div>
 
-                {/* Popularity Score */}
-                <div className="bg-white/5 rounded-xl p-2 border border-white/10" style={{ zIndex: 52 }}>
-                  <div className="text-[#8b5cf6] font-bold text-base text-center" style={{ zIndex: 52 }}>
-                    {animatedScore}/100
+                {/* Followers and Popularity - Side by side on second row */}
+                <div className="grid grid-cols-2 gap-2" style={{ zIndex: 52 }}>
+                  {/* Followers */}
+                  <div className="bg-white/5 rounded-xl p-2 border border-white/10" style={{ zIndex: 52 }}>
+                    <div className="text-[#59e3a5] font-bold text-base text-center" style={{ zIndex: 52 }}>
+                      {formatFollowerCount(animatedFollowers)}
+                    </div>
+                    <div className="text-gray-400 text-xs text-center" style={{ zIndex: 52 }}>
+                      Followers
+                    </div>
                   </div>
-                  <div className="text-gray-400 text-xs text-center" style={{ zIndex: 52 }}>
-                    Popularity
+
+                  {/* Popularity Score */}
+                  <div className="bg-white/5 rounded-xl p-2 border border-white/10" style={{ zIndex: 52 }}>
+                    <div className="text-[#8b5cf6] font-bold text-base text-center" style={{ zIndex: 52 }}>
+                      {animatedScore}/100
+                    </div>
+                    <div className="text-gray-400 text-xs text-center" style={{ zIndex: 52 }}>
+                      Popularity
+                    </div>
                   </div>
                 </div>
               </div>

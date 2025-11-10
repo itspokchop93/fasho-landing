@@ -955,12 +955,12 @@ export default function PackagesPage() {
                     )}
                     {/* Gradient border container */}
                     <div className="relative bg-gradient-to-r from-[#59e3a5] via-[#14c0ff] to-[#8b5cf6] p-[2px] rounded-xl overflow-hidden">
-                      <div className="relative w-[180px] h-[180px] rounded-xl overflow-hidden bg-black/20">
+                      <div className="relative w-[160px] h-[160px] rounded-xl overflow-hidden bg-black/20">
                         <Image
                           src={currentTrack.imageUrl}
                           alt={currentTrack.title}
-                          width={180}
-                          height={180}
+                          width={160}
+                          height={160}
                           className="w-full h-full object-cover"
                           unoptimized
                         />

@@ -296,7 +296,7 @@ const FAQCard = ({ question, answer }: { question: string; answer: string }) => 
       <div className={`overflow-hidden transition-all duration-300 ${
         isExpanded ? 'max-h-96 opacity-100 mt-6' : 'max-h-0 opacity-0'
       }`}>
-        <p className="text-gray-300 leading-relaxed" style={{ fontSize: 'calc(1rem + 0.2rem)' }}>
+        <p className="text-gray-300 leading-relaxed whitespace-pre-line" style={{ fontSize: 'calc(1rem + 0.2rem)' }}>
           {answer}
         </p>
       </div>
@@ -6131,55 +6131,55 @@ export default function Home() {
                 {[
                   {
                     question: "⚡ How fast will my music be placed on playlists?",
-                    answer: "Our team goes to work IMMEDIATELY after you order, and you'll see your first playlist placements within 48-72 hours. That's right - we don't mess around. Some tracks get placed even faster because our curators are HUNGRY for fresh music, but we guarantee results within that lightning-fast timeframe!"
+                    answer: "We submit your track within 24 hours. You'll see your first placements within 48-72 hours after that.\n\nSome tracks get placed even faster depending on curator availability, but we guarantee results within that 3-day window from submission."
                   },
                   {
                     question: "🎵 When will my music start receiving streams?",
-                    answer: "The SECOND your track lands on a playlist, it starts getting streams! These aren't just any playlists - we're talking about playlists with MASSIVE followings that have listeners streaming 24/7. Your plays will start rolling in immediately and continue growing as we place you on more and more playlists throughout your campaign."
+                    answer: "Immediately after your first playlist placement. These are active playlists with engaged listeners who stream daily. Your play count starts accumulating the moment you're added and continues growing as we secure more placements throughout your campaign."
                   },
                   {
                     question: "⏰ How long does the campaign last?",
-                    answer: "Your campaign lasts for a maximum of 30 days, but most campaigns are completed much sooner - typically within just 7-10 days. Once we deliver the estimated plays included in your package tier, the campaign automatically stops. We guarantee you'll reach your estimated stream count within the 30-day window, but in most cases, you'll see your full results delivered within the first week to 10 days of your campaign starting."
+                    answer: "Maximum 30 days, but most campaigns finish within 7-10 days. The campaign continues until you hit your guaranteed play count, then automatically closes. You keep every playlist placement we secured—curators don't remove your track when the campaign ends."
                   },
                   {
                     question: "👀 How do I track which playlists featured my music?",
-                    answer: "Download Spotify's official \"Spotify for Artists\" app (if you haven't already - seriously, get it NOW!). This shows you EVERYTHING - which playlists added your music, your streaming stats, listener demographics, and more. You'll be able to watch your success in real-time!"
+                    answer: "Download Spotify for Artists (free app from Spotify). Open the app, go to \"Music,\" select your track, and scroll to \"Discovered On.\" You'll see every playlist featuring your song, including follower counts and how many streams came from each playlist."
                   },
                   {
                     question: "✈️ Do you work with artists worldwide?",
-                    answer: "YES! We work with musicians, podcasters, and record labels from EVERY country on the planet. Our playlist network spans globally, so whether you're in Nashville, London, Tokyo, or anywhere else - we've got playlists that will LOVE your sound!"
+                    answer: "Yes, every country. Our curator network is global, and Spotify is a worldwide platform. Your location doesn't matter—if your music is on Spotify, we can place it."
                   },
                   {
                     question: "🎶 What genres do you cover?",
-                    answer: "EVERY. SINGLE. GENRE. Hip-hop, pop, rock, country, EDM, jazz, classical, indie, metal, folk, reggae, Latin, K-pop - you name it, we've got playlists for it. We have curators specializing in every genre imaginable, plus all the sub-genres and fusion styles. There's literally NO music we can't promote!"
+                    answer: "All of them. Hip-hop, pop, rock, country, EDM, jazz, R&B, Latin, indie, metal, folk, lo-fi, hyperpop, Afrobeats, and everything in between. We have curators specializing in every genre and subgenre, so your specific sound will land on playlists that actually match your style."
                   },
                   {
                     question: "💎 Will I make money from the streams?",
-                    answer: "ABSOLUTELY! Every stream generates royalties that go directly to you through Spotify's payment system. Many of our clients see their campaigns pay for themselves within months, then it's pure profit! The more playlists we get you on, the more streams you get, the more money you make. It's that simple!"
+                    answer: "Yes. Spotify pays royalties for every stream (approximately $0.003-$0.005 per stream), and that money goes directly to you through your distributor. Many artists see their campaigns pay for themselves within a few months through streaming royalties alone."
                   },
                   {
                     question: "🎤 Do you work with podcasts too?",
-                    answer: "Absolutely! We work with podcast curators who specialize in playlists across every topic and format you can imagine. The process is identical to music - we'll match your podcast with the perfect playlist curators in your niche and get you the exposure you deserve. Same guaranteed results, same lightning-fast delivery!"
+                    answer: "Yes, identical process. We have curator relationships across every podcast category—true crime, business, comedy, self-improvement, sports, and more. Same guaranteed placements, same 48-72 hour delivery timeline."
                   },
                   {
                     question: "🔒 Is this safe for my Spotify account?",
-                    answer: "100% SAFE! We work exclusively with REAL playlists run by genuine music lovers - no bots, no fake streams, no shady tactics. We're talking about legitimate playlists with organic followers who actually listen to music. Spotify LOVES what we do because we help them discover great new music for their users!"
+                    answer: "Completely safe. We only work with real playlists run by independent curators—actual people who manage their playlists and choose music they like. No bots, no fake streams, no automation. This is exactly how Spotify's user-generated playlist system is designed to work, and it's 100% compliant with their terms of service."
                   },
                   {
                     question: "🏆 What makes FASHO.co different from other companies?",
-                    answer: "We're the ONLY company with 10+ year relationships with the biggest playlist curators in the world. While other companies send spam emails or buy fake plays, we make PERSONAL phone calls to curators who trust our taste in music. We've worked with curators from Rap Caviar, Today's Top Hits, and hundreds of other major playlists. Our success rate is UNMATCHED in the industry!"
+                    answer: "Direct curator relationships built over 10+ years. We don't send spam emails or buy fake plays. We make personal submissions to curators who know us, trust our recommendations, and have worked with us for years. That's why our placement rate is 99%+ while most companies struggle to hit 20-30%."
                   },
                   {
                     question: "🚀 What's your success rate?",
-                    answer: "Our artists have a 99%+ placement rate because of our personal relationships with curators. When FASHO.co recommends an artist, curators listen! We've helped create chart-toppers, viral hits, and launched countless careers. Your success is our success!"
+                    answer: "99%+ of artists receive every guaranteed placement and stream count in their package. We've been doing this for over a decade with thousands of successful campaigns across every genre. Your results depend on factors like song quality and genre fit, but we've never failed to deliver our guaranteed minimums."
                   },
                   {
-                    question: "🎧 What if my song is not on Spotify yet? Can you get me on Spotify?",
-                    answer: "We can only market music that's already live on Spotify - we don't offer distribution services (though we will in the very near future!). To get your music on Spotify, we recommend using a distribution service like DistroKid, CD Baby, or TuneCore. Once your track is live on Spotify, we can immediately start getting it placed on massive playlists!"
+                    question: "🎧 What if my song is not on Spotify yet?",
+                    answer: "We can only promote music that's already live on Spotify. You'll need to upload your track through a distributor like DistroKid, CD Baby, or TuneCore first (takes 1-3 days to go live). Once it's on Spotify, we can immediately start your campaign."
                   },
                   {
                     question: "📞 How can I contact support?",
-                    answer: "Hit us up at support@fasho.co and our team will get back to you within 24 hours (usually much faster!). We're here to help you succeed, so don't hesitate to reach out with ANY questions about your campaign or account."
+                    answer: "Email support@fasho.co. Our team responds within 24 hours, usually much faster. If you have questions about your campaign, need help choosing a package, or want to check on your progress, just reach out."
                   }
                 ].map((faq, index) => (
                   <FAQCard key={index} question={faq.question} answer={faq.answer} />
