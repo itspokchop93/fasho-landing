@@ -2112,7 +2112,7 @@ export default function Home() {
             {/* Headings above the box */}
             <div className="text-center mb-0 sm:mb-12">
               <h2 className="text-[clamp(2rem,5vw,2.75rem)] sm:text-[clamp(1.5rem,5vw,2.5rem)] font-black text-white mb-6 leading-tight">
-                <span className="block sm:hidden">Forget <span className="bg-gradient-to-l from-[#59e3a5] to-[#14c0ff] bg-clip-text text-transparent">EVERYTHING</span><br />You've Tried So Far.<br />This Is How Artists <span className="bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] bg-clip-text text-transparent">ACTUALLY</span><br />Blow Up On Spotify.</span>
+                <span className="block sm:hidden">Forget <span className="bg-gradient-to-l from-[#59e3a5] to-[#14c0ff] bg-clip-text text-transparent">EVERYTHING</span><br />You've Tried So Far.<br />This Is How Artists <span className="bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] bg-clip-text text-transparent" style={{ fontSize: '120%' }}>ACTUALLY</span><br />Blow Up On Spotify.</span>
                 <span className="hidden sm:block">Forget <span className="bg-gradient-to-l from-[#59e3a5] to-[#14c0ff] bg-clip-text text-transparent">EVERYTHING</span> You've Tried So Far.<br />This Is How Artists <span className="bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] bg-clip-text text-transparent">ACTUALLY</span> Blow Up On Spotify.</span>
                     </h2>
               <p className="text-[clamp(1.125rem,2.5vw,1.5rem)] sm:text-[clamp(1rem,2vw,1.5rem)] text-gray-300 leading-relaxed max-w-5xl mx-auto mb-[-6.5rem] sm:mb-0 px-4 sm:px-0">
@@ -4342,9 +4342,12 @@ export default function Home() {
               <div className="relative z-50 text-center mt-12 lg:mt-16 cta-button-spacing show-packages-btn-z">
                 <button
                   onClick={scrollToTrackInput}
-                  className="px-12 py-4 bg-gradient-to-r from-[#59e3a5] via-[#14c0ff] to-[#8b5cf6] text-white font-bold rounded-2xl hover:shadow-2xl hover:shadow-[#14c0ff]/30 transition-all duration-700 transform hover:scale-105 active:scale-95 relative overflow-hidden group text-lg sm:mt-[50px]"
+                  className="px-12 py-4 bg-gradient-to-r from-[#59e3a5] via-[#14c0ff] to-[#8b5cf6] text-white font-bold rounded-2xl hover:shadow-2xl hover:shadow-[#14c0ff]/30 transition-all duration-700 transform hover:scale-105 active:scale-95 relative overflow-hidden group text-lg sm:mt-[50px] flex items-center justify-center gap-2 mx-auto"
                 >
-                  <span className="relative z-10">SHOW ME THE PACKAGES</span>
+                  <span className="relative z-10">I WANT TO SEE IT ALL</span>
+                  <svg className="relative z-10 w-5 h-5 sm:w-6 sm:h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                  </svg>
                   <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-700"></div>
                 </button>
               </div>
