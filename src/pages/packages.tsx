@@ -256,6 +256,14 @@ export default function PackagesPage() {
   };
 
   const handleChangePackage = () => {
+    // Unselect the current package
+    setPreviousPackage(selectedPackage);
+    setSelectedPackage("");
+    setSelectedPackages(prev => ({
+      ...prev,
+      [currentSongIndex]: ""
+    }));
+    
     // Wait 200ms then open drawer
     setTimeout(() => {
       setDrawerClosed(false);
@@ -441,17 +449,71 @@ export default function PackagesPage() {
   // Auto-scroll to selected package when drawer closes (mobile only)
   useEffect(() => {
     if (drawerClosed && selectedPackage) {
-      // Wait for drawer animation to complete (500ms) + buffer
-      const scrollTimeout = setTimeout(() => {
-        if (selectedPackageRef.current) {
-          selectedPackageRef.current.scrollIntoView({
-            behavior: 'smooth',
-            block: 'center'
-          });
-        }
-      }, 600);
+      let scrollAnimationId: number | null = null;
+      let timeoutId: NodeJS.Timeout | null = null;
+      let isCancelled = false;
       
-      return () => clearTimeout(scrollTimeout);
+      // Delay to let layout update (other packages collapsing), then calculate final position
+      // This ensures we calculate based on the updated layout state
+      // We need enough time for the layout to update, but still scroll during the animation
+      timeoutId = setTimeout(() => {
+        if (isCancelled || !selectedPackageRef.current) return;
+        
+        // Use requestAnimationFrame to get the most accurate layout measurement
+        scrollAnimationId = requestAnimationFrame(() => {
+          if (isCancelled || !selectedPackageRef.current) return;
+          
+          const element = selectedPackageRef.current;
+          const elementRect = element.getBoundingClientRect();
+          const elementTop = elementRect.top + window.pageYOffset;
+          const elementHeight = elementRect.height;
+          const windowHeight = window.innerHeight;
+          
+          // Calculate target scroll position to center the element (same as scrollIntoView block: 'center')
+          const targetScroll = elementTop - (windowHeight / 2) + (elementHeight / 2);
+          
+          // Get current scroll position
+          const startScroll = window.pageYOffset;
+          const distance = targetScroll - startScroll;
+          
+          // Calculate remaining duration to complete at same time as drawer (500ms total)
+          // We used ~200ms delay, so scroll duration should be ~300ms to complete at same time
+          const delayUsed = 200;
+          const duration = 500 - delayUsed; // ~300ms to complete at same time as drawer
+          const startTime = performance.now();
+          
+          // Custom smooth scroll function
+          const smoothScroll = (currentTime: number) => {
+            if (isCancelled) return;
+            
+            const elapsed = currentTime - startTime;
+            const progress = Math.min(elapsed / duration, 1);
+            
+            // Easing function (ease-in-out) to match smooth scroll behavior
+            const easeInOut = progress < 0.5
+              ? 2 * progress * progress
+              : 1 - Math.pow(-2 * progress + 2, 2) / 2;
+            
+            window.scrollTo(0, startScroll + distance * easeInOut);
+            
+            if (progress < 1) {
+              scrollAnimationId = requestAnimationFrame(smoothScroll);
+            }
+          };
+          
+          scrollAnimationId = requestAnimationFrame(smoothScroll);
+        });
+      }, 200); // Delay to let layout update before calculating position
+      
+      return () => {
+        isCancelled = true;
+        if (timeoutId !== null) {
+          clearTimeout(timeoutId);
+        }
+        if (scrollAnimationId !== null) {
+          cancelAnimationFrame(scrollAnimationId);
+        }
+      };
     }
   }, [drawerClosed, selectedPackage]);
 
@@ -1255,7 +1317,7 @@ export default function PackagesPage() {
                     </div>
                   </div>
                   <div className="text-center">
-                    <div className="text-xs text-white/70">Playlist Placements</div>
+                    <div className="text-xs text-white/70">Playlist Pitches</div>
                     <div className="text-lg font-bold text-[#14c0ff] transition-all duration-500">
                       {animatedPlacements > 0 ? animatedPlacements.toLocaleString() : (chartData.placements || "—")}
                     </div>
@@ -1395,7 +1457,8 @@ export default function PackagesPage() {
                           </svg>
                         </div>
                         <span 
-                          className="text-white/90 text-xs leading-relaxed group-hover:text-white transition-colors duration-200 text-left feature-text-mobile" 
+                          className="text-white/90 leading-relaxed group-hover:text-white transition-colors duration-200 text-left feature-text-mobile" 
+                          style={{ fontSize: '0.9375rem' }}
                         >
                           {feature.includes('<gradient>') ? (
                             <>
@@ -1819,7 +1882,7 @@ export default function PackagesPage() {
                        </div>
                      </div>
                      <div>
-                       <div className="text-sm text-white/70">Playlist Placements</div>
+                       <div className="text-sm text-white/70">Playlist Pitches</div>
                        <div className="text-2xl font-bold text-[#14c0ff] transition-all duration-500">
                          {animatedPlacements > 0 ? animatedPlacements.toLocaleString() : (chartData.placements || "—")}
                        </div>
@@ -2045,7 +2108,7 @@ export default function PackagesPage() {
                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
                            </svg>
                          </div>
-                         <span className="text-white/90 text-xs leading-relaxed group-hover:text-white transition-colors duration-200 text-left feature-text-mobile">
+                         <span className="text-white/90 leading-relaxed group-hover:text-white transition-colors duration-200 text-left feature-text-mobile" style={{ fontSize: '0.9375rem' }}>
                            {feature.includes('<gradient>') ? (
                              <>
                                {feature.split('<gradient>')[0]}
