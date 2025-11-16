@@ -454,14 +454,54 @@ const PlaylistPurchasesNeeded: React.FC = () => {
   };
 
   // Copy playlist link to clipboard
-  const handleCopyLink = async (playlistId: string, playlistLink: string) => {
+  const handleCopyLink = async (playlistId: string, playlistLink: string, event?: React.MouseEvent) => {
+    // Prevent event bubbling
+    if (event) {
+      event.stopPropagation();
+    }
+
+    // Check if playlistLink is valid
+    if (!playlistLink || playlistLink.trim() === '') {
+      console.error('📋 PLAYLIST-PURCHASES: Cannot copy - playlist link is empty for playlist', playlistId);
+      alert('Playlist link is not available. Please check the playlist network settings.');
+      return;
+    }
+
     try {
-      await navigator.clipboard.writeText(playlistLink);
-      setCopiedPlaylistId(playlistId);
-      setTimeout(() => setCopiedPlaylistId(null), 2000);
-      console.log(`📋 PLAYLIST-PURCHASES: Copied link for playlist ${playlistId}`);
+      // Try modern clipboard API first
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        await navigator.clipboard.writeText(playlistLink);
+        setCopiedPlaylistId(playlistId);
+        setTimeout(() => setCopiedPlaylistId(null), 2000);
+        console.log(`📋 PLAYLIST-PURCHASES: Copied link for playlist ${playlistId}: ${playlistLink}`);
+      } else {
+        // Fallback for older browsers
+        const textArea = document.createElement('textarea');
+        textArea.value = playlistLink;
+        textArea.style.position = 'fixed';
+        textArea.style.left = '-999999px';
+        textArea.style.top = '-999999px';
+        document.body.appendChild(textArea);
+        textArea.focus();
+        textArea.select();
+        
+        try {
+          const successful = document.execCommand('copy');
+          if (successful) {
+            setCopiedPlaylistId(playlistId);
+            setTimeout(() => setCopiedPlaylistId(null), 2000);
+            console.log(`📋 PLAYLIST-PURCHASES: Copied link (fallback method) for playlist ${playlistId}: ${playlistLink}`);
+          } else {
+            throw new Error('execCommand copy failed');
+          }
+        } finally {
+          document.body.removeChild(textArea);
+        }
+      }
     } catch (error) {
-      console.error('Failed to copy playlist link:', error);
+      console.error('📋 PLAYLIST-PURCHASES: Failed to copy playlist link:', error);
+      // Show user-friendly error message
+      alert(`Failed to copy playlist link. Please try selecting and copying manually: ${playlistLink}`);
     }
   };
 
@@ -623,10 +663,12 @@ const PlaylistPurchasesNeeded: React.FC = () => {
                         {item.playlistName}
                       </div>
                       <button
-                        onClick={() => handleCopyLink(item.id, item.playlistLink)}
-                        className={`text-xs text-blue-600 hover:text-blue-800 font-medium mt-1 copy-click ${
-                          copiedPlaylistId === item.id ? 'text-green-600' : ''
+                        onClick={(e) => handleCopyLink(item.id, item.playlistLink, e)}
+                        className={`text-xs text-blue-600 hover:text-blue-800 font-medium mt-1 copy-click transition-colors ${
+                          copiedPlaylistId === item.id ? 'text-green-600 font-semibold' : ''
                         }`}
+                        disabled={!item.playlistLink || item.playlistLink.trim() === ''}
+                        title={item.playlistLink ? 'Copy playlist link to clipboard' : 'Playlist link not available'}
                       >
                         {copiedPlaylistId === item.id ? 'Copied to clipboard!' : 'Copy Link'}
                       </button>

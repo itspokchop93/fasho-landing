@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/router'
+import Link from 'next/link'
 import type { CustomerData } from '../pages/api/admin/customers'
 
 export default function AdminCustomersManagement() {
@@ -292,9 +293,12 @@ export default function AdminCustomersManagement() {
               customers.map((customer) => (
                 <tr key={customer.customer_email} className="hover:bg-gray-50">
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm font-medium text-gray-900">
+                    <Link
+                      href={`/admin/customer/${encodeURIComponent(customer.customer_email)}`}
+                      className="text-sm font-medium text-indigo-600 hover:text-indigo-800 hover:underline cursor-pointer transition-colors"
+                    >
                       {customer.customer_name}
-                    </div>
+                    </Link>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="text-sm text-gray-500">

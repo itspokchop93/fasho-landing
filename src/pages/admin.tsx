@@ -88,82 +88,48 @@ export default function AdminDashboard({ adminUser, authError }: AdminDashboardP
 
   // Handle query parameter navigation (e.g., /admin?p=orders)
   useEffect(() => {
-    const handleRouteChange = () => {
-      const urlParams = new URLSearchParams(window.location.search)
-      const page = urlParams.get('p') || 'dashboard'
-      
-      console.log('🔄 ADMIN-NAV: Page parameter:', page);
-      
-      if (page === 'orders' || page === 'orders-management' || page === 'orders-customers') {
-        console.log('🔄 ADMIN-NAV: Setting active tab to orders');
+    // Wait for router to be ready
+    if (!router.isReady) return
+    
+    const page = (router.query.p as string) || 'dashboard'
+    
+    // Determine expected tab based on page parameter
+    let expectedTab: string
+    if (page === 'orders' || page === 'orders-management' || page === 'orders-customers') {
+      expectedTab = 'orders'
+    } else if (page === 'emails') {
+      expectedTab = 'emails'
+    } else if (page === 'coupons') {
+      expectedTab = 'coupons'
+    } else if (page === 'settings') {
+      expectedTab = 'settings'
+    } else if (page === 'blog') {
+      expectedTab = 'blog'
+    } else if (page === 'marketing-manager') {
+      expectedTab = 'marketing-manager'
+    } else {
+      expectedTab = 'dashboard'
+    }
+    
+    // Check if sub-admin is trying to access restricted page
+    if (adminUser.role === 'sub_admin' && expectedTab !== 'orders' && expectedTab !== 'marketing-manager') {
+      // Redirect sub-admin to orders page
+      if (page !== 'orders') {
+        console.log('🔄 ADMIN-NAV: Sub-admin cannot access', expectedTab, 'tab, redirecting to orders');
+        router.replace('/admin?p=orders', undefined, { shallow: true })
         setActiveTab('orders')
-      } else if (page === 'emails') {
-        // Check if sub-admin trying to access emails (not allowed)
-        if (adminUser.role === 'sub_admin') {
-          console.log('🔄 ADMIN-NAV: Sub-admin cannot access emails tab');
-          setActiveTab('orders') // Redirect to orders
-          router.replace('/admin?p=orders', undefined, { shallow: true })
-          return
-        }
-        console.log('🔄 ADMIN-NAV: Setting active tab to emails');
-        setActiveTab('emails')
-      } else if (page === 'coupons') {
-        // Check if sub-admin trying to access coupons (not allowed)
-        if (adminUser.role === 'sub_admin') {
-          console.log('🔄 ADMIN-NAV: Sub-admin cannot access coupons tab');
-          setActiveTab('orders') // Redirect to orders
-          router.replace('/admin?p=orders', undefined, { shallow: true })
-          return
-        }
-        console.log('🔄 ADMIN-NAV: Setting active tab to coupons');
-        setActiveTab('coupons')
-      } else if (page === 'settings') {
-        // Check if sub-admin trying to access settings (not allowed)
-        if (adminUser.role === 'sub_admin') {
-          console.log('🔄 ADMIN-NAV: Sub-admin cannot access settings tab');
-          setActiveTab('orders') // Redirect to orders
-          router.replace('/admin?p=orders', undefined, { shallow: true })
-          return
-        }
-        console.log('🔄 ADMIN-NAV: Setting active tab to settings');
-        setActiveTab('settings')
-      } else if (page === 'blog') {
-        // Check if sub-admin trying to access blog (not allowed)
-        if (adminUser.role === 'sub_admin') {
-          console.log('🔄 ADMIN-NAV: Sub-admin cannot access blog tab');
-          setActiveTab('orders') // Redirect to orders
-          router.replace('/admin?p=orders', undefined, { shallow: true })
-          return
-        }
-        console.log('🔄 ADMIN-NAV: Setting active tab to blog');
-        setActiveTab('blog')
-      } else if (page === 'marketing-manager') {
-        console.log('🔄 ADMIN-NAV: Setting active tab to marketing-manager');
-        setActiveTab('marketing-manager')
-      } else if (page === 'dashboard' || !page) {
-        // Check if sub-admin trying to access dashboard (not allowed)
-        if (adminUser.role === 'sub_admin') {
-          console.log('🔄 ADMIN-NAV: Sub-admin cannot access dashboard tab');
-          setActiveTab('orders') // Redirect to orders
-          router.replace('/admin?p=orders', undefined, { shallow: true })
-          return
-        }
-        console.log('🔄 ADMIN-NAV: Setting active tab to dashboard');
-        setActiveTab('dashboard')
       }
+      return
     }
-
-    // Check route on initial load
-    handleRouteChange()
-
-    // Listen for route changes
-    const handlePopState = () => handleRouteChange()
-    window.addEventListener('popstate', handlePopState)
-
-    return () => {
-      window.removeEventListener('popstate', handlePopState)
+    
+    // If tab is already correct, don't update
+    if (activeTab === expectedTab) {
+      return
     }
-  }, [adminUser.role, router])
+    
+    console.log('🔄 ADMIN-NAV: Setting active tab to', expectedTab);
+    setActiveTab(expectedTab)
+  }, [router.isReady, router.query.p, adminUser.role])
 
   // Fetch analytics data (only for full admins)
   useEffect(() => {

@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
+import Link from 'next/link';
 import { GetServerSideProps } from 'next';
 import { verifyAdminToken, getAdminTokenFromRequest } from '../../../utils/admin/auth';
 import AdminAccessDenied from '../../../components/AdminAccessDenied';
@@ -891,10 +892,10 @@ export default function OrderDetailPage({ adminSession, accessDenied }: OrderDet
         <div className="text-center">
           <div className="text-red-400 text-xl mb-4">{error}</div>
           <button
-            onClick={() => router.push('/admin#orders')}
+            onClick={() => router.push('/admin?p=orders')}
             className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg transition-colors"
           >
-            Back to Admin Dashboard
+            Return to Orders
           </button>
         </div>
       </div>
@@ -918,10 +919,10 @@ export default function OrderDetailPage({ adminSession, accessDenied }: OrderDet
         <div className="flex items-center justify-between mb-8">
           <div className="flex items-center space-x-4">
             <button
-              onClick={() => router.push('/admin#orders')}
+              onClick={() => router.push('/admin?p=orders')}
               className="text-white/70 hover:text-white transition-colors"
             >
-              ← Back to Admin Dashboard
+              ← Return to Orders
             </button>
             <h1 className="text-3xl font-bold text-white">
               Order #{order.order_number}
@@ -966,7 +967,12 @@ export default function OrderDetailPage({ adminSession, accessDenied }: OrderDet
                 </div>
                 <div>
                   <label className="block text-sm text-white/70 mb-1">Name</label>
-                  <p className="text-white">{order.customer_name}</p>
+                  <Link 
+                    href={`/admin/customer/${encodeURIComponent(order.customer_email)}?fromOrder=${order.id}`}
+                    className="text-white hover:text-indigo-300 transition-colors underline cursor-pointer"
+                  >
+                    {order.customer_name}
+                  </Link>
                 </div>
                 <div>
                   <label className="block text-sm text-white/70 mb-1">Order Date</label>

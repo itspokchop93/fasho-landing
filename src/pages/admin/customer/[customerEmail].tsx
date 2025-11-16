@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import type { MouseEvent } from 'react';
 import { useRouter } from 'next/router';
 import { GetServerSideProps } from 'next';
 import Head from 'next/head';
@@ -13,7 +14,7 @@ interface CustomerDetailPageProps {
 
 export default function CustomerDetailPage({ adminSession, accessDenied }: CustomerDetailPageProps) {
   const router = useRouter();
-  const { customerEmail } = router.query;
+  const { customerEmail, fromOrder } = router.query;
   
   // Admin access control
   if (accessDenied || !adminSession) {
@@ -81,28 +82,44 @@ export default function CustomerDetailPage({ adminSession, accessDenied }: Custo
     }).format(amount);
   };
 
-  const handleOrderClick = (orderId: string) => {
+  const handleOrderClick = (orderId: string, event?: MouseEvent) => {
+    // Prevent event bubbling if called from button
+    if (event) {
+      event.stopPropagation();
+    }
     // Open order details in new tab
     window.open(`/admin/order/${orderId}`, '_blank');
   };
 
   const handleBackClick = () => {
-    router.push('/admin?p=orders-customers');
+    // If we came from an order details page, go back to that order
+    if (fromOrder && typeof fromOrder === 'string') {
+      router.push(`/admin/order/${fromOrder}`);
+    } else {
+      // Otherwise, go back to the orders/customers tab
+      router.push('/admin?p=orders-customers');
+    }
   };
 
+  const ORDER_STATUSES = [
+    { value: 'processing', label: 'Processing', bgColor: 'bg-yellow-100', textColor: 'text-yellow-800' },
+    { value: 'marketing_campaign_running', label: 'Marketing Campaign Running', bgColor: 'bg-green-100', textColor: 'text-green-800' },
+    { value: 'completed', label: 'Completed', bgColor: 'bg-blue-100', textColor: 'text-blue-800' },
+    { value: 'order_issue', label: 'Order Issue - Check Email', bgColor: 'bg-orange-100', textColor: 'text-orange-800' },
+    { value: 'cancelled', label: 'Cancelled', bgColor: 'bg-red-100', textColor: 'text-red-800' }
+  ];
+
   const getStatusBadgeClass = (status: string) => {
-    switch (status.toLowerCase()) {
-      case 'completed':
-        return 'bg-green-100 text-green-800';
-      case 'processing':
-        return 'bg-yellow-100 text-yellow-800';
-      case 'shipped':
-        return 'bg-blue-100 text-blue-800';
-      case 'cancelled':
-        return 'bg-red-100 text-red-800';
-      default:
-        return 'bg-gray-100 text-gray-800';
+    const statusConfig = ORDER_STATUSES.find(s => s.value === status);
+    if (statusConfig) {
+      return `${statusConfig.bgColor} ${statusConfig.textColor}`;
     }
+    return 'bg-gray-100 text-gray-800';
+  };
+
+  const getStatusLabel = (status: string) => {
+    const statusConfig = ORDER_STATUSES.find(s => s.value === status);
+    return statusConfig ? statusConfig.label : status.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
   };
 
   if (loading) {
@@ -135,7 +152,7 @@ export default function CustomerDetailPage({ adminSession, accessDenied }: Custo
               onClick={handleBackClick}
               className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg transition-colors"
             >
-              Back to Customers
+              {fromOrder ? 'Return to Order' : 'Back to Customers'}
             </button>
           </div>
         </div>
@@ -156,7 +173,7 @@ export default function CustomerDetailPage({ adminSession, accessDenied }: Custo
               onClick={handleBackClick}
               className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg transition-colors"
             >
-              Back to Customers
+              {fromOrder ? 'Return to Order' : 'Back to Customers'}
             </button>
           </div>
         </div>
@@ -184,7 +201,7 @@ export default function CustomerDetailPage({ adminSession, accessDenied }: Custo
                   <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
                   </svg>
-                  Back to Customers
+                  {fromOrder ? 'Return to Order' : 'Back to Customers'}
                 </button>
                 <div className="h-6 w-px bg-gray-300"></div>
                 <h1 className="text-3xl font-bold text-gray-900">Customer Details</h1>
@@ -305,7 +322,11 @@ export default function CustomerDetailPage({ adminSession, accessDenied }: Custo
                     </thead>
                     <tbody className="bg-white divide-y divide-gray-200">
                       {customer.orders.map((order) => (
-                        <tr key={order.id} className="hover:bg-gray-50">
+                        <tr 
+                          key={order.id} 
+                          onClick={() => handleOrderClick(order.id)}
+                          className="hover:bg-gray-50 cursor-pointer transition-colors"
+                        >
                           <td className="px-6 py-4 whitespace-nowrap">
                             <div className="text-sm font-medium text-gray-900">
                               {order.order_number}
@@ -315,8 +336,8 @@ export default function CustomerDetailPage({ adminSession, accessDenied }: Custo
                             {formatDate(order.created_at)}
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap">
-                            <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full capitalize ${getStatusBadgeClass(order.status)}`}>
-                              {order.status}
+                            <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusBadgeClass(order.status)}`}>
+                              {getStatusLabel(order.status)}
                             </span>
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap">
@@ -329,9 +350,9 @@ export default function CustomerDetailPage({ adminSession, accessDenied }: Custo
                               {order.items_count} {order.items_count === 1 ? 'item' : 'items'}
                             </div>
                           </td>
-                          <td className="px-6 py-4 whitespace-nowrap">
+                          <td className="px-6 py-4 whitespace-nowrap" onClick={(e) => e.stopPropagation()}>
                             <button
-                              onClick={() => handleOrderClick(order.id)}
+                              onClick={(e) => handleOrderClick(order.id, e)}
                               className="bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-1 rounded text-xs font-medium transition-colors"
                             >
                               OPEN
