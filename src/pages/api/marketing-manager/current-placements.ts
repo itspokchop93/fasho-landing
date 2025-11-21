@@ -22,6 +22,7 @@ async function handler(req: NextApiRequest, res: NextApiResponse, adminUser: Adm
     const supabase = createAdminClient();
 
     // Fetch all active campaigns with their playlist assignments and live status calculation
+    // REMOVED: .eq('playlists_added_confirmed', true) to include ALL assignments immediately
     let { data: campaignsData, error: campaignsError } = await supabase
       .from('marketing_campaigns')
       .select(`
@@ -46,10 +47,9 @@ async function handler(req: NextApiRequest, res: NextApiResponse, adminUser: Adm
         created_at,
         orders!inner(created_at, status, billing_info)
       `)
-      .eq('playlists_added_confirmed', true)
       .eq('removed_from_playlists', false)
       .neq('orders.status', 'cancelled')
-      .order('playlists_added_at', { ascending: false });
+      .order('created_at', { ascending: false }); // Changed sorting to created_at since playlists_added_at might be null
 
     if (campaignsError) {
       console.error('Error fetching campaigns for current placements:', campaignsError);
@@ -93,8 +93,8 @@ async function handler(req: NextApiRequest, res: NextApiResponse, adminUser: Adm
 
       if (campaign.playlist_assignments && Array.isArray(campaign.playlist_assignments)) {
         campaign.playlist_assignments.forEach((assignment: any) => {
-          // Only include active playlist assignments (not "removed" ones)
-          if (assignment.id && assignment.id !== 'removed') {
+          // Only include active playlist assignments (not "removed" ones and not "empty" placeholders)
+          if (assignment.id && assignment.id !== 'removed' && assignment.id !== 'empty') {
             const playlistId = assignment.id;
             
             if (!placementsByPlaylist[playlistId]) {

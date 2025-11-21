@@ -6,6 +6,8 @@ import ActiveCampaigns from './marketing-manager/ActiveCampaigns';
 import PlaylistPurchasesNeeded from './marketing-manager/PlaylistPurchasesNeeded';
 import PlaylistUtilization from './marketing-manager/PlaylistUtilization';
 import SystemSettings from './marketing-manager/SystemSettings';
+import CampaignTotals from './marketing-manager/CampaignTotals';
+
 const MarketingManager: React.FC = () => {
   const router = useRouter();
   const [activeTab, setActiveTab] = useState('manager');
@@ -51,6 +53,9 @@ const MarketingManager: React.FC = () => {
         {/* Playlist Network */}
         <SystemSettings onlyPlaylistNetwork={true} />
         
+        {/* Campaign Totals */}
+        <CampaignTotals />
+
         {/* Playlist Utilization */}
         <PlaylistUtilization />
       </div>

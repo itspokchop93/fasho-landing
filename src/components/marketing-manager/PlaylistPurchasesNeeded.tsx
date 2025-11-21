@@ -272,6 +272,23 @@ const PlaylistPurchasesNeeded: React.FC = () => {
         }, {});
         setPlaylistNetwork(networkMap);
         console.log('📋 PLAYLIST-PURCHASES: Loaded playlist network data', networkMap);
+        
+        // Update existing purchases with latest network data
+        setPlaylistPurchases(current => 
+          current.map(item => {
+            const networkData = networkMap[item.id];
+            if (networkData) {
+              return {
+                ...item,
+                playlistName: networkData.name || item.playlistName,
+                playlistLink: networkData.link || item.playlistLink,
+                imageUrl: networkData.imageUrl || item.imageUrl,
+                genre: networkData.genre || item.genre
+              };
+            }
+            return item;
+          })
+        );
       }
     } catch (error) {
       console.error('Error fetching playlist network:', error);
@@ -308,7 +325,12 @@ const PlaylistPurchasesNeeded: React.FC = () => {
         }
 
         const existingIndex = newPurchases.findIndex(item => item.id === assignment.id);
+        // Use the freshest network data if available
         const networkData = playlistNetwork[assignment.id] || {};
+        const playlistName = networkData.name || assignment.name;
+        const playlistLink = networkData.link || assignment.link || '';
+        const imageUrl = networkData.imageUrl || assignment.imageUrl || '';
+        const genre = networkData.genre || assignment.genre || '';
         
         if (existingIndex >= 0) {
           // Increase count for existing playlist
@@ -318,23 +340,23 @@ const PlaylistPurchasesNeeded: React.FC = () => {
             sessionDate: sessionDate,
             recentlyAdded: true,
             // Update with latest network data
-            playlistLink: networkData.link || newPurchases[existingIndex].playlistLink,
-            imageUrl: networkData.imageUrl || newPurchases[existingIndex].imageUrl
+            playlistLink: playlistLink || newPurchases[existingIndex].playlistLink,
+            imageUrl: imageUrl || newPurchases[existingIndex].imageUrl
           };
           console.log(`📋 PLAYLIST-PURCHASES: Increased count for ${assignment.name} to ${newPurchases[existingIndex].songsAdded}`);
         } else {
           // Add new playlist
           newPurchases.push({
             id: assignment.id,
-            playlistName: networkData.name || assignment.name,
-            playlistLink: networkData.link || '',
-            imageUrl: networkData.imageUrl || '',
+            playlistName: playlistName,
+            playlistLink: playlistLink,
+            imageUrl: imageUrl,
             songsAdded: 1,
             sessionDate: sessionDate,
-            genre: networkData.genre || assignment.genre || '',
+            genre: genre,
             recentlyAdded: true
           });
-          console.log(`📋 PLAYLIST-PURCHASES: Added new playlist ${assignment.name}`);
+          console.log(`📋 PLAYLIST-PURCHASES: Added new playlist ${assignment.name} with link ${playlistLink}`);
         }
       });
 
@@ -404,6 +426,10 @@ const PlaylistPurchasesNeeded: React.FC = () => {
       if (newPlaylistId && newPlaylistId !== 'removed') {
         const existingIndex = newPurchases.findIndex(item => item.id === newPlaylistId);
         const networkData = playlistNetwork[newPlaylistId] || {};
+        const playlistName = networkData.name || `Playlist ${newPlaylistId}`;
+        const playlistLink = networkData.link || '';
+        const imageUrl = networkData.imageUrl || '';
+        const genre = networkData.genre || '';
         
         if (existingIndex >= 0) {
           // Increase count for existing playlist
@@ -411,19 +437,21 @@ const PlaylistPurchasesNeeded: React.FC = () => {
             ...newPurchases[existingIndex],
             songsAdded: newPurchases[existingIndex].songsAdded + 1,
             sessionDate: new Date().toISOString(),
-            recentlyAdded: true
+            recentlyAdded: true,
+            // Ensure link is up to date
+            playlistLink: playlistLink || newPurchases[existingIndex].playlistLink
           };
           console.log(`📋 PLAYLIST-PURCHASES: 🎯 SMART UPDATE - Increased count for ${newPlaylistId} to ${newPurchases[existingIndex].songsAdded} (admin changed mind)`);
         } else {
           // Add new playlist
           newPurchases.push({
             id: newPlaylistId,
-            playlistName: networkData.name || `Playlist ${newPlaylistId}`,
-            playlistLink: networkData.link || '',
-            imageUrl: networkData.imageUrl || '',
+            playlistName: playlistName,
+            playlistLink: playlistLink,
+            imageUrl: imageUrl,
             songsAdded: 1,
             sessionDate: new Date().toISOString(),
-            genre: networkData.genre || '',
+            genre: genre,
             recentlyAdded: true
           });
           console.log(`📋 PLAYLIST-PURCHASES: 🎯 SMART UPDATE - Added new playlist ${newPlaylistId} (admin changed mind)`);
@@ -460,8 +488,14 @@ const PlaylistPurchasesNeeded: React.FC = () => {
       event.stopPropagation();
     }
 
-    // Check if playlistLink is valid
-    if (!playlistLink || playlistLink.trim() === '') {
+    // Find the correct link from the network map if the passed link is empty
+    let targetLink = playlistLink;
+    if (!targetLink && playlistNetwork[playlistId]) {
+      targetLink = playlistNetwork[playlistId].link;
+    }
+
+    // Check if targetLink is valid
+    if (!targetLink || targetLink.trim() === '') {
       console.error('📋 PLAYLIST-PURCHASES: Cannot copy - playlist link is empty for playlist', playlistId);
       alert('Playlist link is not available. Please check the playlist network settings.');
       return;
@@ -470,14 +504,14 @@ const PlaylistPurchasesNeeded: React.FC = () => {
     try {
       // Try modern clipboard API first
       if (navigator.clipboard && navigator.clipboard.writeText) {
-        await navigator.clipboard.writeText(playlistLink);
+        await navigator.clipboard.writeText(targetLink);
         setCopiedPlaylistId(playlistId);
         setTimeout(() => setCopiedPlaylistId(null), 2000);
-        console.log(`📋 PLAYLIST-PURCHASES: Copied link for playlist ${playlistId}: ${playlistLink}`);
+        console.log(`📋 PLAYLIST-PURCHASES: Copied link for playlist ${playlistId}: ${targetLink}`);
       } else {
         // Fallback for older browsers
         const textArea = document.createElement('textarea');
-        textArea.value = playlistLink;
+        textArea.value = targetLink;
         textArea.style.position = 'fixed';
         textArea.style.left = '-999999px';
         textArea.style.top = '-999999px';
@@ -490,7 +524,7 @@ const PlaylistPurchasesNeeded: React.FC = () => {
           if (successful) {
             setCopiedPlaylistId(playlistId);
             setTimeout(() => setCopiedPlaylistId(null), 2000);
-            console.log(`📋 PLAYLIST-PURCHASES: Copied link (fallback method) for playlist ${playlistId}: ${playlistLink}`);
+            console.log(`📋 PLAYLIST-PURCHASES: Copied link (fallback method) for playlist ${playlistId}: ${targetLink}`);
           } else {
             throw new Error('execCommand copy failed');
           }
@@ -501,7 +535,7 @@ const PlaylistPurchasesNeeded: React.FC = () => {
     } catch (error) {
       console.error('📋 PLAYLIST-PURCHASES: Failed to copy playlist link:', error);
       // Show user-friendly error message
-      alert(`Failed to copy playlist link. Please try selecting and copying manually: ${playlistLink}`);
+      alert(`Failed to copy playlist link. Please try selecting and copying manually: ${targetLink}`);
     }
   };
 
@@ -629,81 +663,86 @@ const PlaylistPurchasesNeeded: React.FC = () => {
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
-              {playlistPurchases.map((item) => (
-                <tr 
-                  key={item.id}
-                  className={`
-                    ${item.recentlyAdded ? 'fade-in-slide highlight-fade' : ''}
-                    hover:bg-gray-50
-                  `}
-                >
-                  {/* Image */}
-                  <td className="px-4 py-4 whitespace-nowrap w-16">
-                    <div className="flex-shrink-0 h-10 w-10">
-                      {item.imageUrl ? (
-                        <img 
-                          className="h-10 w-10 rounded-lg object-cover" 
-                          src={item.imageUrl} 
-                          alt={item.playlistName}
-                        />
-                      ) : (
-                        <div className="h-10 w-10 rounded-lg bg-gray-300 flex items-center justify-center">
-                          <svg className="h-6 w-6 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3" />
-                          </svg>
-                        </div>
-                      )}
-                    </div>
-                  </td>
-
-                  {/* Playlist */}
-                  <td className="px-4 py-4 whitespace-nowrap w-48">
-                    <div>
-                      <div className="text-sm font-medium text-gray-900 truncate">
-                        {item.playlistName}
+              {playlistPurchases.map((item) => {
+                // Ensure we have the latest link from network data if possible
+                const currentLink = playlistNetwork[item.id]?.link || item.playlistLink;
+                
+                return (
+                  <tr 
+                    key={item.id}
+                    className={`
+                      ${item.recentlyAdded ? 'fade-in-slide highlight-fade' : ''}
+                      hover:bg-gray-50
+                    `}
+                  >
+                    {/* Image */}
+                    <td className="px-4 py-4 whitespace-nowrap w-16">
+                      <div className="flex-shrink-0 h-10 w-10">
+                        {item.imageUrl ? (
+                          <img 
+                            className="h-10 w-10 rounded-lg object-cover" 
+                            src={item.imageUrl} 
+                            alt={item.playlistName}
+                          />
+                        ) : (
+                          <div className="h-10 w-10 rounded-lg bg-gray-300 flex items-center justify-center">
+                            <svg className="h-6 w-6 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3" />
+                            </svg>
+                          </div>
+                        )}
                       </div>
-                      <button
-                        onClick={(e) => handleCopyLink(item.id, item.playlistLink, e)}
-                        className={`text-xs text-blue-600 hover:text-blue-800 font-medium mt-1 copy-click transition-colors ${
-                          copiedPlaylistId === item.id ? 'text-green-600 font-semibold' : ''
-                        }`}
-                        disabled={!item.playlistLink || item.playlistLink.trim() === ''}
-                        title={item.playlistLink ? 'Copy playlist link to clipboard' : 'Playlist link not available'}
-                      >
-                        {copiedPlaylistId === item.id ? 'Copied to clipboard!' : 'Copy Link'}
-                      </button>
-                    </div>
-                  </td>
+                    </td>
 
-                  {/* Songs Added */}
-                  <td className="px-4 py-4 whitespace-nowrap w-24">
-                    <div className="text-center">
-                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-indigo-100 text-indigo-800">
-                        {item.songsAdded}
-                      </span>
-                    </div>
-                  </td>
+                    {/* Playlist */}
+                    <td className="px-4 py-4 whitespace-nowrap w-48">
+                      <div>
+                        <div className="text-sm font-medium text-gray-900 truncate">
+                          {item.playlistName}
+                        </div>
+                        <button
+                          onClick={(e) => handleCopyLink(item.id, currentLink, e)}
+                          className={`text-xs text-blue-600 hover:text-blue-800 font-medium mt-1 copy-click transition-colors ${
+                            copiedPlaylistId === item.id ? 'text-green-600 font-semibold' : ''
+                          }`}
+                          disabled={!currentLink || currentLink.trim() === ''}
+                          title={currentLink ? 'Copy playlist link to clipboard' : 'Playlist link not available'}
+                        >
+                          {copiedPlaylistId === item.id ? 'Copied to clipboard!' : 'Copy Link'}
+                        </button>
+                      </div>
+                    </td>
 
-                  {/* Session */}
-                  <td className="px-4 py-4 whitespace-nowrap w-32">
-                    <div className="text-sm text-gray-900">
-                      {formatDate(item.sessionDate)}
-                    </div>
-                  </td>
+                    {/* Songs Added */}
+                    <td className="px-4 py-4 whitespace-nowrap w-24">
+                      <div className="text-center">
+                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-indigo-100 text-indigo-800">
+                          {item.songsAdded}
+                        </span>
+                      </div>
+                    </td>
 
-                  {/* Action */}
-                  <td className="px-4 py-4 whitespace-nowrap w-24">
-                    <div className="text-center">
-                      <button
-                        onClick={(e) => showConfirmationModal('purchased', e, item.id)}
-                        className="inline-flex items-center px-3 py-1 border border-transparent text-xs font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-                      >
-                        PURCHASED
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
+                    {/* Session */}
+                    <td className="px-4 py-4 whitespace-nowrap w-32">
+                      <div className="text-sm text-gray-900">
+                        {formatDate(item.sessionDate)}
+                      </div>
+                    </td>
+
+                    {/* Action */}
+                    <td className="px-4 py-4 whitespace-nowrap w-24">
+                      <div className="text-center">
+                        <button
+                          onClick={(e) => showConfirmationModal('purchased', e, item.id)}
+                          className="inline-flex items-center px-3 py-1 border border-transparent text-xs font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                        >
+                          PURCHASED
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>

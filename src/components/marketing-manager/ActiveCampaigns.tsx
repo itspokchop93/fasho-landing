@@ -188,6 +188,7 @@ const ActiveCampaigns: React.FC = () => {
     @keyframes button-exit {
       0% { transform: scale(1) translateY(0); opacity: 1; }
       100% { transform: scale(0.8) translateY(-10px); opacity: 0; }
+      100% { transform: scale(1) translateY(0); opacity: 0; }
     }
     
     @keyframes button-entrance {
@@ -236,6 +237,10 @@ const ActiveCampaigns: React.FC = () => {
   } | null>(null);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
   
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(40);
+  
   // Confirmation modal state
   const [confirmationModal, setConfirmationModal] = useState<{
     isOpen: boolean;
@@ -254,7 +259,6 @@ const ActiveCampaigns: React.FC = () => {
   // Copy link feedback state - tracks which campaigns have been copied recently
   const [copiedStates, setCopiedStates] = useState<{[key: string]: boolean}>({});
   
-
 
   useEffect(() => {
     fetchCampaigns();
@@ -305,6 +309,8 @@ const ActiveCampaigns: React.FC = () => {
     });
 
     setFilteredCampaigns(filtered);
+    // Reset to first page when filters change
+    setCurrentPage(1);
   }, [campaigns, searchTerm, filterStatus, sortBy]);
 
   const fetchCampaigns = async () => {
@@ -349,7 +355,7 @@ const ActiveCampaigns: React.FC = () => {
         setCopiedStates(prev => ({ ...prev, [campaignId]: false }));
       }, 2000);
       
-    } catch (error) {
+      } catch (error) {
       console.error('Failed to copy to clipboard:', error);
     }
   };
@@ -582,6 +588,58 @@ const ActiveCampaigns: React.FC = () => {
     );
   };
 
+  // Calculate pagination
+  const totalPages = Math.ceil(filteredCampaigns.length / itemsPerPage);
+  const indexOfLastItem = currentPage * itemsPerPage;
+  const indexOfFirstItem = indexOfLastItem - itemsPerPage;
+  const currentCampaigns = filteredCampaigns.slice(indexOfFirstItem, indexOfLastItem);
+
+  // Helper for page numbers
+  const getPageNumbers = () => {
+    const pageNumbers = [];
+    // Always show first, last, current, and some context
+    
+    if (totalPages <= 7) {
+      for (let i = 1; i <= totalPages; i++) {
+        pageNumbers.push(i);
+      }
+    } else {
+      // Always show page 1
+      pageNumbers.push(1);
+      
+      if (currentPage > 3) {
+        pageNumbers.push('...');
+      }
+      
+      // Pages around current
+      let start = Math.max(2, currentPage - 1);
+      let end = Math.min(totalPages - 1, currentPage + 1);
+      
+      // Adjust if near start
+      if (currentPage <= 3) {
+        end = 4;
+      }
+      
+      // Adjust if near end
+      if (currentPage >= totalPages - 2) {
+        start = totalPages - 3;
+      }
+      
+      for (let i = start; i <= end; i++) {
+        pageNumbers.push(i);
+      }
+      
+      if (currentPage < totalPages - 2) {
+        pageNumbers.push('...');
+      }
+      
+      // Always show last page
+      pageNumbers.push(totalPages);
+    }
+    
+    return pageNumbers;
+  };
+
   if (isLoading) {
     return (
       <div className="bg-white rounded-xl p-6 shadow-lg border border-gray-100">
@@ -677,127 +735,167 @@ const ActiveCampaigns: React.FC = () => {
           </p>
         </div>
       ) : (
-        <div className="border border-gray-200 rounded-lg">
-          {/* Table container with both horizontal and vertical scroll */}
-          <div 
-            className="overflow-x-auto overflow-y-auto"
-            style={{ maxHeight: '600px' }} // Height for approximately 8 rows
-          >
-            <table className="min-w-max divide-y divide-gray-200">
-            <thead className="bg-gray-50 sticky top-0 z-10">
-              <tr>
-                <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-20">Order #</th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-28">Order Date</th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" style={{ width: '16ch' }}>Song</th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-24">Genre</th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-32">Package</th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-64">Playlist Assignments</th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-36">Direct Progress</th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-36">Playlist Progress</th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-28">Removal Date</th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-24">Status</th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-36">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
-              {filteredCampaigns.map((campaign) => (
-                <tr key={campaign.id} id={`campaign-${campaign.orderNumber}`} className="hover:bg-gray-50">
-                  <td className="px-3 py-4 whitespace-nowrap w-20">
-                    <div className="flex flex-col items-center">
-                    <button
-                      onClick={() => handleOrderNumberClick(campaign.orderId)}
-                      className="text-indigo-600 hover:text-indigo-900 font-medium"
-                    >
-                      {campaign.orderNumber}
-                    </button>
-                      {campaign.songNumber && (
-                        <span className="inline-flex items-center px-2 py-0.5 mt-1 text-xs font-medium bg-green-50 text-green-700 border border-green-200 rounded-full">
-                          Song {campaign.songNumber}
-                        </span>
-                      )}
-                    </div>
-                  </td>
-                  <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-900 w-28">
-                    {new Date(campaign.orderDate).toLocaleDateString()}
-                  </td>
-                  <td className="px-4 py-4" style={{ width: '16ch' }}>
-                    <div className="space-y-1">
-                      <div 
-                        className="text-sm text-gray-900 overflow-hidden" 
-                        style={{
-                          display: '-webkit-box',
-                          WebkitLineClamp: 2,
-                          WebkitBoxOrient: 'vertical',
-                          lineHeight: '1.2',
-                          maxHeight: '2.4em'
-                        }}
-                        title={campaign.songName}
-                      >
-                        {campaign.songName}
-                      </div>
+        <div className="flex flex-col space-y-4">
+          <div className="border border-gray-200 rounded-lg">
+            {/* Table container with both horizontal and vertical scroll */}
+            <div 
+              className="overflow-x-auto overflow-y-auto"
+              style={{ maxHeight: '600px' }} // Height for approximately 8 rows
+            >
+              <table className="min-w-max divide-y divide-gray-200">
+              <thead className="bg-gray-50 sticky top-0 z-10">
+                <tr>
+                  <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-20">Order #</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-28">Order Date</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" style={{ width: '16ch' }}>Song</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-24">Genre</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-32">Package</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-64">Playlist Assignments</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-36">Direct Progress</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-36">Playlist Progress</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-28">Removal Date</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-24">Status</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-36">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
+                {currentCampaigns.map((campaign) => (
+                  <tr key={campaign.id} id={`campaign-${campaign.orderNumber}`} className="hover:bg-gray-50">
+                    <td className="px-3 py-4 whitespace-nowrap w-20">
+                      <div className="flex flex-col items-center">
                       <button
-                        onClick={() => copyToClipboard(campaign.songLink, campaign.id)}
-                        className={`text-xs text-indigo-600 hover:text-indigo-800 bg-indigo-50 px-1 py-0.5 rounded transition-all duration-200 ease-in-out ${
-                          copiedStates[campaign.id] ? 'copy-click bg-green-50 text-green-600' : ''
-                        }`}
-                        title="Copy link to clipboard"
+                        onClick={() => handleOrderNumberClick(campaign.orderId)}
+                        className="text-indigo-600 hover:text-indigo-900 font-medium"
                       >
-                        <span className={`inline-block transition-all duration-200 ease-in-out ${
-                          copiedStates[campaign.id] ? 'text-fade-in' : ''
-                        }`}>
-                          {copiedStates[campaign.id] ? 'Copied!' : 'copy link'}
-                        </span>
+                        {campaign.orderNumber}
                       </button>
-                    </div>
-                  </td>
-                  <td className="px-4 py-4 whitespace-nowrap text-xs text-gray-900 w-24">
-                    {editingGenre?.campaignId === campaign.id ? (
-                      <div className="flex items-center space-x-1 w-full">
-                        <select
-                          defaultValue={campaign.userGenre || 'General'}
-                          onChange={(e) => updateGenre(campaign.id, e.target.value)}
-                          className="text-xs border border-gray-300 rounded px-1 py-1 flex-1 min-w-0"
+                        {campaign.songNumber && (
+                          <span className="inline-flex items-center px-2 py-0.5 mt-1 text-xs font-medium bg-green-50 text-green-700 border border-green-200 rounded-full">
+                            Song {campaign.songNumber}
+                          </span>
+                        )}
+                      </div>
+                    </td>
+                    <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-900 w-28">
+                      {new Date(campaign.orderDate).toLocaleDateString()}
+                    </td>
+                    <td className="px-4 py-4" style={{ width: '16ch' }}>
+                      <div className="space-y-1">
+                        <div 
+                          className="text-sm text-gray-900 overflow-hidden" 
+                          style={{
+                            display: '-webkit-box',
+                            WebkitLineClamp: 2,
+                            WebkitBoxOrient: 'vertical',
+                            lineHeight: '1.2',
+                            maxHeight: '2.4em'
+                          }}
+                          title={campaign.songName}
                         >
-                          {MUSIC_GENRES.map(genre => (
-                            <option key={genre} value={genre}>{genre}</option>
-                          ))}
-                        </select>
+                          {campaign.songName}
+                        </div>
                         <button
-                          onClick={() => setEditingGenre(null)}
-                          className="text-xs text-gray-500 hover:text-gray-700 px-1"
+                          onClick={() => copyToClipboard(campaign.songLink, campaign.id)}
+                          className={`text-xs text-indigo-600 hover:text-indigo-800 bg-indigo-50 px-1 py-0.5 rounded transition-all duration-200 ease-in-out ${
+                            copiedStates[campaign.id] ? 'copy-click bg-green-50 text-green-600' : ''
+                          }`}
+                          title="Copy link to clipboard"
                         >
-                          ✕
+                          <span className={`inline-block transition-all duration-200 ease-in-out ${
+                            copiedStates[campaign.id] ? 'text-fade-in' : ''
+                          }`}>
+                            {copiedStates[campaign.id] ? 'Copied!' : 'copy link'}
+                          </span>
                         </button>
                       </div>
-                    ) : (
-                      <button
-                        onClick={() => setEditingGenre({ campaignId: campaign.id })}
-                        className="text-xs text-blue-600 hover:text-blue-800 bg-blue-50 px-2 py-1 rounded truncate w-full text-left"
-                        title="Click to edit genre"
-                      >
-                        {campaign.userGenre || 'Unknown'}
-                      </button>
-                    )}
-                  </td>
-                  <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-900 w-32">
-                    {campaign.packageName}
-                  </td>
-                  <td className="px-4 py-4 w-64">
-                    <div className="space-y-1">
-                      {campaign.playlistAssignments && campaign.playlistAssignments.length > 0 ? (
-                        campaign.playlistAssignments.map((playlist, index) => (
-                          <div key={index} className="flex items-center space-x-1">
-                            {editingPlaylist?.campaignId === campaign.id && editingPlaylist?.playlistIndex === index ? (
+                    </td>
+                    <td className="px-4 py-4 whitespace-nowrap text-xs text-gray-900 w-24">
+                      {editingGenre?.campaignId === campaign.id ? (
+                        <div className="flex items-center space-x-1 w-full">
+                          <select
+                            defaultValue={campaign.userGenre || 'General'}
+                            onChange={(e) => updateGenre(campaign.id, e.target.value)}
+                            className="text-xs border border-gray-300 rounded px-1 py-1 flex-1 min-w-0"
+                          >
+                            {MUSIC_GENRES.map(genre => (
+                              <option key={genre} value={genre}>{genre}</option>
+                            ))}
+                          </select>
+                          <button
+                            onClick={() => setEditingGenre(null)}
+                            className="text-xs text-gray-500 hover:text-gray-700 px-1"
+                          >
+                            ✕
+                          </button>
+                        </div>
+                      ) : (
+                        <button
+                          onClick={() => setEditingGenre({ campaignId: campaign.id })}
+                          className="text-xs text-blue-600 hover:text-blue-800 bg-blue-50 px-2 py-1 rounded truncate w-full text-left"
+                          title="Click to edit genre"
+                        >
+                          {campaign.userGenre || 'Unknown'}
+                        </button>
+                      )}
+                    </td>
+                    <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-900 w-32">
+                      {campaign.packageName}
+                    </td>
+                    <td className="px-4 py-4 w-64">
+                      <div className="space-y-1">
+                        {campaign.playlistAssignments && campaign.playlistAssignments.length > 0 ? (
+                          campaign.playlistAssignments.map((playlist, index) => (
+                            <div key={index} className="flex items-center space-x-1">
+                              {editingPlaylist?.campaignId === campaign.id && editingPlaylist?.playlistIndex === index ? (
+                                <div className="flex items-center space-x-1 w-full">
+                                  <select
+                                    defaultValue={playlist.id}
+                                    onChange={(e) => updatePlaylistAssignment(campaign.id, index, e.target.value)}
+                                    className="text-xs border border-gray-300 rounded px-1 py-1 flex-1 min-w-0"
+                                  >
+                                    <option value="removed">✅ Removed</option>
+                                    <option value="empty">📭 -Empty-</option>
+                                    {availablePlaylists.map(p => (
+                                      <option key={p.id} value={p.id}>{p.name} ({p.genre})</option>
+                                    ))}
+                                  </select>
+                                  <button
+                                    onClick={() => setEditingPlaylist(null)}
+                                    className="text-xs text-gray-500 hover:text-gray-700 px-1"
+                                  >
+                                    ✕
+                                  </button>
+                                </div>
+                              ) : (
+                                <button
+                                  onClick={() => setEditingPlaylist({ campaignId: campaign.id, playlistIndex: index })}
+                                  className={`text-xs px-2 py-1 rounded truncate w-full text-left ${
+                                    playlist.id === 'removed' 
+                                      ? 'text-green-600 hover:text-green-800 bg-green-50'
+                                      : 'text-indigo-600 hover:text-indigo-800 bg-indigo-50'
+                                  }`}
+                                  title={playlist.id === 'removed' ? '✅ Removed' : playlist.name}
+                                >
+                                  {playlist.id === 'removed' ? '✅ Removed' : playlist.name}
+                                </button>
+                              )}
+                            </div>
+                          ))
+                        ) : (
+                          <div className="space-y-1">
+                            <div className="text-xs text-gray-400 italic mb-1">No assignments</div>
+                            {editingPlaylist?.campaignId === campaign.id && editingPlaylist?.playlistIndex === 0 ? (
                               <div className="flex items-center space-x-1 w-full">
                                 <select
-                                  defaultValue={playlist.id}
-                                  onChange={(e) => updatePlaylistAssignment(campaign.id, index, e.target.value)}
+                                  defaultValue="empty"
+                                  onChange={(e) => {
+                                    updatePlaylistAssignment(campaign.id, 0, e.target.value);
+                                  }}
                                   className="text-xs border border-gray-300 rounded px-1 py-1 flex-1 min-w-0"
                                 >
-                                  <option value="removed">✅ Removed</option>
                                   <option value="empty">📭 -Empty-</option>
                                   {availablePlaylists.map(p => (
-                                    <option key={p.id} value={p.id}>{p.name}</option>
+                                    <option key={p.id} value={p.id}>{p.name} ({p.genre})</option>
                                   ))}
                                 </select>
                                 <button
@@ -809,144 +907,169 @@ const ActiveCampaigns: React.FC = () => {
                               </div>
                             ) : (
                               <button
-                                onClick={() => setEditingPlaylist({ campaignId: campaign.id, playlistIndex: index })}
-                                className={`text-xs px-2 py-1 rounded truncate w-full text-left ${
-                                  playlist.id === 'removed' 
-                                    ? 'text-green-600 hover:text-green-800 bg-green-50'
-                                    : 'text-indigo-600 hover:text-indigo-800 bg-indigo-50'
-                                }`}
-                                title={playlist.id === 'removed' ? '✅ Removed' : playlist.name}
+                                onClick={() => setEditingPlaylist({ campaignId: campaign.id, playlistIndex: 0 })}
+                                className="text-xs px-2 py-1 rounded bg-indigo-50 text-indigo-600 hover:text-indigo-800 hover:bg-indigo-100 w-full text-left"
+                                title="Click to add playlist assignment"
                               >
-                                {playlist.id === 'removed' ? '✅ Removed' : playlist.name}
+                                + Add Playlist
                               </button>
                             )}
                           </div>
-                        ))
-                      ) : (
-                        <div className="space-y-1">
-                          <div className="text-xs text-gray-400 italic mb-1">No assignments</div>
-                          {editingPlaylist?.campaignId === campaign.id && editingPlaylist?.playlistIndex === 0 ? (
-                            <div className="flex items-center space-x-1 w-full">
-                              <select
-                                defaultValue="empty"
-                                onChange={(e) => {
-                                  updatePlaylistAssignment(campaign.id, 0, e.target.value);
-                                }}
-                                className="text-xs border border-gray-300 rounded px-1 py-1 flex-1 min-w-0"
-                              >
-                                <option value="empty">📭 -Empty-</option>
-                                {availablePlaylists.map(p => (
-                                  <option key={p.id} value={p.id}>{p.name}</option>
-                                ))}
-                              </select>
+                        )}
+                      </div>
+                    </td>
+                    <td className="px-4 py-4 w-36">
+                      <ProgressBar
+                        current={campaign.directStreamsProgress}
+                        total={campaign.directStreams}
+                        color="bg-blue-500"
+                      />
+                    </td>
+                    <td className="px-4 py-4 w-36">
+                      <ProgressBar
+                        current={campaign.playlistStreamsProgress}
+                        total={campaign.playlistStreams}
+                        color="bg-green-500"
+                      />
+                    </td>
+                    <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-900 w-28">
+                      {campaign.removalDate ? new Date(campaign.removalDate).toLocaleDateString() : '-'}
+                    </td>
+                    <td className="px-4 py-4 whitespace-nowrap w-24">
+                      <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full border ${getStatusColor(campaign.status)}`}>
+                        {campaign.status}
+                      </span>
+                    </td>
+                    <td className="px-4 py-4 whitespace-nowrap text-center text-sm font-medium w-40">
+                      <div className="flex flex-col items-center space-y-2 w-full">
+                        {campaign.status === 'Removal Needed' || (campaign.status === 'Completed' && campaign.removedFromPlaylists) ? (
+                          <div className="flex justify-center w-full transition-all duration-500 ease-in-out">
+                            {campaign.removedFromPlaylists || campaign.status === 'Completed' ? (
+                              // Green checkmark icon for completed de-playlisting - centered
+                              <div className="inline-flex items-center justify-center w-8 h-8 bg-green-500 rounded-full checkmark-entrance">
+                                <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                                </svg>
+                              </div>
+                            ) : (
+                              // De-Playlisted button - full width
                               <button
-                                onClick={() => setEditingPlaylist(null)}
-                                className="text-xs text-gray-500 hover:text-gray-700 px-1"
+                                onClick={(e) => showConfirmationModal(campaign.id, 'de-playlisted', e)}
+                                className="bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded text-xs font-medium button-entrance hover:scale-105 transition-transform duration-200 w-full"
                               >
-                                ✕
+                                De-Playlisted
                               </button>
-                            </div>
-                          ) : (
-                            <button
-                              onClick={() => setEditingPlaylist({ campaignId: campaign.id, playlistIndex: 0 })}
-                              className="text-xs px-2 py-1 rounded bg-indigo-50 text-indigo-600 hover:text-indigo-800 hover:bg-indigo-100 w-full text-left"
-                              title="Click to add playlist assignment"
-                            >
-                              + Add Playlist
-                            </button>
-                          )}
-                        </div>
-                      )}
-                    </div>
-                  </td>
-                  <td className="px-4 py-4 w-36">
-                    <ProgressBar
-                      current={campaign.directStreamsProgress}
-                      total={campaign.directStreams}
-                      color="bg-blue-500"
-                    />
-                  </td>
-                  <td className="px-4 py-4 w-36">
-                    <ProgressBar
-                      current={campaign.playlistStreamsProgress}
-                      total={campaign.playlistStreams}
-                      color="bg-green-500"
-                    />
-                  </td>
-                  <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-900 w-28">
-                    {campaign.removalDate ? new Date(campaign.removalDate).toLocaleDateString() : '-'}
-                  </td>
-                  <td className="px-4 py-4 whitespace-nowrap w-24">
-                    <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full border ${getStatusColor(campaign.status)}`}>
-                      {campaign.status}
-                    </span>
-                  </td>
-                  <td className="px-4 py-4 whitespace-nowrap text-center text-sm font-medium w-40">
-                    <div className="flex flex-col items-center space-y-2 w-full">
-                      {campaign.status === 'Removal Needed' || (campaign.status === 'Completed' && campaign.removedFromPlaylists) ? (
-                        <div className="flex justify-center w-full transition-all duration-500 ease-in-out">
-                          {campaign.removedFromPlaylists || campaign.status === 'Completed' ? (
-                            // Green checkmark icon for completed de-playlisting - centered
-                            <div className="inline-flex items-center justify-center w-8 h-8 bg-green-500 rounded-full checkmark-entrance">
-                              <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                              </svg>
-                            </div>
-                          ) : (
-                            // De-Playlisted button - full width
-                            <button
-                              onClick={(e) => showConfirmationModal(campaign.id, 'de-playlisted', e)}
-                              className="bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded text-xs font-medium button-entrance hover:scale-105 transition-transform duration-200 w-full"
-                            >
-                              De-Playlisted
-                            </button>
-                          )}
-                        </div>
-                      ) : (
-                        <div className="button-entrance w-full">
-                          {/* Directly Purchased Button - full width */}
-                            <button
-                            onClick={campaign.directStreamsConfirmed ? undefined : (e) => showConfirmationModal(campaign.id, 'direct-streams', e)}
-                            className={`w-full px-3 py-1 rounded text-xs font-medium flex items-center justify-center space-x-1 transition-all duration-500 ease-in-out mb-2 ${
-                              campaign.directStreamsConfirmed 
-                                ? 'bg-gray-300 text-gray-500 cursor-not-allowed button-state-change' 
-                                : 'bg-blue-600 hover:bg-blue-700 text-white hover:scale-105'
-                            }`}
-                            disabled={campaign.directStreamsConfirmed}
-                          >
-                            {campaign.directStreamsConfirmed && (
-                              <svg className="w-3 h-3 text-green-600 checkmark-entrance" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
-                              </svg>
                             )}
-                            <span>Directly Purchased</span>
+                          </div>
+                        ) : (
+                          <div className="button-entrance w-full">
+                            {/* Directly Purchased Button - full width */}
+                              <button
+                              onClick={campaign.directStreamsConfirmed ? undefined : (e) => showConfirmationModal(campaign.id, 'direct-streams', e)}
+                              className={`w-full px-3 py-1 rounded text-xs font-medium flex items-center justify-center space-x-1 transition-all duration-500 ease-in-out mb-2 ${
+                                campaign.directStreamsConfirmed 
+                                  ? 'bg-gray-300 text-gray-500 cursor-not-allowed button-state-change' 
+                                  : 'bg-blue-600 hover:bg-blue-700 text-white hover:scale-105'
+                              }`}
+                              disabled={campaign.directStreamsConfirmed}
+                            >
+                              {campaign.directStreamsConfirmed && (
+                                <svg className="w-3 h-3 text-green-600 checkmark-entrance" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                                </svg>
+                              )}
+                              <span>Directly Purchased</span>
+                              </button>
+                            
+                            {/* Added to Playlists Button - full width */}
+                            <button
+                              onClick={campaign.playlistsAddedConfirmed ? undefined : (e) => showConfirmationModal(campaign.id, 'playlists-added', e)}
+                              className={`w-full px-3 py-1 rounded text-xs font-medium flex items-center justify-center space-x-1 transition-all duration-500 ease-in-out ${
+                                campaign.playlistsAddedConfirmed 
+                                  ? 'bg-gray-300 text-gray-500 cursor-not-allowed button-state-change' 
+                                  : 'bg-green-600 hover:bg-green-700 text-white hover:scale-105'
+                              }`}
+                              disabled={campaign.playlistsAddedConfirmed}
+                            >
+                              {campaign.playlistsAddedConfirmed && (
+                                <svg className="w-3 h-3 text-green-600 checkmark-entrance" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                                </svg>
+                              )}
+                              <span>Added to Playlists</span>
                             </button>
-                          
-                          {/* Added to Playlists Button - full width */}
-                          <button
-                            onClick={campaign.playlistsAddedConfirmed ? undefined : (e) => showConfirmationModal(campaign.id, 'playlists-added', e)}
-                            className={`w-full px-3 py-1 rounded text-xs font-medium flex items-center justify-center space-x-1 transition-all duration-500 ease-in-out ${
-                              campaign.playlistsAddedConfirmed 
-                                ? 'bg-gray-300 text-gray-500 cursor-not-allowed button-state-change' 
-                                : 'bg-green-600 hover:bg-green-700 text-white hover:scale-105'
-                            }`}
-                            disabled={campaign.playlistsAddedConfirmed}
-                          >
-                            {campaign.playlistsAddedConfirmed && (
-                              <svg className="w-3 h-3 text-green-600 checkmark-entrance" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
-                              </svg>
-                            )}
-                            <span>Added to Playlists</span>
-                          </button>
-                        </div>
-                      )}
-                    </div>
-                  </td>
-                </tr>
+                          </div>
+                        )}
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+            </div>
+          </div>
+
+          {/* Pagination Controls */}
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-4 px-2 py-4 border-t border-gray-200">
+            {/* Items per page dropdown */}
+            <div className="flex items-center space-x-2 text-sm text-gray-600">
+              <span>Show</span>
+              <select
+                value={itemsPerPage}
+                onChange={(e) => {
+                  setItemsPerPage(Number(e.target.value));
+                  setCurrentPage(1);
+                }}
+                className="border border-gray-300 rounded px-2 py-1 text-sm focus:ring-indigo-500 focus:border-indigo-500"
+              >
+                <option value={10}>10</option>
+                <option value={20}>20</option>
+                <option value={40}>40</option>
+                <option value={100}>100</option>
+              </select>
+              <span>entries</span>
+            </div>
+
+            {/* Page Info */}
+            <div className="text-sm text-gray-600">
+              Showing {filteredCampaigns.length > 0 ? indexOfFirstItem + 1 : 0} to {Math.min(indexOfLastItem, filteredCampaigns.length)} of {filteredCampaigns.length} entries
+            </div>
+
+            {/* Page Numbers */}
+            <div className="flex items-center space-x-1">
+              <button
+                onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                disabled={currentPage === 1}
+                className="px-3 py-1 rounded border border-gray-300 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Previous
+              </button>
+              
+              {getPageNumbers().map((page, index) => (
+                <button
+                  key={index}
+                  onClick={() => typeof page === 'number' && setCurrentPage(page)}
+                  disabled={page === '...'}
+                  className={`px-3 py-1 rounded text-sm font-medium ${
+                    page === currentPage
+                      ? 'bg-indigo-600 text-white'
+                      : page === '...'
+                      ? 'text-gray-700 cursor-default'
+                      : 'border border-gray-300 text-gray-700 hover:bg-gray-50'
+                  }`}
+                >
+                  {page}
+                </button>
               ))}
-            </tbody>
-          </table>
+
+              <button
+                onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                disabled={currentPage === totalPages || totalPages === 0}
+                className="px-3 py-1 rounded border border-gray-300 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Next
+              </button>
+            </div>
           </div>
         </div>
       )}

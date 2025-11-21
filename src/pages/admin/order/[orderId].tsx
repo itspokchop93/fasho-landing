@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/router';
 import Link from 'next/link';
 import { GetServerSideProps } from 'next';
@@ -172,19 +172,59 @@ export default function OrderDetailPage({ adminSession, accessDenied }: OrderDet
   const [copyingProfile, setCopyingProfile] = useState<string | null>(null);
   const [showProfileCopySuccess, setShowProfileCopySuccess] = useState<string | null>(null);
 
+  // Customer History state
+  const [customerHistory, setCustomerHistory] = useState<any[]>([]);
+  const [loadingHistory, setLoadingHistory] = useState(false);
+  const [showHistoryDropdown, setShowHistoryDropdown] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setShowHistoryDropdown(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
+
   useEffect(() => {
     if (orderId && typeof orderId === 'string') {
       fetchOrderDetails(orderId);
     }
   }, [orderId]);
 
-  // Fetch user genres when order is loaded
+  // Fetch user genres and history when order is loaded
   useEffect(() => {
     if (order?.user_id && order?.items) {
       fetchUserGenres(order.user_id, order.items);
       fetchArtistProfileUrls(order.items);
     }
-  }, [order?.user_id, order?.items]);
+    if (order?.customer_email) {
+      fetchCustomerHistory(order.customer_email);
+    }
+  }, [order?.user_id, order?.items, order?.customer_email]);
+
+  const fetchCustomerHistory = async (email: string) => {
+    try {
+      setLoadingHistory(true);
+      // Use the customer details API which returns all orders
+      const response = await fetch(`/api/admin/customer/${encodeURIComponent(email)}`);
+      const data = await response.json();
+      
+      if (data.success && data.customer?.orders) {
+        setCustomerHistory(data.customer.orders);
+      }
+    } catch (error) {
+      console.error('Failed to fetch customer history', error);
+    } finally {
+      setLoadingHistory(false);
+    }
+  };
 
   const fetchOrderDetails = async (orderIdParam: string) => {
     try {
@@ -967,12 +1007,92 @@ export default function OrderDetailPage({ adminSession, accessDenied }: OrderDet
                 </div>
                 <div>
                   <label className="block text-sm text-white/70 mb-1">Name</label>
-                  <Link 
-                    href={`/admin/customer/${encodeURIComponent(order.customer_email)}?fromOrder=${order.id}`}
-                    className="text-white hover:text-indigo-300 transition-colors underline cursor-pointer"
-                  >
-                    {order.customer_name}
-                  </Link>
+                  <div className="relative flex items-center space-x-2" ref={dropdownRef}>
+                    <Link 
+                      href={`/admin/customer/${encodeURIComponent(order.customer_email)}?fromOrder=${order.id}`}
+                      className="text-white hover:text-indigo-300 transition-colors underline cursor-pointer flex items-center gap-1"
+                    >
+                      <span>{order.customer_name}</span>
+                      {customerHistory.length > 0 && (
+                        <span className="text-[0.875rem] text-white/60 no-underline">({customerHistory.length})</span>
+                      )}
+                    </Link>
+                    
+                    <button
+                      onClick={() => setShowHistoryDropdown(!showHistoryDropdown)}
+                      className="p-1 hover:bg-white/10 rounded-full transition-colors text-white/70 hover:text-white focus:outline-none"
+                      title="View Order History"
+                    >
+                      <svg className={`w-4 h-4 transition-transform ${showHistoryDropdown ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                      </svg>
+                    </button>
+
+                    {showHistoryDropdown && (
+                      <div className="absolute top-full left-0 mt-2 w-[600px] bg-[#0f172a] border border-white/20 rounded-xl shadow-2xl z-50 overflow-hidden ring-1 ring-white/10 backdrop-blur-xl">
+                        <div className="p-4 border-b border-white/10 bg-white/5 flex justify-between items-center">
+                          <h3 className="text-white font-semibold">Order History</h3>
+                          <span className="text-[0.75rem] text-white/50 bg-white/10 px-2 py-1 rounded-full">{customerHistory.length} orders</span>
+                        </div>
+                        
+                        <div className="max-h-[400px] overflow-y-auto custom-scrollbar">
+                          {loadingHistory ? (
+                            <div className="p-8 text-center text-white/60 flex flex-col items-center text-[0.875rem]">
+                              <div className="w-6 h-6 border-2 border-[#59e3a5] border-t-transparent rounded-full animate-spin mb-2"></div>
+                              Loading history...
+                            </div>
+                          ) : customerHistory.length === 0 ? (
+                            <div className="p-8 text-center text-white/60 text-[0.875rem]">No order history found</div>
+                          ) : (
+                            <table className="w-full text-left text-[0.875rem] text-white">
+                              <thead className="bg-white/5 text-white/60 font-medium text-[0.75rem] uppercase sticky top-0 backdrop-blur-md">
+                                <tr>
+                                  <th className="px-4 py-3">Order #</th>
+                                  <th className="px-4 py-3">Date</th>
+                                  <th className="px-4 py-3">Status</th>
+                                  <th className="px-4 py-3 text-right">Total</th>
+                                  <th className="px-4 py-3 text-right">Action</th>
+                                </tr>
+                              </thead>
+                              <tbody className="divide-y divide-white/10">
+                                {customerHistory.map((histOrder) => {
+                                  const statusStyle = ORDER_STATUSES.find(s => s.value === histOrder.status);
+                                  return (
+                                    <tr key={histOrder.id} className="hover:bg-white/5 transition-colors group">
+                                      <td className="px-4 py-3 font-mono text-white/80 group-hover:text-white">{histOrder.order_number}</td>
+                                      <td className="px-4 py-3 text-white/60">
+                                        {new Date(histOrder.created_at).toLocaleDateString()}
+                                      </td>
+                                      <td className="px-4 py-3">
+                                        <span className={`px-2 py-0.5 rounded text-[0.625rem] uppercase font-medium tracking-wider ${
+                                          statusStyle?.bgColor || 'bg-gray-800'
+                                        } ${
+                                          statusStyle?.textColor || 'text-gray-300'
+                                        }`}>
+                                          {statusStyle?.label || histOrder.status}
+                                        </span>
+                                      </td>
+                                      <td className="px-4 py-3 text-right font-medium text-white/90">
+                                        {formatOrderCurrency(histOrder.total)}
+                                      </td>
+                                      <td className="px-4 py-3 text-right">
+                                        <Link
+                                          href={`/admin/order/${histOrder.id}`}
+                                          className="text-[#59e3a5] hover:text-[#4ad193] text-[0.75rem] font-medium hover:underline"
+                                        >
+                                          View
+                                        </Link>
+                                      </td>
+                                    </tr>
+                                  );
+                                })}
+                              </tbody>
+                            </table>
+                          )}
+                        </div>
+                      </div>
+                    )}
+                  </div>
                 </div>
                 <div>
                   <label className="block text-sm text-white/70 mb-1">Order Date</label>
