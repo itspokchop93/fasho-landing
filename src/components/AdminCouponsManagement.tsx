@@ -138,6 +138,18 @@ export default function AdminCouponsManagement() {
       }
 
       // Prepare data
+      // For expiry date, set to end of day (11:59:59 PM PST) to ensure
+      // the coupon is valid for the entire selected date
+      let expiresAt = null;
+      if (formData.expires_at) {
+        // Parse the date string (YYYY-MM-DD format from date input)
+        const [year, month, day] = formData.expires_at.split('-').map(Number);
+        // Create date at 11:59:59 PM PST (which is 07:59:59 UTC next day or 08:59:59 during DST)
+        // Using 23:59:59 in the selected timezone by setting end of day UTC
+        const expiryDate = new Date(Date.UTC(year, month - 1, day, 23, 59, 59, 999));
+        expiresAt = expiryDate.toISOString();
+      }
+
       const submitData = {
         code: formData.code.trim(),
         name: formData.name.trim(),
@@ -148,7 +160,7 @@ export default function AdminCouponsManagement() {
         max_discount_amount: formData.max_discount_amount ? parseFloat(formData.max_discount_amount) : null,
         usage_limit: formData.usage_limit ? parseInt(formData.usage_limit) : null,
         is_active: formData.is_active,
-        expires_at: formData.expires_at ? new Date(formData.expires_at).toISOString() : null
+        expires_at: expiresAt
       };
 
       // Add ID for updates

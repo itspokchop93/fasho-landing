@@ -6,6 +6,19 @@ interface AdminSettings {
   site_description: string;
 }
 
+interface SalesBannerSettings {
+  desktop: {
+    beforeCouponText: string;
+    afterCouponText: string;
+    couponCode: string;
+  };
+  mobile: {
+    beforeCouponText: string;
+    afterCouponText: string;
+    couponCode: string;
+  };
+}
+
 interface CacheStats {
   size: number;
   keys: string[];
@@ -32,6 +45,21 @@ const AdminSettingsManagement: React.FC = () => {
   const [cacheStats, setCacheStats] = useState<CacheStats | null>(null);
   const [cacheLoading, setCacheLoading] = useState(false);
   const [autoRefresh, setAutoRefresh] = useState(false);
+
+  // Sales Banner Settings state
+  const [salesBannerSettings, setSalesBannerSettings] = useState<SalesBannerSettings>({
+    desktop: {
+      beforeCouponText: '🔥 {month} SALE! Use code',
+      afterCouponText: 'for 15% off your first campaign!',
+      couponCode: 'FASHO'
+    },
+    mobile: {
+      beforeCouponText: '🔥 {month} SALE! Use code',
+      afterCouponText: 'for 15% off',
+      couponCode: 'FASHO'
+    }
+  });
+  const [savingBannerSettings, setSavingBannerSettings] = useState(false);
 
   // Test Order state
   const [testOrderData, setTestOrderData] = useState({
@@ -65,6 +93,7 @@ const AdminSettingsManagement: React.FC = () => {
   useEffect(() => {
     fetchSettings();
     fetchCacheStats();
+    fetchSalesBannerSettings();
   }, []);
 
   // Auto-refresh cache stats
@@ -230,7 +259,88 @@ const AdminSettingsManagement: React.FC = () => {
     }
   };
 
+  // Sales Banner Settings Functions
+  const fetchSalesBannerSettings = async () => {
+    try {
+      const response = await fetch('/api/admin/admin-settings');
+      if (!response.ok) return;
+      
+      const data = await response.json();
+      const s = data.settings || {};
+      
+      setSalesBannerSettings({
+        desktop: {
+          beforeCouponText: s.sales_banner_desktop_before_text || '🔥 {month} SALE! Use code',
+          afterCouponText: s.sales_banner_desktop_after_text || 'for 15% off your first campaign!',
+          couponCode: s.sales_banner_desktop_coupon_code || 'FASHO'
+        },
+        mobile: {
+          beforeCouponText: s.sales_banner_mobile_before_text || '🔥 {month} SALE! Use code',
+          afterCouponText: s.sales_banner_mobile_after_text || 'for 15% off',
+          couponCode: s.sales_banner_mobile_coupon_code || 'FASHO'
+        }
+      });
+    } catch (err) {
+      console.error('Error fetching sales banner settings:', err);
+    }
+  };
 
+  const handleSaveSalesBannerSettings = async () => {
+    try {
+      setSavingBannerSettings(true);
+      setError(null);
+      setSuccess(null);
+
+      // Save all sales banner settings
+      const settingsToSave = [
+        { key: 'sales_banner_desktop_before_text', value: salesBannerSettings.desktop.beforeCouponText },
+        { key: 'sales_banner_desktop_after_text', value: salesBannerSettings.desktop.afterCouponText },
+        { key: 'sales_banner_desktop_coupon_code', value: salesBannerSettings.desktop.couponCode },
+        { key: 'sales_banner_mobile_before_text', value: salesBannerSettings.mobile.beforeCouponText },
+        { key: 'sales_banner_mobile_after_text', value: salesBannerSettings.mobile.afterCouponText },
+        { key: 'sales_banner_mobile_coupon_code', value: salesBannerSettings.mobile.couponCode }
+      ];
+
+      for (const setting of settingsToSave) {
+        const response = await fetch('/api/admin/admin-settings', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify({
+            setting_key: setting.key,
+            setting_value: setting.value
+          }),
+        });
+
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.error || `Failed to save ${setting.key}`);
+        }
+      }
+
+      setSuccess('Sales banner settings saved successfully!');
+      setTimeout(() => setSuccess(null), 3000);
+    } catch (err) {
+      console.error('Error saving sales banner settings:', err);
+      setError(err instanceof Error ? err.message : 'Failed to save sales banner settings');
+    } finally {
+      setSavingBannerSettings(false);
+    }
+  };
+
+  const updateDesktopBannerSetting = (field: keyof SalesBannerSettings['desktop'], value: string) => {
+    setSalesBannerSettings(prev => ({
+      ...prev,
+      desktop: { ...prev.desktop, [field]: value }
+    }));
+  };
+
+  const updateMobileBannerSetting = (field: keyof SalesBannerSettings['mobile'], value: string) => {
+    setSalesBannerSettings(prev => ({
+      ...prev,
+      mobile: { ...prev.mobile, [field]: value }
+    }));
+  };
 
   const testWebhook = async () => {
     if (!settings.webhook_url.trim()) {
@@ -623,6 +733,224 @@ const AdminSettingsManagement: React.FC = () => {
                 <span className="text-xs text-gray-500">Note: Changes will be applied globally across the entire website.</span>
               </div>
             </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Sales Banners Section */}
+      <div className="bg-white rounded-xl p-6 shadow-lg border border-gray-100">
+        <div className="flex items-center mb-6">
+          <div className="flex-shrink-0">
+            <div className="w-10 h-10 bg-emerald-100 rounded-lg flex items-center justify-center">
+              <svg className="w-6 h-6 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
+              </svg>
+            </div>
+          </div>
+          <div className="ml-4">
+            <h2 className="text-xl font-semibold text-gray-900">Sales Banners</h2>
+            <p className="text-gray-600">Configure the promotional sales banners that appear at the top of the website.</p>
+          </div>
+        </div>
+
+        <div className="space-y-8">
+          {/* Available Placeholders Info */}
+          <div className="bg-emerald-50 border border-emerald-200 rounded-lg p-4">
+            <h3 className="text-sm font-semibold text-emerald-900 mb-3">📌 Available Placeholders</h3>
+            <div className="space-y-2 text-sm text-emerald-800">
+              <div className="flex items-start">
+                <code className="bg-emerald-100 px-2 py-0.5 rounded font-mono text-emerald-700 mr-2 flex-shrink-0">{'{month}'}</code>
+                <span>Shows the current month name (e.g., NOVEMBER)</span>
+              </div>
+              <div className="flex items-start">
+                <code className="bg-emerald-100 px-2 py-0.5 rounded font-mono text-emerald-700 mr-2 flex-shrink-0">{'{day}'}</code>
+                <span>Shows the current day of the month (e.g., 25)</span>
+              </div>
+              <div className="flex items-start">
+                <code className="bg-emerald-100 px-2 py-0.5 rounded font-mono text-emerald-700 mr-2 flex-shrink-0">{'{countdown MM-DD-YY HH:MMam/pm TZ}'}</code>
+                <span>Shows an animated countdown to a specific date/time</span>
+              </div>
+            </div>
+            <div className="mt-3 pt-3 border-t border-emerald-200">
+              <p className="text-xs text-emerald-700">
+                <strong>Countdown Examples:</strong><br />
+                <code className="bg-emerald-100 px-1 rounded">{'{countdown 12-25-25 11:59pm PST}'}</code> → Countdown to Christmas<br />
+                <code className="bg-emerald-100 px-1 rounded">{'{countdown 11-30-25 9:00pm EST}'}</code> → Countdown to Nov 30 at 9pm EST<br />
+                <span className="italic">Supported timezones: PST, PDT, MST, MDT, CST, CDT, EST, EDT, UTC</span>
+              </p>
+            </div>
+          </div>
+
+          {/* Desktop Banner Settings */}
+          <div className="border border-gray-200 rounded-lg p-5">
+            <div className="flex items-center mb-4">
+              <svg className="w-5 h-5 text-gray-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+              </svg>
+              <h3 className="text-lg font-semibold text-gray-900">Desktop Banner</h3>
+            </div>
+            
+            <div className="space-y-4">
+              <div>
+                <label htmlFor="desktop-before-text" className="block text-sm font-medium text-gray-700 mb-2">
+                  Before Coupon Code Text
+                </label>
+                <input
+                  id="desktop-before-text"
+                  type="text"
+                  value={salesBannerSettings.desktop.beforeCouponText}
+                  onChange={(e) => updateDesktopBannerSetting('beforeCouponText', e.target.value)}
+                  placeholder="🔥 {month} SALE! Use code"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-emerald-500 focus:border-emerald-500"
+                />
+                <p className="mt-1 text-xs text-gray-500">This text appears before the coupon code box</p>
+              </div>
+
+              <div>
+                <label htmlFor="desktop-coupon-code" className="block text-sm font-medium text-gray-700 mb-2">
+                  Coupon Code
+                </label>
+                <input
+                  id="desktop-coupon-code"
+                  type="text"
+                  value={salesBannerSettings.desktop.couponCode}
+                  onChange={(e) => updateDesktopBannerSetting('couponCode', e.target.value)}
+                  placeholder="FASHO"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-emerald-500 focus:border-emerald-500 font-mono uppercase"
+                />
+                <p className="mt-1 text-xs text-gray-500">The coupon code users can click to copy</p>
+              </div>
+
+              <div>
+                <label htmlFor="desktop-after-text" className="block text-sm font-medium text-gray-700 mb-2">
+                  After Coupon Code Text
+                </label>
+                <input
+                  id="desktop-after-text"
+                  type="text"
+                  value={salesBannerSettings.desktop.afterCouponText}
+                  onChange={(e) => updateDesktopBannerSetting('afterCouponText', e.target.value)}
+                  placeholder="for 15% off your first campaign!"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-emerald-500 focus:border-emerald-500"
+                />
+                <p className="mt-1 text-xs text-gray-500">This text appears after the coupon code box</p>
+              </div>
+
+              {/* Desktop Preview */}
+              <div className="bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] rounded-lg p-3 mt-4">
+                <div className="text-xs text-black/60 mb-1">Desktop Preview:</div>
+                <div className="flex items-center justify-center gap-1 text-center">
+                  <span className="text-sm text-black">{salesBannerSettings.desktop.beforeCouponText.replace(/\{month\}/gi, 'NOVEMBER').replace(/\{day\}/gi, '25').replace(/\{countdown[^}]+\}/gi, '[COUNTDOWN]')}</span>
+                  <div className="flex items-center gap-2 bg-black text-[#59e3a5] px-3 py-1 rounded-md font-bold ml-1">
+                    <span className="font-bold text-sm">{salesBannerSettings.desktop.couponCode}</span>
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-[#59e3a5]">
+                      <rect width="14" height="14" x="8" y="8" rx="2" ry="2"/>
+                      <path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/>
+                    </svg>
+                  </div>
+                  <span className="text-sm font-bold text-black ml-1">{salesBannerSettings.desktop.afterCouponText.replace(/\{month\}/gi, 'NOVEMBER').replace(/\{day\}/gi, '25').replace(/\{countdown[^}]+\}/gi, '[COUNTDOWN]')}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Mobile Banner Settings */}
+          <div className="border border-gray-200 rounded-lg p-5">
+            <div className="flex items-center mb-4">
+              <svg className="w-5 h-5 text-gray-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z" />
+              </svg>
+              <h3 className="text-lg font-semibold text-gray-900">Mobile Banner</h3>
+            </div>
+            
+            <div className="space-y-4">
+              <div>
+                <label htmlFor="mobile-before-text" className="block text-sm font-medium text-gray-700 mb-2">
+                  Before Coupon Code Text
+                </label>
+                <input
+                  id="mobile-before-text"
+                  type="text"
+                  value={salesBannerSettings.mobile.beforeCouponText}
+                  onChange={(e) => updateMobileBannerSetting('beforeCouponText', e.target.value)}
+                  placeholder="🔥 {month} SALE! Use code"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-emerald-500 focus:border-emerald-500"
+                />
+                <p className="mt-1 text-xs text-gray-500">This text appears before the coupon code box (keep it shorter for mobile)</p>
+              </div>
+
+              <div>
+                <label htmlFor="mobile-coupon-code" className="block text-sm font-medium text-gray-700 mb-2">
+                  Coupon Code
+                </label>
+                <input
+                  id="mobile-coupon-code"
+                  type="text"
+                  value={salesBannerSettings.mobile.couponCode}
+                  onChange={(e) => updateMobileBannerSetting('couponCode', e.target.value)}
+                  placeholder="FASHO"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-emerald-500 focus:border-emerald-500 font-mono uppercase"
+                />
+                <p className="mt-1 text-xs text-gray-500">The coupon code users can click to copy</p>
+              </div>
+
+              <div>
+                <label htmlFor="mobile-after-text" className="block text-sm font-medium text-gray-700 mb-2">
+                  After Coupon Code Text
+                </label>
+                <input
+                  id="mobile-after-text"
+                  type="text"
+                  value={salesBannerSettings.mobile.afterCouponText}
+                  onChange={(e) => updateMobileBannerSetting('afterCouponText', e.target.value)}
+                  placeholder="for 15% off"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-emerald-500 focus:border-emerald-500"
+                />
+                <p className="mt-1 text-xs text-gray-500">This text appears after the coupon code box (keep it shorter for mobile)</p>
+              </div>
+
+              {/* Mobile Preview */}
+              <div className="bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] rounded-lg p-3 mt-4 max-w-xs mx-auto">
+                <div className="text-xs text-black/60 mb-1">Mobile Preview:</div>
+                <div className="flex items-center justify-center gap-1 text-center flex-wrap">
+                  <span className="text-xs text-black">{salesBannerSettings.mobile.beforeCouponText.replace(/\{month\}/gi, 'NOVEMBER').replace(/\{day\}/gi, '25').replace(/\{countdown[^}]+\}/gi, '[CD]')}</span>
+                  <div className="flex items-center gap-1 bg-black text-[#59e3a5] px-2 py-1 rounded-md font-bold ml-1">
+                    <span className="font-bold text-xs">{salesBannerSettings.mobile.couponCode}</span>
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-[#59e3a5]">
+                      <rect width="14" height="14" x="8" y="8" rx="2" ry="2"/>
+                      <path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/>
+                    </svg>
+                  </div>
+                  <span className="text-xs font-bold text-black ml-1">{salesBannerSettings.mobile.afterCouponText.replace(/\{month\}/gi, 'NOVEMBER').replace(/\{day\}/gi, '25').replace(/\{countdown[^}]+\}/gi, '[CD]')}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Save Button */}
+          <div className="pt-4 border-t border-gray-200">
+            <button
+              onClick={handleSaveSalesBannerSettings}
+              disabled={savingBannerSettings}
+              className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-emerald-600 hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-500 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {savingBannerSettings ? (
+                <>
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                  Saving...
+                </>
+              ) : (
+                <>
+                  <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                  </svg>
+                  Save Sales Banner Settings
+                </>
+              )}
+            </button>
+            <p className="mt-2 text-sm text-gray-500">
+              Changes will be reflected on the live website immediately after saving.
+            </p>
           </div>
         </div>
       </div>

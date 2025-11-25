@@ -52,16 +52,12 @@ export default function AdminDashboard({ adminUser, authError }: AdminDashboardP
   const [lottieAnimationData, setLottieAnimationData] = useState(null)
   const lottieRef = useRef<any>(null)
 
-  // Show access denied if not authenticated or error occurred
-  if (!adminUser || authError) {
-    return <AdminAccessDenied 
-      title={authError || "Admin Access Required"}
-      message="You need to be logged in as an administrator to access this page."
-    />
-  }
-
+  // ALL HOOKS MUST BE BEFORE ANY CONDITIONAL RETURNS (React Rules of Hooks)
+  
   // Fetch Lottie animation data
   useEffect(() => {
+    if (!adminUser) return // Skip if not authenticated
+    
     const fetchLottieData = async () => {
       try {
         const response = await fetch('https://lottie.host/b85b82bf-f332-408e-adfc-310fb881ddcf/CJGk9Z9X2e.json')
@@ -73,7 +69,7 @@ export default function AdminDashboard({ adminUser, authError }: AdminDashboardP
     }
 
     fetchLottieData()
-  }, [])
+  }, [adminUser])
 
   // Control Lottie animation speed
   useEffect(() => {
@@ -88,6 +84,8 @@ export default function AdminDashboard({ adminUser, authError }: AdminDashboardP
 
   // Handle query parameter navigation (e.g., /admin?p=orders)
   useEffect(() => {
+    if (!adminUser) return // Skip if not authenticated
+    
     // Wait for router to be ready
     if (!router.isReady) return
     
@@ -129,10 +127,12 @@ export default function AdminDashboard({ adminUser, authError }: AdminDashboardP
     
     console.log('🔄 ADMIN-NAV: Setting active tab to', expectedTab);
     setActiveTab(expectedTab)
-  }, [router.isReady, router.query.p, adminUser.role])
+  }, [router.isReady, router.query.p, adminUser])
 
   // Fetch analytics data (only for full admins)
   useEffect(() => {
+    if (!adminUser) return // Skip if not authenticated
+    
     const fetchAnalytics = async () => {
       if (adminUser.role !== 'admin') return // Sub-admins can't see analytics
       
@@ -154,7 +154,15 @@ export default function AdminDashboard({ adminUser, authError }: AdminDashboardP
     if (activeTab === 'dashboard' && adminUser.role === 'admin') {
       fetchAnalytics()
     }
-  }, [activeTab, adminUser.role])
+  }, [activeTab, adminUser])
+
+  // Show access denied if not authenticated or error occurred - AFTER all hooks
+  if (!adminUser || authError) {
+    return <AdminAccessDenied 
+      title={authError || "Admin Access Required"}
+      message="You need to be logged in as an administrator to access this page."
+    />
+  }
 
   // Count-up animation function
   const animateCounters = (targetData: any) => {
