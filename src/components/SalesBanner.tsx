@@ -17,7 +17,7 @@ interface AllBannerSettings {
   mobile: BannerSettings;
 }
 
-// Default settings to use while loading or on error
+// Default settings - only used as fallback if API fails
 const DEFAULT_SETTINGS: AllBannerSettings = {
   desktop: {
     beforeCouponText: '🔥 {month} SALE! Use code',
@@ -32,8 +32,9 @@ const DEFAULT_SETTINGS: AllBannerSettings = {
 };
 
 export default function SalesBanner({ className = '' }: SalesBannerProps) {
-  const [settings, setSettings] = useState<AllBannerSettings>(DEFAULT_SETTINGS);
+  const [settings, setSettings] = useState<AllBannerSettings | null>(null);
   const [isLoaded, setIsLoaded] = useState(false);
+  const [shouldAnimate, setShouldAnimate] = useState(false);
 
   // Fetch banner settings from API
   useEffect(() => {
@@ -44,23 +45,42 @@ export default function SalesBanner({ className = '' }: SalesBannerProps) {
           const data = await response.json();
           if (data.success && data.settings) {
             setSettings(data.settings);
+          } else {
+            // Use defaults if API returns invalid data
+            setSettings(DEFAULT_SETTINGS);
           }
+        } else {
+          // Use defaults if API request fails
+          setSettings(DEFAULT_SETTINGS);
         }
       } catch (error) {
         console.error('Failed to fetch sales banner settings:', error);
-        // Keep default settings on error
+        // Use defaults on error
+        setSettings(DEFAULT_SETTINGS);
       } finally {
         setIsLoaded(true);
+        // Trigger animation after a tiny delay to ensure DOM is ready
+        setTimeout(() => setShouldAnimate(true), 50);
       }
     };
 
     fetchSettings();
   }, []);
 
+  // Don't render anything until settings are loaded
+  if (!isLoaded || !settings) {
+    return null;
+  }
+
   return (
     <div 
-      className={`fixed w-full top-0 sm:top-0 bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] text-black font-bold py-2 px-4 shadow-lg z-[9999] ${className}`} 
-      style={{ top: '-2px' }}
+      className={`fixed w-full bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] text-black font-bold py-2 px-4 shadow-lg z-[9999] ${className}`} 
+      style={{ 
+        top: '-2px',
+        transform: shouldAnimate ? 'translateY(0)' : 'translateY(-100%)',
+        transition: 'transform 0.5s cubic-bezier(0.4, 0, 0.2, 1)',
+        willChange: 'transform'
+      }}
     >
       <div className="max-w-7xl mx-auto flex items-center justify-center relative">
         {/* Desktop Sales Banner */}
