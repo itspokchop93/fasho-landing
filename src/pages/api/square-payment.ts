@@ -1,6 +1,6 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 import { v4 as uuidv4 } from 'uuid';
-import { SquareClient, SquareEnvironment } from 'square';
+import { SquareClient, SquareEnvironment, Country } from 'square';
 
 interface OrderItem {
   name: string;
@@ -188,7 +188,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       locality: billingInfo.city,
       administrativeDistrictLevel1: billingInfo.state,
       postalCode: billingInfo.zip,
-      country: billingInfo.country === 'US' ? 'US' : billingInfo.country
+      country: (billingInfo.country || 'US') as Country
     };
 
     // Create the payment using Square SDK v43+ syntax
