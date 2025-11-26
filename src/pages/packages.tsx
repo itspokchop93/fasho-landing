@@ -622,7 +622,7 @@ export default function PackagesPage() {
         }
         
         router.push({
-          pathname: '/checkout',
+          pathname: '/checkout-sq',
           query: {
             sessionId,
             ...preservedParams
@@ -2867,6 +2867,43 @@ export default function PackagesPage() {
                 className="bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] text-black font-bold px-8 py-4 rounded-md hover:opacity-90 hover:-translate-y-1 transition-all duration-300 text-lg shadow-lg"
               >
                 CHOOSE MY PACKAGE
+              </button>
+            </div>
+            
+            {/* Hidden test button - below CTA */}
+            <div className="text-center mt-40 pb-4">
+              <button
+                onClick={async () => {
+                  if (tracks.length > 0) {
+                    const testSelectedPackages = { 0: 'test' };
+                    localStorage.setItem('checkoutCart', JSON.stringify({
+                      tracks: JSON.stringify(tracks),
+                      selectedPackages: JSON.stringify(testSelectedPackages)
+                    }));
+                    
+                    try {
+                      const response = await fetch('/api/create-checkout-session', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                          tracks: tracks,
+                          selectedPackages: testSelectedPackages,
+                          userId: null
+                        }),
+                      });
+                      
+                      if (response.ok) {
+                        const { sessionId } = await response.json();
+                        router.push(`/checkout-sq?sessionId=${sessionId}`);
+                      }
+                    } catch (error) {
+                      console.error('Test checkout error:', error);
+                    }
+                  }
+                }}
+                className="text-xs opacity-25 hover:opacity-60 transition-opacity text-gray-500 bg-transparent border-none cursor-pointer"
+              >
+                AA
               </button>
             </div>
           </div>
