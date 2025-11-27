@@ -183,6 +183,7 @@ export default function CheckoutSquarePage() {
   const [cardError, setCardError] = useState('');
   const cardContainerRef = useRef<HTMLDivElement>(null);
   const [showRefreshButton, setShowRefreshButton] = useState(false);
+  const [showPaymentForm, setShowPaymentForm] = useState(false);
 
   // Debug log helper function (logs to console only in production)
   const addDebugLog = (type: string, message: string) => {
@@ -2342,25 +2343,33 @@ export default function CheckoutSquarePage() {
 
                   {/* Square Card Payment Section */}
                   <div className="bg-white/5 rounded-xl p-6 border border-white/20">
-                    <h3 className="text-lg font-semibold mb-4">Payment Details 💳</h3>
-                    
-                    {/* Square Card Container - Dark themed */}
-                    <div 
-                      id="square-card-container" 
-                      ref={cardContainerRef}
-                      className="mb-4 min-h-[90px] bg-[#1a1a2e] rounded-lg p-3 border border-white/20"
-                    ></div>
-                    
-                    {/* Square Card Styling */}
+                    {/* Square Card Styling - Always present */}
                     <style jsx global>{`
+                      #square-card-container {
+                        background: transparent !important;
+                      }
                       #square-card-container iframe {
-                        min-height: 80px !important;
+                        min-height: 60px !important;
                       }
                       .sq-card-wrapper {
-                        background-color: #1a1a2e !important;
+                        background-color: transparent !important;
                       }
                       .sq-card-message-no-error {
                         color: rgba(255, 255, 255, 0.7) !important;
+                      }
+                      /* Override Square's default card styling */
+                      .sq-input {
+                        background-color: rgba(255, 255, 255, 0.05) !important;
+                        border: 1px solid rgba(255, 255, 255, 0.2) !important;
+                        border-radius: 8px !important;
+                        color: white !important;
+                      }
+                      .sq-input::placeholder {
+                        color: rgba(255, 255, 255, 0.4) !important;
+                      }
+                      .sq-input:focus {
+                        border-color: #59e3a5 !important;
+                        box-shadow: 0 0 0 2px rgba(89, 227, 165, 0.2) !important;
                       }
                       @keyframes fadeIn {
                         from { opacity: 0; transform: translateY(-10px); }
@@ -2371,84 +2380,204 @@ export default function CheckoutSquarePage() {
                       }
                     `}</style>
                     
-                    {(!squareLoaded || !card) && (
-                      <div className="flex flex-col items-center justify-center py-4 space-y-3">
-                        <div className="flex items-center">
-                          <div className="w-6 h-6 border-2 border-[#59e3a5] border-t-transparent rounded-full animate-spin mr-3"></div>
-                          <span className="text-white/70">Loading payment form...</span>
-                        </div>
-                        {showRefreshButton && (
-                          <button
-                            type="button"
-                            onClick={() => window.location.reload()}
-                            className="animate-fade-in px-3 py-1.5 bg-white/10 hover:bg-white/20 text-white/60 hover:text-white text-xs rounded border border-white/20 transition-all duration-200 flex items-center space-x-1.5"
-                          >
-                            <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                            </svg>
-                            <span>Refresh checkout form</span>
-                          </button>
-                        )}
-                      </div>
-                    )}
-                    
-                    {cardError && (
-                      <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-4 mb-4">
-                        <div className="flex items-start space-x-3">
-                          <div className="flex-shrink-0">
-                            <svg className="w-5 h-5 text-red-400 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                            </svg>
-                          </div>
-                          <div>
-                            <p className="text-red-400 font-medium text-sm">Payment Declined</p>
-                            <p className="text-red-300/80 text-sm mt-1">{cardError}</p>
-                          </div>
-                        </div>
-                      </div>
-                    )}
-                    
-                    {/* Submit Button - Right under card fields */}
+                    {/* Form Error Message */}
                     {formError && (
                       <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-4 mb-4">
                         <p className="text-red-400 text-sm">{formError}</p>
                       </div>
                     )}
                     
-                    <button
-                      type="submit"
-                      disabled={isLoading || !squareLoaded}
-                      className="w-full bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] text-black font-semibold py-4 px-6 rounded-lg hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed text-lg"
-                    >
-                      {isLoading ? (
-                        <span className="flex items-center justify-center">
-                          <div className="w-5 h-5 border-2 border-black border-t-transparent rounded-full animate-spin mr-3"></div>
-                          Processing Payment...
-                        </span>
-                      ) : (
-                        `Complete Purchase · $${total.toFixed(2)}`
+                    {/* Continue to Payment Button - Show when payment form is hidden */}
+                    {!showPaymentForm && (
+                      <div className="space-y-4">
+                        <button
+                          type="button"
+                          disabled={isLoading}
+                          onClick={() => {
+                            // Validate form before showing payment
+                            if (!isFormValid()) {
+                              const firstMissingField = getFirstMissingField();
+                              let errorMessage = 'Please complete all required fields before continuing.';
+                              
+                              if (firstMissingField) {
+                                const element = document.getElementById(firstMissingField);
+                                if (element) {
+                                  element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                                  element.focus();
+                                }
+                                
+                                if (['email', 'password', 'confirmPassword'].includes(firstMissingField)) {
+                                  errorMessage = 'Please complete your account information before continuing.';
+                                } else if (firstMissingField === 'termsAgreed') {
+                                  errorMessage = 'Please agree to the Terms & Conditions, Privacy Policy, Disclaimer, and Refund Policy before continuing.';
+                                } else if (firstMissingField === 'musicGenre') {
+                                  errorMessage = 'Please select your music genre before continuing.';
+                                } else {
+                                  errorMessage = 'Please complete your billing information before continuing.';
+                                }
+                              }
+                              
+                              setFormError(errorMessage);
+                              return;
+                            }
+                            
+                            setFormError('');
+                            setShowPaymentForm(true);
+                          }}
+                          className="w-full bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] text-black font-semibold py-4 px-6 rounded-lg hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed text-lg"
+                        >
+                          {isLoading ? (
+                            <span className="flex items-center justify-center">
+                              <div className="w-5 h-5 border-2 border-black border-t-transparent rounded-full animate-spin mr-3"></div>
+                              Processing...
+                            </span>
+                          ) : (
+                            `Continue to Payment · $${total.toFixed(2)}`
+                          )}
+                        </button>
+                      </div>
+                    )}
+                    
+                    {/* Payment Form Box - Cohesive unit with background */}
+                    <div className={`transition-all duration-200 ${showPaymentForm ? 'animate-fade-in bg-white/5 rounded-lg p-4 border border-white/10' : ''}`}>
+                      {/* Awaiting Payment Indicator - Only show when form is visible */}
+                      {showPaymentForm && (
+                        <div className="flex items-center justify-center space-x-3 mb-4">
+                          <div className="relative">
+                            <div className="w-3.5 h-3.5 bg-[#59e3a5] rounded-full"></div>
+                            <div className="absolute inset-0 w-3.5 h-3.5 bg-[#59e3a5] rounded-full animate-ping opacity-75"></div>
+                          </div>
+                          <p className="text-base font-semibold text-white/80">
+                            Awaiting payment...
+                          </p>
+                        </div>
                       )}
-                    </button>
+                      
+                      {/* Mini Order Receipt - Only show when form is visible */}
+                      {showPaymentForm && (
+                        <div className="mb-4 px-3 py-2 bg-white/[0.02] rounded border border-white/5">
+                          <div className="space-y-1">
+                            {orderItems.map((item, index) => (
+                              <div key={index} className="flex justify-between items-center text-[10px]">
+                                <span className="truncate pr-2">
+                                  <span className="text-white/50">{item.track.title}</span>
+                                  <span className="text-white/30"> - </span>
+                                  <span className="text-[#59e3a5]/70">{item.package.name}</span>
+                                </span>
+                                <span className="flex-shrink-0 text-white/50">${item.discountedPrice.toFixed(2)}</span>
+                              </div>
+                            ))}
+                            {addOnOrderItems.map((item, index) => (
+                              <div key={`addon-${index}`} className="flex justify-between items-center text-[10px]">
+                                <span className="truncate pr-2">
+                                  <span className="text-white/50">{item.emoji} {item.name.replace(/ \(.*\)/, '')}</span>
+                                </span>
+                                <span className="flex-shrink-0 text-white/50">${item.price.toFixed(2)}</span>
+                              </div>
+                            ))}
+                            {appliedCoupon && (
+                              <div className="flex justify-between items-center text-[10px] text-[#14c0ff]/70">
+                                <span>Coupon ({appliedCoupon.code})</span>
+                                <span>-${appliedCoupon.calculated_discount.toFixed(2)}</span>
+                              </div>
+                            )}
+                            <div className="flex justify-between items-center text-[10px] pt-1 border-t border-white/5 mt-1">
+                              <span className="font-medium text-white/70">Total</span>
+                              <span className="font-medium text-[#59e3a5]">${total.toFixed(2)}</span>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                      
+                      {/* Square Card Container - ALWAYS in DOM for SDK initialization */}
+                      <div 
+                        id="square-card-container" 
+                        ref={cardContainerRef}
+                        className={`transition-all duration-200 ${!showPaymentForm ? 'opacity-0 h-0 overflow-hidden pointer-events-none' : 'min-h-[60px]'}`}
+                      ></div>
+                      
+                      {/* Card Error - Only show when form is visible */}
+                      {showPaymentForm && cardError && (
+                        <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-4 mb-3">
+                          <div className="flex items-start space-x-3">
+                            <div className="flex-shrink-0">
+                              <svg className="w-5 h-5 text-red-400 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                              </svg>
+                            </div>
+                            <div>
+                              <p className="text-red-400 font-medium text-sm">Payment Declined</p>
+                              <p className="text-red-300/80 text-sm mt-1">{cardError}</p>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                      
+                      {/* Complete Order Button - Only show when form is visible */}
+                      {showPaymentForm && (
+                        <button
+                          type="submit"
+                          disabled={isLoading || !squareLoaded}
+                          className="w-full -mt-2 bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] text-black font-semibold py-4 px-6 rounded-lg hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed text-lg"
+                        >
+                          {isLoading ? (
+                            <span className="flex items-center justify-center">
+                              <div className="w-5 h-5 border-2 border-black border-t-transparent rounded-full animate-spin mr-3"></div>
+                              Processing Payment...
+                            </span>
+                          ) : (
+                            `Complete Order · $${total.toFixed(2)}`
+                          )}
+                        </button>
+                      )}
+                    </div>
                     
                     <div className="mt-4 text-center text-sm text-white/60">
                       <div className="flex items-center justify-center space-x-2">
                         <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
                         </svg>
-                        <span>Securely processed by Square</span>
+                        <span>Secure payments by Stripe</span>
                       </div>
                       <div className="flex items-center justify-center mt-3">
-                        <svg className="h-7 w-auto mr-2" viewBox="0 0 290 216" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        {/* Visa */}
+                        <svg className="h-9 w-auto" viewBox="0 0 290 216" fill="none" xmlns="http://www.w3.org/2000/svg">
                           <rect x="41" y="21" width="208" height="134" rx="24" fill="#1434CB"/>
                           <rect x="40.5" y="20.5" width="209" height="135" rx="24.5" stroke="#D6DCE5"/>
-                          <path d="M143.728 66.1627L134.027 111.514H122.295L131.998 66.1627H143.728Z" fill="white"/>
+                          <path d="M143.728 66.1627L134.027 111.514H122.295L131.998 66.1627H143.728ZM193.087 95.4462L199.264 78.4152L202.818 95.4462H193.087ZM206.177 111.514H217.028L207.559 66.1627H197.543C195.292 66.1627 193.393 67.4717 192.548 69.4899L174.947 111.514H187.267L189.713 104.742H204.764L206.177 111.514ZM175.558 96.7064C175.608 84.7367 159.005 84.0778 159.12 78.731C159.155 77.1018 160.706 75.3736 164.095 74.9301C165.779 74.7104 170.408 74.5425 175.664 76.9611L177.723 67.344C174.899 66.3191 171.266 65.333 166.748 65.333C155.153 65.333 146.991 71.498 146.922 80.3257C146.849 86.8539 152.748 90.4969 157.194 92.6672C161.764 94.8907 163.3 96.3146 163.28 98.3026C163.25 101.347 159.634 102.688 156.261 102.741C150.361 102.834 146.938 101.149 144.209 99.8772L142.083 109.814C144.824 111.073 149.883 112.167 155.133 112.223C167.455 112.223 175.518 106.134 175.558 96.7064ZM126.964 66.1627L107.957 111.514H95.5537L86.2007 75.3205C85.6323 73.0913 85.1385 72.276 83.4117 71.3358C80.594 69.8071 75.9362 68.3703 71.8381 67.4804L72.118 66.1627H92.08C94.6236 66.1627 96.913 67.8564 97.49 70.7861L102.431 97.0308L114.639 66.1627H126.964Z" fill="white"/>
                         </svg>
-                        <svg className="h-7 w-auto mr-2" viewBox="0 0 290 216" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        
+                        {/* Mastercard */}
+                        <svg className="h-9 w-auto" viewBox="0 0 290 216" fill="none" xmlns="http://www.w3.org/2000/svg">
                           <rect x="41" y="21" width="208" height="134" rx="24" fill="#FFEFE5"/>
                           <rect x="40.5" y="20.5" width="209" height="135" rx="24.5" stroke="#D6DCE5"/>
                           <path d="M159.941 61.483H129.316V116.517H159.941V61.483Z" fill="#FF5F00"/>
                           <path d="M131.261 89C131.256 83.6998 132.457 78.468 134.773 73.7006C137.089 68.9333 140.46 64.7553 144.629 61.483C139.466 57.4246 133.265 54.9007 126.735 54.1999C120.205 53.499 113.61 54.6495 107.703 57.5197C101.796 60.39 96.8161 64.8642 93.3319 70.4311C89.8477 75.9979 88 82.4327 88 89C88 95.5673 89.8477 102.002 93.3319 107.569C96.8161 113.136 101.796 117.61 107.703 120.48C113.61 123.351 120.205 124.501 126.735 123.8C133.265 123.099 139.466 120.575 144.629 116.517C140.46 113.245 137.089 109.067 134.773 104.299C132.457 99.532 131.256 94.3002 131.261 89Z" fill="#EB001B"/>
                           <path d="M201.256 89C201.256 95.5672 199.409 102.002 195.925 107.569C192.441 113.136 187.461 117.61 181.554 120.48C175.647 123.35 169.052 124.501 162.523 123.8C155.993 123.099 149.792 120.575 144.629 116.517C148.795 113.241 152.162 109.063 154.478 104.296C156.794 99.5295 157.997 94.2993 157.997 89C157.997 83.7007 156.794 78.4705 154.478 73.7039C152.162 68.9373 148.795 64.7586 144.629 61.483C149.792 57.4246 155.993 54.9007 162.523 54.1999C169.052 53.499 175.647 54.6495 181.554 57.5198C187.461 60.3901 192.441 64.8643 195.925 70.4312C199.409 75.998 201.256 82.4328 201.256 89Z" fill="#F79E1B"/>
+                        </svg>
+                        
+                        {/* American Express */}
+                        <svg className="h-9 w-auto" viewBox="0 0 290 216" fill="none" xmlns="http://www.w3.org/2000/svg">
+                          <rect x="41" y="21" width="208" height="134" rx="24" fill="#E5F1FA"/>
+                          <rect x="40.5" y="20.5" width="209" height="135" rx="24.5" stroke="#D6DCE5"/>
+                          <path fillRule="evenodd" clipRule="evenodd" d="M249.079 45.2613H231.862L222.863 71.0859L213.473 45.2613H195.865V85.4722L177.866 45.2613H163.39L145.391 86.3451H157.911L161.433 78.1288H180.214L183.736 86.3451H207.212V57.7817L217.777 86.3451H227.558L238.123 57.7817V86.3451H249.079V92.6053H234.601L222.863 105.518L210.734 92.6053H161.042V133.689H210.343L222.472 120.386L234.601 133.689H249.079V138.775H231.862L222.472 128.602L213.081 138.775H154.782V91.8226H136L159.477 39H182.17L190.387 56.9991V39H218.559L223.254 52.695L227.95 39H249.079V45.2613ZM249.079 101.604L238.515 112.951L249.079 124.298V133.689L229.906 112.951L249.079 92.6053V101.604ZM195.865 133.689V123.907H172.389V117.647H195.474V108.256H172.389V101.996H195.865V92.6053L215.429 112.951L195.865 133.689ZM164.954 69.1287L170.433 55.8256L175.91 69.1287H164.954Z" fill="#006FCF"/>
+                        </svg>
+                        
+                        {/* Discover */}
+                        <svg className="h-9 w-auto" viewBox="0 0 290 216" fill="none" xmlns="http://www.w3.org/2000/svg">
+                          <defs>
+                            <linearGradient id="discoverGradientSq" x1="106.438" y1="21.0002" x2="186.634" y2="156.712" gradientUnits="userSpaceOnUse">
+                              <stop stopColor="#E05026"/>
+                              <stop offset="1" stopColor="#F9A020"/>
+                            </linearGradient>
+                          </defs>
+                          <rect x="41" y="21.0002" width="208" height="134" rx="24" fill="url(#discoverGradientSq)"/>
+                          <rect x="40.5" y="20.5002" width="209" height="135" rx="24.5" stroke="#D6DCE5"/>
+                          <path d="M44 44C44 32.9543 52.9543 24 64 24H173C208.346 24 237 52.6538 237 88C237 123.346 208.346 152 173 152H64C52.9543 152 44 143.046 44 132V44Z" fill="white"/>
+                          <path d="M106.846 88.0817C106.846 95.9509 113.026 102.051 120.975 102.051C123.224 102.051 125.147 101.608 127.521 100.492V94.3463C125.434 96.4331 123.585 97.2765 121.217 97.2765C115.958 97.2765 112.226 93.464 112.226 88.0427C112.226 82.9047 116.079 78.8501 120.975 78.8501C123.466 78.8501 125.352 79.7367 127.521 81.8603V75.7167C125.231 74.5555 123.345 74.0732 121.098 74.0732C113.188 74.0732 106.846 80.299 106.846 88.0817Z" fill="#251F1F"/>
+                          <path d="M93.4447 81.5813C93.4447 83.0258 94.3659 83.7913 97.4993 84.9504C103.44 87.1237 105.2 89.0483 105.2 93.3019C105.2 98.4831 101.392 102.09 95.9661 102.09C91.9937 102.09 89.1046 100.527 86.6978 96.9953L90.0712 93.7473C91.2736 96.072 93.2803 97.3175 95.7693 97.3175C98.1005 97.3175 99.824 95.7108 99.824 93.5419C99.824 92.4174 99.3006 91.4508 98.2583 90.7718C97.7329 90.4496 96.6927 89.9673 94.6492 89.2472C89.7447 87.4827 88.0623 85.5948 88.0623 81.9057C88.0623 77.5245 91.6758 74.2354 96.4116 74.2354C99.3461 74.2354 102.032 75.2388 104.279 77.2045L101.545 80.7812C100.185 79.2567 98.9006 78.6123 97.335 78.6123C95.0838 78.6123 93.4447 79.8946 93.4447 81.5813Z" fill="#251F1F"/>
+                          <path fillRule="evenodd" clipRule="evenodd" d="M62.7377 74.6788H55.0718V101.448H62.6966C66.7491 101.448 69.6792 100.492 72.2482 98.3577C75.3016 95.8298 77.1073 92.0196 77.1073 88.0817C77.1073 80.1822 71.2038 74.6788 62.7377 74.6788ZM68.8359 94.7897C67.1946 96.2688 65.0645 96.9154 61.6911 96.9154H60.2898V79.2156H61.6911C65.0645 79.2156 67.1102 79.8168 68.8359 81.3802C70.6437 82.987 71.7271 85.4781 71.7271 88.0428C71.7271 90.6118 70.6437 93.183 68.8359 94.7897Z" fill="#251F1F"/>
+                          <path d="M84.7322 74.6788H79.5098V101.448H84.7322V74.6788Z" fill="#251F1F"/>
                         </svg>
                       </div>
                     </div>
