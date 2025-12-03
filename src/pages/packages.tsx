@@ -622,7 +622,7 @@ export default function PackagesPage() {
         }
         
         router.push({
-          pathname: '/checkout-sq',
+          pathname: '/checkout',
           query: {
             sessionId,
             ...preservedParams
@@ -2894,7 +2894,7 @@ export default function PackagesPage() {
                       
                       if (response.ok) {
                         const { sessionId } = await response.json();
-                        router.push(`/checkout-sq?sessionId=${sessionId}`);
+                        router.push(`/checkout?sessionId=${sessionId}`);
                       }
                     } catch (error) {
                       console.error('Test checkout error:', error);
