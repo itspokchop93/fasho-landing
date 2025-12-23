@@ -258,6 +258,8 @@ const ActiveCampaigns: React.FC = () => {
   
   // Copy link feedback state - tracks which campaigns have been copied recently
   const [copiedStates, setCopiedStates] = useState<{[key: string]: boolean}>({});
+  // Animation state for re-copy feedback
+  const [copyAnimating, setCopyAnimating] = useState<string | null>(null);
   
 
   useEffect(() => {
@@ -347,15 +349,14 @@ const ActiveCampaigns: React.FC = () => {
     try {
       await navigator.clipboard.writeText(text);
       
-      // Set copied state for this campaign
-      setCopiedStates(prev => ({ ...prev, [campaignId]: true }));
+      // Trigger animation for re-copy feedback
+      setCopyAnimating(campaignId);
+      setTimeout(() => setCopyAnimating(null), 300);
       
-      // Reset after 2 seconds
-      setTimeout(() => {
-        setCopiedStates(prev => ({ ...prev, [campaignId]: false }));
-      }, 2000);
+      // Clear all other copied states and set only this one
+      setCopiedStates({ [campaignId]: true });
       
-      } catch (error) {
+    } catch (error) {
       console.error('Failed to copy to clipboard:', error);
     }
   };
@@ -745,7 +746,7 @@ const ActiveCampaigns: React.FC = () => {
               <table className="min-w-max divide-y divide-gray-200">
               <thead className="bg-gray-50 sticky top-0 z-10">
                 <tr>
-                  <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-20">Order #</th>
+                  <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" style={{ minWidth: '140px' }}>Order #</th>
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-28">Order Date</th>
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" style={{ width: '16ch' }}>Song</th>
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-24">Genre</th>
@@ -758,21 +759,61 @@ const ActiveCampaigns: React.FC = () => {
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-36">Actions</th>
                 </tr>
               </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
-                {currentCampaigns.map((campaign) => (
-                  <tr key={campaign.id} id={`campaign-${campaign.orderNumber}`} className="hover:bg-gray-50">
-                    <td className="px-3 py-4 whitespace-nowrap w-20">
-                      <div className="flex flex-col items-center">
-                      <button
-                        onClick={() => handleOrderNumberClick(campaign.orderId)}
-                        className="text-indigo-600 hover:text-indigo-900 font-medium"
-                      >
-                        {campaign.orderNumber}
-                      </button>
+              <tbody className="bg-white">
+                {currentCampaigns.map((campaign, index) => {
+                  // Check if this is a new order (different from previous)
+                  const isNewOrder = index === 0 || currentCampaigns[index - 1].orderNumber !== campaign.orderNumber;
+                  
+                  // Calculate order group index for alternating colors and backgrounds
+                  let orderGroupIndex = 0;
+                  let currentOrderNum = '';
+                  for (let i = 0; i <= index; i++) {
+                    if (currentCampaigns[i].orderNumber !== currentOrderNum) {
+                      orderGroupIndex++;
+                      currentOrderNum = currentCampaigns[i].orderNumber;
+                    }
+                  }
+                  
+                  // Determine badge colors based on order group (alternating green/blue)
+                  const isGreenOrder = orderGroupIndex % 2 === 1;
+                  const badgeBgColor = isGreenOrder ? 'bg-green-50 text-green-700 border-green-200' : 'bg-blue-50 text-blue-700 border-blue-200';
+                  
+                  // Alternate row background for each order (white/gray)
+                  const isWhiteRow = orderGroupIndex % 2 === 1;
+                  const rowBgColor = isWhiteRow ? 'bg-white hover:bg-gray-100/50' : 'bg-gray-50 hover:bg-gray-200/50';
+                  
+                  return (
+                  <tr 
+                    key={campaign.id} 
+                    id={`campaign-${campaign.orderNumber}`} 
+                    className={`${rowBgColor} ${isNewOrder ? 'border-t-2 border-gray-400' : 'border-t border-gray-200'}`}
+                  >
+                    <td className="px-3 py-4 whitespace-nowrap relative" style={{ minWidth: '140px' }}>
+                      {/* Filled triangle chevron on the separator line for new orders */}
+                      {isNewOrder && (
+                        <svg 
+                          className="text-gray-400 absolute" 
+                          style={{ width: '7px', height: '7px', left: '0px', top: '-4.5px' }} 
+                          viewBox="0 0 10 10" 
+                          fill="currentColor"
+                        >
+                          <polygon points="0,0 10,5 0,10" />
+                        </svg>
+                      )}
+                      <div className="flex items-center gap-1">
+                        <button
+                          onClick={() => handleOrderNumberClick(campaign.orderId)}
+                          className="text-indigo-600 hover:text-indigo-900 font-medium"
+                        >
+                          {campaign.orderNumber}
+                        </button>
                         {campaign.songNumber && (
-                          <span className="inline-flex items-center px-2 py-0.5 mt-1 text-xs font-medium bg-green-50 text-green-700 border border-green-200 rounded-full">
-                            Song {campaign.songNumber}
-                          </span>
+                          <>
+                            <span className="text-gray-400">-</span>
+                            <span className={`inline-flex items-center px-2 py-0.5 text-xs font-medium border rounded-full ${badgeBgColor}`}>
+                              Song {campaign.songNumber}
+                            </span>
+                          </>
                         )}
                       </div>
                     </td>
@@ -796,16 +837,15 @@ const ActiveCampaigns: React.FC = () => {
                         </div>
                         <button
                           onClick={() => copyToClipboard(campaign.songLink, campaign.id)}
-                          className={`text-xs text-indigo-600 hover:text-indigo-800 bg-indigo-50 px-1 py-0.5 rounded transition-all duration-200 ease-in-out ${
-                            copiedStates[campaign.id] ? 'copy-click bg-green-50 text-green-600' : ''
-                          }`}
+                          className={`text-xs px-1.5 py-0.5 rounded transition-all duration-200 ease-in-out ${
+                            copiedStates[campaign.id] 
+                              ? 'bg-green-100 text-green-700 hover:bg-green-200' 
+                              : 'text-indigo-600 hover:text-indigo-800 bg-indigo-50 hover:bg-indigo-100'
+                          } ${copyAnimating === campaign.id ? 'scale-110 ring-2 ring-green-400' : ''}`}
                           title="Copy link to clipboard"
+                          style={{ transform: copyAnimating === campaign.id ? 'scale(1.1)' : 'scale(1)' }}
                         >
-                          <span className={`inline-block transition-all duration-200 ease-in-out ${
-                            copiedStates[campaign.id] ? 'text-fade-in' : ''
-                          }`}>
-                            {copiedStates[campaign.id] ? 'Copied!' : 'copy link'}
-                          </span>
+                          {copiedStates[campaign.id] ? 'Copied!' : 'copy link'}
                         </button>
                       </div>
                     </td>
@@ -1003,7 +1043,8 @@ const ActiveCampaigns: React.FC = () => {
                       </div>
                     </td>
                   </tr>
-                ))}
+                  );
+                })}
               </tbody>
             </table>
             </div>

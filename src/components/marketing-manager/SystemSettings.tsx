@@ -214,7 +214,7 @@ const SystemSettings: React.FC<SystemSettingsProps> = ({ onlyPlaylistNetwork = f
     genre: '',
     accountEmail: '',
     playlistLink: '',
-    maxSongs: 25
+    maxSongs: 35
   });
   const [streamPurchaseForm, setStreamPurchaseForm] = useState<StreamPurchaseForm>({
     playlistId: '',
@@ -465,7 +465,7 @@ const SystemSettings: React.FC<SystemSettingsProps> = ({ onlyPlaylistNetwork = f
           genre: '',
           accountEmail: '',
           playlistLink: '',
-          maxSongs: 25
+          maxSongs: 35
         });
         setShowAddForm(false);
         fetchPlaylists();
@@ -985,7 +985,7 @@ const SystemSettings: React.FC<SystemSettingsProps> = ({ onlyPlaylistNetwork = f
                     genre: '',
                     accountEmail: '',
                     playlistLink: '',
-                    maxSongs: 25
+                    maxSongs: 35
                   });
                 }
                 setShowAddForm(!showAddForm);
@@ -1171,7 +1171,7 @@ const SystemSettings: React.FC<SystemSettingsProps> = ({ onlyPlaylistNetwork = f
                     min="1"
                     max="10000"
                     value={newPlaylist.maxSongs}
-                    onChange={(e) => handleInputChange('maxSongs', parseInt(e.target.value) || 25)}
+                    onChange={(e) => handleInputChange('maxSongs', parseInt(e.target.value) || 35)}
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
                   />
                 </div>
