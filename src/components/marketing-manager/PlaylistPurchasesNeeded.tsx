@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 
 // Types
 interface PlaylistPurchaseItem {
@@ -140,6 +141,10 @@ const PlaylistPurchasesNeeded: React.FC = () => {
   const [playlistNetwork, setPlaylistNetwork] = useState<{[id: string]: any}>({});
   const [campaignTracker, setCampaignTracker] = useState<{[campaignId: string]: string[]}>({});
   const [copiedPlaylistId, setCopiedPlaylistId] = useState<string | null>(null);
+  // Track the absolute last playlist that was copied
+  const [lastCopiedId, setLastCopiedId] = useState<string | null>(null);
+  // Animation state for re-copy feedback
+  const [copyAnimating, setCopyAnimating] = useState<string | null>(null);
   
   console.log('📋 PLAYLIST-PURCHASES: 🚀 STATE INITIALIZED - All state variables created');
   const [confirmationModal, setConfirmationModal] = useState<{
@@ -505,8 +510,17 @@ const PlaylistPurchasesNeeded: React.FC = () => {
       // Try modern clipboard API first
       if (navigator.clipboard && navigator.clipboard.writeText) {
         await navigator.clipboard.writeText(targetLink);
+        
+        // Trigger animation for re-copy feedback
+        setCopyAnimating(playlistId);
+        setTimeout(() => setCopyAnimating(null), 300);
+        
         setCopiedPlaylistId(playlistId);
-        setTimeout(() => setCopiedPlaylistId(null), 2000);
+        setLastCopiedId(playlistId);
+        
+        // Revert after 5 seconds
+        setTimeout(() => setCopiedPlaylistId(null), 5000);
+        
         console.log(`📋 PLAYLIST-PURCHASES: Copied link for playlist ${playlistId}: ${targetLink}`);
       } else {
         // Fallback for older browsers
@@ -522,8 +536,16 @@ const PlaylistPurchasesNeeded: React.FC = () => {
         try {
           const successful = document.execCommand('copy');
           if (successful) {
+            // Trigger animation for re-copy feedback
+            setCopyAnimating(playlistId);
+            setTimeout(() => setCopyAnimating(null), 300);
+            
             setCopiedPlaylistId(playlistId);
-            setTimeout(() => setCopiedPlaylistId(null), 2000);
+            setLastCopiedId(playlistId);
+            
+            // Revert after 5 seconds
+            setTimeout(() => setCopiedPlaylistId(null), 5000);
+            
             console.log(`📋 PLAYLIST-PURCHASES: Copied link (fallback method) for playlist ${playlistId}: ${targetLink}`);
           } else {
             throw new Error('execCommand copy failed');
@@ -645,24 +667,24 @@ const PlaylistPurchasesNeeded: React.FC = () => {
           <table className="min-w-full divide-y divide-gray-200">
             <thead className="bg-gray-50">
               <tr>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-16">
+                <th className="px-4 py-3 text-left text-[0.65rem] font-black text-gray-500 uppercase tracking-widest w-16">
                   Image
                 </th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-48">
+                <th className="px-4 py-3 text-left text-[0.65rem] font-black text-gray-500 uppercase tracking-widest w-48">
                   Playlist
                 </th>
-                <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider w-24">
+                <th className="px-4 py-3 text-center text-[0.65rem] font-black text-gray-500 uppercase tracking-widest w-24">
                   Songs Added
                 </th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-32">
+                <th className="px-4 py-3 text-center text-[0.65rem] font-black text-gray-500 uppercase tracking-widest w-32">
                   Session
                 </th>
-                <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider w-24">
+                <th className="px-4 py-3 text-center text-[0.65rem] font-black text-gray-500 uppercase tracking-widest w-24">
                   Action
                 </th>
               </tr>
             </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
+            <tbody className="bg-white">
               {playlistPurchases.map((item) => {
                 // Ensure we have the latest link from network data if possible
                 const currentLink = playlistNetwork[item.id]?.link || item.playlistLink;
@@ -672,21 +694,48 @@ const PlaylistPurchasesNeeded: React.FC = () => {
                     key={item.id}
                     className={`
                       ${item.recentlyAdded ? 'fade-in-slide highlight-fade' : ''}
-                      hover:bg-gray-50
+                      hover:bg-gray-50 relative border-t-2 border-gray-200
                     `}
                   >
-                    {/* Image */}
-                    <td className="px-4 py-4 whitespace-nowrap w-16">
+                    {/* Image & Vertical Badge & Chevron */}
+                    <td className="px-4 py-4 whitespace-nowrap w-16 relative pl-10">
+                      {/* Filled triangle chevron on the separator line */}
+                      <svg 
+                        className="text-gray-400 absolute" 
+                        style={{ width: '7px', height: '7px', left: '0px', top: '-4.5px' }} 
+                        viewBox="0 0 10 10" 
+                        fill="currentColor"
+                      >
+                        <polygon points="0,0 10,5 0,10" />
+                      </svg>
+
+                      {/* Vertical "Copied Last" Badge */}
+                      <AnimatePresence>
+                        {lastCopiedId === item.id && copiedPlaylistId !== item.id && (
+                          <motion.div
+                            initial={{ opacity: 0, x: -20 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            exit={{ opacity: 0, x: -20 }}
+                            transition={{ duration: 0.4, ease: "easeInOut" }}
+                            className="absolute left-0 top-0 bottom-0 w-6 bg-orange-400 shadow-inner flex items-center justify-center overflow-hidden pointer-events-auto"
+                          >
+                            <span className="text-[0.45rem] font-black text-white uppercase tracking-widest whitespace-nowrap -rotate-90 inline-block">
+                              Copied Last
+                            </span>
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
+
                       <div className="flex-shrink-0 h-10 w-10">
                         {item.imageUrl ? (
                           <img 
-                            className="h-10 w-10 rounded-lg object-cover" 
+                            className="h-10 w-10 rounded-lg object-cover border border-gray-100 shadow-sm" 
                             src={item.imageUrl} 
                             alt={item.playlistName}
                           />
                         ) : (
-                          <div className="h-10 w-10 rounded-lg bg-gray-300 flex items-center justify-center">
-                            <svg className="h-6 w-6 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <div className="h-10 w-10 rounded-lg bg-gray-100 flex items-center justify-center border border-gray-200 text-gray-400">
+                            <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3" />
                             </svg>
                           </div>
@@ -696,19 +745,35 @@ const PlaylistPurchasesNeeded: React.FC = () => {
 
                     {/* Playlist */}
                     <td className="px-4 py-4 whitespace-nowrap w-48">
-                      <div>
-                        <div className="text-sm font-medium text-gray-900 truncate">
+                      <div className="flex flex-col gap-1">
+                        <div className="text-[0.8rem] font-black text-gray-900 truncate tracking-tight">
                           {item.playlistName}
                         </div>
                         <button
                           onClick={(e) => handleCopyLink(item.id, currentLink, e)}
-                          className={`text-xs text-blue-600 hover:text-blue-800 font-medium mt-1 copy-click transition-colors ${
-                            copiedPlaylistId === item.id ? 'text-green-600 font-semibold' : ''
-                          }`}
+                          className={`inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg font-black text-[0.7rem] uppercase tracking-wider transition-all duration-200 shadow-sm w-fit ${
+                            copiedPlaylistId === item.id 
+                              ? 'bg-green-600 text-white' 
+                              : 'bg-indigo-600 text-white hover:bg-indigo-700 active:scale-95'
+                          } ${copyAnimating === item.id ? 'ring-2 ring-green-400' : ''}`}
                           disabled={!currentLink || currentLink.trim() === ''}
                           title={currentLink ? 'Copy playlist link to clipboard' : 'Playlist link not available'}
                         >
-                          {copiedPlaylistId === item.id ? 'Copied to clipboard!' : 'Copy Link'}
+                          {copiedPlaylistId === item.id ? (
+                            <>
+                              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                              </svg>
+                              COPIED!
+                            </>
+                          ) : (
+                            <>
+                              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3" />
+                              </svg>
+                              COPY LINK
+                            </>
+                          )}
                         </button>
                       </div>
                     </td>
@@ -716,7 +781,7 @@ const PlaylistPurchasesNeeded: React.FC = () => {
                     {/* Songs Added */}
                     <td className="px-4 py-4 whitespace-nowrap w-24">
                       <div className="text-center">
-                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-indigo-100 text-indigo-800">
+                        <span className="inline-flex items-center px-2.5 py-1 rounded-full text-[0.7rem] font-black bg-indigo-100 text-indigo-800 border border-indigo-200 shadow-sm">
                           {item.songsAdded}
                         </span>
                       </div>
@@ -724,8 +789,11 @@ const PlaylistPurchasesNeeded: React.FC = () => {
 
                     {/* Session */}
                     <td className="px-4 py-4 whitespace-nowrap w-32">
-                      <div className="text-sm text-gray-900">
-                        {formatDate(item.sessionDate)}
+                      <div className="bg-gray-50 border border-gray-200 rounded-lg px-2.5 py-1.5 flex flex-col items-center justify-center gap-0.5">
+                        <span className="text-[0.55rem] font-black text-gray-400 uppercase tracking-tighter leading-none">Session</span>
+                        <span className="text-[0.7rem] font-bold text-gray-700 leading-none">
+                          {formatDate(item.sessionDate)}
+                        </span>
                       </div>
                     </td>
 
@@ -734,8 +802,11 @@ const PlaylistPurchasesNeeded: React.FC = () => {
                       <div className="text-center">
                         <button
                           onClick={(e) => showConfirmationModal('purchased', e, item.id)}
-                          className="inline-flex items-center px-3 py-1 border border-transparent text-xs font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                          className="inline-flex items-center px-4 py-2 rounded-lg text-[0.7rem] font-black uppercase tracking-wider text-white bg-blue-600 hover:bg-blue-700 active:scale-95 transition-all shadow-md gap-2"
                         >
+                          <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                          </svg>
                           PURCHASED
                         </button>
                       </div>

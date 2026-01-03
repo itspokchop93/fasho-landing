@@ -480,9 +480,13 @@ const ActiveCampaigns: React.FC = () => {
     });
 
     setFilteredCampaigns(filtered);
-    // Reset to first page when filters change
-    setCurrentPage(1);
   }, [campaigns, searchTerm, filterStatus, sortBy]);
+
+  // Reset to first page ONLY when search filters or sort criteria change
+  // This prevents polling updates from kicking the user back to page 1
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm, filterStatus, sortBy]);
 
   const fetchCampaigns = async () => {
     try {
@@ -987,6 +991,15 @@ const ActiveCampaigns: React.FC = () => {
                     className={`${rowBgColor} ${isNewOrder ? 'border-t-2 border-gray-400' : 'border-t border-gray-200'}`}
                   >
                     <td className="px-4 py-4" style={{ width: '260px' }}>
+                      {/* Filled triangle chevron on the separator line */}
+                      <svg 
+                        className="text-gray-400 absolute" 
+                        style={{ width: '7px', height: '7px', left: '0px', top: '-4.5px' }} 
+                        viewBox="0 0 10 10" 
+                        fill="currentColor"
+                      >
+                        <polygon points="0,0 10,5 0,10" />
+                      </svg>
                       <div className={`bg-white rounded-lg shadow-sm border border-gray-200 p-2.5 relative flex flex-col gap-1.5 w-[220px] ${(campaign.songNumber || lastCopiedId === campaign.id) ? 'pb-7' : ''}`}>
                         {/* Order Info - Top Right Corner */}
                         <div className="absolute top-2 right-2 text-right flex flex-col items-end z-10">
