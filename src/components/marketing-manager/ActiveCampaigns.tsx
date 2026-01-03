@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/router';
+import { motion, AnimatePresence } from 'framer-motion';
 import { MUSIC_GENRES } from '../../constants/genres';
 import { formatProgressDisplay } from '../../utils/numberFormatter';
 
@@ -147,6 +148,7 @@ interface Campaign {
   customerName: string;
   songName: string;
   songLink: string;
+  songImage?: string | null;
   songNumber?: number | null;
   packageName: string;
   userGenre: string;
@@ -167,6 +169,166 @@ interface Playlist {
   name: string;
   genre: string;
 }
+
+interface PlaylistSelectorProps {
+  currentValue: string;
+  playlists: Playlist[];
+  onSelect: (value: string) => void;
+  onCancel: () => void;
+  isUpdating?: boolean;
+}
+
+const PlaylistSelector: React.FC<PlaylistSelectorProps> = ({
+  currentValue,
+  playlists,
+  onSelect,
+  onCancel,
+  isUpdating = false
+}) => {
+  const [searchTerm, setSearchTerm] = useState('');
+  const [sortBy, setSortBy] = useState<'name' | 'genre'>('name');
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        onCancel();
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [onCancel]);
+
+  const allOptions = [
+    { id: 'removed', name: '✅ Removed', genre: '' },
+    { id: 'empty', name: '📭 -Empty-', genre: '' },
+    ...playlists
+  ];
+
+  const filteredPlaylists = allOptions
+    .filter(p => 
+      p.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
+      p.genre.toLowerCase().includes(searchTerm.toLowerCase())
+    )
+    .sort((a, b) => {
+      if (sortBy === 'genre') {
+        // Put empty genres at the bottom
+        if (!a.genre && b.genre) return 1;
+        if (a.genre && !b.genre) return -1;
+        if (a.genre < b.genre) return -1;
+        if (a.genre > b.genre) return 1;
+      }
+      // Default to name sorting
+      if (a.name < b.name) return -1;
+      if (a.name > b.name) return 1;
+      return 0;
+    });
+
+  return (
+    <div 
+      ref={dropdownRef}
+      className="absolute z-[100] bg-white border-2 border-indigo-500 rounded-lg shadow-2xl w-[280px] animate-in fade-in zoom-in-95 duration-200 overflow-hidden"
+      style={{ 
+        top: '50%',
+        left: '50%',
+        transform: 'translate(-50%, -50%)',
+        position: 'fixed'
+      }}
+    >
+      <div className="p-3 border-b border-gray-100 bg-indigo-50/50 flex items-center justify-between">
+        <span className="text-[0.7rem] font-black uppercase text-indigo-900 tracking-wider">Select Playlist</span>
+        <div className="flex items-center gap-2">
+          {isUpdating && (
+            <div className="w-4 h-4 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin"></div>
+          )}
+          <button onClick={onCancel} className="text-gray-400 hover:text-red-500 transition-colors">
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+      </div>
+
+      <div className="p-2 bg-gray-50/50 space-y-2">
+        {/* Search */}
+        <div className="relative">
+          <svg className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+          </svg>
+          <input
+            autoFocus
+            type="text"
+            placeholder="Search playlists..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="w-full pl-8 pr-3 py-1.5 text-[0.7rem] font-bold border-2 border-gray-200 rounded-md focus:border-indigo-500 outline-none transition-all bg-white"
+          />
+        </div>
+
+        {/* Sorting Controls */}
+        <div className="flex items-center gap-1.5 px-1">
+          <span className="text-[0.6rem] font-black text-gray-400 uppercase">Sort By:</span>
+          <button 
+            onClick={() => setSortBy('name')}
+            className={`text-[0.6rem] font-black px-2 py-0.5 rounded uppercase transition-all ${sortBy === 'name' ? 'bg-indigo-600 text-white' : 'bg-gray-200 text-gray-500 hover:bg-gray-300'}`}
+          >
+            Name
+          </button>
+          <button 
+            onClick={() => setSortBy('genre')}
+            className={`text-[0.6rem] font-black px-2 py-0.5 rounded uppercase transition-all ${sortBy === 'genre' ? 'bg-indigo-600 text-white' : 'bg-gray-200 text-gray-500 hover:bg-gray-300'}`}
+          >
+            Genre
+          </button>
+        </div>
+      </div>
+
+      <div className="max-h-[300px] overflow-y-auto p-1 bg-white custom-scrollbar">
+        {isUpdating ? (
+          <div className="py-20 flex flex-col items-center justify-center space-y-3">
+            <div className="w-8 h-8 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin"></div>
+            <span className="text-[0.7rem] font-black text-indigo-900 uppercase animate-pulse">Updating Assignment...</span>
+          </div>
+        ) : filteredPlaylists.length > 0 ? (
+          filteredPlaylists.map((p) => (
+            <button
+              key={p.id}
+              onClick={() => onSelect(p.id)}
+              className={`w-full text-left px-3 py-2 rounded-md transition-all flex flex-col gap-0.5 mb-1 group ${
+                currentValue === p.id 
+                  ? 'bg-indigo-600 text-white shadow-lg scale-[0.98]' 
+                  : 'hover:bg-indigo-50 text-gray-700 hover:translate-x-1'
+              }`}
+            >
+              <div className="flex items-center justify-between w-full">
+                <span className={`text-[0.75rem] font-black ${currentValue === p.id ? 'text-white' : 'text-indigo-900 group-hover:text-indigo-600'}`}>
+                  {p.name}
+                </span>
+                {currentValue === p.id && (
+                  <svg className="w-3.5 h-3.5 text-white animate-in zoom-in-50 duration-300" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                  </svg>
+                )}
+              </div>
+              {p.genre && (
+                <span className={`text-[0.6rem] uppercase font-black tracking-tighter ${currentValue === p.id ? 'text-indigo-200' : 'text-gray-400 group-hover:text-indigo-400'}`}>
+                  {p.genre}
+                </span>
+              )}
+            </button>
+          ))
+        ) : (
+          <div className="py-12 flex flex-col items-center justify-center text-gray-400 bg-gray-50/30 rounded-lg border-2 border-dashed border-gray-100 m-2">
+            <svg className="w-8 h-8 mb-2 opacity-20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+            </svg>
+            <span className="text-[0.7rem] font-bold italic">No matching playlists</span>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
 
 const ActiveCampaigns: React.FC = () => {
   const router = useRouter();
@@ -258,8 +420,15 @@ const ActiveCampaigns: React.FC = () => {
   
   // Copy link feedback state - tracks which campaigns have been copied recently
   const [copiedStates, setCopiedStates] = useState<{[key: string]: boolean}>({});
+  // Track the absolute last song that was copied
+  const [lastCopiedId, setLastCopiedId] = useState<string | null>(null);
   // Animation state for re-copy feedback
   const [copyAnimating, setCopyAnimating] = useState<string | null>(null);
+  
+  // Track updating state for playlist assignments
+  const [updatingPlaylistId, setUpdatingPlaylistId] = useState<{campaignId: string, index: number} | null>(null);
+  // Track recently updated playlists for green feedback
+  const [recentlyUpdated, setRecentlyUpdated] = useState<{[key: string]: boolean}>({});
   
 
   useEffect(() => {
@@ -353,8 +522,15 @@ const ActiveCampaigns: React.FC = () => {
       setCopyAnimating(campaignId);
       setTimeout(() => setCopyAnimating(null), 300);
       
-      // Clear all other copied states and set only this one
-      setCopiedStates({ [campaignId]: true });
+      // Set copied state to true
+      setCopiedStates(prev => ({ ...prev, [campaignId]: true }));
+      // Set this as the absolute last copied ID
+      setLastCopiedId(campaignId);
+      
+      // Revert after 5 seconds
+      setTimeout(() => {
+        setCopiedStates(prev => ({ ...prev, [campaignId]: false }));
+      }, 5000);
       
     } catch (error) {
       console.error('Failed to copy to clipboard:', error);
@@ -485,6 +661,7 @@ const ActiveCampaigns: React.FC = () => {
 
   const updatePlaylistAssignment = async (campaignId: string, playlistIndex: number, newPlaylistId: string) => {
     try {
+      setUpdatingPlaylistId({ campaignId, index: playlistIndex });
       const response = await fetch('/api/marketing-manager/update-playlist-assignment', {
         method: 'POST',
         headers: {
@@ -495,33 +672,35 @@ const ActiveCampaigns: React.FC = () => {
 
       if (response.ok) {
         // Refresh campaigns data
-        fetchCampaigns();
+        await fetchCampaigns();
+        
+        // Show success feedback
+        const updateKey = `${campaignId}-${playlistIndex}`;
+        setRecentlyUpdated(prev => ({ ...prev, [updateKey]: true }));
+        
         setEditingPlaylist(null);
+        
+        // Revert feedback after 3 seconds
+        setTimeout(() => {
+          setRecentlyUpdated(prev => {
+            const newState = { ...prev };
+            delete newState[updateKey];
+            return newState;
+          });
+        }, 3000);
         
         // Dispatch event to notify SystemSettings to refresh current placements
         const event = new CustomEvent('playlistAssignmentUpdated', {
           detail: { campaignId, playlistIndex, newPlaylistId }
         });
         window.dispatchEvent(event);
-        console.log(`🔄 PLAYLIST-UPDATE: 🎯 DISPATCHED playlistAssignmentUpdated event for campaign ${campaignId}`, {
-          campaignId,
-          playlistIndex,
-          newPlaylistId,
-          eventType: 'playlistAssignmentUpdated'
-        });
-        
-        // TEST: Verify event listeners are working by logging all event listeners on window
-        console.log(`🔄 PLAYLIST-UPDATE: 🧪 DEBUG - Active event listeners on window:`, Object.keys(window as any));
-        
-        // TEST: Try to manually verify the event is dispatched
-        setTimeout(() => {
-          console.log(`🔄 PLAYLIST-UPDATE: 🧪 DEBUG - Event should have been processed by now`);
-        }, 100);
       } else {
         console.error('Failed to update playlist assignment:', response.statusText);
       }
     } catch (error) {
       console.error('Error updating playlist assignment:', error);
+    } finally {
+      setUpdatingPlaylistId(null);
     }
   };
 
@@ -571,6 +750,16 @@ const ActiveCampaigns: React.FC = () => {
       default:
         return 'bg-gray-100 text-gray-800 border-gray-200';
     }
+  };
+
+  const getPackageStyles = (packageName: string) => {
+    const name = packageName.toUpperCase();
+    if (name.includes('LEGENDARY')) return { color: 'text-amber-600', bg: 'bg-amber-50', border: 'border-amber-200', icon: '✨' };
+    if (name.includes('UNSTOPPABLE')) return { color: 'text-rose-600', bg: 'bg-rose-50', border: 'border-rose-200', icon: '🚀' };
+    if (name.includes('DOMINATE')) return { color: 'text-indigo-600', bg: 'bg-indigo-50', border: 'border-indigo-200', icon: '🏆' };
+    if (name.includes('MOMENTUM')) return { color: 'text-sky-600', bg: 'bg-sky-50', border: 'border-sky-200', icon: '⚡' };
+    if (name.includes('BREAKTHROUGH')) return { color: 'text-emerald-600', bg: 'bg-emerald-50', border: 'border-emerald-200', icon: '💎' };
+    return { color: 'text-slate-600', bg: 'bg-slate-50', border: 'border-slate-200', icon: '📦' };
   };
 
   const ProgressBar: React.FC<{ current: number; total: number; color: string }> = ({ current, total, color }) => {
@@ -746,11 +935,8 @@ const ActiveCampaigns: React.FC = () => {
               <table className="min-w-max divide-y divide-gray-200">
               <thead className="bg-gray-50 sticky top-0 z-10">
                 <tr>
-                  <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" style={{ minWidth: '140px' }}>Order #</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-28">Order Date</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" style={{ width: '16ch' }}>Song</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-24">Genre</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-32">Package</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" style={{ width: '260px' }}>Order Info</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-36">Package</th>
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-64">Playlist Assignments</th>
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-36">Direct Progress</th>
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-36">Playlist Progress</th>
@@ -788,174 +974,251 @@ const ActiveCampaigns: React.FC = () => {
                     id={`campaign-${campaign.orderNumber}`} 
                     className={`${rowBgColor} ${isNewOrder ? 'border-t-2 border-gray-400' : 'border-t border-gray-200'}`}
                   >
-                    <td className="px-3 py-4 whitespace-nowrap relative" style={{ minWidth: '140px' }}>
-                      {/* Filled triangle chevron on the separator line for new orders */}
-                      {isNewOrder && (
-                        <svg 
-                          className="text-gray-400 absolute" 
-                          style={{ width: '7px', height: '7px', left: '0px', top: '-4.5px' }} 
-                          viewBox="0 0 10 10" 
-                          fill="currentColor"
-                        >
-                          <polygon points="0,0 10,5 0,10" />
-                        </svg>
-                      )}
-                      <div className="flex items-center gap-1">
-                        <button
-                          onClick={() => handleOrderNumberClick(campaign.orderId)}
-                          className="text-indigo-600 hover:text-indigo-900 font-medium"
-                        >
-                          {campaign.orderNumber}
-                        </button>
-                        {campaign.songNumber && (
-                          <>
-                            <span className="text-gray-400">-</span>
-                            <span className={`inline-flex items-center px-2 py-0.5 text-xs font-medium border rounded-full ${badgeBgColor}`}>
-                              Song {campaign.songNumber}
-                            </span>
-                          </>
-                        )}
-                      </div>
-                    </td>
-                    <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-900 w-28">
-                      {new Date(campaign.orderDate).toLocaleDateString()}
-                    </td>
-                    <td className="px-4 py-4" style={{ width: '16ch' }}>
-                      <div className="space-y-1">
-                        <div 
-                          className="text-sm text-gray-900 overflow-hidden" 
-                          style={{
-                            display: '-webkit-box',
-                            WebkitLineClamp: 2,
-                            WebkitBoxOrient: 'vertical',
-                            lineHeight: '1.2',
-                            maxHeight: '2.4em'
-                          }}
-                          title={campaign.songName}
-                        >
-                          {campaign.songName}
-                        </div>
-                        <button
-                          onClick={() => copyToClipboard(campaign.songLink, campaign.id)}
-                          className={`text-xs px-1.5 py-0.5 rounded transition-all duration-200 ease-in-out ${
-                            copiedStates[campaign.id] 
-                              ? 'bg-green-100 text-green-700 hover:bg-green-200' 
-                              : 'text-indigo-600 hover:text-indigo-800 bg-indigo-50 hover:bg-indigo-100'
-                          } ${copyAnimating === campaign.id ? 'scale-110 ring-2 ring-green-400' : ''}`}
-                          title="Copy link to clipboard"
-                          style={{ transform: copyAnimating === campaign.id ? 'scale(1.1)' : 'scale(1)' }}
-                        >
-                          {copiedStates[campaign.id] ? 'Copied!' : 'copy link'}
-                        </button>
-                      </div>
-                    </td>
-                    <td className="px-4 py-4 whitespace-nowrap text-xs text-gray-900 w-24">
-                      {editingGenre?.campaignId === campaign.id ? (
-                        <div className="flex items-center space-x-1 w-full">
-                          <select
-                            defaultValue={campaign.userGenre || 'General'}
-                            onChange={(e) => updateGenre(campaign.id, e.target.value)}
-                            className="text-xs border border-gray-300 rounded px-1 py-1 flex-1 min-w-0"
-                          >
-                            {MUSIC_GENRES.map(genre => (
-                              <option key={genre} value={genre}>{genre}</option>
-                            ))}
-                          </select>
+                    <td className="px-4 py-4" style={{ width: '260px' }}>
+                      <div className={`bg-white rounded-lg shadow-sm border border-gray-200 p-2.5 relative flex flex-col gap-1.5 w-[220px] ${(campaign.songNumber || lastCopiedId === campaign.id) ? 'pb-7' : ''}`}>
+                        {/* Order Info - Top Right Corner */}
+                        <div className="absolute top-2 right-2 text-right flex flex-col items-end z-10">
                           <button
-                            onClick={() => setEditingGenre(null)}
-                            className="text-xs text-gray-500 hover:text-gray-700 px-1"
+                            onClick={() => handleOrderNumberClick(campaign.orderId)}
+                            className="text-indigo-600 hover:text-indigo-900 font-bold text-[0.75rem] block leading-none"
                           >
-                            ✕
+                            #{campaign.orderNumber}
                           </button>
+                          <span className="text-[0.55rem] font-medium text-gray-400 mt-0.5 leading-none">
+                            {new Date(campaign.orderDate).toLocaleDateString()}
+                          </span>
                         </div>
-                      ) : (
-                        <button
-                          onClick={() => setEditingGenre({ campaignId: campaign.id })}
-                          className="text-xs text-blue-600 hover:text-blue-800 bg-blue-50 px-2 py-1 rounded truncate w-full text-left"
-                          title="Click to edit genre"
-                        >
-                          {campaign.userGenre || 'Unknown'}
-                        </button>
-                      )}
-                    </td>
-                    <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-900 w-32">
-                      {campaign.packageName}
-                    </td>
-                    <td className="px-4 py-4 w-64">
-                      <div className="space-y-1">
-                        {campaign.playlistAssignments && campaign.playlistAssignments.length > 0 ? (
-                          campaign.playlistAssignments.map((playlist, index) => (
-                            <div key={index} className="flex items-center space-x-1">
-                              {editingPlaylist?.campaignId === campaign.id && editingPlaylist?.playlistIndex === index ? (
-                                <div className="flex items-center space-x-1 w-full">
+
+                        <div className="flex items-start gap-2">
+                          {/* Song Image Thumbnail */}
+                          <div className="flex-shrink-0">
+                            {campaign.songImage ? (
+                              <img 
+                                src={campaign.songImage} 
+                                alt={campaign.songName} 
+                                className="w-10 h-10 rounded-md object-cover shadow-sm border border-gray-100"
+                              />
+                            ) : (
+                              <div className="w-10 h-10 rounded-md bg-gray-100 flex items-center justify-center border border-gray-200 text-gray-400">
+                                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3" />
+                                </svg>
+                              </div>
+                            )}
+                          </div>
+
+                          <div className="flex-1 min-w-0 pr-12">
+                            {/* Song Title */}
+                            <h3 
+                              className="text-[0.85rem] font-bold text-gray-900 leading-tight truncate"
+                              title={campaign.songName}
+                            >
+                              {campaign.songName}
+                            </h3>
+
+                            {/* Genre Pill - Under Song Title (Constant Color) */}
+                            <div className="mt-1">
+                              {editingGenre?.campaignId === campaign.id ? (
+                                <div className="flex items-center space-x-1">
                                   <select
-                                    defaultValue={playlist.id}
-                                    onChange={(e) => updatePlaylistAssignment(campaign.id, index, e.target.value)}
-                                    className="text-xs border border-gray-300 rounded px-1 py-1 flex-1 min-w-0"
+                                    defaultValue={campaign.userGenre || 'General'}
+                                    onChange={(e) => updateGenre(campaign.id, e.target.value)}
+                                    className="text-[0.6rem] border border-gray-300 rounded px-1 py-0.5 bg-white"
                                   >
-                                    <option value="removed">✅ Removed</option>
-                                    <option value="empty">📭 -Empty-</option>
-                                    {availablePlaylists.map(p => (
-                                      <option key={p.id} value={p.id}>{p.name} ({p.genre})</option>
+                                    {MUSIC_GENRES.map(genre => (
+                                      <option key={genre} value={genre}>{genre}</option>
                                     ))}
                                   </select>
-                                  <button
-                                    onClick={() => setEditingPlaylist(null)}
-                                    className="text-xs text-gray-500 hover:text-gray-700 px-1"
-                                  >
-                                    ✕
-                                  </button>
+                                  <button onClick={() => setEditingGenre(null)} className="text-[0.6rem] text-gray-500 hover:text-gray-700">✕</button>
                                 </div>
                               ) : (
                                 <button
-                                  onClick={() => setEditingPlaylist({ campaignId: campaign.id, playlistIndex: index })}
-                                  className={`text-xs px-2 py-1 rounded truncate w-full text-left ${
-                                    playlist.id === 'removed' 
-                                      ? 'text-green-600 hover:text-green-800 bg-green-50'
-                                      : 'text-indigo-600 hover:text-indigo-800 bg-indigo-50'
-                                  }`}
-                                  title={playlist.id === 'removed' ? '✅ Removed' : playlist.name}
+                                  onClick={() => setEditingGenre({ campaignId: campaign.id })}
+                                  className="inline-flex px-2 py-0.5 rounded-full text-[0.6rem] font-black uppercase tracking-wider border bg-gray-50 text-gray-600 border-gray-200 hover:bg-gray-100 transition-colors shadow-sm"
                                 >
-                                  {playlist.id === 'removed' ? '✅ Removed' : playlist.name}
+                                  {campaign.userGenre || 'Unknown'}
                                 </button>
                               )}
                             </div>
-                          ))
-                        ) : (
-                          <div className="space-y-1">
-                            <div className="text-xs text-gray-400 italic mb-1">No assignments</div>
-                            {editingPlaylist?.campaignId === campaign.id && editingPlaylist?.playlistIndex === 0 ? (
-                              <div className="flex items-center space-x-1 w-full">
-                                <select
-                                  defaultValue="empty"
-                                  onChange={(e) => {
-                                    updatePlaylistAssignment(campaign.id, 0, e.target.value);
-                                  }}
-                                  className="text-xs border border-gray-300 rounded px-1 py-1 flex-1 min-w-0"
+                          </div>
+                        </div>
+
+                        {/* Bottom Section */}
+                        <div className="flex flex-col gap-1.5 mt-0.5">
+                          <div className="relative">
+                            {/* Copy Button - Smaller */}
+                            <button
+                              onClick={() => copyToClipboard(campaign.songLink, campaign.id)}
+                              className={`w-full py-1.5 rounded font-bold text-[0.7rem] transition-all duration-200 flex items-center justify-center gap-1.5 shadow-sm ${
+                                copiedStates[campaign.id] 
+                                  ? 'bg-green-600 text-white' 
+                                  : 'bg-indigo-600 text-white hover:bg-indigo-700 active:scale-95'
+                              } ${copyAnimating === campaign.id ? 'ring-2 ring-green-400' : ''}`}
+                            >
+                              {copiedStates[campaign.id] ? (
+                                <>
+                                  <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                                  </svg>
+                                  COPIED!
+                                </>
+                              ) : (
+                                <>
+                                  <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3" />
+                                  </svg>
+                                  COPY LINK
+                                </>
+                              )}
+                            </button>
+                          </div>
+                        </div>
+
+                        {/* Status Badges Row - Bottom Left and Right */}
+                        <div className="absolute bottom-0 left-0 right-0 flex justify-between items-end leading-none pointer-events-none">
+                          {/* "Copied Last" Badge - Bottom Left Flush */}
+                          <div className="h-5 flex items-end">
+                            <AnimatePresence>
+                              {lastCopiedId === campaign.id && !copiedStates[campaign.id] && (
+                                <motion.div
+                                  initial={{ opacity: 0, y: 10 }}
+                                  animate={{ opacity: 1, y: 0 }}
+                                  exit={{ opacity: 0, y: 10 }}
+                                  transition={{ duration: 0.4, ease: "easeInOut" }}
+                                  className="pointer-events-auto"
                                 >
-                                  <option value="empty">📭 -Empty-</option>
-                                  {availablePlaylists.map(p => (
-                                    <option key={p.id} value={p.id}>{p.name} ({p.genre})</option>
-                                  ))}
-                                </select>
-                                <button
-                                  onClick={() => setEditingPlaylist(null)}
-                                  className="text-xs text-gray-500 hover:text-gray-700 px-1"
-                                >
-                                  ✕
-                                </button>
-                              </div>
-                            ) : (
-                              <button
-                                onClick={() => setEditingPlaylist({ campaignId: campaign.id, playlistIndex: 0 })}
-                                className="text-xs px-2 py-1 rounded bg-indigo-50 text-indigo-600 hover:text-indigo-800 hover:bg-indigo-100 w-full text-left"
-                                title="Click to add playlist assignment"
-                              >
-                                + Add Playlist
-                              </button>
+                                  <span className="inline-flex items-center px-2 py-0.5 text-[0.55rem] font-black bg-orange-400 text-white uppercase tracking-wider border-t border-r rounded-tr-md shadow-inner">
+                                    Copied Last
+                                  </span>
+                                </motion.div>
+                              )}
+                            </AnimatePresence>
+                          </div>
+
+                          {/* Song Number Badge - Bottom Right Flush (Alternating Color) */}
+                          <div className="h-5 flex items-end">
+                            {campaign.songNumber && (
+                              <span className={`inline-flex items-center px-2 py-0.5 text-[0.6rem] font-black uppercase border-t border-l rounded-tl-md shadow-inner ${badgeBgColor}`}>
+                                Song {campaign.songNumber}
+                              </span>
                             )}
                           </div>
-                        )}
+                        </div>
+                      </div>
+                    </td>
+                    <td className="px-4 py-4 whitespace-nowrap w-36">
+                      {(() => {
+                        const styles = getPackageStyles(campaign.packageName);
+                        return (
+                          <div className={`rounded-lg border-2 ${styles.bg} ${styles.border} px-2.5 py-1.5 shadow-sm flex items-center gap-2 w-fit mx-auto`}>
+                            <div className={`flex-shrink-0 ${styles.color}`}>
+                              {styles.icon === '📦' ? (
+                                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+                                </svg>
+                              ) : (
+                                <span className="text-[0.75rem] leading-none">{styles.icon}</span>
+                              )}
+                            </div>
+                            <span className={`text-[0.78rem] font-black uppercase tracking-tight leading-none ${styles.color}`}>
+                              {campaign.packageName}
+                            </span>
+                          </div>
+                        );
+                      })()}
+                    </td>
+                    <td className="px-4 py-4 w-64">
+                      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-2.5 min-h-[90px] w-full flex flex-col justify-center overflow-hidden">
+                        <div className="space-y-1.5 w-full">
+                          {campaign.playlistAssignments && campaign.playlistAssignments.length > 0 ? (
+                            campaign.playlistAssignments.map((playlist, index) => (
+                              <div key={index} className="flex items-center group w-full">
+                                {editingPlaylist?.campaignId === campaign.id && editingPlaylist?.playlistIndex === index ? (
+                                  <div className="w-full">
+                                    <PlaylistSelector
+                                      currentValue={playlist.id}
+                                      playlists={availablePlaylists}
+                                      onSelect={(val) => updatePlaylistAssignment(campaign.id, index, val)}
+                                      onCancel={() => setEditingPlaylist(null)}
+                                      isUpdating={updatingPlaylistId?.campaignId === campaign.id && updatingPlaylistId?.index === index}
+                                    />
+                                    {/* Ghost button to maintain layout while dropdown is open */}
+                                    <div className="text-[0.72rem] font-bold px-2.5 py-1.5 rounded-md truncate w-full text-left border-2 border-indigo-100 bg-indigo-50/50 text-indigo-300 opacity-50 flex items-center justify-between">
+                                      <span className="truncate">{playlist.id === 'removed' ? '✅ Removed' : playlist.name}</span>
+                                      {updatingPlaylistId?.campaignId === campaign.id && updatingPlaylistId?.index === index && (
+                                        <div className="w-3 h-3 border-2 border-indigo-400 border-t-transparent rounded-full animate-spin"></div>
+                                      )}
+                                    </div>
+                                  </div>
+                                  ) : (
+                                  <button
+                                    onClick={() => setEditingPlaylist({ campaignId: campaign.id, playlistIndex: index })}
+                                    className={`text-[0.72rem] font-bold px-2.5 py-1.5 rounded-md truncate w-full text-left transition-all border-2 ${
+                                      recentlyUpdated[`${campaign.id}-${index}`]
+                                        ? 'text-green-700 bg-green-100 border-green-400 scale-[1.02] shadow-sm'
+                                        : playlist.id === 'removed' 
+                                        ? 'text-green-700 bg-green-50 border-green-50 hover:border-green-200'
+                                        : 'text-indigo-700 bg-indigo-50 border-indigo-50 hover:border-indigo-200'
+                                    }`}
+                                    title={playlist.id === 'removed' ? '✅ Removed' : playlist.name}
+                                  >
+                                    <div className="flex items-center justify-between">
+                                      <span className="truncate">
+                                        {playlist.id === 'removed' ? '✅ Removed' : playlist.name}
+                                      </span>
+                                      {recentlyUpdated[`${campaign.id}-${index}`] ? (
+                                        <svg className="w-3.5 h-3.5 text-green-600 animate-in zoom-in-50 duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                                        </svg>
+                                      ) : (
+                                        <svg className="w-3 h-3 opacity-0 group-hover:opacity-100 transition-opacity ml-1.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                                        </svg>
+                                      )}
+                                    </div>
+                                  </button>
+                                )}
+                              </div>
+                            ))
+                          ) : (
+                            <div className="space-y-1.5 w-full">
+                              <div className="text-[0.7rem] text-gray-400 font-medium italic mb-1 text-center">No assignments</div>
+                              {editingPlaylist?.campaignId === campaign.id && editingPlaylist?.playlistIndex === 0 ? (
+                                <div className="w-full">
+                                  <PlaylistSelector
+                                    currentValue="empty"
+                                    playlists={availablePlaylists}
+                                    onSelect={(val) => updatePlaylistAssignment(campaign.id, 0, val)}
+                                    onCancel={() => setEditingPlaylist(null)}
+                                    isUpdating={updatingPlaylistId?.campaignId === campaign.id && updatingPlaylistId?.index === 0}
+                                  />
+                                  {/* Ghost button */}
+                                  <div className="text-[0.72rem] font-bold px-3 py-2 rounded-md bg-indigo-100 text-indigo-300 opacity-50 flex items-center justify-center gap-1.5 w-full uppercase tracking-wider">
+                                    {updatingPlaylistId?.campaignId === campaign.id && updatingPlaylistId?.index === 0 ? (
+                                      <div className="w-3.5 h-3.5 border-2 border-indigo-400 border-t-transparent rounded-full animate-spin"></div>
+                                    ) : (
+                                      <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M12 4v16m8-8H4" />
+                                      </svg>
+                                    )}
+                                    Add Playlist
+                                  </div>
+                                </div>
+                              ) : (
+                                <button
+                                  onClick={() => setEditingPlaylist({ campaignId: campaign.id, playlistIndex: 0 })}
+                                  className="text-[0.72rem] font-black px-3 py-2 rounded-md bg-indigo-600 text-white hover:bg-indigo-700 transition-all shadow flex items-center justify-center gap-1.5 w-full uppercase tracking-wider"
+                                  title="Click to add playlist assignment"
+                                >
+                                  <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M12 4v16m8-8H4" />
+                                  </svg>
+                                  Add Playlist
+                                </button>
+                              )}
+                            </div>
+                          )}
+                        </div>
                       </div>
                     </td>
                     <td className="px-4 py-4 w-36">

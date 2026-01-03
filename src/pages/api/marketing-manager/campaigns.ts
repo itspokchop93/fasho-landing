@@ -314,7 +314,7 @@ async function handler(req: NextApiRequest, res: NextApiResponse, adminUser: Adm
         time_on_playlists,
         created_at,
         updated_at,
-        orders!inner(created_at, status, billing_info)
+        orders!inner(created_at, status, billing_info, order_items(track_title, track_image_url))
       `)
       .neq('orders.status', 'cancelled')
       .order('created_at', { ascending: false });
@@ -439,7 +439,7 @@ async function handler(req: NextApiRequest, res: NextApiResponse, adminUser: Adm
         time_on_playlists,
         created_at,
         updated_at,
-        orders!inner(created_at, status, billing_info)
+        orders!inner(created_at, status, billing_info, order_items(track_title, track_image_url))
       `)
       .neq('orders.status', 'cancelled')
       .order('created_at', { ascending: false });
@@ -536,6 +536,14 @@ async function handler(req: NextApiRequest, res: NextApiResponse, adminUser: Adm
         ? orderCampaigns.findIndex(c => c.id === campaign.id) + 1 
         : null;
 
+      // Find the corresponding track image from order_items
+      const orderItems = (campaign.orders as any)?.order_items || [];
+      const matchingItem = orderItems.find((item: any) => 
+        item.track_title.toLowerCase() === campaign.song_name.toLowerCase()
+      ) || orderItems[0]; // Fallback to first item if no exact match
+      
+      const songImage = matchingItem?.track_image_url || null;
+
       return {
         id: campaign.id,
         orderNumber: campaign.order_number,
@@ -544,6 +552,7 @@ async function handler(req: NextApiRequest, res: NextApiResponse, adminUser: Adm
         customerName: campaign.customer_name,
         songName: campaign.song_name,
         songLink: campaign.song_link,
+        songImage: songImage,
         songNumber: songNumber,
         packageName: campaign.package_name,
         userGenre: userGenre,
