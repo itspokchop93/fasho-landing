@@ -11,7 +11,7 @@ interface ConfirmationModalProps {
   onConfirm: () => void;
   onCancel: () => void;
   position: { top: number; left: number } | null;
-  buttonType: 'direct-streams' | 'playlists-added' | 'de-playlisted';
+  buttonType: 'direct-streams' | 'playlists-added' | 'de-playlisted' | 'manual-override';
 }
 
 const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
@@ -64,6 +64,12 @@ const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
           confirm: 'bg-red-600 hover:bg-red-700 text-white',
           border: 'border-red-200',
           accent: 'text-red-600'
+        };
+      case 'manual-override':
+        return {
+          confirm: 'bg-gray-600 hover:bg-gray-700 text-white',
+          border: 'border-gray-300',
+          accent: 'text-gray-600'
         };
       default:
         return {
@@ -419,7 +425,7 @@ const ActiveCampaigns: React.FC = () => {
     isOpen: boolean;
     message: string;
     campaignId: string;
-    action: 'direct-streams' | 'playlists-added' | 'de-playlisted';
+    action: 'direct-streams' | 'playlists-added' | 'de-playlisted' | 'manual-override';
     position: { top: number; left: number } | null;
   }>({
     isOpen: false,
@@ -445,8 +451,9 @@ const ActiveCampaigns: React.FC = () => {
   const [smmApiModal, setSmmApiModal] = useState<{
     isOpen: boolean;
     campaignId: string;
-    campaignInfo: { orderNumber: string; songName: string; packageName: string } | null;
+    campaignInfo: { orderNumber: string; songName: string; packageName: string; songImage?: string | null } | null;
     status: 'confirm' | 'submitting' | 'success' | 'partial' | 'error';
+    isRetryMode: boolean;
     results: Array<{
       orderSetId: string;
       serviceId: string;
@@ -459,25 +466,65 @@ const ActiveCampaigns: React.FC = () => {
     totalCount: number;
     errorMessage: string;
     newBalance: string | null;
+    // Receipt preview data
+    loadingPreview: boolean;
+    orderSetsPreview: Array<{
+      id: string;
+      serviceId: string;
+      quantity: number;
+      dripRuns: number | null;
+      totalStreams: number;
+      setCost: number;
+    }>;
+    currentBalance: string | null;
+    totalCost: number;
+    totalStreams: number;
   }>({
     isOpen: false,
     campaignId: '',
     campaignInfo: null,
     status: 'confirm',
+    isRetryMode: false,
     results: [],
     successCount: 0,
     totalCount: 0,
     errorMessage: '',
     newBalance: null,
+    // Receipt preview data
+    loadingPreview: true,
+    orderSetsPreview: [],
+    currentBalance: null,
+    totalCost: 0,
+    totalStreams: 0,
   });
 
+  // Track campaigns with failed SMM submissions
+  const [campaignsWithFailedSmm, setCampaignsWithFailedSmm] = useState<Record<string, {
+    hasSubmissions: boolean;
+    hasFailures: boolean;
+    allSuccess: boolean;
+    submissions: Array<{
+      orderSetId: string;
+      serviceId: string;
+      quantity: number;
+      success: boolean;
+      followizOrderId?: number;
+      error?: string;
+    }>;
+  }>>({});
+
   useEffect(() => {
-    fetchCampaigns();
-    fetchAvailablePlaylists();
+    // Initial load - always fetch SMM status to restore any failure states from DB
+    const initializeData = async () => {
+      await fetchCampaigns(false); // Fetch campaigns AND SMM status
+      fetchAvailablePlaylists();
+    };
+    initializeData();
     
     // Set up real-time updates every 60 seconds
+    // Pass true to skip SMM fetch since we want to preserve any existing failure states in memory
     intervalRef.current = setInterval(() => {
-      fetchCampaigns();
+      fetchCampaigns(true);
     }, 60000);
 
     return () => {
@@ -528,12 +575,29 @@ const ActiveCampaigns: React.FC = () => {
     setCurrentPage(1);
   }, [searchTerm, filterStatus, sortBy]);
 
-  const fetchCampaigns = async () => {
+  const fetchCampaigns = async (skipSmmStatusFetch: boolean = false) => {
+    console.log('🔄 [Frontend] fetchCampaigns called, skipSmmStatusFetch:', skipSmmStatusFetch);
     try {
       const response = await fetch('/api/marketing-manager/campaigns');
       if (response.ok) {
         const campaignsData = await response.json();
         setCampaigns(campaignsData);
+        
+        // Fetch SMM submission status for campaigns that haven't completed direct streams
+        if (!skipSmmStatusFetch) {
+          const campaignsNeedingCheck = campaignsData
+            .filter((c: any) => !c.direct_streams_confirmed)
+            .map((c: any) => c.id);
+          
+          console.log('📋 [Frontend] Campaigns needing SMM check:', campaignsNeedingCheck.length, 'out of', campaignsData.length, 'total');
+          
+          if (campaignsNeedingCheck.length > 0) {
+            // Await the SMM status fetch to ensure state is set before render
+            await fetchSmmSubmissionStatus(campaignsNeedingCheck);
+          } else {
+            console.log('⚠️ [Frontend] No campaigns need SMM status check (all have direct_streams_confirmed=true)');
+          }
+        }
       } else {
         console.error('Failed to fetch campaigns:', response.statusText);
       }
@@ -541,6 +605,45 @@ const ActiveCampaigns: React.FC = () => {
       console.error('Error fetching campaigns:', error);
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const fetchSmmSubmissionStatus = async (campaignIds: string[]) => {
+    console.log('🔍 [Frontend] Fetching SMM status for', campaignIds.length, 'campaigns');
+    try {
+      // Batch in groups of 50 to avoid URL length issues
+      const batchSize = 50;
+      const allStatusData: Record<string, any> = {};
+      
+      for (let i = 0; i < campaignIds.length; i += batchSize) {
+        const batch = campaignIds.slice(i, i + batchSize);
+        const response = await fetch(`/api/marketing-manager/smm-panel/submission-status?campaignIds=${batch.join(',')}`);
+        
+        if (response.ok) {
+          const statusData = await response.json();
+          console.log('📊 [Frontend] Received SMM status data:', statusData);
+          
+          // Log campaigns with failures
+          const withFailures = Object.entries(statusData).filter(([_, v]: [string, any]) => v.hasFailures);
+          if (withFailures.length > 0) {
+            console.log('⚠️ [Frontend] Found', withFailures.length, 'campaigns with failures:', withFailures.map(([id]) => id));
+          }
+          
+          Object.assign(allStatusData, statusData);
+        } else {
+          console.error('❌ [Frontend] Failed to fetch SMM status:', response.status, response.statusText);
+        }
+      }
+      
+      // Set all data at once to avoid multiple re-renders
+      console.log('💾 [Frontend] Setting campaignsWithFailedSmm state with', Object.keys(allStatusData).length, 'campaigns');
+      setCampaignsWithFailedSmm(prev => {
+        const newState = { ...prev, ...allStatusData };
+        console.log('📋 [Frontend] New campaignsWithFailedSmm state has', Object.keys(newState).length, 'entries');
+        return newState;
+      });
+    } catch (error) {
+      console.error('❌ [Frontend] Error fetching SMM submission status:', error);
     }
   };
 
@@ -585,11 +688,12 @@ const ActiveCampaigns: React.FC = () => {
     window.open(`/admin/order/${orderId}`, '_blank');
   };
 
-  const showConfirmationModal = (campaignId: string, action: 'direct-streams' | 'playlists-added' | 'de-playlisted', event: React.MouseEvent) => {
+  const showConfirmationModal = (campaignId: string, action: 'direct-streams' | 'playlists-added' | 'de-playlisted' | 'manual-override', event: React.MouseEvent) => {
     const actionMessages = {
       'direct-streams': 'Confirm that you have purchased direct streams for this campaign?',
       'playlists-added': 'Confirm that you have added this song to the assigned playlists?',
-      'de-playlisted': 'Confirm that you have removed this song from all playlists?'
+      'de-playlisted': 'Confirm that you have removed this song from all playlists?',
+      'manual-override': 'Confirm MANUAL completion? This will mark the direct streams as completed without API submission.'
     };
 
     // Get button position
@@ -630,22 +734,39 @@ const ActiveCampaigns: React.FC = () => {
     // Close modal first
     setConfirmationModal(prev => ({ ...prev, isOpen: false }));
     
+    // For manual-override, we treat it as direct-streams completion
+    const apiAction = action === 'manual-override' ? 'direct-streams' : action;
+    
       try {
         const response = await fetch('/api/marketing-manager/confirm-action', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
           },
-          body: JSON.stringify({ campaignId, action }),
+          body: JSON.stringify({ 
+            campaignId, 
+            action: apiAction,
+            isManualOverride: action === 'manual-override' 
+          }),
         });
 
         if (response.ok) {
+          // If manual override, clear the failed SMM state for this campaign
+          if (action === 'manual-override') {
+            setCampaignsWithFailedSmm(prev => {
+              const updated = { ...prev };
+              delete updated[campaignId];
+              return updated;
+            });
+            console.log(`✅ Manual override completed for campaign ${campaignId}`);
+          }
+          
           // Refresh campaigns data
           fetchCampaigns();
         
         // Dispatch custom event to notify ActionQueue to refresh immediately
         const event = new CustomEvent('campaignActionConfirmed', {
-          detail: { campaignId, action }
+          detail: { campaignId, action: apiAction }
         });
         window.dispatchEvent(event);
         
@@ -666,7 +787,7 @@ const ActiveCampaigns: React.FC = () => {
           }
         }
         
-        console.log(`🔄 LIVE UPDATE: Dispatched campaignActionConfirmed event for ${action} on campaign ${campaignId}`);
+        console.log(`🔄 LIVE UPDATE: Dispatched campaignActionConfirmed event for ${apiAction} on campaign ${campaignId}`);
         } else {
           console.error('Failed to confirm action:', response.statusText);
         }
@@ -679,29 +800,149 @@ const ActiveCampaigns: React.FC = () => {
     setConfirmationModal(prev => ({ ...prev, isOpen: false }));
   };
 
+  // Fetch receipt preview data (order sets and balance)
+  const fetchReceiptPreview = async (packageName: string) => {
+    try {
+      console.log('🔍 [Receipt] Fetching preview for package:', packageName);
+      
+      // Fetch order sets for this package and current balance in parallel
+      const [orderSetsRes, balanceRes] = await Promise.all([
+        fetch(`/api/marketing-manager/smm-panel/order-sets?package_name=${packageName.toUpperCase()}`),
+        fetch('/api/marketing-manager/smm-panel/balance'),
+      ]);
+
+      let orderSetsData: any[] = [];
+      let balanceData: { balance: string; currency: string } | null = null;
+
+      if (orderSetsRes.ok) {
+        const data = await orderSetsRes.json();
+        // API returns array directly, not wrapped in orderSets
+        orderSetsData = Array.isArray(data) ? data : [];
+        console.log('📦 [Receipt] Fetched', orderSetsData.length, 'order sets');
+      } else {
+        console.error('❌ [Receipt] Failed to fetch order sets:', orderSetsRes.status, orderSetsRes.statusText);
+      }
+
+      if (balanceRes.ok) {
+        balanceData = await balanceRes.json();
+        console.log('💰 [Receipt] Current balance:', balanceData?.balance);
+      } else {
+        console.error('❌ [Receipt] Failed to fetch balance:', balanceRes.status, balanceRes.statusText);
+      }
+
+      // Calculate totals
+      const orderSetsPreview = orderSetsData.map((os: any) => ({
+        id: os.id,
+        serviceId: os.service_id,
+        quantity: os.quantity,
+        dripRuns: os.drip_runs,
+        totalStreams: os.quantity * (os.drip_runs || 1),
+        setCost: parseFloat(os.set_cost) || 0,
+      }));
+
+      const totalCost = orderSetsPreview.reduce((sum: number, os: any) => sum + os.setCost, 0);
+      const totalStreams = orderSetsPreview.reduce((sum: number, os: any) => sum + os.totalStreams, 0);
+
+      console.log('📊 [Receipt] Totals - Cost:', totalCost, 'Streams:', totalStreams);
+
+      setSmmApiModal(prev => ({
+        ...prev,
+        loadingPreview: false,
+        orderSetsPreview,
+        currentBalance: balanceData?.balance || null,
+        totalCost,
+        totalStreams,
+      }));
+    } catch (error) {
+      console.error('❌ [Receipt] Error fetching receipt preview:', error);
+      setSmmApiModal(prev => ({
+        ...prev,
+        loadingPreview: false,
+      }));
+    }
+  };
+
   // SMM API Submission Handlers
-  const showSmmApiModal = (campaignId: string, campaign: Campaign) => {
-    setSmmApiModal({
-      isOpen: true,
-      campaignId,
-      campaignInfo: {
-        orderNumber: campaign.orderNumber,
-        songName: campaign.songName,
-        packageName: campaign.packageName,
-      },
-      status: 'confirm',
-      results: [],
-      errorMessage: '',
-      newBalance: null,
-    });
+  const showSmmApiModal = (campaignId: string, campaign: Campaign, isRetry: boolean = false) => {
+    const failedData = campaignsWithFailedSmm[campaignId];
+    
+    if (isRetry && failedData?.hasFailures) {
+      // Retry mode - show previous results immediately
+      const previousSubmissions = failedData.submissions.map(s => ({
+        orderSetId: s.orderSetId,
+        serviceId: s.serviceId,
+        quantity: s.quantity,
+        success: s.success,
+        followizOrderId: s.followizOrderId,
+        error: s.error,
+      }));
+      
+      const successCount = previousSubmissions.filter(s => s.success).length;
+      const totalCount = previousSubmissions.length;
+      
+      setSmmApiModal({
+        isOpen: true,
+        campaignId,
+        campaignInfo: {
+          orderNumber: campaign.orderNumber,
+          songName: campaign.songName,
+          packageName: campaign.packageName,
+          songImage: campaign.songImage,
+        },
+        status: 'partial',  // Show as partial so results display
+        isRetryMode: true,
+        results: previousSubmissions,
+        successCount,
+        totalCount,
+        errorMessage: '',
+        newBalance: null,
+        loadingPreview: false,
+        orderSetsPreview: [],
+        currentBalance: null,
+        totalCost: 0,
+        totalStreams: 0,
+      });
+    } else {
+      // Normal submission mode - start loading preview
+      setSmmApiModal({
+        isOpen: true,
+        campaignId,
+        campaignInfo: {
+          orderNumber: campaign.orderNumber,
+          songName: campaign.songName,
+          packageName: campaign.packageName,
+          songImage: campaign.songImage,
+        },
+        status: 'confirm',
+        isRetryMode: false,
+        results: [],
+        successCount: 0,
+        totalCount: 0,
+        errorMessage: '',
+        newBalance: null,
+        loadingPreview: true,
+        orderSetsPreview: [],
+        currentBalance: null,
+        totalCost: 0,
+        totalStreams: 0,
+      });
+      
+      // Fetch receipt preview data
+      fetchReceiptPreview(campaign.packageName);
+    }
   };
 
   const closeSmmApiModal = () => {
     // Only allow closing if not in submitting state
     if (smmApiModal.status !== 'submitting') {
+      // Store the current status before closing
+      const wasSuccess = smmApiModal.status === 'success';
+      
       setSmmApiModal(prev => ({ ...prev, isOpen: false }));
-      // Refresh campaigns if there was a successful submission
-      if (smmApiModal.status === 'success') {
+      
+      // Only refresh campaigns if ALL submissions were successful
+      // For partial/error, we keep the local state and don't refetch
+      if (wasSuccess) {
         fetchCampaigns();
       }
     }
@@ -711,6 +952,8 @@ const ActiveCampaigns: React.FC = () => {
     setSmmApiModal(prev => ({ ...prev, status: 'submitting' }));
 
     try {
+      console.log('🚀 [SMM Submit] Starting submission for campaign:', smmApiModal.campaignId);
+      
       const response = await fetch('/api/marketing-manager/smm-panel/submit-purchase', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -718,6 +961,31 @@ const ActiveCampaigns: React.FC = () => {
       });
 
       const result = await response.json();
+      
+      console.log('📥 [SMM Submit] API Response:', {
+        status: response.status,
+        success: result.success,
+        resultsCount: result.results?.length || 0,
+        successCount: result.successCount,
+        totalSubmitted: result.totalSubmitted,
+        error: result.error,
+      });
+
+      // Check if the API returned an error (non-200 or error in response)
+      if (!response.ok || result.error) {
+        console.error('❌ [SMM Submit] API Error:', result.error || `HTTP ${response.status}`);
+        setSmmApiModal(prev => ({
+          ...prev,
+          status: 'error',
+          isRetryMode: true,
+          results: result.results || [],
+          successCount: result.successCount || 0,
+          totalCount: result.totalSubmitted || 0,
+          newBalance: result.newBalance,
+          errorMessage: result.error || `API returned status ${response.status}`,
+        }));
+        return;
+      }
 
       const successCount = result.successCount || 0;
       const totalCount = result.totalSubmitted || 0;
@@ -731,16 +999,39 @@ const ActiveCampaigns: React.FC = () => {
       } else {
         status = 'error';
       }
+      
+      console.log('📊 [SMM Submit] Final status:', status, `(${successCount}/${totalCount})`);
 
       setSmmApiModal(prev => ({
         ...prev,
         status,
+        isRetryMode: status !== 'success',  // Keep retry mode available if not all succeeded
         results: result.results || [],
         successCount,
         totalCount,
         newBalance: result.newBalance,
         errorMessage: result.error || '',
       }));
+      
+      // Update the failed SMM tracking
+      if (status !== 'success') {
+        setCampaignsWithFailedSmm(prev => ({
+          ...prev,
+          [smmApiModal.campaignId]: {
+            hasSubmissions: true,
+            hasFailures: true,
+            allSuccess: false,
+            submissions: result.results || [],
+          }
+        }));
+      } else {
+        // Remove from failed tracking if all succeeded
+        setCampaignsWithFailedSmm(prev => {
+          const updated = { ...prev };
+          delete updated[smmApiModal.campaignId];
+          return updated;
+        });
+      }
       
       // Dispatch event to notify other components (only if at least some succeeded)
       if (successCount > 0) {
@@ -755,6 +1046,112 @@ const ActiveCampaigns: React.FC = () => {
         status: 'error',
         successCount: 0,
         totalCount: 0,
+        errorMessage: error instanceof Error ? error.message : 'Network error occurred',
+      }));
+    }
+  };
+
+  const handleSmmApiRetry = async () => {
+    setSmmApiModal(prev => ({ ...prev, status: 'submitting' }));
+
+    try {
+      console.log('🔄 [SMM Retry] Starting retry for campaign:', smmApiModal.campaignId);
+      console.log('📋 [SMM Retry] Previous results:', smmApiModal.results);
+      
+      const response = await fetch('/api/marketing-manager/smm-panel/submit-purchase', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          campaignId: smmApiModal.campaignId,
+          retryMode: true,
+          previousResults: smmApiModal.results,
+        }),
+      });
+
+      const result = await response.json();
+      
+      console.log('📥 [SMM Retry] API Response:', {
+        status: response.status,
+        success: result.success,
+        resultsCount: result.results?.length || 0,
+        successCount: result.successCount,
+        totalSubmitted: result.totalSubmitted,
+        error: result.error,
+      });
+
+      // Check if the API returned an error
+      if (!response.ok || result.error) {
+        console.error('❌ [SMM Retry] API Error:', result.error || `HTTP ${response.status}`);
+        setSmmApiModal(prev => ({
+          ...prev,
+          status: 'error',
+          isRetryMode: true,
+          results: result.results || prev.results, // Keep previous results if no new ones
+          successCount: result.successCount || prev.successCount,
+          totalCount: result.totalSubmitted || prev.totalCount,
+          newBalance: result.newBalance,
+          errorMessage: result.error || `API returned status ${response.status}`,
+        }));
+        return;
+      }
+
+      const successCount = result.successCount || 0;
+      const totalCount = result.totalSubmitted || 0;
+      
+      // Determine status: success (all), partial (some), error (none)
+      let status: 'success' | 'partial' | 'error';
+      if (successCount === totalCount && totalCount > 0) {
+        status = 'success';
+      } else if (successCount > 0) {
+        status = 'partial';
+      } else {
+        status = 'error';
+      }
+      
+      console.log('📊 [SMM Retry] Final status:', status, `(${successCount}/${totalCount})`);
+
+      setSmmApiModal(prev => ({
+        ...prev,
+        status,
+        isRetryMode: status !== 'success',  // Keep retry mode available if not all succeeded
+        results: result.results || [],
+        successCount,
+        totalCount,
+        newBalance: result.newBalance,
+        errorMessage: result.error || '',
+      }));
+      
+      // Update the failed SMM tracking
+      if (status !== 'success') {
+        setCampaignsWithFailedSmm(prev => ({
+          ...prev,
+          [smmApiModal.campaignId]: {
+            hasSubmissions: true,
+            hasFailures: true,
+            allSuccess: false,
+            submissions: result.results || [],
+          }
+        }));
+      } else {
+        // Remove from failed tracking if all succeeded
+        setCampaignsWithFailedSmm(prev => {
+          const updated = { ...prev };
+          delete updated[smmApiModal.campaignId];
+          return updated;
+        });
+      }
+      
+      // Dispatch event to notify other components (only if all succeeded after retry)
+      if (status === 'success') {
+        const event = new CustomEvent('campaignActionConfirmed', {
+          detail: { campaignId: smmApiModal.campaignId, action: 'direct-streams' }
+        });
+        window.dispatchEvent(event);
+      }
+    } catch (error) {
+      setSmmApiModal(prev => ({
+        ...prev,
+        status: 'error',
         errorMessage: error instanceof Error ? error.message : 'Network error occurred',
       }));
     }
@@ -1428,27 +1825,60 @@ const ActiveCampaigns: React.FC = () => {
                           </div>
                         ) : (
                           <div className="button-entrance w-full space-y-2.5">
-                            {/* Submit Purchase API Button - full width */}
-                              <button
-                              onClick={campaign.directStreamsConfirmed ? undefined : () => showSmmApiModal(campaign.id, campaign)}
-                              className={`w-full px-4 py-2.5 rounded-lg text-[0.7rem] font-black uppercase tracking-wider flex items-center justify-center gap-2 transition-all duration-300 shadow-md ${
-                                campaign.directStreamsConfirmed 
-                                  ? 'bg-gray-100 text-gray-400 cursor-not-allowed border-2 border-gray-200 shadow-none' 
-                                  : 'bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white hover:scale-[1.02] active:scale-95'
-                              }`}
-                              disabled={campaign.directStreamsConfirmed}
-                            >
-                              {campaign.directStreamsConfirmed ? (
-                                <svg className="w-4 h-4 text-green-500 checkmark-entrance" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
-                                </svg>
-                              ) : (
-                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
-                                </svg>
-                              )}
-                              <span>Submit Purchase API</span>
-                              </button>
+                            {/* Submit Purchase API / Retry Failed Button - full width */}
+                            {(() => {
+                              const hasFailedSmm = campaignsWithFailedSmm[campaign.id]?.hasFailures;
+                              const isRetryMode = hasFailedSmm && !campaign.directStreamsConfirmed;
+                              
+                              if (isRetryMode) {
+                                // Split row with Retry Failed and Manual buttons
+                                return (
+                                  <div className="flex gap-2">
+                                    <button
+                                      onClick={() => showSmmApiModal(campaign.id, campaign, true)}
+                                      className="flex-1 px-3 py-2.5 rounded-lg text-[0.65rem] font-black uppercase tracking-wider flex items-center justify-center gap-1.5 transition-all duration-300 shadow-md bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white hover:scale-[1.02] active:scale-95"
+                                    >
+                                      <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                                      </svg>
+                                      <span>Retry</span>
+                                    </button>
+                                    <button
+                                      onClick={(e) => showConfirmationModal(campaign.id, 'manual-override', e)}
+                                      className="flex-1 px-3 py-2.5 rounded-lg text-[0.65rem] font-black uppercase tracking-wider flex items-center justify-center gap-1.5 transition-all duration-300 shadow-md bg-gradient-to-r from-gray-500 to-gray-600 hover:from-gray-600 hover:to-gray-700 text-white hover:scale-[1.02] active:scale-95"
+                                    >
+                                      <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                      </svg>
+                                      <span>Manual</span>
+                                    </button>
+                                  </div>
+                                );
+                              }
+                              
+                              return (
+                                <button
+                                  onClick={campaign.directStreamsConfirmed ? undefined : () => showSmmApiModal(campaign.id, campaign, false)}
+                                  className={`w-full px-4 py-2.5 rounded-lg text-[0.7rem] font-black uppercase tracking-wider flex items-center justify-center gap-2 transition-all duration-300 shadow-md ${
+                                    campaign.directStreamsConfirmed 
+                                      ? 'bg-gray-100 text-gray-400 cursor-not-allowed border-2 border-gray-200 shadow-none' 
+                                      : 'bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white hover:scale-[1.02] active:scale-95'
+                                  }`}
+                                  disabled={campaign.directStreamsConfirmed}
+                                >
+                                  {campaign.directStreamsConfirmed ? (
+                                    <svg className="w-4 h-4 text-green-500 checkmark-entrance" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                                    </svg>
+                                  ) : (
+                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                                    </svg>
+                                  )}
+                                  <span>Submit Purchase API</span>
+                                </button>
+                              );
+                            })()}
                             
                             {/* Added to Playlists Button - full width */}
                             <button
@@ -1606,41 +2036,187 @@ const ActiveCampaigns: React.FC = () => {
             
             {/* Content */}
             <div className="p-6">
-              {/* Confirm State */}
+              {/* Confirm State - Receipt View */}
               {smmApiModal.status === 'confirm' && (
                 <div>
-                  <p className="text-gray-700 text-sm mb-6">
-                    Are you sure you would like to submit this purchase to the purchase API?
-                  </p>
-                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
-                    <div className="flex items-start gap-3">
-                      <svg className="w-5 h-5 text-blue-500 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                      </svg>
-                      <div>
-                        <p className="text-sm text-blue-800 font-medium">
-                          This will submit all configured order sets for the {smmApiModal.campaignInfo?.packageName} package to the Followiz SMM panel.
-                        </p>
-                      </div>
+                  {smmApiModal.loadingPreview ? (
+                    /* Loading Preview */
+                    <div className="text-center py-8">
+                      <div className="w-10 h-10 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin mx-auto mb-3"></div>
+                      <p className="text-gray-500 text-sm">Loading purchase details...</p>
                     </div>
-                  </div>
-                  <div className="flex justify-end gap-3">
-                    <button
-                      onClick={closeSmmApiModal}
-                      className="px-5 py-2.5 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg font-medium transition-colors"
-                    >
-                      Cancel
-                    </button>
-                    <button
-                      onClick={handleSmmApiSubmit}
-                      className="px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors flex items-center gap-2"
-                    >
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
-                      </svg>
-                      Confirm Submission
-                    </button>
-                  </div>
+                  ) : (
+                    /* Receipt View */
+                    <div className="space-y-4">
+                      {/* Customer Order Info */}
+                      <div className="bg-gradient-to-r from-indigo-50 to-blue-50 rounded-lg p-4 border border-indigo-100 relative">
+                        <div className="flex items-center justify-between mb-3">
+                          <span className="text-[0.7rem] font-bold text-indigo-600 uppercase tracking-wider">Customer Order</span>
+                          <span className="text-[0.7rem] font-bold text-gray-400 uppercase tracking-wider">
+                            {smmApiModal.orderSetsPreview.length} Service{smmApiModal.orderSetsPreview.length !== 1 ? 's' : ''}
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-3">
+                          {/* Song Image Thumbnail */}
+                          <div className="flex-shrink-0">
+                            {smmApiModal.campaignInfo?.songImage ? (
+                              <img 
+                                src={smmApiModal.campaignInfo.songImage} 
+                                alt={smmApiModal.campaignInfo.songName} 
+                                className="w-16 h-16 rounded-lg object-cover shadow-md border-2 border-white"
+                              />
+                            ) : (
+                              <div className="w-16 h-16 rounded-lg bg-gray-200 flex items-center justify-center border-2 border-white shadow-md">
+                                <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3" />
+                                </svg>
+                              </div>
+                            )}
+                          </div>
+                          
+                          {/* Song Info */}
+                          <div className="flex-1 min-w-0">
+                            <p className="text-[0.85rem] font-semibold text-gray-700 truncate mb-1" title={smmApiModal.campaignInfo?.songName}>
+                              {smmApiModal.campaignInfo?.songName}
+                            </p>
+                            <p className="text-[0.7rem] text-gray-500">
+                              {smmApiModal.totalStreams.toLocaleString()} total streams
+                            </p>
+                          </div>
+                        </div>
+                        
+                        {/* Package Name Badge - Bottom Right */}
+                        <div className="absolute bottom-3 right-3">
+                          <span className="px-2.5 py-1 rounded-full bg-indigo-600 text-white text-[0.65rem] font-black uppercase tracking-wider shadow-sm">
+                            {smmApiModal.campaignInfo?.packageName}
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* Order Sets Preview - Receipt Line Items */}
+                      {smmApiModal.orderSetsPreview.length > 0 && (
+                        <div className="space-y-3">
+                          <div className="flex items-center justify-between">
+                            <span className="text-[0.7rem] font-bold text-gray-400 uppercase tracking-wider">Order Sets</span>
+                            <span className="text-[0.7rem] font-bold text-gray-400">{smmApiModal.orderSetsPreview.length} item{smmApiModal.orderSetsPreview.length !== 1 ? 's' : ''}</span>
+                          </div>
+                          <div className="bg-white border border-gray-200 rounded-lg divide-y divide-gray-100 max-h-48 overflow-y-auto">
+                            {smmApiModal.orderSetsPreview.map((os, idx) => (
+                              <div key={os.id} className="px-4 py-3 flex items-center justify-between hover:bg-gray-50 transition-colors">
+                                <div className="flex-1 min-w-0">
+                                  <div className="flex items-center gap-2 mb-1">
+                                    <span className="text-[0.65rem] font-bold text-gray-400 uppercase tracking-wider">Service ID</span>
+                                    <span className="text-[0.9rem] font-black text-gray-900">{os.serviceId}</span>
+                                  </div>
+                                  <div className="flex items-center gap-3 text-[0.7rem] text-gray-500">
+                                    <span className="font-medium">
+                                      {os.quantity.toLocaleString()} streams
+                                    </span>
+                                    {os.dripRuns && os.dripRuns > 1 && (
+                                      <>
+                                        <span className="text-gray-300">•</span>
+                                        <span className="font-medium">
+                                          {os.dripRuns} drip runs
+                                        </span>
+                                        <span className="text-gray-300">•</span>
+                                        <span className="font-medium text-blue-600">
+                                          {os.totalStreams.toLocaleString()} total
+                                        </span>
+                                      </>
+                                    )}
+                                  </div>
+                                </div>
+                                <div className="ml-4 text-right">
+                                  <div className="text-[0.9rem] font-black text-gray-900">
+                                    ${os.setCost.toFixed(2)}
+                                  </div>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Cost Summary */}
+                      <div className="bg-gray-900 rounded-lg p-4 space-y-3">
+                        {/* Current Balance */}
+                        <div className="flex items-center justify-between text-white">
+                          <span className="text-[0.75rem] font-medium text-gray-400">Current Balance</span>
+                          <span className="text-[0.95rem] font-bold">
+                            {smmApiModal.currentBalance ? `$${parseFloat(smmApiModal.currentBalance).toFixed(2)}` : '—'}
+                          </span>
+                        </div>
+                        
+                        {/* Total Cost */}
+                        <div className="flex items-center justify-between text-white">
+                          <span className="text-[0.75rem] font-medium text-gray-400">Purchase Cost</span>
+                          <span className="text-[0.95rem] font-bold text-red-400">
+                            -${smmApiModal.totalCost.toFixed(2)}
+                          </span>
+                        </div>
+                        
+                        {/* Divider */}
+                        <div className="border-t border-gray-700"></div>
+                        
+                        {/* New Balance */}
+                        <div className="flex items-center justify-between text-white">
+                          <span className="text-[0.8rem] font-bold text-gray-300">New FW Balance</span>
+                          <span className="text-[1.1rem] font-black text-emerald-400">
+                            {smmApiModal.currentBalance 
+                              ? `$${(parseFloat(smmApiModal.currentBalance) - smmApiModal.totalCost).toFixed(2)}`
+                              : '—'
+                            }
+                          </span>
+                        </div>
+                        
+                        {/* Warning if balance is low */}
+                        {smmApiModal.currentBalance && (parseFloat(smmApiModal.currentBalance) - smmApiModal.totalCost) < 0 && (
+                          <div className="flex items-center gap-2 text-amber-400 bg-amber-900/30 rounded-lg px-3 py-2 mt-2">
+                            <svg className="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                            </svg>
+                            <span className="text-[0.7rem] font-medium">Insufficient balance!</span>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Action Buttons */}
+                      <div className="flex justify-end gap-3 pt-2">
+                        <button
+                          onClick={closeSmmApiModal}
+                          className="px-5 py-2.5 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg font-medium transition-colors"
+                        >
+                          Cancel
+                        </button>
+                        <button
+                          onClick={handleSmmApiSubmit}
+                          disabled={smmApiModal.orderSetsPreview.length === 0}
+                          className={`px-5 py-2.5 rounded-lg font-medium transition-colors flex items-center gap-2 ${
+                            smmApiModal.orderSetsPreview.length === 0
+                              ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                              : 'bg-blue-600 hover:bg-blue-700 text-white'
+                          }`}
+                        >
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
+                          </svg>
+                          Confirm Submission
+                        </button>
+                      </div>
+                      
+                      {/* No Order Sets Warning */}
+                      {smmApiModal.orderSetsPreview.length === 0 && (
+                        <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 flex items-start gap-2">
+                          <svg className="w-5 h-5 text-amber-500 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                          </svg>
+                          <p className="text-[0.75rem] text-amber-800">
+                            No order sets configured for the {smmApiModal.campaignInfo?.packageName} package. Please add order sets in Purchase API Settings first.
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
               )}
               
@@ -1689,6 +2265,29 @@ const ActiveCampaigns: React.FC = () => {
                       {smmApiModal.status === 'error' && 'All submissions failed'}
                     </p>
                   </div>
+                  
+                  {/* Error Message Box (when API returns error or no results) */}
+                  {smmApiModal.status === 'error' && smmApiModal.results.length === 0 && smmApiModal.errorMessage && (
+                    <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-4">
+                      <div className="flex items-start gap-3">
+                        <svg className="w-5 h-5 text-red-500 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        <div>
+                          <p className="text-sm font-bold text-red-800 mb-1">Error Details:</p>
+                          <p className="text-sm text-red-700">{smmApiModal.errorMessage}</p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                  
+                  {/* No Results Info (when API returned 0 results with no error message) */}
+                  {smmApiModal.results.length === 0 && !smmApiModal.errorMessage && (
+                    <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 mb-4 text-center">
+                      <p className="text-sm text-gray-600">No submission results available.</p>
+                      <p className="text-xs text-gray-400 mt-1">Check browser console or server logs for details.</p>
+                    </div>
+                  )}
                   
                   {/* Order Set Results - Individual Boxes */}
                   {smmApiModal.results.length > 0 && (
@@ -1771,16 +2370,33 @@ const ActiveCampaigns: React.FC = () => {
                     </div>
                   )}
                   
-                  <button
-                    onClick={closeSmmApiModal}
-                    className={`w-full px-5 py-2.5 text-white rounded-lg font-medium transition-all duration-300 ease-in-out ${
-                      smmApiModal.status === 'success' ? 'bg-green-600 hover:bg-green-700' :
-                      smmApiModal.status === 'partial' ? 'bg-amber-600 hover:bg-amber-700' :
-                      'bg-gray-600 hover:bg-gray-700'
-                    }`}
-                  >
-                    {smmApiModal.status === 'success' ? 'OK' : 'Close'}
-                  </button>
+                  {/* Buttons - Show Retry for partial/error, OK for success */}
+                  {smmApiModal.status === 'success' ? (
+                    <button
+                      onClick={closeSmmApiModal}
+                      className="w-full px-5 py-2.5 bg-green-600 hover:bg-green-700 text-white rounded-lg font-medium transition-all duration-300 ease-in-out"
+                    >
+                      OK
+                    </button>
+                  ) : (
+                    <div className="flex gap-3">
+                      <button
+                        onClick={closeSmmApiModal}
+                        className="flex-1 px-5 py-2.5 bg-gray-200 hover:bg-gray-300 text-gray-700 rounded-lg font-medium transition-all duration-300 ease-in-out"
+                      >
+                        Close
+                      </button>
+                      <button
+                        onClick={handleSmmApiRetry}
+                        className="flex-1 px-5 py-2.5 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white rounded-lg font-bold transition-all duration-300 ease-in-out flex items-center justify-center gap-2"
+                      >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                        </svg>
+                        Retry Failed
+                      </button>
+                    </div>
+                  )}
                 </div>
               )}
             </div>

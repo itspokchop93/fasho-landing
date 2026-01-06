@@ -19,3 +19,12 @@ ALTER TABLE smm_order_sets
 ALTER COLUMN interval_minutes DROP NOT NULL,
 ALTER COLUMN interval_minutes DROP DEFAULT;
 
+-- Also make drip_runs and interval_minutes nullable in purchase logs
+ALTER TABLE smm_purchase_logs 
+ALTER COLUMN drip_runs DROP NOT NULL,
+ALTER COLUMN drip_runs DROP DEFAULT;
+
+ALTER TABLE smm_purchase_logs 
+ALTER COLUMN interval_minutes DROP NOT NULL,
+ALTER COLUMN interval_minutes DROP DEFAULT;
+

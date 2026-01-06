@@ -58,13 +58,22 @@ function calculateSetCost(quantity: number, dripRuns: number | null, pricePerK: 
 async function handler(req: NextApiRequest, res: NextApiResponse, adminUser: AdminUser) {
   const supabase = createAdminClient();
 
-  // GET - Fetch all order sets
+  // GET - Fetch order sets (optionally filtered by package_name)
   if (req.method === 'GET') {
     try {
-      const { data: orderSets, error } = await supabase
+      const { package_name } = req.query;
+      
+      let query = supabase
         .from('smm_order_sets')
         .select('*')
-        .eq('is_active', true)
+        .eq('is_active', true);
+      
+      // Filter by package_name if provided
+      if (package_name) {
+        query = query.eq('package_name', (package_name as string).toUpperCase());
+      }
+      
+      const { data: orderSets, error } = await query
         .order('package_name', { ascending: true })
         .order('display_order', { ascending: true });
 

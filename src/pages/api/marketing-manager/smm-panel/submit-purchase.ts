@@ -19,6 +19,16 @@ interface SubmissionResult {
   success: boolean;
   followizOrderId?: number;
   error?: string;
+  wasRetried?: boolean;  // Flag to indicate this was a retry
+}
+
+interface PreviousResult {
+  orderSetId: string;
+  serviceId: string;
+  quantity: number;
+  success: boolean;
+  followizOrderId?: number;
+  error?: string;
 }
 
 async function handler(req: NextApiRequest, res: NextApiResponse, adminUser: AdminUser) {
@@ -29,7 +39,7 @@ async function handler(req: NextApiRequest, res: NextApiResponse, adminUser: Adm
   const supabase = createAdminClient();
 
   try {
-    const { campaignId } = req.body;
+    const { campaignId, retryMode, previousResults } = req.body;
 
     if (!campaignId) {
       return res.status(400).json({ 
@@ -38,7 +48,8 @@ async function handler(req: NextApiRequest, res: NextApiResponse, adminUser: Adm
       });
     }
 
-    console.log(`📤 Starting SMM purchase submission for campaign: ${campaignId}`);
+    const isRetry = retryMode === true;
+    console.log(`📤 ${isRetry ? 'RETRYING' : 'Starting'} SMM purchase submission for campaign: ${campaignId}`);
 
     // Fetch the campaign details
     const { data: campaign, error: campaignError } = await supabase
@@ -86,12 +97,40 @@ async function handler(req: NextApiRequest, res: NextApiResponse, adminUser: Adm
 
     console.log(`📦 Found ${orderSets.length} order sets for ${campaign.package_name} package`);
 
+    // In retry mode, determine which order sets need to be retried
+    let orderSetsToSubmit: OrderSet[] = orderSets;
+    let previousSuccessResults: SubmissionResult[] = [];
+
+    if (isRetry && previousResults && Array.isArray(previousResults)) {
+      // Get the service IDs that previously failed
+      const failedServiceIds = (previousResults as PreviousResult[])
+        .filter(r => !r.success)
+        .map(r => r.serviceId);
+
+      console.log(`🔄 Retry mode: Retrying ${failedServiceIds.length} failed order sets`);
+
+      // Filter to only the failed ones
+      orderSetsToSubmit = orderSets.filter(os => failedServiceIds.includes(os.service_id));
+
+      // Keep track of previously successful results
+      previousSuccessResults = (previousResults as PreviousResult[])
+        .filter(r => r.success)
+        .map(r => ({
+          orderSetId: r.orderSetId,
+          serviceId: r.serviceId,
+          quantity: r.quantity,
+          success: true,
+          followizOrderId: r.followizOrderId,
+          wasRetried: false,
+        }));
+    }
+
     // Submit each order set to Followiz
-    const results: SubmissionResult[] = [];
+    const results: SubmissionResult[] = [...previousSuccessResults];
     let allSuccessful = true;
 
-    for (const orderSet of orderSets) {
-      console.log(`🚀 Submitting order set: Service ${orderSet.service_id}, Qty ${orderSet.quantity}`);
+    for (const orderSet of orderSetsToSubmit) {
+      console.log(`🚀 ${isRetry ? 'Retrying' : 'Submitting'} order set: Service ${orderSet.service_id}, Qty ${orderSet.quantity}`);
 
       const result = await submitFollowizOrder({
         serviceId: orderSet.service_id,
@@ -132,20 +171,24 @@ async function handler(req: NextApiRequest, res: NextApiResponse, adminUser: Adm
         success: result.success,
         followizOrderId: result.orderId,
         error: result.error,
+        wasRetried: isRetry,
       };
 
       results.push(submissionResult);
 
       if (!result.success) {
         allSuccessful = false;
-        console.error(`❌ Failed to submit order set ${orderSet.id}:`, result.error);
+        console.error(`❌ Failed to ${isRetry ? 'retry' : 'submit'} order set ${orderSet.id}:`, result.error);
       } else {
-        console.log(`✅ Order set submitted successfully. Followiz Order ID: ${result.orderId}`);
+        console.log(`✅ Order set ${isRetry ? 'retry' : 'submitted'} successfully. Followiz Order ID: ${result.orderId}`);
       }
     }
 
+    // Check if ALL results (including previous successes) are now successful
+    const totalSuccess = results.every(r => r.success);
+
     // If all orders were successful, update the campaign's direct_streams_confirmed status
-    if (allSuccessful) {
+    if (totalSuccess) {
       const { error: updateError } = await supabase
         .from('marketing_campaigns')
         .update({
@@ -166,20 +209,22 @@ async function handler(req: NextApiRequest, res: NextApiResponse, adminUser: Adm
 
     const successCount = results.filter(r => r.success).length;
     const failedCount = results.filter(r => !r.success).length;
+    const totalCount = results.length;
 
     console.log(`📊 Submission complete: ${successCount} successful, ${failedCount} failed`);
 
     return res.status(200).json({
-      success: allSuccessful,
-      message: allSuccessful 
+      success: totalSuccess,
+      message: totalSuccess 
         ? `Successfully submitted ${successCount} orders to SMM panel` 
         : `Completed with ${failedCount} failed submissions`,
       results,
-      totalSubmitted: orderSets.length,
+      totalSubmitted: totalCount,
       successCount,
       failedCount,
       newBalance: balanceResult.success ? balanceResult.balance : null,
       currency: balanceResult.success ? balanceResult.currency : null,
+      wasRetry: isRetry,
     });
 
   } catch (error) {
@@ -192,4 +237,3 @@ async function handler(req: NextApiRequest, res: NextApiResponse, adminUser: Adm
 }
 
 export default requireAdminAuth(handler);
-
