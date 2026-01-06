@@ -381,6 +381,17 @@ const ActiveCampaigns: React.FC = () => {
     .copy-click { animation: copy-click 0.2s ease-in-out; }
     .text-fade-out { animation: text-fade-out 0.2s ease-out forwards; }
     .text-fade-in { animation: text-fade-in 0.2s ease-in forwards; }
+    
+    @keyframes fadeSlideIn {
+      0% { 
+        opacity: 0; 
+        transform: translateY(10px); 
+      }
+      100% { 
+        opacity: 1; 
+        transform: translateY(0); 
+      }
+    }
   `;
   
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
@@ -430,6 +441,35 @@ const ActiveCampaigns: React.FC = () => {
   // Track recently updated playlists for green feedback
   const [recentlyUpdated, setRecentlyUpdated] = useState<{[key: string]: boolean}>({});
   
+  // SMM API Submission Modal State
+  const [smmApiModal, setSmmApiModal] = useState<{
+    isOpen: boolean;
+    campaignId: string;
+    campaignInfo: { orderNumber: string; songName: string; packageName: string } | null;
+    status: 'confirm' | 'submitting' | 'success' | 'partial' | 'error';
+    results: Array<{
+      orderSetId: string;
+      serviceId: string;
+      quantity: number;
+      success: boolean;
+      followizOrderId?: number;
+      error?: string;
+    }>;
+    successCount: number;
+    totalCount: number;
+    errorMessage: string;
+    newBalance: string | null;
+  }>({
+    isOpen: false,
+    campaignId: '',
+    campaignInfo: null,
+    status: 'confirm',
+    results: [],
+    successCount: 0,
+    totalCount: 0,
+    errorMessage: '',
+    newBalance: null,
+  });
 
   useEffect(() => {
     fetchCampaigns();
@@ -637,6 +677,87 @@ const ActiveCampaigns: React.FC = () => {
 
   const handleCancelAction = () => {
     setConfirmationModal(prev => ({ ...prev, isOpen: false }));
+  };
+
+  // SMM API Submission Handlers
+  const showSmmApiModal = (campaignId: string, campaign: Campaign) => {
+    setSmmApiModal({
+      isOpen: true,
+      campaignId,
+      campaignInfo: {
+        orderNumber: campaign.orderNumber,
+        songName: campaign.songName,
+        packageName: campaign.packageName,
+      },
+      status: 'confirm',
+      results: [],
+      errorMessage: '',
+      newBalance: null,
+    });
+  };
+
+  const closeSmmApiModal = () => {
+    // Only allow closing if not in submitting state
+    if (smmApiModal.status !== 'submitting') {
+      setSmmApiModal(prev => ({ ...prev, isOpen: false }));
+      // Refresh campaigns if there was a successful submission
+      if (smmApiModal.status === 'success') {
+        fetchCampaigns();
+      }
+    }
+  };
+
+  const handleSmmApiSubmit = async () => {
+    setSmmApiModal(prev => ({ ...prev, status: 'submitting' }));
+
+    try {
+      const response = await fetch('/api/marketing-manager/smm-panel/submit-purchase', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ campaignId: smmApiModal.campaignId }),
+      });
+
+      const result = await response.json();
+
+      const successCount = result.successCount || 0;
+      const totalCount = result.totalSubmitted || 0;
+      
+      // Determine status: success (all), partial (some), error (none)
+      let status: 'success' | 'partial' | 'error';
+      if (successCount === totalCount && totalCount > 0) {
+        status = 'success';
+      } else if (successCount > 0) {
+        status = 'partial';
+      } else {
+        status = 'error';
+      }
+
+      setSmmApiModal(prev => ({
+        ...prev,
+        status,
+        results: result.results || [],
+        successCount,
+        totalCount,
+        newBalance: result.newBalance,
+        errorMessage: result.error || '',
+      }));
+      
+      // Dispatch event to notify other components (only if at least some succeeded)
+      if (successCount > 0) {
+        const event = new CustomEvent('campaignActionConfirmed', {
+          detail: { campaignId: smmApiModal.campaignId, action: 'direct-streams' }
+        });
+        window.dispatchEvent(event);
+      }
+    } catch (error) {
+      setSmmApiModal(prev => ({
+        ...prev,
+        status: 'error',
+        successCount: 0,
+        totalCount: 0,
+        errorMessage: error instanceof Error ? error.message : 'Network error occurred',
+      }));
+    }
   };
 
   const updateGenre = async (campaignId: string, newGenre: string) => {
@@ -1307,13 +1428,13 @@ const ActiveCampaigns: React.FC = () => {
                           </div>
                         ) : (
                           <div className="button-entrance w-full space-y-2.5">
-                            {/* Directly Purchased Button - full width */}
+                            {/* Submit Purchase API Button - full width */}
                               <button
-                              onClick={campaign.directStreamsConfirmed ? undefined : (e) => showConfirmationModal(campaign.id, 'direct-streams', e)}
-                              className={`w-full px-4 py-2.5 rounded-lg text-[0.75rem] font-black uppercase tracking-wider flex items-center justify-center gap-2 transition-all duration-300 shadow-md ${
+                              onClick={campaign.directStreamsConfirmed ? undefined : () => showSmmApiModal(campaign.id, campaign)}
+                              className={`w-full px-4 py-2.5 rounded-lg text-[0.7rem] font-black uppercase tracking-wider flex items-center justify-center gap-2 transition-all duration-300 shadow-md ${
                                 campaign.directStreamsConfirmed 
                                   ? 'bg-gray-100 text-gray-400 cursor-not-allowed border-2 border-gray-200 shadow-none' 
-                                  : 'bg-blue-600 hover:bg-blue-700 text-white hover:scale-[1.02] active:scale-95'
+                                  : 'bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white hover:scale-[1.02] active:scale-95'
                               }`}
                               disabled={campaign.directStreamsConfirmed}
                             >
@@ -1323,10 +1444,10 @@ const ActiveCampaigns: React.FC = () => {
                                 </svg>
                               ) : (
                                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
                                 </svg>
                               )}
-                              <span>Directly Purchased</span>
+                              <span>Submit Purchase API</span>
                               </button>
                             
                             {/* Added to Playlists Button - full width */}
@@ -1436,6 +1557,236 @@ const ActiveCampaigns: React.FC = () => {
         position={confirmationModal.position}
         buttonType={confirmationModal.action}
       />
+      
+      {/* SMM API Submission Modal */}
+      {smmApiModal.isOpen && (
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center">
+          {/* Backdrop - does NOT close the modal */}
+          <div className="absolute inset-0 bg-black bg-opacity-60" />
+          
+          {/* Modal */}
+          <div className="relative bg-white rounded-xl shadow-2xl w-full max-w-md mx-4 overflow-hidden">
+            {/* Close button - only way to close */}
+            {smmApiModal.status !== 'submitting' && (
+              <button
+                onClick={closeSmmApiModal}
+                className="absolute top-4 right-4 z-10 p-1 rounded-lg hover:bg-gray-100 text-gray-500 hover:text-gray-700 transition-colors"
+              >
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            )}
+            
+            {/* Header - Dynamic color based on status */}
+            <div className={`px-6 py-4 pr-12 transition-all duration-500 ease-in-out ${
+              smmApiModal.status === 'success' ? 'bg-gradient-to-r from-green-500 to-emerald-600' :
+              smmApiModal.status === 'partial' ? 'bg-gradient-to-r from-amber-500 to-orange-500' :
+              smmApiModal.status === 'error' ? 'bg-gradient-to-r from-red-500 to-rose-600' :
+              'bg-gradient-to-r from-blue-600 to-indigo-600'
+            }`}>
+              <h3 className="text-white font-bold text-lg">
+                {smmApiModal.status === 'confirm' && 'Submit Purchase API'}
+                {smmApiModal.status === 'submitting' && 'Submitting Purchases...'}
+                {(smmApiModal.status === 'success' || smmApiModal.status === 'partial' || smmApiModal.status === 'error') && 
+                  `${smmApiModal.successCount}/${smmApiModal.totalCount} Completed`
+                }
+              </h3>
+              {smmApiModal.campaignInfo && (
+                <p className={`text-sm mt-1 transition-colors duration-500 ease-in-out ${
+                  smmApiModal.status === 'success' ? 'text-green-100' :
+                  smmApiModal.status === 'partial' ? 'text-amber-100' :
+                  smmApiModal.status === 'error' ? 'text-red-100' :
+                  'text-blue-100'
+                }`}>
+                  Order #{smmApiModal.campaignInfo.orderNumber} • {smmApiModal.campaignInfo.packageName}
+                </p>
+              )}
+            </div>
+            
+            {/* Content */}
+            <div className="p-6">
+              {/* Confirm State */}
+              {smmApiModal.status === 'confirm' && (
+                <div>
+                  <p className="text-gray-700 text-sm mb-6">
+                    Are you sure you would like to submit this purchase to the purchase API?
+                  </p>
+                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+                    <div className="flex items-start gap-3">
+                      <svg className="w-5 h-5 text-blue-500 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                      <div>
+                        <p className="text-sm text-blue-800 font-medium">
+                          This will submit all configured order sets for the {smmApiModal.campaignInfo?.packageName} package to the Followiz SMM panel.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="flex justify-end gap-3">
+                    <button
+                      onClick={closeSmmApiModal}
+                      className="px-5 py-2.5 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg font-medium transition-colors"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      onClick={handleSmmApiSubmit}
+                      className="px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors flex items-center gap-2"
+                    >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
+                      </svg>
+                      Confirm Submission
+                    </button>
+                  </div>
+                </div>
+              )}
+              
+              {/* Submitting State */}
+              {smmApiModal.status === 'submitting' && (
+                <div className="text-center py-8">
+                  <div className="w-16 h-16 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin mx-auto mb-4"></div>
+                  <p className="text-gray-700 font-medium mb-2">Submitting Purchases...</p>
+                  <p className="text-gray-500 text-sm">Please do not close this window.</p>
+                </div>
+              )}
+              
+              {/* Results State (Success, Partial, or Error) */}
+              {(smmApiModal.status === 'success' || smmApiModal.status === 'partial' || smmApiModal.status === 'error') && (
+                <div>
+                  {/* Status Icon */}
+                  <div className="text-center mb-5">
+                    <div className={`w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-3 transition-all duration-500 ease-in-out ${
+                      smmApiModal.status === 'success' ? 'bg-green-100' :
+                      smmApiModal.status === 'partial' ? 'bg-amber-100' :
+                      'bg-red-100'
+                    }`}>
+                      {smmApiModal.status === 'success' && (
+                        <svg className="w-10 h-10 text-green-500 transition-all duration-500 ease-in-out" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
+                        </svg>
+                      )}
+                      {smmApiModal.status === 'partial' && (
+                        <svg className="w-10 h-10 text-amber-500 transition-all duration-500 ease-in-out" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                        </svg>
+                      )}
+                      {smmApiModal.status === 'error' && (
+                        <svg className="w-10 h-10 text-red-500 transition-all duration-500 ease-in-out" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                      )}
+                    </div>
+                    <p className={`font-medium transition-colors duration-500 ease-in-out ${
+                      smmApiModal.status === 'success' ? 'text-green-700' :
+                      smmApiModal.status === 'partial' ? 'text-amber-700' :
+                      'text-red-700'
+                    }`}>
+                      {smmApiModal.status === 'success' && 'All purchases submitted successfully!'}
+                      {smmApiModal.status === 'partial' && 'Partial completion - some orders failed'}
+                      {smmApiModal.status === 'error' && 'All submissions failed'}
+                    </p>
+                  </div>
+                  
+                  {/* Order Set Results - Individual Boxes */}
+                  {smmApiModal.results.length > 0 && (
+                    <div className="space-y-3 mb-4 max-h-64 overflow-y-auto">
+                      {smmApiModal.results.map((result, index) => (
+                        <div 
+                          key={index} 
+                          className={`rounded-lg p-4 border-2 transition-all duration-500 ease-in-out ${
+                            result.success 
+                              ? 'bg-green-50 border-green-200' 
+                              : 'bg-red-50 border-red-200'
+                          }`}
+                          style={{ 
+                            animationDelay: `${index * 100}ms`,
+                            animation: 'fadeSlideIn 0.4s ease-out forwards',
+                            opacity: 0,
+                          }}
+                        >
+                          {/* Service Info Row */}
+                          <div className="flex items-center justify-between mb-2">
+                            <div className="flex items-center gap-2">
+                              {result.success ? (
+                                <div className="w-6 h-6 bg-green-500 rounded-full flex items-center justify-center transition-all duration-300 ease-in-out">
+                                  <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
+                                  </svg>
+                                </div>
+                              ) : (
+                                <div className="w-6 h-6 bg-red-500 rounded-full flex items-center justify-center transition-all duration-300 ease-in-out">
+                                  <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M6 18L18 6M6 6l12 12" />
+                                  </svg>
+                                </div>
+                              )}
+                              <span className={`font-bold text-[0.85rem] ${result.success ? 'text-green-800' : 'text-red-800'}`}>
+                                Service #{result.serviceId}
+                              </span>
+                            </div>
+                            <span className={`text-[0.75rem] font-medium px-2 py-0.5 rounded-full ${
+                              result.success ? 'bg-green-200 text-green-700' : 'bg-red-200 text-red-700'
+                            }`}>
+                              {result.quantity.toLocaleString()} qty
+                            </span>
+                          </div>
+                          
+                          {/* API Response Row */}
+                          <div className={`text-[0.8rem] rounded px-3 py-2 ${
+                            result.success ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
+                          }`}>
+                            {result.success ? (
+                              <span className="font-medium">✓ Order ID: #{result.followizOrderId}</span>
+                            ) : (
+                              <span className="font-medium">✗ {result.error || 'Unknown error'}</span>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                  
+                  {/* New Balance */}
+                  {smmApiModal.newBalance && (
+                    <div className={`border rounded-lg p-3 mb-4 transition-all duration-500 ease-in-out ${
+                      smmApiModal.status === 'success' ? 'bg-green-50 border-green-200' :
+                      smmApiModal.status === 'partial' ? 'bg-amber-50 border-amber-200' :
+                      'bg-gray-50 border-gray-200'
+                    }`}>
+                      <div className="flex items-center justify-between">
+                        <span className={`text-sm font-medium ${
+                          smmApiModal.status === 'success' ? 'text-green-700' :
+                          smmApiModal.status === 'partial' ? 'text-amber-700' :
+                          'text-gray-700'
+                        }`}>Updated Panel Balance:</span>
+                        <span className={`text-lg font-bold ${
+                          smmApiModal.status === 'success' ? 'text-green-700' :
+                          smmApiModal.status === 'partial' ? 'text-amber-700' :
+                          'text-gray-700'
+                        }`}>${parseFloat(smmApiModal.newBalance).toFixed(2)}</span>
+                      </div>
+                    </div>
+                  )}
+                  
+                  <button
+                    onClick={closeSmmApiModal}
+                    className={`w-full px-5 py-2.5 text-white rounded-lg font-medium transition-all duration-300 ease-in-out ${
+                      smmApiModal.status === 'success' ? 'bg-green-600 hover:bg-green-700' :
+                      smmApiModal.status === 'partial' ? 'bg-amber-600 hover:bg-amber-700' :
+                      'bg-gray-600 hover:bg-gray-700'
+                    }`}
+                  >
+                    {smmApiModal.status === 'success' ? 'OK' : 'Close'}
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
