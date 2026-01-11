@@ -104,6 +104,7 @@ interface Playlist {
   maxSongs: number;
   songCount: number;
   imageUrl?: string;
+  saves?: number;
   isActive: boolean;
   healthStatus?: 'active' | 'private' | 'removed' | 'error' | 'unknown';
   healthLastChecked?: string;
@@ -603,6 +604,10 @@ const SystemSettings: React.FC<SystemSettingsProps> = ({ onlyPlaylistNetwork = f
           case 'songCount':
             aValue = a.songCount || 0;
             bValue = b.songCount || 0;
+            break;
+          case 'saves':
+            aValue = a.saves || 0;
+            bValue = b.saves || 0;
             break;
           case 'nextStreamPurchase':
             // Get the latest purchase for each playlist
@@ -1384,6 +1389,15 @@ const SystemSettings: React.FC<SystemSettingsProps> = ({ onlyPlaylistNetwork = f
                       Placements
                     </th>
                 <th 
+                      className="px-2 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 select-none w-20 bg-gray-50"
+                  onClick={() => handleSort('saves')}
+                >
+                      <div className="flex items-center justify-center space-x-1">
+                        <span>Saves</span>
+                    {getSortIcon('saves')}
+                  </div>
+                </th>
+                <th 
                       className="px-2 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 select-none w-24 bg-gray-50"
                   onClick={() => handleSort('nextStreamPurchase')}
                 >
@@ -1489,6 +1503,15 @@ const SystemSettings: React.FC<SystemSettingsProps> = ({ onlyPlaylistNetwork = f
                             <span className="text-sm font-medium text-blue-600">
                               {(currentPlacements[playlist.id] || []).length}
                             </span>
+                          </div>
+                        </td>
+                        <td className="px-2 py-4 whitespace-nowrap w-20">
+                          <div className="text-center">
+                            <div className="text-sm font-medium text-gray-900">
+                              {playlist.saves !== undefined && playlist.saves !== null 
+                                ? playlist.saves.toLocaleString() 
+                                : '-'}
+                            </div>
                           </div>
                         </td>
                         <td className="px-2 py-4 whitespace-nowrap w-24">
@@ -1598,7 +1621,7 @@ const SystemSettings: React.FC<SystemSettingsProps> = ({ onlyPlaylistNetwork = f
                       {/* Accordion Details Section */}
                       {isExpanded && (
                         <tr>
-                          <td colSpan={11} className="px-0 py-0">
+                          <td colSpan={12} className="px-0 py-0">
                             <div className="bg-gray-50 border-t border-gray-200 animate-slide-down w-full">
                               <div className="px-4 py-4 max-h-96 overflow-y-auto w-full">
                                 {/* Current Placements Section */}

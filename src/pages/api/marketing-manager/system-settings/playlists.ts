@@ -27,6 +27,7 @@ async function handler(req: NextApiRequest, res: NextApiResponse, adminUser: Adm
         max_songs,
         cached_song_count,
         cached_image_url,
+        cached_saves,
         last_scraped_at,
         is_active,
         health_status,
@@ -48,12 +49,14 @@ async function handler(req: NextApiRequest, res: NextApiResponse, adminUser: Adm
       (playlistsData || []).map(async (playlist) => {
         let songCount = playlist.cached_song_count || 0;
         let imageUrl = playlist.cached_image_url || '';
+        let saves = playlist.cached_saves || 0;
         let healthStatus = playlist.health_status || 'unknown';
         let healthLastChecked = playlist.health_last_checked;
         let healthErrorMessage = playlist.health_error_message;
         
-        // Only call Spotify API if refresh is explicitly requested or health was never checked
-        const shouldCheckHealth = forceRefresh || !playlist.health_last_checked;
+        // Only call Spotify API if refresh is explicitly requested, health was never checked, or saves data is missing/zero (needs fetch)
+        const savesNeedFetch = playlist.cached_saves === null || playlist.cached_saves === 0;
+        const shouldCheckHealth = forceRefresh || !playlist.health_last_checked || savesNeedFetch;
         
         if (shouldCheckHealth) {
           try {
@@ -62,6 +65,7 @@ async function handler(req: NextApiRequest, res: NextApiResponse, adminUser: Adm
             if (playlistData) {
               songCount = playlistData.trackCount;
               imageUrl = playlistData.imageUrl;
+              saves = playlistData.followers || 0;
               
               // Extract health status information
               if (playlistData.healthStatus) {
@@ -70,12 +74,13 @@ async function handler(req: NextApiRequest, res: NextApiResponse, adminUser: Adm
                 healthErrorMessage = playlistData.healthStatus.errorMessage || null;
               }
               
-              // Update database with fresh data including health status
+              // Update database with fresh data including health status and saves
               await supabase
                 .from('playlist_network')
                 .update({
                   cached_song_count: songCount,
                   cached_image_url: imageUrl,
+                  cached_saves: saves,
                   last_scraped_at: new Date().toISOString(),
                   health_status: healthStatus,
                   health_last_checked: healthLastChecked,
@@ -84,7 +89,7 @@ async function handler(req: NextApiRequest, res: NextApiResponse, adminUser: Adm
                 })
                 .eq('id', playlist.id);
               
-              console.log(`✅ UPDATED: ${playlist.playlist_name} - Songs: ${songCount}, Image: ${imageUrl ? 'Yes' : 'No'}, Health: ${healthStatus}`);
+              console.log(`✅ UPDATED: ${playlist.playlist_name} - Songs: ${songCount}, Image: ${imageUrl ? 'Yes' : 'No'}, Saves: ${saves}, Health: ${healthStatus}`);
             }
           } catch (error) {
             console.error(`Error fetching fresh data for playlist ${playlist.playlist_name}:`, error);
@@ -103,7 +108,7 @@ async function handler(req: NextApiRequest, res: NextApiResponse, adminUser: Adm
               .eq('id', playlist.id);
           }
         } else {
-          console.log(`📋 CACHE: Using cached data for ${playlist.playlist_name} - Songs: ${songCount}, Image: ${imageUrl ? 'Yes' : 'No'}, Health: ${healthStatus}`);
+          console.log(`📋 CACHE: Using cached data for ${playlist.playlist_name} - Songs: ${songCount}, Image: ${imageUrl ? 'Yes' : 'No'}, Saves: ${saves}, Health: ${healthStatus}`);
         }
 
         return {
@@ -116,6 +121,7 @@ async function handler(req: NextApiRequest, res: NextApiResponse, adminUser: Adm
           maxSongs: playlist.max_songs,
           songCount,
           imageUrl,
+          saves,
           isActive: playlist.is_active,
           healthStatus,
           healthLastChecked,
