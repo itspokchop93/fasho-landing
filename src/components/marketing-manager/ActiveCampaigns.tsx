@@ -1527,6 +1527,18 @@ const ActiveCampaigns: React.FC = () => {
                         <polygon points="0,0 10,5 0,10" />
                       </svg>
                       <div className={`bg-white rounded-lg shadow-sm border border-gray-200 p-2.5 relative flex flex-col gap-1.5 w-[220px] ${(campaign.songNumber || lastCopiedId === campaign.id) ? 'pb-7' : ''}`}>
+                        {/* Open Song Link - Top Left Corner */}
+                        <a
+                          href={campaign.songLink}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="absolute top-1.5 left-1.5 z-10 p-0.5 rounded bg-gray-100 hover:bg-green-500 transition-colors group"
+                          title="Open in Spotify"
+                        >
+                          <svg className="w-3 h-3 text-gray-500 group-hover:text-white transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                          </svg>
+                        </a>
                         {/* Order Info - Top Right Corner */}
                         <div className="absolute top-2 right-2 text-right flex flex-col items-end z-10">
                           <button
