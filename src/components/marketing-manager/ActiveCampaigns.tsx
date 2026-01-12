@@ -336,6 +336,42 @@ const PlaylistSelector: React.FC<PlaylistSelectorProps> = ({
   );
 };
 
+// ProgressBar component defined outside ActiveCampaigns to prevent re-mounting on parent re-renders
+const ProgressBar: React.FC<{ current: number; total: number; color: string; label: string }> = ({ current, total, color, label }) => {
+  const percentage = total > 0 ? Math.min((current / total) * 100, 100) : 0;
+  // Track if the component has already animated to prevent re-animation on parent re-renders
+  const hasAnimated = useRef(false);
+  
+  // Mark as animated after the first render completes
+  useEffect(() => {
+    hasAnimated.current = true;
+  }, []);
+  
+  return (
+    <div className="flex flex-col gap-1.5 w-full min-w-[150px] bg-white p-2.5 rounded-xl border border-gray-200 shadow-sm">
+      <div className="flex justify-between items-center px-0.5">
+        <span className="text-[0.6rem] font-black uppercase text-gray-400 tracking-widest">{label}</span>
+        <span className={`text-[0.7rem] font-black ${percentage === 100 ? 'text-green-600' : 'text-gray-900'}`}>
+          {Math.round(percentage)}%
+        </span>
+      </div>
+      <div className="w-full bg-gray-100 rounded-full h-2.5 overflow-hidden border border-gray-200/50">
+        <motion.div
+          initial={hasAnimated.current ? false : { width: 0 }}
+          animate={{ width: `${percentage}%` }}
+          transition={{ duration: 1.2, ease: "easeOut" }}
+          className={`h-full rounded-full ${color} shadow-inner transition-all duration-500`}
+        />
+      </div>
+      <div className="text-[0.65rem] font-bold text-gray-500 mt-0.5 px-0.5 flex justify-between items-center">
+        <span className="tabular-nums">{current.toLocaleString()}</span>
+        <div className="h-2 w-[1px] bg-gray-200 mx-1"></div>
+        <span className="tabular-nums text-gray-400">{total.toLocaleString()}</span>
+      </div>
+    </div>
+  );
+};
+
 const ActiveCampaigns: React.FC = () => {
   const router = useRouter();
   
@@ -1282,34 +1318,6 @@ const ActiveCampaigns: React.FC = () => {
     if (name.includes('MOMENTUM')) return { color: 'text-sky-600', bg: 'bg-sky-50', border: 'border-sky-200', icon: '⚡' };
     if (name.includes('BREAKTHROUGH')) return { color: 'text-emerald-600', bg: 'bg-emerald-50', border: 'border-emerald-200', icon: '💎' };
     return { color: 'text-slate-600', bg: 'bg-slate-50', border: 'border-slate-200', icon: '📦' };
-  };
-
-  const ProgressBar: React.FC<{ current: number; total: number; color: string; label: string }> = ({ current, total, color, label }) => {
-    const percentage = total > 0 ? Math.min((current / total) * 100, 100) : 0;
-    
-    return (
-      <div className="flex flex-col gap-1.5 w-full min-w-[150px] bg-white p-2.5 rounded-xl border border-gray-200 shadow-sm">
-        <div className="flex justify-between items-center px-0.5">
-          <span className="text-[0.6rem] font-black uppercase text-gray-400 tracking-widest">{label}</span>
-          <span className={`text-[0.7rem] font-black ${percentage === 100 ? 'text-green-600' : 'text-gray-900'}`}>
-            {Math.round(percentage)}%
-          </span>
-        </div>
-        <div className="w-full bg-gray-100 rounded-full h-2.5 overflow-hidden border border-gray-200/50">
-          <motion.div
-            initial={{ width: 0 }}
-            animate={{ width: `${percentage}%` }}
-            transition={{ duration: 1.2, ease: "easeOut" }}
-            className={`h-full rounded-full ${color} shadow-inner transition-all duration-500`}
-          />
-        </div>
-        <div className="text-[0.65rem] font-bold text-gray-500 mt-0.5 px-0.5 flex justify-between items-center">
-          <span className="tabular-nums">{current.toLocaleString()}</span>
-          <div className="h-2 w-[1px] bg-gray-200 mx-1"></div>
-          <span className="tabular-nums text-gray-400">{total.toLocaleString()}</span>
-        </div>
-      </div>
-    );
   };
 
   // Calculate pagination

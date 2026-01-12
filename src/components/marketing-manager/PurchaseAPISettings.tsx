@@ -15,6 +15,17 @@ interface OrderSet {
   updated_at: string;
 }
 
+interface PlaylistService {
+  id: string;
+  service_type: string;
+  service_id: string;
+  service_name: string | null;
+  price_per_1k: number | null;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
 interface OrderSetFormData {
   service_id: string;
   quantity: string;
@@ -138,9 +149,19 @@ const PurchaseAPISettings: React.FC = () => {
     position: null,
   });
 
+  // Playlist service settings states
+  const [playlistServices, setPlaylistServices] = useState<{ [key: string]: PlaylistService }>({});
+  const [editingFollowers, setEditingFollowers] = useState(false);
+  const [editingStreams, setEditingStreams] = useState(false);
+  const [followersServiceId, setFollowersServiceId] = useState('');
+  const [streamsServiceId, setStreamsServiceId] = useState('');
+  const [savingFollowers, setSavingFollowers] = useState(false);
+  const [savingStreams, setSavingStreams] = useState(false);
+
   useEffect(() => {
     fetchOrderSets();
     fetchBalance();
+    fetchPlaylistServices();
   }, []);
 
   const fetchOrderSets = async () => {
@@ -156,6 +177,77 @@ const PurchaseAPISettings: React.FC = () => {
       console.error('Error fetching order sets:', error);
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const fetchPlaylistServices = async () => {
+    try {
+      const response = await fetch('/api/marketing-manager/smm-panel/playlist-services');
+      if (response.ok) {
+        const data = await response.json();
+        if (data.success) {
+          setPlaylistServices(data.services || {});
+          // Initialize input fields with existing values
+          if (data.services?.playlist_followers) {
+            setFollowersServiceId(data.services.playlist_followers.service_id);
+          }
+          if (data.services?.playlist_streams) {
+            setStreamsServiceId(data.services.playlist_streams.service_id);
+          }
+        }
+      } else {
+        console.error('Failed to fetch playlist services');
+      }
+    } catch (error) {
+      console.error('Error fetching playlist services:', error);
+    }
+  };
+
+  const savePlaylistService = async (serviceType: 'playlist_followers' | 'playlist_streams', serviceId: string) => {
+    if (serviceType === 'playlist_followers') {
+      setSavingFollowers(true);
+    } else {
+      setSavingStreams(true);
+    }
+
+    try {
+      const response = await fetch('/api/marketing-manager/smm-panel/playlist-services', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          service_type: serviceType,
+          service_id: serviceId,
+        }),
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        if (data.success) {
+          // Update local state with new service
+          setPlaylistServices(prev => ({
+            ...prev,
+            [serviceType]: data.service,
+          }));
+          // Exit edit mode
+          if (serviceType === 'playlist_followers') {
+            setEditingFollowers(false);
+          } else {
+            setEditingStreams(false);
+          }
+        }
+      } else {
+        const error = await response.json();
+        alert(`Error: ${error.error}`);
+      }
+    } catch (error) {
+      console.error('Error saving playlist service:', error);
+      alert('Error saving service configuration');
+    } finally {
+      if (serviceType === 'playlist_followers') {
+        setSavingFollowers(false);
+      } else {
+        setSavingStreams(false);
+      }
     }
   };
 
@@ -527,6 +619,166 @@ const PurchaseAPISettings: React.FC = () => {
             </div>
           );
         })}
+      </div>
+
+      {/* Playlist Purchases Section */}
+      <div className="mt-8 bg-gradient-to-r from-purple-50 to-indigo-50 border-2 border-purple-200 rounded-xl p-6">
+        <div className="flex items-center gap-3 mb-6">
+          <div className="p-2 bg-purple-100 rounded-lg">
+            <svg className="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3" />
+            </svg>
+          </div>
+          <div>
+            <h3 className="text-lg font-bold text-purple-800">Playlist Purchases</h3>
+            <p className="text-[0.75rem] text-purple-600">Configure service IDs for playlist followers and streams</p>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {/* Playlist Followers Service */}
+          <div className="bg-white rounded-xl border-2 border-purple-100 p-5 shadow-sm">
+            <div className="flex items-center gap-2 mb-4">
+              <svg className="w-5 h-5 text-purple-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+              </svg>
+              <span className="text-[0.85rem] font-bold text-purple-800">Playlist Followers Service</span>
+            </div>
+
+            {playlistServices.playlist_followers && !editingFollowers ? (
+              // Display saved service
+              <div className="space-y-3">
+                <div className="flex items-center justify-between bg-purple-50 rounded-lg px-4 py-3 border border-purple-100">
+                  <div>
+                    <div className="text-[0.65rem] font-bold text-purple-400 uppercase">Service ID</div>
+                    <div className="text-[1rem] font-black text-purple-700">{playlistServices.playlist_followers.service_id}</div>
+                  </div>
+                  <button
+                    onClick={() => setEditingFollowers(true)}
+                    className="text-[0.7rem] font-bold text-purple-600 hover:text-purple-800 px-3 py-1.5 rounded-lg hover:bg-purple-100 transition-colors"
+                  >
+                    Edit
+                  </button>
+                </div>
+                {playlistServices.playlist_followers.service_name && (
+                  <div className="bg-gray-50 rounded-lg px-4 py-2.5 border border-gray-100">
+                    <div className="text-[0.6rem] font-bold text-gray-400 uppercase mb-1">Service Info</div>
+                    <div className="text-[0.8rem] font-bold text-gray-700">{playlistServices.playlist_followers.service_name}</div>
+                    {playlistServices.playlist_followers.price_per_1k && (
+                      <div className="text-[0.75rem] font-bold text-green-600 mt-1">
+                        ${playlistServices.playlist_followers.price_per_1k.toFixed(4)}/1K
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            ) : (
+              // Edit/Add mode
+              <div className="space-y-3">
+                <input
+                  type="text"
+                  value={followersServiceId}
+                  onChange={(e) => setFollowersServiceId(e.target.value)}
+                  placeholder="Enter Service ID (e.g. 1234)"
+                  className="w-full px-4 py-2.5 border-2 border-purple-200 rounded-lg focus:border-purple-500 focus:ring-0 outline-none transition-colors text-[0.9rem]"
+                  disabled={savingFollowers}
+                />
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => savePlaylistService('playlist_followers', followersServiceId)}
+                    disabled={!followersServiceId.trim() || savingFollowers}
+                    className="flex-1 px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg font-bold text-[0.75rem] uppercase tracking-wider disabled:opacity-50 transition-colors"
+                  >
+                    {savingFollowers ? 'Saving...' : 'Save'}
+                  </button>
+                  {playlistServices.playlist_followers && (
+                    <button
+                      onClick={() => {
+                        setEditingFollowers(false);
+                        setFollowersServiceId(playlistServices.playlist_followers?.service_id || '');
+                      }}
+                      className="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg font-bold text-[0.75rem] uppercase tracking-wider transition-colors"
+                    >
+                      Cancel
+                    </button>
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Playlist Streams Service */}
+          <div className="bg-white rounded-xl border-2 border-purple-100 p-5 shadow-sm">
+            <div className="flex items-center gap-2 mb-4">
+              <svg className="w-5 h-5 text-purple-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              <span className="text-[0.85rem] font-bold text-purple-800">Playlist Streams Service</span>
+            </div>
+
+            {playlistServices.playlist_streams && !editingStreams ? (
+              // Display saved service
+              <div className="space-y-3">
+                <div className="flex items-center justify-between bg-purple-50 rounded-lg px-4 py-3 border border-purple-100">
+                  <div>
+                    <div className="text-[0.65rem] font-bold text-purple-400 uppercase">Service ID</div>
+                    <div className="text-[1rem] font-black text-purple-700">{playlistServices.playlist_streams.service_id}</div>
+                  </div>
+                  <button
+                    onClick={() => setEditingStreams(true)}
+                    className="text-[0.7rem] font-bold text-purple-600 hover:text-purple-800 px-3 py-1.5 rounded-lg hover:bg-purple-100 transition-colors"
+                  >
+                    Edit
+                  </button>
+                </div>
+                {playlistServices.playlist_streams.service_name && (
+                  <div className="bg-gray-50 rounded-lg px-4 py-2.5 border border-gray-100">
+                    <div className="text-[0.6rem] font-bold text-gray-400 uppercase mb-1">Service Info</div>
+                    <div className="text-[0.8rem] font-bold text-gray-700">{playlistServices.playlist_streams.service_name}</div>
+                    {playlistServices.playlist_streams.price_per_1k && (
+                      <div className="text-[0.75rem] font-bold text-green-600 mt-1">
+                        ${playlistServices.playlist_streams.price_per_1k.toFixed(4)}/1K
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            ) : (
+              // Edit/Add mode
+              <div className="space-y-3">
+                <input
+                  type="text"
+                  value={streamsServiceId}
+                  onChange={(e) => setStreamsServiceId(e.target.value)}
+                  placeholder="Enter Service ID (e.g. 1234)"
+                  className="w-full px-4 py-2.5 border-2 border-purple-200 rounded-lg focus:border-purple-500 focus:ring-0 outline-none transition-colors text-[0.9rem]"
+                  disabled={savingStreams}
+                />
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => savePlaylistService('playlist_streams', streamsServiceId)}
+                    disabled={!streamsServiceId.trim() || savingStreams}
+                    className="flex-1 px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg font-bold text-[0.75rem] uppercase tracking-wider disabled:opacity-50 transition-colors"
+                  >
+                    {savingStreams ? 'Saving...' : 'Save'}
+                  </button>
+                  {playlistServices.playlist_streams && (
+                    <button
+                      onClick={() => {
+                        setEditingStreams(false);
+                        setStreamsServiceId(playlistServices.playlist_streams?.service_id || '');
+                      }}
+                      className="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg font-bold text-[0.75rem] uppercase tracking-wider transition-colors"
+                    >
+                      Cancel
+                    </button>
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
       </div>
 
       {/* Add/Edit Modal */}
