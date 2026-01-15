@@ -19,7 +19,6 @@ export const initPostHog = () => {
     capture_pageview: false,
     session_recording: {
       maskAllInputs: true,
-      maskAllText: true,
     },
   });
 
