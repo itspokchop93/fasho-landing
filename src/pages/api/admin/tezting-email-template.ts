@@ -93,7 +93,13 @@ async function handler(req: NextApiRequest, res: NextApiResponse, adminUser: Adm
         year: 'numeric',
         month: 'long',
         day: 'numeric'
-      })
+      }),
+      total_orders: '4',
+      past_orders: [
+        '1. FASHO-0001 - Starter Package - $49.00 - 01/24/2025',
+        '2. FASHO-0002 - Pro Package, Boost Add-On - $89.00 - 02/11/2025',
+        '3. FASHO-0003 - Elite Package - $129.00 - 03/02/2025'
+      ].join('<br/>')
     }
 
     console.log('📧 TEZTING-EMAIL-API: Sending test email with sample data:', sampleEmailData)

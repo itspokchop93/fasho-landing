@@ -534,7 +534,79 @@ export async function sendAdminNewOrderEmail(
     console.log('📧 ADMIN-NEW-ORDER: Sending admin notification for new order:', orderData.order_number);
 
     const emailService = new EmailService();
-    
+
+    const formatOrderTotal = (total: number): string => {
+      if (!Number.isFinite(total)) {
+        return '$0.00';
+      }
+      return `$${total.toFixed(2)}`;
+    };
+
+    const { data: currentOrderItems, error: currentItemsError } = await supabaseClient
+      .from('order_items')
+      .select('package_name')
+      .eq('order_id', orderData.id)
+      .order('created_at', { ascending: true });
+
+    if (currentItemsError) {
+      console.error('📧 ADMIN-NEW-ORDER: Error fetching current order items:', currentItemsError);
+    }
+
+    const currentPackageNames = (currentOrderItems || [])
+      .map((item: { package_name?: string }) => item.package_name)
+      .filter(Boolean) as string[];
+
+    const { data: customerOrders, error: ordersError, count: totalOrdersCount } = await supabaseClient
+      .from('orders')
+      .select('id, order_number, total, created_at', { count: 'exact' })
+      .eq('customer_email', orderData.customer_email)
+      .order('created_at', { ascending: false });
+
+    if (ordersError) {
+      console.error('📧 ADMIN-NEW-ORDER: Error fetching customer orders:', ordersError);
+    }
+
+    const totalOrders = totalOrdersCount ?? customerOrders?.length ?? 0;
+    const pastOrders = (customerOrders || []).filter((order: { id: string }) => order.id !== orderData.id);
+    const pastOrderIds = pastOrders.map((order: { id: string }) => order.id);
+
+    let pastOrdersList = 'No past orders';
+    if (pastOrderIds.length > 0) {
+      const { data: pastOrderItems, error: pastItemsError } = await supabaseClient
+        .from('order_items')
+        .select('order_id, package_name')
+        .in('order_id', pastOrderIds)
+        .order('created_at', { ascending: true });
+
+      if (pastItemsError) {
+        console.error('📧 ADMIN-NEW-ORDER: Error fetching past order items:', pastItemsError);
+      }
+
+      const packagesByOrderId = (pastOrderItems || []).reduce((acc: Record<string, string[]>, item: { order_id: string; package_name?: string }) => {
+        if (!item.order_id) {
+          return acc;
+        }
+        if (!acc[item.order_id]) {
+          acc[item.order_id] = [];
+        }
+        if (item.package_name) {
+          acc[item.order_id].push(item.package_name);
+        }
+        return acc;
+      }, {});
+
+      pastOrdersList = pastOrders
+        .map((order: { id: string; order_number: string; total: number; created_at?: string }, index: number) => {
+          const packageNames = packagesByOrderId[order.id] || [];
+          const packageList = packageNames.length > 0 ? packageNames.join(', ') : 'No packages';
+          const orderDate = order.created_at
+            ? new Date(order.created_at).toLocaleDateString('en-US')
+            : 'Unknown date';
+          return `${index + 1}. ${order.order_number} - ${packageList} - ${formatOrderTotal(order.total)} - ${orderDate}`;
+        })
+        .join('<br/>');
+    }
+
     // Format order data for admin email
     const emailData: EmailData = {
       to: '', // Will be replaced with admin email
@@ -547,7 +619,9 @@ export async function sendAdminNewOrderEmail(
       order_total: `$${(orderData.total / 100).toFixed(2)}`,
       orderDate: new Date(orderData.created_at).toLocaleDateString(),
       order_date: new Date(orderData.created_at).toLocaleDateString(),
-      order_items: 'Music promotion package', // Could be enhanced with actual items
+      order_items: currentPackageNames.length > 0 ? currentPackageNames.join(', ') : 'No packages',
+      total_orders: `${totalOrders}`,
+      past_orders: pastOrdersList,
       admin_order_url: `${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/admin/order/${orderData.id}`
     };
 

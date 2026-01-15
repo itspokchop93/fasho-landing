@@ -671,23 +671,31 @@ export default function EmailEditor({ adminSession, accessDenied }: EmailEditorP
 
               {/* Available Variables */}
               <div className="bg-white rounded-xl p-6 shadow-lg border border-gray-100">
-                <h3 className="text-lg font-semibold text-gray-900 mb-4">Available Variables</h3>
+                <h3 className="text-[1.125rem] font-semibold text-gray-900 mb-4">Available Variables</h3>
                 <div className="space-y-2">
-                  <div className="text-sm">
-                    <code className="bg-gray-100 px-2 py-1 rounded text-xs">{'{{customer_name}}'}</code>
+                  <div className="text-[0.875rem]">
+                    <code className="bg-gray-100 px-2 py-1 rounded text-[0.75rem]">{'{{customer_name}}'}</code>
                     <p className="text-gray-600 mt-1">Customer's full name</p>
                   </div>
-                  <div className="text-sm">
-                    <code className="bg-gray-100 px-2 py-1 rounded text-xs">{'{{order_number}}'}</code>
+                  <div className="text-[0.875rem]">
+                    <code className="bg-gray-100 px-2 py-1 rounded text-[0.75rem]">{'{{order_number}}'}</code>
                     <p className="text-gray-600 mt-1">Order number</p>
                   </div>
-                  <div className="text-sm">
-                    <code className="bg-gray-100 px-2 py-1 rounded text-xs">{'{{order_total}}'}</code>
+                  <div className="text-[0.875rem]">
+                    <code className="bg-gray-100 px-2 py-1 rounded text-[0.75rem]">{'{{order_total}}'}</code>
                     <p className="text-gray-600 mt-1">Order total amount</p>
                   </div>
-                  <div className="text-sm">
-                    <code className="bg-gray-100 px-2 py-1 rounded text-xs">{'{{order_date}}'}</code>
+                  <div className="text-[0.875rem]">
+                    <code className="bg-gray-100 px-2 py-1 rounded text-[0.75rem]">{'{{order_date}}'}</code>
                     <p className="text-gray-600 mt-1">Order creation date</p>
+                  </div>
+                  <div className="text-[0.875rem]">
+                    <code className="bg-gray-100 px-2 py-1 rounded text-[0.75rem]">{'{{total_orders}}'}</code>
+                    <p className="text-gray-600 mt-1">Total number of customer orders</p>
+                  </div>
+                  <div className="text-[0.875rem]">
+                    <code className="bg-gray-100 px-2 py-1 rounded text-[0.75rem]">{'{{past_orders}}'}</code>
+                    <p className="text-gray-600 mt-1">List of past orders with package details</p>
                   </div>
                 </div>
               </div>
