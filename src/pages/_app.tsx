@@ -5,6 +5,7 @@ import { useRouter } from "next/router";
 import * as gtag from "../utils/gtag";
 import LeadTracker from "../utils/leadTracking";
 import { AuthProvider } from "../utils/authContext";
+import PostHogInit from "../components/posthog-init";
 
 
 
@@ -56,8 +57,9 @@ export default function App({ Component, pageProps }: AppProps) {
 
   return (
     <AuthProvider>
-
-      <Component {...pageProps} />
+      <PostHogInit>
+        <Component {...pageProps} />
+      </PostHogInit>
     </AuthProvider>
   );
 }

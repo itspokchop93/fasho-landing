@@ -11,6 +11,7 @@ import { createPortal } from 'react-dom'
 import PowerToolsCarousel from '../components/PowerToolsCarousel'
 import PowerToolsTab from '../components/PowerToolsTab'
 import { GoogleSheetsService, PowerTool } from '../utils/googleSheets'
+import { analytics } from "../utils/analytics"
 
 interface DashboardProps {
   user: {
@@ -109,9 +110,28 @@ export default function Dashboard({ user }: DashboardProps) {
   const statusDropdownRef = useRef<HTMLButtonElement>(null)
   const genrePortalRef = useRef<HTMLDivElement>(null)
   const statusPortalRef = useRef<HTMLDivElement>(null)
+  const hasTrackedDashboardView = useRef(false)
+  const hasTrackedOrdersList = useRef(false)
+  const trackedOrderDetails = useRef<Set<string>>(new Set())
+  const trackedCampaignStatuses = useRef<Set<string>>(new Set())
+  const hasTrackedCuratorView = useRef(false)
+  const curatorSearchTimeoutRef = useRef<NodeJS.Timeout | null>(null)
 
   // Track when component is mounted for portal
   useEffect(() => { setIsMounted(true); }, [])
+
+  useEffect(() => {
+    if (hasTrackedDashboardView.current) return
+    const firstTimeAfterPurchase =
+      typeof window !== 'undefined' && !localStorage.getItem('dashboard_viewed')
+    analytics.track('dashboard_viewed', {
+      first_time_after_purchase: !!firstTimeAfterPurchase,
+    })
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('dashboard_viewed', 'true')
+    }
+    hasTrackedDashboardView.current = true
+  }, [])
 
   // Handle mobile viewport height changes for bottom navigation (MOBILE ONLY FIX)
   useEffect(() => {
@@ -421,6 +441,35 @@ export default function Dashboard({ user }: DashboardProps) {
     }
   }, [activeTab]);
 
+  useEffect(() => {
+    if (activeTab !== 'curator-connect') return
+    const trimmedQuery = curatorSearch.trim()
+    if (!trimmedQuery) return
+
+    if (curatorSearchTimeoutRef.current) {
+      clearTimeout(curatorSearchTimeoutRef.current)
+    }
+
+    const filtersActiveCount =
+      curatorFilters.genres.length +
+      (curatorFilters.minSaves ? 1 : 0) +
+      (curatorFilters.maxSaves ? 1 : 0) +
+      (curatorFilters.status !== 'all' ? 1 : 0)
+
+    curatorSearchTimeoutRef.current = setTimeout(() => {
+      analytics.track('curator_search_used', {
+        query_length: trimmedQuery.length,
+        filters_active_count: filtersActiveCount,
+      })
+    }, 400)
+
+    return () => {
+      if (curatorSearchTimeoutRef.current) {
+        clearTimeout(curatorSearchTimeoutRef.current)
+      }
+    }
+  }, [activeTab, curatorSearch, curatorFilters]);
+
   // Close dropdowns when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -548,6 +597,23 @@ export default function Dashboard({ user }: DashboardProps) {
       newExpanded.delete(orderId)
     } else {
       newExpanded.add(orderId)
+      if (!trackedOrderDetails.current.has(orderId)) {
+        analytics.track('order_details_viewed', { order_id: orderId })
+        trackedOrderDetails.current.add(orderId)
+      }
+      if (!trackedCampaignStatuses.current.has(orderId)) {
+        const order = orders.find(o => o.id === orderId)
+        if (order?.items) {
+          order.items.forEach((item: any) => {
+            analytics.track('campaign_status_viewed', {
+              order_id: orderId,
+              spotify_track_id: item?.track?.id,
+              status: order.status,
+            })
+          })
+        }
+        trackedCampaignStatuses.current.add(orderId)
+      }
     }
     setExpandedOrders(newExpanded)
   }
@@ -561,6 +627,12 @@ export default function Dashboard({ user }: DashboardProps) {
         const data = await res.json()
         if (data.success) {
           setOrders(data.orders)
+          if (!hasTrackedOrdersList.current) {
+            analytics.track('orders_list_viewed', {
+              order_count: data.orders?.length || 0,
+            })
+            hasTrackedOrdersList.current = true
+          }
         } else {
           setOrders([])
         }
@@ -630,6 +702,12 @@ export default function Dashboard({ user }: DashboardProps) {
       window.removeEventListener('hashchange', handleHashChange)
     }
   }, [])
+
+  useEffect(() => {
+    if (activeTab !== 'curator-connect' || hasTrackedCuratorView.current) return
+    analytics.track('curator_connect_viewed', { tab: 'Curator Connect+' })
+    hasTrackedCuratorView.current = true
+  }, [activeTab])
 
   // Trigger stats boxes animation on component mount
   useEffect(() => {
@@ -4217,6 +4295,13 @@ export default function Dashboard({ user }: DashboardProps) {
     }
   }
 
+  const trackCuratorFilterChange = (filterName: string, filterValue: string | number) => {
+    analytics.track('curator_filter_changed', {
+      filter_name: filterName,
+      filter_value: String(filterValue),
+    })
+  }
+
   // Update dropdown positions on scroll and resize
   useEffect(() => {
     if (showGenreDropdown || showStatusDropdown) {
@@ -4241,6 +4326,7 @@ export default function Dashboard({ user }: DashboardProps) {
   }, [showGenreDropdown, showStatusDropdown])
 
   const handleGenreClick = (genre: string) => {
+    trackCuratorFilterChange('genre', genre)
     setCuratorFilters(prev => {
       // If this is the first genre being selected, replace all filters
       if (prev.genres.length === 0) {
@@ -4261,6 +4347,7 @@ export default function Dashboard({ user }: DashboardProps) {
 
   // Helper function to handle genre filter toggle
   const toggleGenreFilter = (genre: string) => {
+    trackCuratorFilterChange('genre', genre)
     setCuratorFilters(prev => ({
       ...prev,
       genres: prev.genres.includes(genre)
@@ -4305,6 +4392,11 @@ export default function Dashboard({ user }: DashboardProps) {
 
   const handleContactCurator = async (curator: any) => {
     try {
+      analytics.track('curator_contact_clicked', {
+        curator_id: curator.id,
+        template_version: 'v1',
+      })
+
       // Track the contact
       await fetch('/api/curator-contact-track', {
         method: 'POST',
@@ -4509,7 +4601,10 @@ Best regards,
                 type="number"
                 placeholder="Minimum followers"
                 value={curatorFilters.minSaves}
-                onChange={(e) => setCuratorFilters(prev => ({ ...prev, minSaves: e.target.value }))}
+                onChange={(e) => {
+                  setCuratorFilters(prev => ({ ...prev, minSaves: e.target.value }))
+                  trackCuratorFilterChange('min_followers', e.target.value || '0')
+                }}
                 className="w-full px-3 py-2 bg-gray-800/50 border border-gray-700 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-green-500"
               />
             </div>
@@ -4538,7 +4633,14 @@ Best regards,
           <div className="mt-4 flex flex-wrap gap-4 items-center">
             <span className="text-sm font-medium text-gray-300">Sort by:</span>
             <button
-              onClick={() => setCuratorSort({ field: 'playlistSaves', direction: curatorSort.direction === 'asc' ? 'desc' : 'asc' })}
+              onClick={() => {
+                const direction = curatorSort.direction === 'asc' ? 'desc' : 'asc'
+                setCuratorSort({ field: 'playlistSaves', direction })
+                analytics.track('curator_sort_changed', {
+                  sort_key: 'playlistSaves',
+                  direction,
+                })
+              }}
               className={`px-3 py-1 rounded-lg text-sm font-medium transition-colors ${
                 curatorSort.field === 'playlistSaves'
                   ? 'bg-green-600 text-white'
@@ -4548,7 +4650,14 @@ Best regards,
               Followers {curatorSort.field === 'playlistSaves' && (curatorSort.direction === 'asc' ? '↑' : '↓')}
             </button>
             <button
-              onClick={() => setCuratorSort({ field: 'playlistName', direction: curatorSort.direction === 'asc' ? 'desc' : 'asc' })}
+              onClick={() => {
+                const direction = curatorSort.direction === 'asc' ? 'desc' : 'asc'
+                setCuratorSort({ field: 'playlistName', direction })
+                analytics.track('curator_sort_changed', {
+                  sort_key: 'playlistName',
+                  direction,
+                })
+              }}
               className={`px-3 py-1 rounded-lg text-sm font-medium transition-colors ${
                 curatorSort.field === 'playlistName'
                   ? 'bg-green-600 text-white'
@@ -5146,7 +5255,10 @@ Thank you,
                 <div className="flex gap-2">
                   {curatorFilters.genres.length > 0 && (
                     <button
-                      onClick={() => setCuratorFilters(prev => ({ ...prev, genres: [] }))}
+                      onClick={() => {
+                        setCuratorFilters(prev => ({ ...prev, genres: [] }))
+                        trackCuratorFilterChange('genre', 'all')
+                      }}
                       className="text-xs text-green-400 hover:text-green-300"
                     >
                       Clear All
@@ -5208,7 +5320,8 @@ Thank you,
                   <button
                     key={option.value}
                     onClick={() => {
-                      setCuratorFilters(prev => ({ ...prev, status: option.value }));
+                      setCuratorFilters(prev => ({ ...prev, status: option.value }))
+                      trackCuratorFilterChange('status', option.value)
                       setShowStatusDropdown(false);
                     }}
                     className={`w-full text-left px-2 py-1 rounded text-sm transition-colors ${

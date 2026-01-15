@@ -12,6 +12,7 @@ import { MUSIC_GENRES } from '../constants/genres';
 import LegalModal from '../components/LegalModal';
 import SpotlightCard from '../components/SpotlightCard';
 import { useAuth } from '../utils/authContext';
+import { analytics } from "../utils/analytics";
 
 interface Package {
   id: string;
@@ -166,6 +167,7 @@ export default function CheckoutPage() {
   const [loginError, setLoginError] = useState('');
   const [emailStatus, setEmailStatus] = useState<null | 'available' | 'exists' | 'invalid' | 'error'>(null);
   const [loginInfoMessage, setLoginInfoMessage] = useState<string | null>(null);
+  const hasTrackedCheckoutView = useRef(false);
 
   const [lastSessionId, setLastSessionId] = useState<string>('');
   const [artistProfile, setArtistProfile] = useState<ArtistProfile | null>(null);
@@ -735,6 +737,17 @@ export default function CheckoutPage() {
     updateTotals();
   }, [orderItems, addOnOrderItems]);
 
+  useEffect(() => {
+    if (hasTrackedCheckoutView.current) return;
+    if (orderItems.length === 0) return;
+    analytics.track("checkout_viewed", {
+      song_count: orderItems.length,
+      order_total_estimated: total,
+      currency: "USD",
+    });
+    hasTrackedCheckoutView.current = true;
+  }, [orderItems.length, total]);
+
   // Debounced email validation effect
   useEffect(() => {
     if (!formData.email || isLoginMode) {
@@ -1020,12 +1033,23 @@ export default function CheckoutPage() {
       }
       
       setFormError(errorMessage);
+      analytics.track("validation_error_shown", {
+        field: firstMissingField || "checkout_form",
+        message_id: firstMissingField ? `missing_${firstMissingField}` : "checkout_validation_failed",
+        step: "checkout",
+      });
       setIsLoading(false);
       return;
     }
 
     // Process payment directly
     console.log('🚀 CHECKOUT: About to call handlePaymentSubmit...');
+    analytics.track("checkout_submitted", {
+      song_count: orderItems.length,
+      packages_count: orderItems.length,
+      order_total: total,
+      currency: "USD",
+    });
     await handlePaymentSubmit();
     console.log('🚀 CHECKOUT: handlePaymentSubmit completed');
   };
@@ -1248,6 +1272,9 @@ export default function CheckoutPage() {
     console.log('🚨 CHECKOUT: PROCEEDING WITH ORDER CREATION...');
     console.log('🚨 CHECKOUT: Starting main try-catch block for order processing');
     
+    let hasTrackedPaymentSuccess = false;
+    let trackPaymentSuccess: (orderId?: string | null) => void = () => {};
+
     try {
       console.log('🚀 CHECKOUT: handleSuccessfulPayment called with response:', response);
       console.log('🚀 CHECKOUT: Current user state:', { 
@@ -1272,6 +1299,17 @@ export default function CheckoutPage() {
       
       const pendingOrder = JSON.parse(pendingOrderData);
       console.log('🚀 CHECKOUT: Retrieved pendingOrder data:', pendingOrder);
+      trackPaymentSuccess = (orderId?: string | null) => {
+        if (hasTrackedPaymentSuccess) return;
+        analytics.track("checkout_payment_succeeded", {
+          order_id: orderId || null,
+          order_total: pendingOrder?.total ?? total,
+          currency: "USD",
+          payment_provider: "authorize_net",
+          song_count: pendingOrder?.items?.length ?? orderItems.length,
+        });
+        hasTrackedPaymentSuccess = true;
+      };
       
       // Track if we created a new account
       let newAccountCreated = false;
@@ -1373,10 +1411,12 @@ export default function CheckoutPage() {
         console.error('🚨 CHECKOUT: Error creating order:', orderResult.message);
         console.error('🚨 CHECKOUT: Order error details:', JSON.stringify(orderResult, null, 2));
         setError('Payment was successful but there was an error saving your order. Please contact support with your transaction ID: ' + response.transId);
+        trackPaymentSuccess(null);
         return;
       }
 
       console.log('🚀 CHECKOUT: Order created successfully:', orderResult.order);
+      trackPaymentSuccess(orderResult.order?.id);
       
       // Mark checkout session as completed
       if (sessionId) {
@@ -1453,6 +1493,7 @@ export default function CheckoutPage() {
       console.error('🚨 CHECKOUT: Error name:', (error as Error)?.name || 'Unknown error type');
       console.log('🚨 CHECKOUT: Payment was successful but order processing failed');
       
+      trackPaymentSuccess(null);
       setError('Payment was successful but there was an error processing your order. Please contact support.');
       orderProcessingFlag.current = false; // Unlock on error using ref
       console.log('🔓 CHECKOUT: Order processing unlocked due to error (ref flag reset)');
@@ -1916,6 +1957,12 @@ export default function CheckoutPage() {
           }
           } else {
             console.error('🔍 PAYMENT: Transaction declined or error:', response.responseReasonText);
+            analytics.track("checkout_payment_failed", {
+              payment_provider: "authorize_net",
+              reason: response.responseReasonText || "payment_declined",
+              error_code: response.responseReasonCode || response.responseCode,
+              step: "payment",
+            });
             setError(`Payment failed: ${response.responseReasonText}`);
             setIsLoading(false);
             setShowPaymentForm(false);
@@ -1925,6 +1972,12 @@ export default function CheckoutPage() {
 
         case 'PAYMENT_CANCELLED':
           console.log('❌ PARENT PAGE: Payment was cancelled');
+          analytics.track("checkout_payment_failed", {
+            payment_provider: "authorize_net",
+            reason: "cancelled",
+            error_code: "cancelled",
+            step: "payment",
+          });
           setError('Payment was cancelled');
           setIsLoading(false);
           setShowPaymentForm(false);

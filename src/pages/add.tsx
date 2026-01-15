@@ -15,6 +15,7 @@ import SalesPop from "../components/SalesPop";
 import { createClient } from '../utils/supabase/client';
 import { createPortal } from 'react-dom';
 import * as gtag from '../utils/gtag';
+import { analytics } from "../utils/analytics";
 
 export default function AddSongsPage() {
   const router = useRouter();
@@ -63,6 +64,8 @@ export default function AddSongsPage() {
   const inputRef = useRef<HTMLInputElement>(null);
   const tracksContainerRef = useRef<HTMLDivElement>(null);
   const searchDropdownRef = useRef<HTMLDivElement>(null);
+  const hasTrackedAddView = useRef(false);
+  const lastValidationErrorRef = useRef<string | null>(null);
 
   // Calculate dropdown position when input changes or dropdown opens
   const updateDropdownPosition = () => {
@@ -78,6 +81,25 @@ export default function AddSongsPage() {
 
   // Track when component is mounted for portal
   useEffect(() => { setIsMounted(true); }, []);
+
+  useEffect(() => {
+    if (!router.isReady || hasTrackedAddView.current) return;
+    analytics.track("add_page_viewed", {
+      song_count_current: tracks.length,
+      has_preselected_song: tracks.length > 0,
+    });
+    hasTrackedAddView.current = true;
+  }, [router.isReady, tracks.length]);
+
+  useEffect(() => {
+    if (!validationError || validationError === lastValidationErrorRef.current) return;
+    analytics.track("validation_error_shown", {
+      field: "track_url",
+      message_id: "invalid_spotify_url",
+      step: "add",
+    });
+    lastValidationErrorRef.current = validationError;
+  }, [validationError]);
 
   // Track Initialize Checkout conversion when page loads
   useEffect(() => {
@@ -298,11 +320,21 @@ export default function AddSongsPage() {
         setShowSearchResults(true);
         setHasSearched(true);
       } else {
+        analytics.track("spotify_api_error", {
+          endpoint: "/api/spotify/search",
+          status_code: response.status,
+          error_type: "spotify_search_failed",
+        });
         setError(data.error || 'Failed to search tracks');
         setSearchResults([]);
         setShowSearchResults(false);
       }
     } catch (err) {
+      analytics.track("spotify_api_error", {
+        endpoint: "/api/spotify/search",
+        status_code: null,
+        error_type: "spotify_search_error",
+      });
       setError('Failed to search tracks. Please try again.');
       setSearchResults([]);
       setShowSearchResults(false);
@@ -335,6 +367,11 @@ export default function AddSongsPage() {
     setPreviewTrack(null);
     setHasSearched(false);
     scrollToNewTrack(newTracks.length - 1);
+    analytics.track("add_song_clicked", {
+      spotify_track_id: track.id,
+      song_count_new: newTracks.length,
+      discount_offer: "25_off_additional",
+    });
   };
 
   // debounce search when input changes
@@ -399,6 +436,11 @@ export default function AddSongsPage() {
           if (!isRequestActive) return;
           
           if (!data.success) {
+            analytics.track("spotify_api_error", {
+              endpoint: "/api/track",
+              status_code: res.status,
+              error_type: "spotify_track_fetch_failed",
+            });
             setError("Sorry! We can't find this song on Spotify. Make sure you entered the link correctly and try again.");
             setPreviewTrack(null);
           } else {
@@ -409,6 +451,11 @@ export default function AddSongsPage() {
           
           if (!isRequestActive) return;
           
+          analytics.track("spotify_api_error", {
+            endpoint: "/api/track",
+            status_code: null,
+            error_type: "spotify_track_fetch_error",
+          });
           setError("Sorry! We can't find this song on Spotify. Make sure you entered the link correctly and try again.");
           setPreviewTrack(null);
         } finally {
@@ -440,11 +487,23 @@ export default function AddSongsPage() {
     setInput("");
     setHasSearched(false);
     scrollToNewTrack(newTracks.length - 1);
+    analytics.track("add_song_clicked", {
+      spotify_track_id: previewTrack.id,
+      song_count_new: newTracks.length,
+      discount_offer: "25_off_additional",
+    });
   };
 
   const removeTrack = (indexToRemove: number) => {
+    const removedTrack = tracks[indexToRemove];
     const newTracks = tracks.filter((_, index) => index !== indexToRemove);
     setTracks(newTracks);
+    if (removedTrack) {
+      analytics.track("remove_song_clicked", {
+        spotify_track_id: removedTrack.id,
+        song_count_new: newTracks.length,
+      });
+    }
     
     // If no tracks left, redirect to home page
     if (newTracks.length === 0) {
@@ -478,6 +537,12 @@ export default function AddSongsPage() {
     if (currentParams.get('utm_campaign')) {
       preservedParams.utm_campaign = currentParams.get('utm_campaign');
     }
+
+    analytics.track("add_step_completed", {
+      song_count: tracks.length,
+      has_additional_songs: tracks.length > 1,
+      discount_applied: tracks.length > 1,
+    });
 
     // Normal flow - go to packages page
     router.push({

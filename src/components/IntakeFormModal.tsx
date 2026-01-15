@@ -1,5 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { analytics } from "../utils/analytics";
 
 interface Question {
   id: string;
@@ -12,6 +13,8 @@ interface Question {
 interface IntakeFormModalProps {
   isOpen: boolean;
   onComplete: (responses: Record<string, any>) => void;
+  orderId?: string | null;
+  surveyId?: string;
 }
 
 // Icon mapping for each answer option
@@ -99,13 +102,19 @@ const questions: Question[] = [
   }
 ];
 
-const IntakeFormModal: React.FC<IntakeFormModalProps> = ({ isOpen, onComplete }) => {
+const IntakeFormModal: React.FC<IntakeFormModalProps> = ({
+  isOpen,
+  onComplete,
+  orderId = null,
+  surveyId = "intake_form",
+}) => {
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [responses, setResponses] = useState<Record<string, any>>({});
   const [isAnimating, setIsAnimating] = useState(false);
   const [showCompletion, setShowCompletion] = useState(false);
   const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
   const [countdown, setCountdown] = useState(5);
+  const surveyStartTime = useRef<number | null>(null);
 
   console.log('📋 INTAKE-FORM-MODAL: Component rendered', { 
     isOpen, 
@@ -120,14 +129,19 @@ const IntakeFormModal: React.FC<IntakeFormModalProps> = ({ isOpen, onComplete })
   // Reset state when modal opens
   useEffect(() => {
     if (isOpen) {
+      surveyStartTime.current = Date.now();
       setCurrentQuestionIndex(0);
       setResponses({});
       setIsAnimating(false);
       setShowCompletion(false);
       setSelectedAnswer(null);
       setCountdown(5);
+      analytics.track("survey_started", {
+        survey_id: surveyId,
+        order_id: orderId,
+      });
     }
-  }, [isOpen]);
+  }, [isOpen, orderId, surveyId]);
 
   // Countdown timer effect (visual only - modal closes after submission)
   useEffect(() => {
@@ -216,6 +230,17 @@ const IntakeFormModal: React.FC<IntakeFormModalProps> = ({ isOpen, onComplete })
 
       if (response.ok && data.success) {
         console.log('✅ INTAKE-FORM: Successfully submitted:', data);
+        const completionSeconds = surveyStartTime.current
+          ? Math.round((Date.now() - surveyStartTime.current) / 1000)
+          : undefined;
+        analytics.track("survey_completed", {
+          survey_id: surveyId,
+          order_id: orderId,
+          completion_time_seconds: completionSeconds,
+          music_years_active_range: finalResponses.music_experience,
+          age_range: finalResponses.age_range,
+          online_time_range: finalResponses.online_activity_time,
+        });
         // Note: Modal will close immediately after this function returns
       } else {
         console.error('❌ INTAKE-FORM: Submission failed:', data);

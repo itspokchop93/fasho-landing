@@ -20,6 +20,7 @@ import Lottie from 'lottie-react';
 import * as gtag from '../utils/gtag';
 import { fetchSiteSettings, SiteSettings, defaultSiteSettings } from '../utils/siteSettings';
 import usePageVisibility from '../hooks/use-page-visibility';
+import { analytics } from "../utils/analytics";
 
 // CSS for responsive font sizing
 const responsiveFontStyles = `
@@ -355,6 +356,8 @@ export default function Home() {
   const [searchTimeout, setSearchTimeout] = useState<NodeJS.Timeout | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const searchDropdownRef = useRef<HTMLDivElement>(null);
+  const hasTrackedHomeView = useRef(false);
+  const lastValidationErrorRef = useRef<string | null>(null);
   const router = useRouter();
   const [dropdownPosition, setDropdownPosition] = useState({ top: 0, left: 0, width: 0 });
   const [isMounted, setIsMounted] = useState(false);
@@ -856,6 +859,11 @@ export default function Home() {
       console.log('🔍 Search response status:', response.status);
       
       if (!response.ok) {
+        analytics.track("spotify_api_error", {
+          endpoint: "/api/spotify/search",
+          status_code: response.status,
+          error_type: "spotify_search_failed",
+        });
         const errorData = await response.json().catch(() => ({ error: 'Search failed' }));
         throw new Error(errorData.error || `Search failed with status ${response.status}`);
       }
@@ -868,11 +876,21 @@ export default function Home() {
         setHasSearched(true);
         setError(null);
         console.log('🔍 Found', data.tracks?.length || 0, 'tracks');
+        analytics.track("home_search_submitted", {
+          query_length: query.trim().length,
+          result_count: data.tracks?.length || 0,
+          search_source: "homepage",
+        });
       } else {
         throw new Error(data.error || 'Search failed');
       }
     } catch (error: any) {
       console.error('🔍 Search error:', error);
+      analytics.track("spotify_api_error", {
+        endpoint: "/api/spotify/search",
+        status_code: null,
+        error_type: "spotify_search_error",
+      });
       setSearchResults([]);
       setHasSearched(true);
       const errorMessage = error?.message || 'Search failed. Please try again.';
@@ -882,7 +900,7 @@ export default function Home() {
       setIsSearching(false);
     }
   };
-  const selectTrackFromSearch = (selectedTrack: Track) => {
+  const selectTrackFromSearch = (selectedTrack: Track, positionInResults?: number) => {
     setTrack(selectedTrack);
     setPreviewTrack(selectedTrack);
     setUrl(selectedTrack.url);
@@ -890,6 +908,13 @@ export default function Home() {
     setFocused(false);
     setValidationError(null);
     setError(null);
+    analytics.track("song_selected", {
+      spotify_track_id: selectedTrack.id,
+      track_name: selectedTrack.title,
+      artist_name: selectedTrack.artist,
+      position_in_results: positionInResults,
+      result_count: searchResults.length || undefined,
+    });
   };
 
   // Handle URL changes
@@ -965,6 +990,11 @@ export default function Home() {
       const data = await response.json();
 
       if (!response.ok) {
+        analytics.track("spotify_api_error", {
+          endpoint: "/api/track",
+          status_code: response.status,
+          error_type: "spotify_track_fetch_failed",
+        });
         throw new Error(data.error || 'Failed to fetch track information');
       }
 
@@ -974,6 +1004,11 @@ export default function Home() {
       }
     } catch (error: any) {
       console.error('Error fetching track:', error);
+      analytics.track("spotify_api_error", {
+        endpoint: "/api/track",
+        status_code: null,
+        error_type: "spotify_track_fetch_error",
+      });
       setError(error.message || 'Failed to load track information');
       setPreviewTrack(null);
     } finally {
@@ -1001,6 +1036,11 @@ export default function Home() {
 
   const handleSubmit = async () => {
     if (!track && !previewTrack) {
+      analytics.track("validation_error_shown", {
+        field: "track",
+        message_id: "track_required",
+        step: "home",
+      });
       setError('Please select a track first');
       return;
     }
@@ -1076,6 +1116,25 @@ export default function Home() {
 
   // Track when component is mounted for portal
   useEffect(() => { setIsMounted(true); }, []);
+
+  useEffect(() => {
+    if (!router.isReady || hasTrackedHomeView.current) return;
+    analytics.track("home_viewed", { page_path: "/" });
+    hasTrackedHomeView.current = true;
+  }, [router.isReady]);
+
+  useEffect(() => {
+    if (!validationError || validationError === lastValidationErrorRef.current) return;
+    const messageId = validationError.includes("valid Spotify")
+      ? "invalid_spotify_url"
+      : "validation_error";
+    analytics.track("validation_error_shown", {
+      field: "track_url",
+      message_id: messageId,
+      step: "home",
+    });
+    lastValidationErrorRef.current = validationError;
+  }, [validationError]);
 
   // Update position on focus, showSearchResults, or url change
   useEffect(() => {
@@ -1671,7 +1730,7 @@ export default function Home() {
                                     searchResults.map((track, index) => (
                                       <div
                                         key={index}
-                                        onClick={() => selectTrackFromSearch(track)}
+                                        onClick={() => selectTrackFromSearch(track, index + 1)}
                                         className="p-4 hover:bg-white/5 cursor-pointer transition-all duration-200 border-b border-white/5 last:border-b-0 group"
                                       >
                                         <div className="flex items-center space-x-3">
@@ -6263,7 +6322,7 @@ export default function Home() {
                   searchResults.map((track, index) => (
                     <div
                       key={index}
-                      onClick={() => selectTrackFromSearch(track)}
+                      onClick={() => selectTrackFromSearch(track, index + 1)}
                       className="p-4 hover:bg-white/5 cursor-pointer transition-all duration-200 border-b border-white/5 last:border-b-0 group"
                     >
                       <div className="flex items-center space-x-3">

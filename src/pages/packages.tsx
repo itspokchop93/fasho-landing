@@ -10,6 +10,7 @@ import SalesPop from "../components/SalesPop";
 import dynamic from 'next/dynamic';
 import { createClient } from '../utils/supabase/client';
 import * as gtag from '../utils/gtag';
+import { analytics } from "../utils/analytics";
 
 // Packages page component
 const Lottie = dynamic(() => import('lottie-react'), { ssr: false });
@@ -105,6 +106,7 @@ export default function PackagesPage() {
   const lottieRef = useRef<any>(null);
   const selectedPackageRef = useRef<HTMLDivElement>(null);
   const changeSongButtonRef = useRef<HTMLButtonElement>(null);
+  const hasTrackedPackagesView = useRef(false);
 
   useEffect(() => {
     if (!router.isReady) return;
@@ -130,6 +132,13 @@ export default function PackagesPage() {
       router.push( '/add');
     }
   }, [router.isReady, tracksParam, router.query.sessionId]);
+
+  useEffect(() => {
+    if (!router.isReady || hasTrackedPackagesView.current) return;
+    if (tracks.length === 0) return;
+    analytics.track("packages_page_viewed", { song_count: tracks.length });
+    hasTrackedPackagesView.current = true;
+  }, [router.isReady, tracks.length]);
 
   // Check for authentication state
   useEffect(() => {
@@ -203,6 +212,8 @@ export default function PackagesPage() {
   const handlePackageSelect = (packageId: string) => {
     // Toggle functionality - if clicking the same package, unselect it
     const newPackageId = selectedPackage === packageId ? "" : packageId;
+    const fromPackageId = selectedPackage || undefined;
+    const selectedPkg = packages.find(pkg => pkg.id === packageId);
     
     // Only play confetti if actually selecting a package (not deselecting)
     if (newPackageId !== "") {
@@ -216,8 +227,22 @@ export default function PackagesPage() {
       }, 2000);
 
       // Track package selection for Google Ads
-      const selectedPkg = packages.find(pkg => pkg.id === packageId);
       if (selectedPkg) {
+        analytics.track("package_selected", {
+          package_id: selectedPkg.id,
+          package_name: selectedPkg.name,
+          price: selectedPkg.price,
+          currency: "USD",
+          spotify_track_id: currentTrack?.id,
+          song_count_affected: 1,
+        });
+        if (fromPackageId && fromPackageId !== newPackageId) {
+          analytics.track("package_selection_changed", {
+            from_package_id: fromPackageId,
+            to_package_id: newPackageId,
+            spotify_track_id: currentTrack?.id,
+          });
+        }
         gtag.trackPackageSelect({
           id: selectedPkg.id,
           name: selectedPkg.name,
@@ -570,6 +595,13 @@ export default function PackagesPage() {
         }).filter(item => item.packageName !== 'UNKNOWN');
 
         const totalAmount = checkoutItems.reduce((sum, item) => sum + item.price, 0);
+        const packagesCount = checkoutItems.length;
+
+        analytics.track("packages_step_completed", {
+          song_count: tracks.length,
+          packages_count: packagesCount,
+          total_estimated: totalAmount,
+        });
 
         gtag.trackBeginCheckout({
           totalAmount,

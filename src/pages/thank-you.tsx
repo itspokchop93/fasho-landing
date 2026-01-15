@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import Head from 'next/head';
 import Link from 'next/link';
 import Image from 'next/image';
@@ -8,6 +8,7 @@ import Header from '../components/Header';
 import Footer from '../components/Footer';
 import IntakeFormModal from '../components/IntakeFormModal';
 import * as gtag from '../utils/gtag';
+import { analytics } from "../utils/analytics";
 
 interface OrderItem {
   track: {
@@ -142,6 +143,15 @@ export default function ThankYouPage() {
   const [timeRemaining, setTimeRemaining] = useState<number>(0);
   const [showIntakeForm, setShowIntakeForm] = useState(false);
   const [checkingIntakeStatus, setCheckingIntakeStatus] = useState(true);
+  const hasTrackedThankYouView = useRef(false);
+
+  useEffect(() => {
+    if (!orderData || hasTrackedThankYouView.current) return;
+    analytics.track("thank_you_viewed", {
+      order_id: orderData.orderId || orderData.orderNumber || null,
+    });
+    hasTrackedThankYouView.current = true;
+  }, [orderData]);
 
   useEffect(() => {
     const loadOrderData = async () => {
@@ -793,6 +803,7 @@ export default function ThankYouPage() {
       <IntakeFormModal 
         isOpen={showIntakeForm && !checkingIntakeStatus}
         onComplete={handleIntakeFormComplete}
+        orderId={orderData?.orderId || orderData?.orderNumber || null}
       />
     </>
   );
