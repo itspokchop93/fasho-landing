@@ -558,7 +558,6 @@ const DashboardTour: React.FC<DashboardTourProps> = ({
           cancelIcon: {
             enabled: true,
           },
-          classes: 'fasho-tour-step',
         });
       }
       
