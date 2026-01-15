@@ -2299,3 +2299,388 @@ button, a, [role="button"] {
     transform: translateY(60px);
   }
 }
+
+/* ===== SHEPHERD.JS DASHBOARD TOUR CUSTOM STYLES ===== */
+
+/* Main step container - LARGER SIZE */
+.shepherd-element {
+  background: linear-gradient(135deg, #1a1b2e 0%, #0f1019 100%) !important;
+  border: 2px solid rgba(89, 227, 165, 0.4) !important;
+  border-radius: 20px !important;
+  box-shadow: 0 25px 50px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(89, 227, 165, 0.15), 0 0 40px rgba(89, 227, 165, 0.1) !important;
+  max-width: 440px !important;
+  min-width: 380px !important;
+}
+
+/* Step header - LARGER PADDING */
+.shepherd-header {
+  padding: 24px 28px 12px 28px !important;
+  background: transparent !important;
+  border-bottom: none !important;
+}
+
+/* Step title - LARGER FONT */
+.shepherd-title {
+  color: #59e3a5 !important;
+  font-weight: 700 !important;
+  font-size: 1.5rem !important;
+  line-height: 1.3 !important;
+  margin: 0 !important;
+  letter-spacing: -0.02em !important;
+  width: 100% !important;
+}
+
+/* Progress ring wrapper in title */
+.shepherd-progress-wrapper {
+  display: flex !important;
+  align-items: center !important;
+  gap: 10px !important;
+  width: 100% !important;
+}
+
+.shepherd-title-text {
+  flex: 1 !important;
+}
+
+/* Circular progress ring - small and compact */
+.shepherd-progress-ring {
+  position: relative !important;
+  width: 22px !important;
+  height: 22px !important;
+  border-radius: 50% !important;
+  background: conic-gradient(
+    #59e3a5 var(--progress, 0%),
+    rgba(255, 255, 255, 0.15) var(--progress, 0%)
+  ) !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  flex-shrink: 0 !important;
+}
+
+.shepherd-progress-ring::before {
+  content: '' !important;
+  position: absolute !important;
+  width: 14px !important;
+  height: 14px !important;
+  border-radius: 50% !important;
+  background: linear-gradient(135deg, #1a1b2e 0%, #0f1019 100%) !important;
+}
+
+/* Hide the progress text inside the ring */
+.shepherd-progress-text {
+  display: none !important;
+}
+
+/* Cancel button (X) - LARGER */
+.shepherd-cancel-icon {
+  background: transparent !important;
+  color: #9ca3af !important;
+  font-size: 1.5rem !important;
+  width: 36px !important;
+  height: 36px !important;
+  line-height: 36px !important;
+  text-align: center !important;
+  border-radius: 50% !important;
+  transition: all 0.2s ease !important;
+}
+
+.shepherd-cancel-icon:hover {
+  background: rgba(239, 68, 68, 0.15) !important;
+  color: #ef4444 !important;
+}
+
+/* Step text content - LARGER FONT */
+.shepherd-text {
+  color: #e5e7eb !important;
+  font-size: 1.125rem !important;
+  line-height: 1.7 !important;
+  padding: 12px 28px 24px 28px !important;
+}
+
+/* Button container - LARGER PADDING */
+.shepherd-footer {
+  padding: 16px 28px 24px 28px !important;
+  border-top: 1px solid rgba(255, 255, 255, 0.1) !important;
+  display: flex !important;
+  justify-content: space-between !important;
+  gap: 14px !important;
+}
+
+/* Base button styles - LARGER */
+.shepherd-button {
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%) !important;
+  border: none !important;
+  border-radius: 10px !important;
+  color: white !important;
+  font-weight: 600 !important;
+  font-size: 1rem !important;
+  padding: 14px 24px !important;
+  transition: all 0.2s ease !important;
+  cursor: pointer !important;
+  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.35) !important;
+}
+
+.shepherd-button:hover {
+  background: linear-gradient(135deg, #059669 0%, #047857 100%) !important;
+  transform: translateY(-2px) !important;
+  box-shadow: 0 6px 16px rgba(16, 185, 129, 0.45) !important;
+}
+
+.shepherd-button:focus {
+  outline: none !important;
+  box-shadow: 0 0 0 3px rgba(89, 227, 165, 0.5), 0 4px 12px rgba(16, 185, 129, 0.35) !important;
+}
+
+/* Secondary button (Back) */
+.shepherd-button-secondary {
+  background: rgba(255, 255, 255, 0.1) !important;
+  color: #9ca3af !important;
+  box-shadow: none !important;
+}
+
+.shepherd-button-secondary:hover {
+  background: rgba(255, 255, 255, 0.18) !important;
+  color: white !important;
+  transform: translateY(-2px) !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25) !important;
+}
+
+/* Primary button (Next/Done) */
+.shepherd-button-primary {
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%) !important;
+}
+
+.shepherd-button-primary:hover {
+  background: linear-gradient(135deg, #059669 0%, #047857 100%) !important;
+}
+
+/* Done button special styling */
+.shepherd-button-primary:last-child {
+  background: linear-gradient(135deg, #59e3a5 0%, #14c0ff 100%) !important;
+}
+
+.shepherd-button-primary:last-child:hover {
+  background: linear-gradient(135deg, #4ade80 0%, #06b6d4 100%) !important;
+}
+
+/* Disabled button */
+.shepherd-button:disabled {
+  opacity: 0.5 !important;
+  cursor: not-allowed !important;
+  pointer-events: none !important;
+}
+
+/* Shepherd modal overlay - DARKER for better highlight effect */
+.shepherd-modal-overlay-container {
+  fill: rgba(0, 0, 0, 0.82) !important;
+}
+
+/* The highlighted element gets feathered glow effect */
+.shepherd-enabled.shepherd-target {
+  position: relative !important;
+  z-index: 9999 !important;
+  border-radius: 16px !important;
+  box-shadow: 
+    0 0 0 4px rgba(89, 227, 165, 0.25),
+    0 0 20px 8px rgba(89, 227, 165, 0.15),
+    0 0 40px 16px rgba(89, 227, 165, 0.08),
+    0 0 60px 24px rgba(20, 192, 255, 0.05) !important;
+  animation: shepherd-highlight-pulse 2s ease-in-out infinite !important;
+}
+
+/* Feathered highlight pulse animation */
+@keyframes shepherd-highlight-pulse {
+  0%, 100% {
+    box-shadow: 
+      0 0 0 4px rgba(89, 227, 165, 0.25),
+      0 0 20px 8px rgba(89, 227, 165, 0.15),
+      0 0 40px 16px rgba(89, 227, 165, 0.08),
+      0 0 60px 24px rgba(20, 192, 255, 0.05);
+  }
+  50% {
+    box-shadow: 
+      0 0 0 6px rgba(89, 227, 165, 0.35),
+      0 0 25px 10px rgba(89, 227, 165, 0.2),
+      0 0 50px 20px rgba(89, 227, 165, 0.1),
+      0 0 70px 28px rgba(20, 192, 255, 0.08);
+  }
+}
+
+/* Shepherd SVG modal uses a mask - style the cutout with rounded corners */
+.shepherd-modal-overlay-container.shepherd-modal-is-visible {
+  /* The SVG path needs rounded corners - achieved via filter */
+}
+
+/* Better arrow styling - custom arrow with gradient */
+.shepherd-arrow,
+.shepherd-arrow::before {
+  position: absolute !important;
+  width: 20px !important;
+  height: 20px !important;
+  background: inherit !important;
+  z-index: -1 !important;
+}
+
+.shepherd-arrow {
+  visibility: hidden !important;
+}
+
+.shepherd-arrow::before {
+  visibility: visible !important;
+  content: '' !important;
+  transform: rotate(45deg) !important;
+  background: linear-gradient(135deg, #1a1b2e 0%, #0f1019 100%) !important;
+  border: 2px solid rgba(89, 227, 165, 0.4) !important;
+  box-shadow: -2px -2px 8px rgba(89, 227, 165, 0.15) !important;
+}
+
+/* Arrow position adjustments for different placements */
+.shepherd-element[data-popper-placement^='top'] > .shepherd-arrow {
+  bottom: -10px !important;
+}
+
+.shepherd-element[data-popper-placement^='top'] > .shepherd-arrow::before {
+  border-top: none !important;
+  border-left: none !important;
+}
+
+.shepherd-element[data-popper-placement^='bottom'] > .shepherd-arrow {
+  top: -10px !important;
+}
+
+.shepherd-element[data-popper-placement^='bottom'] > .shepherd-arrow::before {
+  border-bottom: none !important;
+  border-right: none !important;
+}
+
+.shepherd-element[data-popper-placement^='left'] > .shepherd-arrow {
+  right: -10px !important;
+}
+
+.shepherd-element[data-popper-placement^='left'] > .shepherd-arrow::before {
+  border-left: none !important;
+  border-bottom: none !important;
+}
+
+.shepherd-element[data-popper-placement^='right'] > .shepherd-arrow {
+  left: -10px !important;
+}
+
+.shepherd-element[data-popper-placement^='right'] > .shepherd-arrow::before {
+  border-right: none !important;
+  border-top: none !important;
+}
+
+/* Custom step class for additional styling */
+.fasho-tour-step {
+  z-index: 10000 !important;
+}
+
+/* Ensure modal has some breathing room from viewport edges */
+.shepherd-element {
+  margin: 12px !important;
+}
+
+/* Step 2 "Your Campaigns" - Force modal to RIGHT side of viewport */
+.shepherd-element.shepherd-step-all-campaigns,
+.shepherd-element[data-shepherd-step="all-campaigns"] {
+  position: fixed !important;
+  right: 24px !important;
+  left: auto !important;
+  top: 50% !important;
+  transform: translateY(-50%) !important;
+  margin: 0 !important;
+}
+
+/* Fix arrow for right-side positioned modal - point LEFT */
+.shepherd-element.shepherd-step-all-campaigns .shepherd-arrow,
+.shepherd-element[data-shepherd-step="all-campaigns"] .shepherd-arrow,
+.shepherd-element.shepherd-step-all-campaigns[data-popper-placement^='left'] > .shepherd-arrow,
+.shepherd-element[data-shepherd-step="all-campaigns"][data-popper-placement^='left'] > .shepherd-arrow {
+  left: -10px !important;
+  right: auto !important;
+  top: 50% !important;
+  transform: translateY(-50%) !important;
+}
+
+.shepherd-element.shepherd-step-all-campaigns .shepherd-arrow::before,
+.shepherd-element[data-shepherd-step="all-campaigns"] .shepherd-arrow::before,
+.shepherd-element.shepherd-step-all-campaigns[data-popper-placement^='left'] > .shepherd-arrow::before,
+.shepherd-element[data-shepherd-step="all-campaigns"][data-popper-placement^='left'] > .shepherd-arrow::before {
+  border-left: none !important;
+  border-bottom: none !important;
+  border-right: 2px solid rgba(89, 227, 165, 0.4) !important;
+  border-top: 2px solid rgba(89, 227, 165, 0.4) !important;
+  transform: rotate(45deg) !important;
+}
+
+/* Override shepherd modal mask to have rounded corners on the cutout */
+.shepherd-modal-overlay-container path {
+  /* SVG path styling - unfortunately SVG paths don't support border-radius directly */
+  /* The feathered glow on the target element creates the visual effect instead */
+}
+
+/* Mobile responsive adjustments */
+@media (max-width: 768px) {
+  .shepherd-element {
+    max-width: 340px !important;
+    min-width: 300px !important;
+    margin: 10px !important;
+  }
+  
+  .shepherd-header {
+    padding: 18px 20px 8px 20px !important;
+  }
+  
+  .shepherd-title {
+    font-size: 1.25rem !important;
+  }
+  
+  .shepherd-text {
+    font-size: 1rem !important;
+    padding: 8px 20px 18px 20px !important;
+  }
+  
+  .shepherd-footer {
+    padding: 12px 20px 18px 20px !important;
+    flex-direction: row !important;
+  }
+  
+  .shepherd-button {
+    padding: 12px 18px !important;
+    font-size: 0.9375rem !important;
+  }
+  
+  .shepherd-cancel-icon {
+    width: 30px !important;
+    height: 30px !important;
+    line-height: 30px !important;
+    font-size: 1.25rem !important;
+  }
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+  .shepherd-element {
+    border: 2px solid #59e3a5 !important;
+  }
+  
+  .shepherd-text {
+    color: #ffffff !important;
+  }
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+  .shepherd-element,
+  .shepherd-target-highlight,
+  .shepherd-button {
+    transition: none !important;
+    animation: none !important;
+  }
+  
+  .shepherd-button:hover {
+    transform: none !important;
+  }
+}

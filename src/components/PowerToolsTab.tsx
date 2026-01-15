@@ -141,7 +141,7 @@ export default function PowerToolsTab({ className = '' }: PowerToolsTabProps) {
           </p>
         </div>
       ) : (
-        <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-x-3 gap-y-5 md:gap-6" style={{ paddingTop: '12px', paddingBottom: '12px' }}>
+        <div data-tour="power-tools-grid" className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-x-3 gap-y-5 md:gap-6" style={{ paddingTop: '12px', paddingBottom: '12px' }}>
           {filteredTools.map((tool, index) => (
             <PowerToolCard
               key={index}

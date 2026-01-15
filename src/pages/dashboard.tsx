@@ -1,7 +1,7 @@
 import { GetServerSideProps } from 'next'
 import Head from 'next/head'
 import { createClientSSR } from '../utils/supabase/server'
-import React, { useState, useEffect, useRef } from 'react'
+import React, { useState, useEffect, useRef, useCallback } from 'react'
 import { createClient } from '../utils/supabase/client'
 import { useRouter } from 'next/router'
 import Lottie from 'lottie-react'
@@ -12,6 +12,7 @@ import PowerToolsCarousel from '../components/PowerToolsCarousel'
 import PowerToolsTab from '../components/PowerToolsTab'
 import { GoogleSheetsService, PowerTool } from '../utils/googleSheets'
 import { analytics } from "../utils/analytics"
+import DashboardTour from '../components/DashboardTour'
 
 interface DashboardProps {
   user: {
@@ -116,6 +117,9 @@ export default function Dashboard({ user }: DashboardProps) {
   const trackedCampaignStatuses = useRef<Set<string>>(new Set())
   const hasTrackedCuratorView = useRef(false)
   const curatorSearchTimeoutRef = useRef<NodeJS.Timeout | null>(null)
+
+  // Dashboard tour state
+  const [isDashboardReady, setIsDashboardReady] = useState(false)
 
   // Track when component is mounted for portal
   useEffect(() => { setIsMounted(true); }, [])
@@ -618,6 +622,29 @@ export default function Dashboard({ user }: DashboardProps) {
     setExpandedOrders(newExpanded)
   }
 
+  // Function to expand the first campaign (used by tour)
+  const expandFirstCampaign = useCallback(() => {
+    if (orders.length > 0) {
+      const firstOrderId = orders[0].id
+      if (!expandedOrders.has(firstOrderId)) {
+        const newExpanded = new Set(expandedOrders)
+        newExpanded.add(firstOrderId)
+        setExpandedOrders(newExpanded)
+      }
+    }
+  }, [orders, expandedOrders])
+
+  // Set dashboard ready state after initial data loads
+  useEffect(() => {
+    if (!ordersLoading && !checkingIntakeStatus && isMounted) {
+      // Small delay to ensure DOM is rendered
+      const timer = setTimeout(() => {
+        setIsDashboardReady(true)
+      }, 300)
+      return () => clearTimeout(timer)
+    }
+  }, [ordersLoading, checkingIntakeStatus, isMounted])
+
   useEffect(() => {
     async function fetchOrders() {
       setOrdersLoading(true)
@@ -645,63 +672,52 @@ export default function Dashboard({ user }: DashboardProps) {
     fetchOrders()
   }, [])
 
-  // Function to update URL hash when tab changes
-  const updateUrlHash = (tabName: string) => {
-    if (typeof window !== 'undefined') {
-      const newHash = tabName === 'dashboard' ? '' : tabName
-      const newUrl = `${window.location.pathname}${newHash ? `#${newHash}` : ''}`
-      window.history.replaceState(null, '', newUrl)
+  // Function to update URL query parameter when tab changes
+  const updateUrlQuery = (tabName: string) => {
+    if (tabName === 'logout') {
+      // Special handling for logout - don't update URL
+      return
     }
+    
+    const query: { t?: string } = {}
+    if (tabName !== 'dashboard') {
+      query.t = tabName
+    }
+    
+    router.replace(
+      {
+        pathname: router.pathname,
+        query: query,
+      },
+      undefined,
+      { shallow: true }
+    )
   }
 
   // Enhanced function to change tabs and update URL
   const changeTab = (tabName: string) => {
     setActiveTab(tabName)
-    updateUrlHash(tabName)
+    updateUrlQuery(tabName)
   }
 
-  // Handle hash navigation for tab switching
+  // Handle query parameter navigation for tab switching
   useEffect(() => {
-    const handleHashChange = () => {
-      const hash = window.location.hash.slice(1) // Remove the '#' character
-      const validTabs = ['dashboard', 'campaigns', 'curator-connect', 'power-tools', 'packages', 'faq', 'contact', 'settings', 'logout']
-      
-      if (hash === 'campaigns') {
-        setActiveTab('campaigns')
-      } else if (hash === 'curator-connect') {
-        setActiveTab('curator-connect')
-      } else if (hash === 'power-tools') {
-        setActiveTab('power-tools')
-      } else if (hash === 'packages') {
-        setActiveTab('packages')
-      } else if (hash === 'contact') {
-        setActiveTab('contact')
-      } else if (hash === 'faq') {
-        setActiveTab('faq')
-      } else if (hash === 'settings') {
-        setActiveTab('settings')
-      } else if (hash === 'help') {
-        setActiveTab('contact') // 'help' maps to 'contact' tab
-      } else if (hash === 'logout') {
-        // Handle logout hash - trigger sign out modal
-        setShowSignOutModal(true)
-        // Don't change the active tab, just show the modal
-      } else if (hash === '' || hash === 'dashboard') {
+    if (!router.isReady) return
+
+    const tabParam = router.query.t as string
+    const validTabs = ['dashboard', 'campaigns', 'curator-connect', 'power-tools', 'packages', 'faq', 'contact', 'settings']
+    
+    if (tabParam && validTabs.includes(tabParam)) {
+      if (tabParam !== activeTab) {
+        setActiveTab(tabParam)
+      }
+    } else if (!tabParam) {
+      // No tab parameter means dashboard
+      if (activeTab !== 'dashboard') {
         setActiveTab('dashboard')
       }
     }
-
-    // Check hash on initial load
-    handleHashChange()
-
-    // Listen for hash changes
-    window.addEventListener('hashchange', handleHashChange)
-
-    // Cleanup listener
-    return () => {
-      window.removeEventListener('hashchange', handleHashChange)
-    }
-  }, [])
+  }, [router.isReady, router.query.t])
 
   useEffect(() => {
     if (activeTab !== 'curator-connect' || hasTrackedCuratorView.current) return
@@ -1746,7 +1762,7 @@ export default function Dashboard({ user }: DashboardProps) {
         </div>
 
         {/* Artist Profile Section */}
-        <div className="bg-gradient-to-br from-purple-900/20 via-pink-900/20 to-orange-900/20 backdrop-blur-sm rounded-2xl p-6 border border-gray-800/30 relative z-10 overflow-hidden">
+        <div data-tour="artist-profile" className="bg-gradient-to-br from-purple-900/20 via-pink-900/20 to-orange-900/20 backdrop-blur-sm rounded-2xl p-6 border border-gray-800/30 relative z-10 overflow-hidden">
           {/* Background gradient overlay */}
           <div className="absolute inset-0 bg-gradient-to-br from-purple-600/5 via-pink-600/5 to-orange-600/5 animate-pulse"></div>
           
@@ -2425,7 +2441,7 @@ export default function Dashboard({ user }: DashboardProps) {
   )
 
   const renderCampaignsContent = () => (
-    <div className="space-y-6 pb-8">
+    <div className="space-y-6 pb-8" data-tour="all-campaigns">
       <div className="flex items-center justify-between">
         <h2 className="text-2xl font-bold text-white">All Campaigns</h2>
         <button 
@@ -2460,6 +2476,7 @@ export default function Dashboard({ user }: DashboardProps) {
         }`}>
           {orders.map((order, index) => (
             <div key={order.id}
+              {...(index === 0 ? { 'data-tour': 'first-campaign' } : {})}
               className={`campaign-card transition-all duration-600 ease-out ${
                 campaignsAnimated 
                   ? 'opacity-100 translate-y-0' 
@@ -2735,9 +2752,9 @@ export default function Dashboard({ user }: DashboardProps) {
                       <div className="relative group">
                         {/* Outer glow effect */}
                         <div className="absolute -inset-1 bg-gradient-to-r from-cyan-500/20 via-emerald-500/30 to-purple-500/20 rounded-xl blur-lg opacity-75 group-hover:opacity-100 transition-all duration-300 animate-pulse"></div>
-                        
+
                         {/* Main container with liquid glass effect */}
-                        <div className="relative bg-gradient-to-br from-slate-900/90 via-slate-800/70 to-slate-900/90 backdrop-blur-xl rounded-xl p-5 border border-white/10 shadow-2xl overflow-hidden">
+                        <div data-tour="campaign-progress" className="relative bg-gradient-to-br from-slate-900/90 via-slate-800/70 to-slate-900/90 backdrop-blur-xl rounded-xl p-5 border border-white/10 shadow-2xl overflow-hidden">
                           {/* Dynamic gradient overlay */}
                           <div className="absolute inset-0 bg-gradient-to-br from-cyan-500/10 via-transparent to-emerald-500/10 animate-pulse"></div>
                           
@@ -2935,7 +2952,7 @@ export default function Dashboard({ user }: DashboardProps) {
       <h2 className="block md:hidden text-2xl font-bold text-white text-center mt-8 mb-8">Contact Support</h2>
       
       <div className="grid md:grid-cols-2 gap-8">
-        <div className="bg-gradient-to-br from-gray-950/90 to-gray-900/90 backdrop-blur-sm rounded-2xl p-6 border border-gray-800/30">
+        <div data-tour="contact-form" className="bg-gradient-to-br from-gray-950/90 to-gray-900/90 backdrop-blur-sm rounded-2xl p-6 border border-gray-800/30">
           <h3 className="hidden md:block text-xl font-semibold text-white mb-6">Speak To Our Team ✉️</h3>
           
           {/* Success/Error Message */}
@@ -3149,7 +3166,6 @@ export default function Dashboard({ user }: DashboardProps) {
               <button
                 onClick={() => {
                   setShowUserDropdown(false)
-                  updateUrlHash('logout')
                   setShowSignOutModal(true)
                 }}
                 className="w-full flex items-center space-x-3 px-3 py-2 rounded-lg text-gray-300 hover:bg-gray-800/50 hover:text-red-400 transition-colors"
@@ -3203,7 +3219,6 @@ export default function Dashboard({ user }: DashboardProps) {
                 onClick={() => {
                   setShowMobileSettingsDropdown(false);
                   if (item.id === 'signout') {
-                    updateUrlHash('logout')
                     setShowSignOutModal(true);
                   } else {
                     changeTab(item.id);
@@ -3933,7 +3948,7 @@ export default function Dashboard({ user }: DashboardProps) {
     };
 
     return (
-      <div className="space-y-8 pb-8">
+      <div className="space-y-8 pb-8" data-tour="packages">
         {/* Heading above Pricing Cards */}
         <div className="max-w-7xl mx-auto">
           <h2 className="text-2xl md:text-3xl font-black text-white text-center mt-8 mb-8">Choose Your Next Campaign</h2>
@@ -4687,7 +4702,7 @@ Best regards,
         </div>
 
         {/* Curators Table - Desktop */}
-        <div className="hidden lg:block bg-gradient-to-br from-gray-950/90 to-gray-900/90 backdrop-blur-sm rounded-2xl border border-gray-800/30 overflow-hidden">
+        <div data-tour="curator-table" className="hidden lg:block bg-gradient-to-br from-gray-950/90 to-gray-900/90 backdrop-blur-sm rounded-2xl border border-gray-800/30 overflow-hidden">
           {curatorDataLoading ? (
             <div className="p-8 text-center">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-500 mx-auto"></div>
@@ -4706,7 +4721,7 @@ Best regards,
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-800/30">
-                  {filteredCurators.map((curator) => {
+                  {filteredCurators.map((curator, curatorIndex) => {
                     const isContacted = contactedCurators[curator.id]
                     return (
                       <tr key={curator.id} className="hover:bg-gray-800/20 transition-colors">
@@ -4782,6 +4797,7 @@ Best regards,
                           <button
                             onClick={() => handleContactCurator(curator)}
                             className="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-colors"
+                            {...(curatorIndex === 0 ? { 'data-tour': 'curator-contact-button' } : {})}
                           >
                             Contact
                           </button>
@@ -5082,7 +5098,6 @@ Thank you,
                   key={item.id}
                   onClick={() => {
                     if (item.id === 'signout') {
-                      updateUrlHash('logout')
                       setShowSignOutModal(true)
                     } else {
                       changeTab(item.id)
@@ -5236,6 +5251,17 @@ Thank you,
         <IntakeFormModal 
           isOpen={showIntakeForm && !checkingIntakeStatus}
           onComplete={handleIntakeFormComplete}
+        />
+
+        {/* Dashboard Onboarding Tour */}
+        <DashboardTour
+          activeTab={activeTab}
+          onTabChange={changeTab}
+          isSurveyModalOpen={showIntakeForm && !checkingIntakeStatus}
+          isDashboardReady={isDashboardReady}
+          onExpandFirstCampaign={expandFirstCampaign}
+          hasCampaigns={orders.length > 0}
+          userId={user.id}
         />
 
         {/* Genre Dropdown Portal */}
