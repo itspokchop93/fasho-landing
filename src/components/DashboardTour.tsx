@@ -362,10 +362,9 @@ const DashboardTour: React.FC<DashboardTourProps> = ({
     try {
       // Dynamically import Shepherd.js and its CSS (client-side only)
       console.log('[DashboardTour] Importing Shepherd.js...');
-      const [ShepherdModule] = await Promise.all([
-        import('shepherd.js'),
-        import('shepherd.js/dist/css/shepherd.css'),
-      ]);
+      const ShepherdModule = await import('shepherd.js');
+      // @ts-ignore - CSS import for side effects
+      await import('shepherd.js/dist/css/shepherd.css');
       const Shepherd = ShepherdModule.default || ShepherdModule;
       console.log('[DashboardTour] Shepherd.js imported successfully');
       
