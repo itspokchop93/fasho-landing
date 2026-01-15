@@ -39,7 +39,7 @@ interface TourStep {
   element: string; // data-tour attribute selector
   title: string;
   content: string;
-  position?: 'top' | 'bottom' | 'left' | 'right' | 'auto';
+  position?: 'top' | 'top-start' | 'top-end' | 'bottom' | 'bottom-start' | 'bottom-end' | 'left' | 'left-start' | 'left-end' | 'right' | 'right-start' | 'right-end' | 'auto';
   beforeStep?: () => Promise<void> | void; // Action before showing step (e.g., expand accordion)
   skipIfMissing?: boolean; // If true, skip this step if element not found
 }
