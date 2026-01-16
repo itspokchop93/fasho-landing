@@ -24,6 +24,30 @@ import { analytics } from "../utils/analytics";
 
 // CSS for responsive font sizing
 const responsiveFontStyles = `
+  /* Pricing message fade animation */
+  @keyframes pricingMessageFade {
+    0% {
+      opacity: 0;
+      transform: translateY(-10px);
+    }
+    10% {
+      opacity: 1;
+      transform: translateY(0);
+    }
+    85% {
+      opacity: 1;
+      transform: translateY(0);
+    }
+    100% {
+      opacity: 0;
+      transform: translateY(-5px);
+    }
+  }
+  
+  .animate-pricing-message {
+    animation: pricingMessageFade 4.2s ease-in-out forwards;
+  }
+
   .text-base-mobile-lg-desktop {
     font-size: 1.6rem;
   }
@@ -354,6 +378,8 @@ export default function Home() {
   const [isSearching, setIsSearching] = useState(false);
   const [hasSearched, setHasSearched] = useState(false);
   const [searchTimeout, setSearchTimeout] = useState<NodeJS.Timeout | null>(null);
+  const [showPricingMessage, setShowPricingMessage] = useState(false);
+  const pricingMessageTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const searchDropdownRef = useRef<HTMLDivElement>(null);
   const hasTrackedHomeView = useRef(false);
@@ -595,6 +621,57 @@ export default function Home() {
     
     return () => window.removeEventListener('resize', checkIsMobile);
   }, []);
+
+  // Listen for pricing message event from header
+  useEffect(() => {
+    const handleShowPricingMessage = () => {
+      // Clear any existing timeout
+      if (pricingMessageTimeoutRef.current) {
+        clearTimeout(pricingMessageTimeoutRef.current);
+      }
+      
+      // Show the message
+      setShowPricingMessage(true);
+      
+      // Auto-hide after 4.2 seconds
+      pricingMessageTimeoutRef.current = setTimeout(() => {
+        setShowPricingMessage(false);
+      }, 4200);
+    };
+
+    window.addEventListener('showPricingMessage', handleShowPricingMessage);
+    
+    // Check URL for pricing message parameter (for navigation from other pages)
+    if (router.query.showPricingMessage === 'true') {
+      // Slight delay to ensure page is rendered
+      setTimeout(() => {
+        handleShowPricingMessage();
+        // Scroll to center the search input
+        const searchInput = document.getElementById('spotify-search-input');
+        if (searchInput) {
+          const elementRect = searchInput.getBoundingClientRect();
+          const elementCenter = elementRect.top + (elementRect.height / 2);
+          const viewportCenter = window.innerHeight / 2;
+          const offset = elementCenter - viewportCenter;
+          const targetScroll = window.pageYOffset + offset;
+          
+          window.scrollTo({
+            top: targetScroll,
+            behavior: 'smooth'
+          });
+        }
+        // Remove the query parameter from URL without refresh
+        router.replace('/', undefined, { shallow: true });
+      }, 300);
+    }
+
+    return () => {
+      window.removeEventListener('showPricingMessage', handleShowPricingMessage);
+      if (pricingMessageTimeoutRef.current) {
+        clearTimeout(pricingMessageTimeoutRef.current);
+      }
+    };
+  }, [router.query.showPricingMessage]);
 
   // Viewport animation hooks for PAS section
 
@@ -1664,6 +1741,20 @@ export default function Home() {
                     
                     {/* Content */}
                     <div className="relative z-10 w-full max-w-full mx-auto">
+                      {/* Pricing Message - Shows when user clicks Pricing in header */}
+                      {showPricingMessage && (
+                        <div 
+                          className="text-center mb-4 animate-pricing-message"
+                          style={{
+                            animation: 'pricingMessageFade 4.2s ease-in-out forwards'
+                          }}
+                        >
+                          <p className="text-gray-200 text-sm md:text-base bg-gradient-to-r from-[#59e3a5]/10 via-[#14c0ff]/10 to-[#8b5cf6]/10 px-4 py-2 rounded-xl inline-block border border-white/10 backdrop-blur-sm">
+                            ⭐️ Search for your song here, pricing is shown on the next page.
+                          </p>
+                        </div>
+                      )}
+
                       {/* Campaign Start Text - Reduced by 10px and added gradient text with reduced shadow */}
                       <div className="text-center mb-8">
                         <h2 className="text-[1.6rem] md:text-4xl font-black bg-gradient-to-b from-white to-gray-400 bg-clip-text text-transparent drop-shadow-[0_8px_16px_rgba(0,0,0,0.6)] mb-4 pt-2.5 md:pt-0 break-words">
@@ -1675,7 +1766,7 @@ export default function Home() {
                       </div>
 
                       {/* Input and Button Layout - Responsive - SEARCH CONTAINER WITH ESCAPE POSITIONING */}
-                      <div className="relative mb-8 w-full">
+                      <div id="spotify-search-input" className="relative mb-8 w-full">
                         <div className="flex flex-col md:flex-row gap-4 items-stretch md:items-center w-full">
                           <div className="flex-1 relative">
                             <input

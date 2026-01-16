@@ -171,6 +171,41 @@ export default function Header({ transparent = false, hideSignUp = false, extraC
     }
   };
 
+  // Scroll to center the search bar and show pricing message
+  const scrollToPricingSearch = (e?: React.MouseEvent) => {
+    if (e) {
+      e.preventDefault();
+    }
+    
+    // Close mobile menu if open
+    setIsMobileMenuOpen(false);
+    
+    // If we're not on the homepage, navigate to it first
+    if (!isHomepage) {
+      router.push('/?showPricingMessage=true#pricing-search');
+      return;
+    }
+    
+    // Find the search input container element
+    const searchInput = document.getElementById('spotify-search-input');
+    if (searchInput) {
+      // Calculate position to center the element in viewport
+      const elementRect = searchInput.getBoundingClientRect();
+      const elementCenter = elementRect.top + (elementRect.height / 2);
+      const viewportCenter = window.innerHeight / 2;
+      const offset = elementCenter - viewportCenter;
+      const targetScroll = window.pageYOffset + offset;
+      
+      window.scrollTo({
+        top: targetScroll,
+        behavior: 'smooth'
+      });
+      
+      // Dispatch custom event to show pricing message
+      window.dispatchEvent(new CustomEvent('showPricingMessage'));
+    }
+  };
+
   const getUserProfileImage = () => {
     return artistProfile?.artist_image_url || null;
   };
@@ -504,10 +539,17 @@ export default function Header({ transparent = false, hideSignUp = false, extraC
           {/* Desktop Navigation */}
           <nav className={`hidden md:flex items-center space-x-2 ${hideSignUp ? 'pr-16' : ''} animate-fade-in-up`} style={{ animationDelay: '0.4s', overflow: 'visible' }}>
 
-            {!isHomepage && (
+            {!isHomepage ? (
               <Link href={preserveTrackingParams("/pricing")} className="text-white hover:text-[#59e3a5] transition-all duration-300 ease-in-out font-medium px-4 py-2 rounded-lg hover:bg-white/5 hover:scale-105 transform backdrop-blur-sm border border-transparent hover:border-white/10">
                 Pricing
               </Link>
+            ) : (
+              <button 
+                onClick={scrollToPricingSearch}
+                className="text-white hover:text-[#59e3a5] transition-all duration-300 ease-in-out font-medium px-4 py-2 rounded-lg hover:bg-white/5 hover:scale-105 transform backdrop-blur-sm border border-transparent hover:border-white/10"
+              >
+                Pricing
+              </button>
             )}
             <Link href={preserveTrackingParams("/#faq")} className="text-white hover:text-[#59e3a5] transition-all duration-300 ease-in-out font-medium px-4 py-2 rounded-lg hover:bg-white/5 hover:scale-105 transform backdrop-blur-sm border border-transparent hover:border-white/10">
               FAQ
@@ -589,7 +631,7 @@ export default function Header({ transparent = false, hideSignUp = false, extraC
           >
             <div className="px-4 pt-4 pb-4 space-y-1 text-center">
 
-              {!isHomepage && (
+              {!isHomepage ? (
                 <Link href={preserveTrackingParams("/pricing")} className="flex items-center justify-center gap-3 px-4 py-4 mx-2 text-white hover:text-[#59e3a5] hover:bg-white/5 transition-all duration-300 ease-in-out font-medium rounded-xl backdrop-blur-sm border border-transparent hover:border-white/10 transform hover:scale-[1.02] animate-fade-in-up" style={{ animationDelay: !isHomepage ? '0.1s' : '0.05s' }}>
                   <svg className="w-5 h-5" fill="none" stroke="url(#gradient1)" viewBox="0 0 24 24">
                     <defs>
@@ -603,6 +645,24 @@ export default function Header({ transparent = false, hideSignUp = false, extraC
                   </svg>
                   Pricing
                 </Link>
+              ) : (
+                <button 
+                  onClick={scrollToPricingSearch}
+                  className="flex items-center justify-center gap-3 px-4 py-4 mx-2 w-[calc(100%-1rem)] text-white hover:text-[#59e3a5] hover:bg-white/5 transition-all duration-300 ease-in-out font-medium rounded-xl backdrop-blur-sm border border-transparent hover:border-white/10 transform hover:scale-[1.02] animate-fade-in-up" 
+                  style={{ animationDelay: '0.05s' }}
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="url(#gradientPricing)" viewBox="0 0 24 24">
+                    <defs>
+                      <linearGradient id="gradientPricing" x1="0%" y1="0%" x2="100%" y2="0%">
+                        <stop offset="0%" stopColor="#59e3a5" />
+                        <stop offset="100%" stopColor="#14c0ff" />
+                      </linearGradient>
+                    </defs>
+                    <circle cx="12" cy="12" r="10" strokeWidth={2}/>
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v12M9.5 9a2.5 2.5 0 715 0M9.5 15a2.5 2.5 0 005 0"/>
+                  </svg>
+                  Pricing
+                </button>
               )}
               {currentUser && !authLoading && (
                 <Link href="/dashboard" className="flex items-center justify-center gap-3 px-4 py-4 mx-2 text-white hover:text-[#59e3a5] hover:bg-white/5 transition-all duration-300 ease-in-out font-medium rounded-xl backdrop-blur-sm border border-transparent hover:border-white/10 transform hover:scale-[1.02] animate-fade-in-up" style={{ animationDelay: !isHomepage ? '0.15s' : '0.1s' }}>
