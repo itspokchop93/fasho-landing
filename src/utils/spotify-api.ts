@@ -198,12 +198,13 @@ export async function getSpotifyAccessToken(): Promise<string> {
   }
 
   const data = await response.json();
-  cachedAccessToken = data.access_token;
+  const token: string = data.access_token;
+  cachedAccessToken = token;
   // Token typically expires in 3600 seconds (1 hour)
   tokenExpiresAt = Date.now() + (data.expires_in * 1000);
   
   console.log('✅ SPOTIFY-API: Access token obtained successfully');
-  return cachedAccessToken;
+  return token;
 }
 
 /**
