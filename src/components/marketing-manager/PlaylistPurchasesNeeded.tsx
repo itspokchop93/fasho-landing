@@ -427,6 +427,10 @@ const PlaylistPurchasesNeeded: React.FC = () => {
   });
   
   console.log('📋 PLAYLIST-PURCHASES: 🚀 STATE INITIALIZED - All state variables created');
+  
+  // Refresh state for the refresh button
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  
   const [confirmationModal, setConfirmationModal] = useState<{
     isOpen: boolean;
     message: string;
@@ -489,7 +493,7 @@ const PlaylistPurchasesNeeded: React.FC = () => {
   };
 
   // Open the receipt modal for followers purchase
-  const openFollowersPurchaseModal = (playlistId: string, playlistName: string) => {
+  const openFollowersPurchaseModal = async (playlistId: string, playlistName: string) => {
     const qty = parseInt(followersInputs[playlistId] || '0');
     if (!qty || qty <= 0) {
       alert('Please enter a valid quantity');
@@ -499,6 +503,21 @@ const PlaylistPurchasesNeeded: React.FC = () => {
     if (!playlistServices.playlist_followers) {
       alert('Playlist Followers Service not configured. Please set it up in Purchase API Settings.');
       return;
+    }
+
+    // Fetch the LIVE balance from API before opening the modal
+    try {
+      console.log('📋 PLAYLIST-PURCHASES: Fetching live balance before opening followers modal...');
+      const balanceResponse = await fetch('/api/marketing-manager/smm-panel/balance');
+      if (balanceResponse.ok) {
+        const data = await balanceResponse.json();
+        if (data.success) {
+          setCurrentBalance(data.balance);
+          console.log('📋 PLAYLIST-PURCHASES: Live balance fetched:', data.balance);
+        }
+      }
+    } catch (error) {
+      console.error('📋 PLAYLIST-PURCHASES: Error fetching live balance:', error);
     }
 
     setReceiptModal({
@@ -512,7 +531,7 @@ const PlaylistPurchasesNeeded: React.FC = () => {
   };
 
   // Open the receipt modal for streams purchase
-  const openStreamsPurchaseModal = (playlistId: string, playlistName: string) => {
+  const openStreamsPurchaseModal = async (playlistId: string, playlistName: string) => {
     const inputs = streamsInputs[playlistId] || { qty: '', dripRuns: '', interval: '1440' };
     const qty = parseInt(inputs.qty || '0');
     const dripRuns = parseInt(inputs.dripRuns || '0');
@@ -526,6 +545,21 @@ const PlaylistPurchasesNeeded: React.FC = () => {
     if (!playlistServices.playlist_streams) {
       alert('Playlist Streams Service not configured. Please set it up in Purchase API Settings.');
       return;
+    }
+
+    // Fetch the LIVE balance from API before opening the modal
+    try {
+      console.log('📋 PLAYLIST-PURCHASES: Fetching live balance before opening streams modal...');
+      const balanceResponse = await fetch('/api/marketing-manager/smm-panel/balance');
+      if (balanceResponse.ok) {
+        const data = await balanceResponse.json();
+        if (data.success) {
+          setCurrentBalance(data.balance);
+          console.log('📋 PLAYLIST-PURCHASES: Live balance fetched:', data.balance);
+        }
+      }
+    } catch (error) {
+      console.error('📋 PLAYLIST-PURCHASES: Error fetching live balance:', error);
     }
 
     setReceiptModal({
@@ -727,10 +761,15 @@ const PlaylistPurchasesNeeded: React.FC = () => {
     console.log('📋 PLAYLIST-PURCHASES: Saved campaign tracker to localStorage', campaignTracker);
   }, [campaignTracker]);
 
-  // Fetch playlist network data
-  const fetchPlaylistNetwork = async () => {
+  // Fetch playlist network data (with optional force refresh from Spotify API)
+  const fetchPlaylistNetwork = async (forceRefresh: boolean = false) => {
     try {
-      const response = await fetch('/api/marketing-manager/system-settings/playlists');
+      console.log(`📋 PLAYLIST-PURCHASES: Fetching playlist network data${forceRefresh ? ' (FORCE REFRESH)' : ''}...`);
+      const url = forceRefresh 
+        ? '/api/marketing-manager/system-settings/playlists?refresh=true'
+        : '/api/marketing-manager/system-settings/playlists';
+      
+      const response = await fetch(url);
       if (response.ok) {
         const playlists = await response.json();
         const networkMap = playlists.reduce((acc: any, playlist: any) => {
@@ -739,7 +778,7 @@ const PlaylistPurchasesNeeded: React.FC = () => {
             link: playlist.playlistLink,
             imageUrl: playlist.imageUrl,
             genre: playlist.genre,
-            saves: playlist.cached_saves || playlist.saves || 0
+            saves: playlist.saves || playlist.cached_saves || 0
           };
           return acc;
         }, {});
@@ -763,9 +802,29 @@ const PlaylistPurchasesNeeded: React.FC = () => {
             return item;
           })
         );
+        
+        if (forceRefresh) {
+          console.log('✅ PLAYLIST-PURCHASES: Force refresh completed successfully');
+        }
+      } else {
+        console.error('📋 PLAYLIST-PURCHASES: Failed to fetch playlist network:', response.status);
       }
     } catch (error) {
-      console.error('Error fetching playlist network:', error);
+      console.error('📋 PLAYLIST-PURCHASES: Error fetching playlist network:', error);
+    }
+  };
+
+  // Handle refresh button click - force refresh from Spotify API
+  const handleRefreshClick = async () => {
+    if (isRefreshing) return;
+    
+    setIsRefreshing(true);
+    console.log('📋 PLAYLIST-PURCHASES: 🔄 Manual refresh initiated by admin');
+    
+    try {
+      await fetchPlaylistNetwork(true);
+    } finally {
+      setIsRefreshing(false);
     }
   };
 
@@ -1107,11 +1166,33 @@ const PlaylistPurchasesNeeded: React.FC = () => {
       <style dangerouslySetInnerHTML={{ __html: animationStyles }} />
       
       <div className="flex items-center justify-between mb-6">
-        <div>
-          <h2 className="text-2xl font-bold text-indigo-800">Playlist Purchases Needed</h2>
-          <p className="text-sm text-gray-500 mt-1">
-            Track playlists that need SMM panel streams purchased - {playlistPurchases.length} playlist{playlistPurchases.length !== 1 ? 's' : ''} pending
-          </p>
+        <div className="flex items-center gap-3">
+          {/* Small refresh button in top left corner */}
+          <button
+            onClick={handleRefreshClick}
+            disabled={isRefreshing}
+            title="Refresh playlist images & saves from Spotify API"
+            className={`p-1.5 rounded-md border transition-all duration-200 ${
+              isRefreshing 
+                ? 'border-gray-200 bg-gray-50 text-gray-400 cursor-not-allowed' 
+                : 'border-gray-300 bg-white text-gray-500 hover:bg-indigo-50 hover:border-indigo-300 hover:text-indigo-600'
+            }`}
+          >
+            <svg 
+              className={`w-4 h-4 ${isRefreshing ? 'animate-spin' : ''}`} 
+              fill="none" 
+              stroke="currentColor" 
+              viewBox="0 0 24 24"
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+            </svg>
+          </button>
+          <div>
+            <h2 className="text-2xl font-bold text-indigo-800">Playlist Purchases Needed</h2>
+            <p className="text-sm text-gray-500 mt-1">
+              Track playlists that need SMM panel streams purchased - {playlistPurchases.length} playlist{playlistPurchases.length !== 1 ? 's' : ''} pending
+            </p>
+          </div>
         </div>
         <div className="flex space-x-3">
           <button
