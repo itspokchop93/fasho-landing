@@ -547,7 +547,7 @@ export default function ThankYouPage() {
                             {orderData.orderNumber && (
                 <div className="bg-gradient-to-r from-[#59e3a5]/10 to-[#14c0ff]/10 border border-[#59e3a5]/20 rounded-lg p-4 mb-4 mt-3">
                   <p className="text-[#59e3a5] font-black text-2xl">Order #{orderData.orderNumber}</p>
-                  <p className="text-white/60 text-xs mt-2">The charge on your card will show as *Focused Founders LLC*</p>
+                  <p className="text-white/60 text-xs mt-2">The charge on your card will show as "REDRIDGE MEDIA"</p>
                 </div>
               )}
               {orderData.newAccountCreated && (

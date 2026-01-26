@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { v4 as uuidv4 } from 'uuid';
 
 interface LiveCounterProps {
   className?: string;
@@ -7,6 +8,20 @@ interface LiveCounterProps {
 export default function LiveCounter({ className = '' }: LiveCounterProps) {
   const [count, setCount] = useState<number>(0);
   const [isClient, setIsClient] = useState(false);
+
+  const getRandomCount = (min = 61, max = 132) => {
+    const range = BigInt(max - min + 1);
+    const uuid = uuidv4().replace(/-/g, '');
+    const value = BigInt(`0x${uuid}`);
+    return min + Number(value % range);
+  };
+
+  const getRandomIntervalMs = (min = 7000, max = 20000) => {
+    const range = BigInt(max - min + 1);
+    const uuid = uuidv4().replace(/-/g, '');
+    const value = BigInt(`0x${uuid}`);
+    return min + Number(value % range);
+  };
 
   // Initialize counter on client side
   useEffect(() => {
@@ -27,14 +42,14 @@ export default function LiveCounter({ className = '' }: LiveCounterProps) {
         setCount(parseInt(storedCount));
       } else {
         // Generate new random number if data is old
-        const newCount = Math.floor(Math.random() * (124 - 84 + 1)) + 84;
+        const newCount = getRandomCount();
         setCount(newCount);
         localStorage.setItem('artistCounterValue', newCount.toString());
         localStorage.setItem('artistCounterTimestamp', currentTime.toString());
       }
     } else {
       // First time visit - generate random number
-      const newCount = Math.floor(Math.random() * (124 - 84 + 1)) + 84;
+      const newCount = getRandomCount();
       setCount(newCount);
       localStorage.setItem('artistCounterValue', newCount.toString());
       localStorage.setItem('artistCounterTimestamp', currentTime.toString());
@@ -45,10 +60,8 @@ export default function LiveCounter({ className = '' }: LiveCounterProps) {
   useEffect(() => {
     if (!isClient) return;
 
-    const getRandomInterval = () => Math.floor(Math.random() * (20000 - 7000 + 1)) + 7000; // 7-20 seconds
-
     const scheduleNextIncrement = () => {
-      const interval = getRandomInterval();
+      const interval = getRandomIntervalMs();
       
       setTimeout(() => {
         setCount(prevCount => {
