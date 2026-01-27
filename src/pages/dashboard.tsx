@@ -87,6 +87,15 @@ export default function Dashboard({ user }: DashboardProps) {
   const [formData, setFormData] = useState<any>({})
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false)
 
+  // FASHOKENS loyalty state
+  const [fashokenBalance, setFashokenBalance] = useState(0)
+  const [fashokenLifetimeEarned, setFashokenLifetimeEarned] = useState(0)
+  const [fashokenLifetimeSpent, setFashokenLifetimeSpent] = useState(0)
+  const [fashokenLedger, setFashokenLedger] = useState<any[]>([])
+  const [fashokenLedgerLoading, setFashokenLedgerLoading] = useState(true)
+  const [fashokenLedgerPage, setFashokenLedgerPage] = useState(1)
+  const [fashokenLedgerTotalPages, setFashokenLedgerTotalPages] = useState(1)
+
   // Curator Connect+ state
   const [curatorData, setCuratorData] = useState<any[]>([])
   const [curatorDataLoading, setCuratorDataLoading] = useState(true)
@@ -445,6 +454,13 @@ export default function Dashboard({ user }: DashboardProps) {
     }
   }, [activeTab]);
 
+  // Fetch fashoken data when tab is active or on dashboard
+  useEffect(() => {
+    if (activeTab === 'fashokens' || activeTab === 'dashboard') {
+      fetchFashokenData(1);
+    }
+  }, [activeTab]);
+
   useEffect(() => {
     if (activeTab !== 'curator-connect') return
     const trimmedQuery = curatorSearch.trim()
@@ -705,7 +721,7 @@ export default function Dashboard({ user }: DashboardProps) {
     if (!router.isReady) return
 
     const tabParam = router.query.t as string
-    const validTabs = ['dashboard', 'campaigns', 'curator-connect', 'power-tools', 'packages', 'faq', 'contact', 'settings']
+    const validTabs = ['dashboard', 'campaigns', 'curator-connect', 'fashokens', 'power-tools', 'packages', 'faq', 'contact', 'settings']
     
     if (tabParam && validTabs.includes(tabParam)) {
       if (tabParam !== activeTab) {
@@ -1298,6 +1314,7 @@ export default function Dashboard({ user }: DashboardProps) {
     { id: 'dashboard', label: 'Dashboard', icon: 'M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2H5a2 2 0 00-2-2z' },
     { id: 'campaigns', label: 'Campaigns', icon: 'M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z' },
     { id: 'curator-connect', label: 'Curator Connect+', icon: 'M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z' },
+    { id: 'fashokens', label: 'FASHOkens', icon: 'fashoken', isImage: true },
     { id: 'power-tools', label: 'Power Tools', icon: 'M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z M15 12a3 3 0 11-6 0 3 3 0 016 0z' },
     { id: 'packages', label: 'Packages', icon: 'M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4' },
     { id: 'faq', label: 'FAQ', icon: 'M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z' },
@@ -1306,18 +1323,19 @@ export default function Dashboard({ user }: DashboardProps) {
     { id: 'signout', label: 'Sign Out', icon: 'M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1' },
   ]
 
-  // Mobile-only navigation items (excludes FAQ, Contact, Sign Out - they go in settings dropdown)
+  // Mobile-only navigation items - FASHOkens on main bar (replacing Packages), order: Dashboard, Campaigns, Curators, FASHOkens, Tools, Settings
   const mobileNavItems = [
     { id: 'dashboard', label: 'Dashboard', icon: 'M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2H5a2 2 0 00-2-2z' },
     { id: 'campaigns', label: 'Campaigns', icon: 'M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z' },
     { id: 'curator-connect', label: 'Curator Connect+', icon: 'M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z' },
+    { id: 'fashokens', label: 'FASHOkens', icon: 'fashoken', isImage: true },
     { id: 'power-tools', label: 'Tools', icon: 'M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z M15 12a3 3 0 11-6 0 3 3 0 016 0z' },
-    { id: 'packages', label: 'Packages', icon: 'M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4' },
     { id: 'settings', label: 'Settings', icon: 'M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z M15 12a3 3 0 11-6 0 3 3 0 016 0z' },
   ]
 
-  // Settings dropdown menu items
+  // Settings dropdown menu items - Packages moved here (replacing FASHOkens)
   const settingsDropdownItems = [
+    { id: 'packages', label: 'Packages', icon: 'M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4' },
     { id: 'settings', label: 'Settings', icon: 'M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z M15 12a3 3 0 11-6 0 3 3 0 016 0z' },
     { id: 'faq', label: 'FAQ', icon: 'M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z' },
     { id: 'contact', label: 'Contact', icon: 'M3 8l7.89 4.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z' },
@@ -1398,7 +1416,12 @@ export default function Dashboard({ user }: DashboardProps) {
                 FASHO.CO
               </span>
             </h2>
-            <p className="text-base text-gray-200 font-medium">
+            <p 
+              className="text-base text-gray-200 font-medium"
+              style={{
+                textShadow: '0 0 20px #1DB954, 0 0 30px #1DB954, 0 0 40px rgba(29, 185, 84, 0.5)'
+              }}
+            >
               It's time to dominate on Spotify! 🚀
             </p>
           </div>
@@ -1426,6 +1449,87 @@ export default function Dashboard({ user }: DashboardProps) {
                 className="bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white px-12 py-4 rounded-xl text-lg font-semibold transition-all duration-300 shadow-lg hover:shadow-xl transform hover:scale-105 border-2 border-gray-900/60 whitespace-nowrap"
               >
                 Start New Campaign
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Mobile FASHOkens Section */}
+      <div className="lg:hidden mb-6">
+        <div className="relative overflow-hidden rounded-2xl border border-[#59e3a5]/40 bg-gradient-to-br from-[#59e3a5]/15 via-[#10b981]/10 to-[#14c0ff]/10 backdrop-blur-sm z-10">
+          <div className="absolute -top-10 -right-10 w-24 h-24 bg-[#59e3a5]/20 rounded-full blur-3xl animate-pulse"></div>
+          <div className="absolute -bottom-10 -left-10 w-24 h-24 bg-[#14c0ff]/20 rounded-full blur-3xl animate-pulse delay-200"></div>
+          
+          <div className="relative p-4">
+            {/* Top Row: Title + Wallet */}
+            <div className="flex items-center justify-between mb-3">
+              {/* Title */}
+              <div className="flex items-center space-x-2">
+                <img src="/fashoken.png" alt="FASHOKEN" className="w-7 h-7" />
+                <h3 className="text-xl font-bold text-white">Your FASHOkens</h3>
+              </div>
+              
+              {/* Wallet Container - Top Right */}
+              <div className="bg-black/30 rounded-lg px-2.5 py-1 border border-[#59e3a5]/20">
+                <p className="text-white/40 text-[9px] uppercase tracking-wider">Wallet</p>
+                <p className="text-lg font-bold text-[#59e3a5]">{fashokenBalance.toLocaleString()} <span className="text-[10px] text-[#59e3a5]/60">FSHKS</span></p>
+              </div>
+            </div>
+
+            {/* Last Change - Compact */}
+            {fashokenLedger.length > 0 && (
+              <div className="bg-black/20 rounded-lg px-3 py-2 mb-3">
+                <div className="flex items-center justify-between mb-1">
+                  <p className="text-white/40 text-[10px] uppercase tracking-wider">Last Change</p>
+                  <span className={`text-[10px] px-1.5 py-0.5 rounded ${
+                    fashokenLedger[0]?.type === 'credit' || fashokenLedger[0]?.type === 'adjustment_add' 
+                      ? 'bg-green-500/20 text-green-400' 
+                      : 'bg-red-500/20 text-red-400'
+                  }`}>
+                    {fashokenLedger[0]?.type === 'credit' || fashokenLedger[0]?.type === 'adjustment_add' ? 'IN' : 'OUT'}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <p className={`text-sm font-bold ${
+                    fashokenLedger[0]?.type === 'credit' || fashokenLedger[0]?.type === 'adjustment_add' 
+                      ? 'text-green-400' 
+                      : 'text-red-400'
+                  }`}>
+                    {fashokenLedger[0]?.type === 'credit' || fashokenLedger[0]?.type === 'adjustment_add' ? '+' : '-'}
+                    {fashokenLedger[0]?.amount.toLocaleString()} FSHKS
+                  </p>
+                  <p className="text-white/40 text-[10px]">
+                    {formatFashokenDate(fashokenLedger[0]?.created_at)}
+                  </p>
+                </div>
+                {fashokenLedger[0]?.order_number && (
+                  <p className="text-white/30 text-[10px]">Order #{fashokenLedger[0].order_number}</p>
+                )}
+                <div className="mt-1 text-right">
+                  <button 
+                    onClick={() => changeTab('fashokens')}
+                    className="text-[#59e3a5]/70 hover:text-[#59e3a5] text-[10px] transition-colors"
+                  >
+                    View all changes →
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* Bottom Row: Description + Button */}
+            <div className="flex items-end justify-between gap-3">
+              <div className="flex items-start space-x-2 text-white/50 text-[10px] leading-tight flex-1">
+                <svg className="w-3.5 h-3.5 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <span>Earn FSHKS with every dollar you spend, then use them towards your next campaign!</span>
+              </div>
+              <button
+                onClick={() => router.push('/?spendTokens=true#start-campaign')}
+                className="px-3 py-1.5 bg-[#59e3a5] text-black font-semibold rounded-lg hover:bg-[#4ade80] transition-colors text-[11px] whitespace-nowrap"
+              >
+                Spend Tokens
               </button>
             </div>
           </div>
@@ -1485,7 +1589,7 @@ export default function Dashboard({ user }: DashboardProps) {
                     <div className="text-center text-gray-400 text-sm">Loading tracks...</div>
                   ) : (
                     <div className="relative">
-                      {/* Left Arrow */}
+                      {/* Left Arrow - positioned outside the masked area */}
                       <button
                         onClick={() => {
                           const container = document.getElementById('mobile-tracks-container');
@@ -1501,7 +1605,7 @@ export default function Dashboard({ user }: DashboardProps) {
                         </svg>
                       </button>
 
-                      {/* Right Arrow */}
+                      {/* Right Arrow - positioned outside the masked area */}
                       <button
                         onClick={() => {
                           const container = document.getElementById('mobile-tracks-container');
@@ -1517,11 +1621,16 @@ export default function Dashboard({ user }: DashboardProps) {
                         </svg>
                       </button>
 
-                      {/* Tracks Container */}
+                      {/* Tracks Container with fade mask applied to entire container */}
                       <div
                         id="mobile-tracks-container"
                         className="flex gap-3 overflow-x-auto mobile-tracks-scrollbar pb-2"
-                        style={{ scrollbarWidth: 'thin', scrollbarColor: '#10b981 transparent' }}
+                        style={{ 
+                          scrollbarWidth: 'thin', 
+                          scrollbarColor: '#10b981 transparent',
+                          maskImage: 'linear-gradient(to right, transparent 0%, black 8%, black 92%, transparent 100%)',
+                          WebkitMaskImage: 'linear-gradient(to right, transparent 0%, black 8%, black 92%, transparent 100%)'
+                        }}
                       >
                         {artistTracks.map((track, index) => (
                           <div key={index} className="flex-shrink-0 w-32 bg-gray-800/30 rounded-lg p-3 hover:bg-gray-800/50 transition-colors">
@@ -1721,48 +1830,135 @@ export default function Dashboard({ user }: DashboardProps) {
 
       {/* Desktop Hero Section & Artist Profile */}
       <div className="hidden lg:grid lg:grid-cols-2 gap-8 mb-8">
-        {/* Hero Section */}
-        <div className="dashboard-hero-gradient rounded-2xl p-8 border border-gray-800/30 relative overflow-hidden min-h-[400px] z-10">
-          <div className="flex flex-row items-center justify-between h-full">
-            <div className="relative z-10 flex-1 pr-8 text-left">
-              <h2 className="text-5xl font-bold text-white mb-6 leading-tight">
-                <span className="text-3xl">Welcome to</span><br />
-                <span className="bg-gradient-to-r from-green-400 to-blue-500 bg-clip-text text-transparent">
-                  FASHO.CO
-                </span>
-              </h2>
-              <p className="text-2xl text-gray-300 mb-8 leading-relaxed">
-                It's time to dominate on Spotify! 🚀
-              </p>
-              <button 
-                onClick={() => router.push('/#start-campaign')}
-                className="bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white px-6 py-3 rounded-xl text-base font-semibold transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl"
-              >
-                Start New Campaign
-              </button>
+        {/* Left Column - Welcome (65%) + FASHOkens (35%) stacked */}
+        <div className="flex flex-col gap-4 h-full">
+          {/* Hero Section - 60% height */}
+          <div className="dashboard-hero-gradient rounded-2xl p-6 border border-gray-800/30 relative overflow-hidden z-10" style={{ flex: '0 0 calc(60% - 8px)' }}>
+            <div className="flex flex-row items-start justify-between h-full">
+              <div className="relative z-20 flex-1 pr-4 text-left pt-2">
+                <h2 className="text-3xl xl:text-4xl font-bold text-white mb-3 leading-tight">
+                  <span className="text-xl xl:text-2xl">Welcome to</span><br />
+                  <span className="bg-gradient-to-r from-green-400 to-blue-500 bg-clip-text text-transparent">
+                    FASHO.CO
+                  </span>
+                </h2>
+                <p 
+                  className="text-lg xl:text-xl text-gray-300 mb-4 leading-relaxed"
+                  style={{
+                    textShadow: '0 0 20px #1DB954, 0 0 30px #1DB954, 0 0 40px rgba(29, 185, 84, 0.5)'
+                  }}
+                >
+                  It's time to dominate on Spotify! 🚀
+                </p>
+                <button 
+                  onClick={() => router.push('/#start-campaign')}
+                  className="relative z-20 bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white px-5 py-2.5 rounded-xl text-sm font-semibold transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl"
+                >
+                  Start New Campaign
+                </button>
+              </div>
+              
+              {/* Lottie Animation - Large, overflowing bottom and right, BEHIND text */}
+              <div className="absolute right-[-60px] bottom-[-80px] z-0">
+                {lottieAnimationData ? (
+                  <Lottie 
+                    animationData={lottieAnimationData}
+                    loop={true}
+                    autoplay={true}
+                    className="w-[320px] h-[320px] xl:w-[380px] xl:h-[380px]"
+                    lottieRef={lottieRef}
+                  />
+                ) : (
+                  <div className="w-[320px] h-[320px] xl:w-[380px] xl:h-[380px] bg-gray-800/50 rounded-lg flex items-center justify-center">
+                    <div className="text-gray-400 text-sm">Loading...</div>
+                  </div>
+                )}
+              </div>
             </div>
+          </div>
+
+          {/* FASHOkens Section - 40% height */}
+          <div className="relative rounded-2xl border border-[#59e3a5]/40 bg-gradient-to-br from-[#59e3a5]/15 via-[#10b981]/10 to-[#14c0ff]/10 backdrop-blur-sm z-10 overflow-hidden" style={{ flex: '0 0 calc(40% - 8px)' }}>
+            <div className="absolute -top-10 -right-10 w-32 h-32 bg-[#59e3a5]/20 rounded-full blur-3xl animate-pulse pointer-events-none"></div>
+            <div className="absolute -bottom-10 -left-10 w-32 h-32 bg-[#14c0ff]/20 rounded-full blur-3xl animate-pulse delay-200 pointer-events-none"></div>
             
-            {/* Lottie Animation */}
-            <div className="relative z-10 flex items-center justify-start ml-0 mr-8" style={{ transform: 'translateX(-45px)' }}>
-              {lottieAnimationData ? (
-                <Lottie 
-                  animationData={lottieAnimationData}
-                  loop={true}
-                  autoplay={true}
-                  className="w-[442px] h-[442px] xl:w-[483px] xl:h-[483px]"
-                  lottieRef={lottieRef}
-                />
-              ) : (
-                <div className="w-[442px] h-[442px] xl:w-[483px] xl:h-[483px] bg-gray-800/50 rounded-lg flex items-center justify-center">
-                  <div className="text-gray-400">Loading animation...</div>
+            <div className="relative p-4 h-full flex flex-col overflow-hidden">
+              {/* Top Row: Title + Wallet */}
+              <div className="flex items-center justify-between mb-2 flex-shrink-0">
+                {/* Title */}
+                <div className="flex items-center space-x-2">
+                  <img src="/fashoken.png" alt="FASHOKEN" className="w-8 h-8" />
+                  <h3 className="text-2xl font-bold text-white">Your FASHOkens</h3>
+                </div>
+                
+                {/* Wallet Container - Top Right */}
+                <div className="bg-black/30 rounded-lg px-3 py-1.5 border border-[#59e3a5]/20">
+                  <p className="text-white/40 text-[10px] uppercase tracking-wider">Wallet</p>
+                  <p className="text-xl font-bold text-[#59e3a5]">{fashokenBalance.toLocaleString()} <span className="text-xs text-[#59e3a5]/60">FSHKS</span></p>
+                </div>
+              </div>
+
+              {/* Last Change - Compact */}
+              {fashokenLedger.length > 0 && (
+                <div className="bg-black/20 rounded-lg px-3 py-2 flex-1 min-h-0 flex flex-col">
+                  <div className="flex items-center justify-between mb-1">
+                    <p className="text-white/40 text-[10px] uppercase tracking-wider">Last Change</p>
+                    <span className={`text-[10px] px-1.5 py-0.5 rounded ${
+                      fashokenLedger[0]?.type === 'credit' || fashokenLedger[0]?.type === 'adjustment_add' 
+                        ? 'bg-green-500/20 text-green-400' 
+                        : 'bg-red-500/20 text-red-400'
+                    }`}>
+                      {fashokenLedger[0]?.type === 'credit' || fashokenLedger[0]?.type === 'adjustment_add' ? 'IN' : 'OUT'}
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <p className={`text-sm font-bold ${
+                      fashokenLedger[0]?.type === 'credit' || fashokenLedger[0]?.type === 'adjustment_add' 
+                        ? 'text-green-400' 
+                        : 'text-red-400'
+                    }`}>
+                      {fashokenLedger[0]?.type === 'credit' || fashokenLedger[0]?.type === 'adjustment_add' ? '+' : '-'}
+                      {fashokenLedger[0]?.amount.toLocaleString()} FSHKS
+                    </p>
+                    <p className="text-white/40 text-[10px]">
+                      {formatFashokenDate(fashokenLedger[0]?.created_at)}
+                    </p>
+                  </div>
+                  {fashokenLedger[0]?.order_number && (
+                    <p className="text-white/30 text-[10px]">Order #{fashokenLedger[0].order_number}</p>
+                  )}
+                  <div className="mt-1 text-right">
+                    <button 
+                      onClick={() => changeTab('fashokens')}
+                      className="text-[#59e3a5]/70 hover:text-[#59e3a5] text-[10px] transition-colors"
+                    >
+                      View all changes →
+                    </button>
+                  </div>
                 </div>
               )}
+
+              {/* Bottom Row: Description + Button */}
+              <div className="flex items-end justify-between gap-3 mt-3 flex-shrink-0">
+                <div className="flex items-start space-x-2 text-white/50 text-[10px] leading-tight flex-1">
+                  <svg className="w-3.5 h-3.5 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  <span>Earn FSHKS with every dollar you spend, then use them towards your next campaign!</span>
+                </div>
+                <button
+                  onClick={() => router.push('/?spendTokens=true#start-campaign')}
+                  className="px-3 py-1 bg-[#59e3a5] text-black font-semibold rounded-lg hover:bg-[#4ade80] transition-colors text-[10px] whitespace-nowrap"
+                >
+                  Spend Tokens
+                </button>
+              </div>
             </div>
           </div>
         </div>
 
-        {/* Artist Profile Section */}
-        <div data-tour="artist-profile" className="bg-gradient-to-br from-purple-900/20 via-pink-900/20 to-orange-900/20 backdrop-blur-sm rounded-2xl p-6 border border-gray-800/30 relative z-10 overflow-hidden">
+        {/* Artist Profile Section - Stretches to match left column */}
+        <div data-tour="artist-profile" className="bg-gradient-to-br from-purple-900/20 via-pink-900/20 to-orange-900/20 backdrop-blur-sm rounded-2xl p-6 border border-gray-800/30 relative z-10 overflow-hidden h-full">
           {/* Background gradient overlay */}
           <div className="absolute inset-0 bg-gradient-to-br from-purple-600/5 via-pink-600/5 to-orange-600/5 animate-pulse"></div>
           
@@ -1813,7 +2009,7 @@ export default function Dashboard({ user }: DashboardProps) {
                     <div className="text-center text-gray-400">Loading tracks...</div>
                   ) : (
                     <div className="relative">
-                      {/* Left Arrow */}
+                      {/* Left Arrow - positioned outside the masked area */}
                       <button
                         onClick={() => {
                           const container = document.getElementById('tracks-container');
@@ -1829,7 +2025,7 @@ export default function Dashboard({ user }: DashboardProps) {
                         </svg>
                       </button>
 
-                      {/* Right Arrow */}
+                      {/* Right Arrow - positioned outside the masked area */}
                       <button
                         onClick={() => {
                           const container = document.getElementById('tracks-container');
@@ -1845,13 +2041,15 @@ export default function Dashboard({ user }: DashboardProps) {
                         </svg>
                       </button>
 
-                      {/* Horizontal Scrolling Container */}
+                      {/* Horizontal Scrolling Container with fade mask applied to entire container */}
                       <div 
                         id="tracks-container"
                         className="flex gap-3 overflow-x-auto pb-2 px-2"
                         style={{
                           scrollbarWidth: 'thin',
-                          scrollbarColor: '#6B7280 #1F2937'
+                          scrollbarColor: '#6B7280 #1F2937',
+                          maskImage: 'linear-gradient(to right, transparent 0%, black 8%, black 92%, transparent 100%)',
+                          WebkitMaskImage: 'linear-gradient(to right, transparent 0%, black 8%, black 92%, transparent 100%)'
                         }}
                       >
                         <style jsx>{`
@@ -3230,9 +3428,13 @@ export default function Dashboard({ user }: DashboardProps) {
                 }}
               >
                 <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-gray-800 to-gray-700 flex items-center justify-center shadow-lg">
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={item.icon} />
-                  </svg>
+                  {(item as any).isImage ? (
+                    <img src="/fashoken.png" alt="FASHOKEN" className="w-5 h-5" />
+                  ) : (
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={item.icon} />
+                    </svg>
+                  )}
                 </div>
                 <span className="font-medium text-base flex-1">{item.label}</span>
                 <div className="text-gray-500">
@@ -4149,6 +4351,214 @@ export default function Dashboard({ user }: DashboardProps) {
     )
   }
 
+  const formatFashokenDate = (dateString: string) => {
+    const date = new Date(dateString)
+    return date.toLocaleDateString('en-US', {
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric',
+      hour: 'numeric',
+      minute: '2-digit'
+    })
+  }
+
+  const renderFashokensContent = () => (
+    <div className="space-y-6 pb-8">
+      {/* Balance Card */}
+      <div className="relative overflow-hidden rounded-2xl border border-[#59e3a5]/40 bg-gradient-to-br from-[#59e3a5]/10 via-[#10b981]/5 to-transparent backdrop-blur-sm">
+        <div className="absolute -top-20 -right-20 w-40 h-40 bg-[#59e3a5]/20 rounded-full blur-3xl"></div>
+        
+        <div className="relative p-6">
+          {/* Header - Desktop shows balance next to title, Mobile shows title only */}
+          <div className="flex items-center space-x-4 mb-6">
+            <img src="/fashoken.png" alt="FASHOKEN" className="w-12 h-12" />
+            <div className="flex-1">
+              <h3 className="text-xl sm:text-2xl font-bold text-white">Your FASHOKEN Balance</h3>
+              <p className="text-white/60 text-sm">Loyalty tokens you've earned</p>
+            </div>
+            {/* Desktop only - balance next to title */}
+            <div className="hidden sm:block text-right">
+              <div className="flex items-center space-x-2 justify-end">
+                <img src="/fashoken.png" alt="" className="w-8 h-8" />
+                <span className="text-4xl font-bold text-[#59e3a5]">{fashokenBalance.toLocaleString()}</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Mobile only - WALLET container with centered balance */}
+          <div className="sm:hidden mb-6">
+            <div className="bg-black/30 rounded-xl p-4 border border-[#59e3a5]/20">
+              <p className="text-white/40 text-xs text-center uppercase tracking-wider mb-2">WALLET</p>
+              <p className="text-4xl font-bold text-[#59e3a5] text-center">{fashokenBalance.toLocaleString()}</p>
+              <p className="text-[#59e3a5]/60 text-xs text-center mt-1">FSHKS</p>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4 mb-6">
+            <div className="bg-black/20 rounded-xl p-4">
+              <p className="text-white/60 text-sm mb-1">Lifetime Earned</p>
+              <p className="text-green-400 text-lg sm:text-xl font-bold">+{fashokenLifetimeEarned.toLocaleString()} FSHKS</p>
+            </div>
+            <div className="bg-black/20 rounded-xl p-4">
+              <p className="text-white/60 text-sm mb-1">Lifetime Spent</p>
+              <p className={`text-lg sm:text-xl font-bold ${fashokenLifetimeSpent > 0 ? 'text-red-400' : 'text-white'}`}>
+                {fashokenLifetimeSpent > 0 ? `-${fashokenLifetimeSpent.toLocaleString()}` : fashokenLifetimeSpent.toLocaleString()} FSHKS
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-start space-x-2 text-white/50 text-sm mb-6">
+            <svg className="w-5 h-5 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <span>FASHOkens are our in-house loyalty tokens that you earn for every dollar you spend! Use them towards discounts on your next campaign launch.</span>
+          </div>
+
+          <button
+            onClick={() => router.push('/?spendTokens=true#start-campaign')}
+            className="w-full py-3 bg-[#59e3a5] text-black font-semibold rounded-xl hover:bg-[#4ade80] transition-colors"
+          >
+            <span className="hidden sm:inline">Spend Tokens on Your Next Campaign</span>
+            <span className="sm:hidden">SPEND MY TOKENS NOW</span>
+          </button>
+        </div>
+      </div>
+
+      {/* Transaction History */}
+      <div className="bg-gray-900/50 backdrop-blur-sm rounded-2xl border border-gray-800/50 overflow-hidden">
+        <div className="p-6 border-b border-gray-800/50">
+          <h3 className="text-xl font-bold text-white">Transaction History</h3>
+          <p className="text-gray-400 text-sm">All your FASHOKEN activity</p>
+        </div>
+
+        {fashokenLedgerLoading ? (
+          <div className="p-8 text-center text-gray-400">Loading transactions...</div>
+        ) : fashokenLedger.length === 0 ? (
+          <div className="p-8 text-center">
+            <img src="/fashoken.png" alt="FASHOKEN" className="w-16 h-16 mx-auto mb-4 opacity-50" />
+            <p className="text-gray-400">No transactions yet</p>
+            <p className="text-gray-500 text-sm mt-2">Earn FASHOkens by launching campaigns!</p>
+          </div>
+        ) : (
+          <>
+            {/* Desktop Table View */}
+            <div className="hidden md:block overflow-x-auto">
+              <table className="w-full">
+                <thead className="bg-gray-800/50">
+                  <tr>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Type</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Amount</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Order</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Balance After</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Date</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-800/50">
+                  {fashokenLedger.map((entry) => {
+                    const isCredit = entry.type === 'credit' || entry.type === 'adjustment_add'
+                    return (
+                      <tr key={entry.id} className="hover:bg-gray-800/30 transition-colors">
+                        <td className="px-4 py-3 whitespace-nowrap">
+                          <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                            isCredit ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'
+                          }`}>
+                            {isCredit ? '↑ IN' : '↓ OUT'}
+                          </span>
+                        </td>
+                        <td className="px-4 py-3 whitespace-nowrap">
+                          <span className={`font-semibold ${isCredit ? 'text-green-400' : 'text-red-400'}`}>
+                            {isCredit ? '+' : '-'}{entry.amount.toLocaleString()} FSHKS
+                          </span>
+                        </td>
+                        <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-400">
+                          {entry.order_number ? `#${entry.order_number}` : '—'}
+                        </td>
+                        <td className="px-4 py-3 whitespace-nowrap text-sm font-medium text-white">
+                          {entry.balance_after.toLocaleString()} FSHKS
+                        </td>
+                        <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-400">
+                          {formatFashokenDate(entry.created_at)}
+                        </td>
+                      </tr>
+                    )
+                  })}
+                </tbody>
+              </table>
+            </div>
+
+            {/* Mobile Card View */}
+            <div className="md:hidden p-4 space-y-3">
+              {fashokenLedger.map((entry) => {
+                const isCredit = entry.type === 'credit' || entry.type === 'adjustment_add'
+                return (
+                  <div 
+                    key={entry.id} 
+                    className={`rounded-xl p-4 border ${
+                      isCredit 
+                        ? 'bg-green-500/5 border-green-500/20' 
+                        : 'bg-red-500/5 border-red-500/20'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between mb-3">
+                      <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium ${
+                        isCredit ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'
+                      }`}>
+                        {isCredit ? '↑ IN' : '↓ OUT'}
+                      </span>
+                      <span className={`text-lg font-bold ${isCredit ? 'text-green-400' : 'text-red-400'}`}>
+                        {isCredit ? '+' : '-'}{entry.amount.toLocaleString()} FSHKS
+                      </span>
+                    </div>
+                    
+                    <div className="space-y-2 text-sm">
+                      <div className="flex justify-between">
+                        <span className="text-gray-500">Balance After</span>
+                        <span className="text-white font-medium">{entry.balance_after.toLocaleString()} FSHKS</span>
+                      </div>
+                      {entry.order_number && (
+                        <div className="flex justify-between">
+                          <span className="text-gray-500">Order</span>
+                          <span className="text-gray-300">#{entry.order_number}</span>
+                        </div>
+                      )}
+                      <div className="flex justify-between">
+                        <span className="text-gray-500">Date</span>
+                        <span className="text-gray-400">{formatFashokenDate(entry.created_at)}</span>
+                      </div>
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+
+            {/* Pagination */}
+            {fashokenLedgerTotalPages > 1 && (
+              <div className="px-4 py-3 bg-gray-800/30 border-t border-gray-800/50 flex items-center justify-between">
+                <button
+                  onClick={() => fetchFashokenData(fashokenLedgerPage - 1)}
+                  disabled={fashokenLedgerPage === 1}
+                  className="px-3 py-1 bg-gray-700 rounded-md text-sm text-white disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-600 transition-colors"
+                >
+                  Previous
+                </button>
+                <span className="text-sm text-gray-400">
+                  Page {fashokenLedgerPage} of {fashokenLedgerTotalPages}
+                </span>
+                <button
+                  onClick={() => fetchFashokenData(fashokenLedgerPage + 1)}
+                  disabled={fashokenLedgerPage === fashokenLedgerTotalPages}
+                  className="px-3 py-1 bg-gray-700 rounded-md text-sm text-white disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-600 transition-colors"
+                >
+                  Next
+                </button>
+              </div>
+            )}
+          </>
+        )}
+      </div>
+    </div>
+  )
+
   const renderContent = () => {
     switch (activeTab) {
       case 'dashboard':
@@ -4157,6 +4567,8 @@ export default function Dashboard({ user }: DashboardProps) {
         return renderCampaignsContent()
       case 'curator-connect':
         return renderCuratorConnectContent()
+      case 'fashokens':
+        return renderFashokensContent()
       case 'power-tools':
         return <PowerToolsTab />
       case 'packages':
@@ -4253,6 +4665,28 @@ export default function Dashboard({ user }: DashboardProps) {
     console.log('📋 DASHBOARD: Intake form completed:', responses);
     setShowIntakeForm(false);
   };
+
+  // FASHOKENS functions
+  const fetchFashokenData = async (page = 1) => {
+    try {
+      setFashokenLedgerLoading(true)
+      const response = await fetch(`/api/user/fashokens?userId=${user.id}&page=${page}&limit=20`)
+      const data = await response.json()
+      
+      if (data.success) {
+        setFashokenBalance(data.balance)
+        setFashokenLifetimeEarned(data.lifetimeEarned)
+        setFashokenLifetimeSpent(data.lifetimeSpent)
+        setFashokenLedger(data.entries)
+        setFashokenLedgerTotalPages(data.totalPages)
+        setFashokenLedgerPage(page)
+      }
+    } catch (error) {
+      console.error('🪙 DASHBOARD: Error fetching fashoken data:', error)
+    } finally {
+      setFashokenLedgerLoading(false)
+    }
+  }
 
   // Curator Connect+ functions
   const fetchCuratorData = async () => {
@@ -5115,14 +5549,18 @@ Thank you,
                     transformOrigin: 'left center',
                   }}
                 >
-                  <svg 
-                    className="w-5 h-5 transition-transform duration-300 hover:scale-110" 
-                    fill="none" 
-                    stroke="currentColor" 
-                    viewBox="0 0 24 24"
-                  >
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={item.icon} />
-                  </svg>
+                  {(item as any).isImage ? (
+                    <img src="/fashoken.png" alt="FASHOKEN" className="w-5 h-5 transition-transform duration-300 hover:scale-110" />
+                  ) : (
+                    <svg 
+                      className="w-5 h-5 transition-transform duration-300 hover:scale-110" 
+                      fill="none" 
+                      stroke="currentColor" 
+                      viewBox="0 0 24 24"
+                    >
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={item.icon} />
+                    </svg>
+                  )}
                   <span className="font-medium">{item.label}</span>
                 </button>
               ))}
@@ -5152,6 +5590,7 @@ Thank you,
                     {activeTab === 'dashboard' && 'Dashboard'}
                     {activeTab === 'campaigns' && 'Campaigns'}
                     {activeTab === 'curator-connect' && 'Curator Connect+'}
+                    {activeTab === 'fashokens' && 'FASHOkens'}
                     {activeTab === 'power-tools' && 'Power Tools'}
                     {activeTab === 'packages' && 'Packages'}
                     {activeTab === 'faq' && 'Frequently Asked Questions'}
@@ -5162,6 +5601,7 @@ Thank you,
                     {activeTab === 'dashboard' && 'Welcome back! Here\'s your campaign overview.'}
                     {activeTab === 'campaigns' && 'Manage and monitor all your music campaigns.'}
                     {activeTab === 'curator-connect' && 'Connect with Spotify playlist curators and grow your audience.'}
+                    {activeTab === 'fashokens' && 'Your loyalty tokens - earn rewards with every campaign!'}
                     {activeTab === 'power-tools' && 'These are the battle-tested tools that our top performing clients use. From beat making to social media growth, these are the essentials that help artists dominate every aspect of their music careers.'}
                     {activeTab === 'packages' && 'Choose the perfect plan to launch your music career.'}
                     {activeTab === 'faq' && 'Get the answers that you need, when you need them.'}
@@ -5196,7 +5636,7 @@ Thank you,
               // Get flex basis based on label length
               const getFlexBasis = (itemId: string) => {
                 if (itemId === 'dashboard' || itemId === 'campaigns' || itemId === 'curator-connect') {
-                  return 'flex-[1.15]' // Slightly less space for longer labels
+                  return 'flex-[1.1]' // Slightly less space for longer labels
                 } else {
                   return 'flex-1' // Normal space for others
                 }
@@ -5224,9 +5664,13 @@ Thank you,
                   }}
                 >
                   <div className={`relative ${item.id === 'settings' ? 'transition-transform duration-200' : ''}`}>
-                  <svg className="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={item.icon} />
-                  </svg>
+                  {(item as any).isImage ? (
+                    <img src="/fashoken.png" alt="FASHOkens" className="w-5 h-5 flex-shrink-0" />
+                  ) : (
+                    <svg className="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={item.icon} />
+                    </svg>
+                  )}
                     {item.id === 'settings' && (
                       <div className="absolute -top-1 -right-1 w-2 h-2 bg-gradient-to-r from-green-400 to-blue-400 rounded-full opacity-75"></div>
                     )}

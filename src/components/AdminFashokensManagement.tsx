@@ -191,7 +191,7 @@ function LedgerTab() {
         </div>
       </div>
 
-      {/* Table */}
+      {/* Table / Mobile Cards */}
       <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
         {loading ? (
           <div className="p-8 text-center text-gray-500">Loading...</div>
@@ -200,80 +200,164 @@ function LedgerTab() {
         ) : entries.length === 0 ? (
           <div className="p-8 text-center text-gray-500">No ledger entries found</div>
         ) : (
-          <div className="overflow-x-auto max-h-[600px] overflow-y-auto">
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50 sticky top-0">
-                <tr>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Type</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Customer</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Amount</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Order #</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Order Total</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Reason</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Balance After</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Admin</th>
-                </tr>
-              </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
-                {entries.map((entry) => {
-                  const typeDisplay = getTypeDisplay(entry.type);
-                  return (
-                    <tr key={entry.id} className="hover:bg-gray-50">
-                      <td className="px-4 py-3 whitespace-nowrap">
-                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${typeDisplay.color}`}>
-                          {typeDisplay.arrow} {typeDisplay.label}
-                        </span>
-                      </td>
-                      <td className="px-4 py-3">
-                        <div className="text-sm font-medium text-gray-900">
-                          <a 
-                            href={`/admin/customer/${encodeURIComponent(entry.user_email || '')}`}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="text-indigo-600 hover:text-indigo-800"
-                          >
-                            {entry.user_name || 'Unknown'}
-                          </a>
+          <>
+            {/* Mobile Card View */}
+            <div className="md:hidden divide-y divide-gray-200 max-h-[600px] overflow-y-auto">
+              {entries.map((entry) => {
+                const typeDisplay = getTypeDisplay(entry.type);
+                const isCredit = entry.type === 'credit' || entry.type === 'adjustment_add';
+                return (
+                  <div key={entry.id} className="p-4 hover:bg-gray-50">
+                    {/* Top Row: Type Badge + Amount */}
+                    <div className="flex items-center justify-between mb-3">
+                      <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold ${typeDisplay.color}`}>
+                        {typeDisplay.arrow} {typeDisplay.label}
+                      </span>
+                      <span className={`text-xl font-bold ${isCredit ? 'text-green-600' : 'text-red-600'}`}>
+                        {isCredit ? '+' : '-'}{entry.amount.toLocaleString()}
+                      </span>
+                    </div>
+                    
+                    {/* Customer Info */}
+                    <div className="mb-3">
+                      <a 
+                        href={`/admin/customer/${encodeURIComponent(entry.user_email || '')}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-base font-semibold text-indigo-600 hover:text-indigo-800"
+                      >
+                        {entry.user_name || 'Unknown'}
+                      </a>
+                      <div className="text-sm text-gray-500">{entry.user_email}</div>
+                    </div>
+                    
+                    {/* Details Grid */}
+                    <div className="grid grid-cols-2 gap-2 text-sm mb-2">
+                      {entry.order_number && (
+                        <div>
+                          <span className="text-gray-400 text-xs">Order</span>
+                          <div>
+                            <a 
+                              href={`/admin/order/${entry.order_id}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-indigo-600 hover:text-indigo-800 font-medium"
+                            >
+                              #{entry.order_number}
+                            </a>
+                          </div>
                         </div>
-                        <div className="text-xs text-gray-500">{entry.user_email}</div>
-                      </td>
-                      <td className="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-900">
-                        {entry.amount.toLocaleString()}
-                      </td>
-                      <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-500">
-                        {entry.order_number ? (
-                          <a 
-                            href={`/admin/order/${entry.order_id}`}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="text-indigo-600 hover:text-indigo-800"
-                          >
-                            #{entry.order_number}
-                          </a>
-                        ) : '—'}
-                      </td>
-                      <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-500">
-                        {entry.order_total ? `$${entry.order_total.toFixed(2)}` : '—'}
-                      </td>
-                      <td className="px-4 py-3 text-sm text-gray-500 max-w-xs truncate" title={entry.reason}>
+                      )}
+                      {entry.order_total && (
+                        <div>
+                          <span className="text-gray-400 text-xs">Order Total</span>
+                          <div className="font-medium text-gray-700">${entry.order_total.toFixed(2)}</div>
+                        </div>
+                      )}
+                      <div>
+                        <span className="text-gray-400 text-xs">Balance After</span>
+                        <div className="font-semibold text-gray-900">{entry.balance_after.toLocaleString()}</div>
+                      </div>
+                      <div>
+                        <span className="text-gray-400 text-xs">Date</span>
+                        <div className="text-gray-700">{formatDate(entry.created_at)}</div>
+                      </div>
+                    </div>
+                    
+                    {/* Reason */}
+                    {entry.reason && (
+                      <div className="text-xs text-gray-500 bg-gray-50 rounded-lg px-2 py-1.5 mt-2">
                         {entry.reason}
-                      </td>
-                      <td className="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-900">
-                        {entry.balance_after.toLocaleString()}
-                      </td>
-                      <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-500">
-                        {formatDate(entry.created_at)}
-                      </td>
-                      <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-500">
-                        {entry.admin_email || '—'}
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
+                      </div>
+                    )}
+                    
+                    {/* Admin (if applicable) */}
+                    {entry.admin_email && (
+                      <div className="text-xs text-gray-400 mt-2">
+                        By: {entry.admin_email}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Desktop Table View */}
+            <div className="hidden md:block overflow-x-auto max-h-[600px] overflow-y-auto">
+              <table className="min-w-full divide-y divide-gray-200">
+                <thead className="bg-gray-50 sticky top-0">
+                  <tr>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Type</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Customer</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Amount</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Order #</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Order Total</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Reason</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Balance After</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Admin</th>
+                  </tr>
+                </thead>
+                <tbody className="bg-white divide-y divide-gray-200">
+                  {entries.map((entry) => {
+                    const typeDisplay = getTypeDisplay(entry.type);
+                    return (
+                      <tr key={entry.id} className="hover:bg-gray-50">
+                        <td className="px-4 py-3 whitespace-nowrap">
+                          <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${typeDisplay.color}`}>
+                            {typeDisplay.arrow} {typeDisplay.label}
+                          </span>
+                        </td>
+                        <td className="px-4 py-3">
+                          <div className="text-sm font-medium text-gray-900">
+                            <a 
+                              href={`/admin/customer/${encodeURIComponent(entry.user_email || '')}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-indigo-600 hover:text-indigo-800"
+                            >
+                              {entry.user_name || 'Unknown'}
+                            </a>
+                          </div>
+                          <div className="text-xs text-gray-500">{entry.user_email}</div>
+                        </td>
+                        <td className="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-900">
+                          {entry.amount.toLocaleString()}
+                        </td>
+                        <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-500">
+                          {entry.order_number ? (
+                            <a 
+                              href={`/admin/order/${entry.order_id}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-indigo-600 hover:text-indigo-800"
+                            >
+                              #{entry.order_number}
+                            </a>
+                          ) : '—'}
+                        </td>
+                        <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-500">
+                          {entry.order_total ? `$${entry.order_total.toFixed(2)}` : '—'}
+                        </td>
+                        <td className="px-4 py-3 text-sm text-gray-500 max-w-xs truncate" title={entry.reason}>
+                          {entry.reason}
+                        </td>
+                        <td className="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-900">
+                          {entry.balance_after.toLocaleString()}
+                        </td>
+                        <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-500">
+                          {formatDate(entry.created_at)}
+                        </td>
+                        <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-500">
+                          {entry.admin_email || '—'}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </>
         )}
 
         {/* Pagination */}

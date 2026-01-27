@@ -52,6 +52,7 @@ export default function AdminDashboard({ adminUser, authError }: AdminDashboardP
   })
   const [lottieAnimationData, setLottieAnimationData] = useState(null)
   const lottieRef = useRef<any>(null)
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
 
   // ALL HOOKS MUST BE BEFORE ANY CONDITIONAL RETURNS (React Rules of Hooks)
   
@@ -435,14 +436,15 @@ export default function AdminDashboard({ adminUser, authError }: AdminDashboardP
 
       <main className="min-h-screen bg-gray-50">
         {/* Navigation */}
-        <nav className="bg-white shadow-sm border-b border-gray-200">
+        <nav className="bg-white shadow-sm border-b border-gray-200 relative z-50">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="flex justify-between h-16">
-              <div className="flex items-center space-x-8">
+              <div className="flex items-center">
                 <div className="flex-shrink-0">
                   <h1 className="text-xl font-bold text-gray-900">Fasho Admin</h1>
                 </div>
-                <div className="flex space-x-8">
+                {/* Desktop Navigation */}
+                <div className="hidden lg:flex lg:ml-8 lg:space-x-4">
                   {/* Dashboard Tab - Only for full admins */}
                   {adminUser.role === 'admin' && (
                     <button
@@ -481,7 +483,7 @@ export default function AdminDashboard({ adminUser, authError }: AdminDashboardP
                       setActiveTab('marketing-manager')
                       router.replace('/admin?p=marketing-manager', undefined, { shallow: true })
                     }}
-                    className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                    className={`px-3 py-2 rounded-md text-sm font-medium transition-colors whitespace-nowrap ${
                       activeTab === 'marketing-manager'
                         ? 'bg-indigo-100 text-indigo-700'
                         : 'text-gray-500 hover:text-gray-700'
@@ -576,7 +578,9 @@ export default function AdminDashboard({ adminUser, authError }: AdminDashboardP
                   )}
                 </div>
               </div>
-              <div className="flex items-center space-x-4">
+              
+              {/* Desktop User Info & Sign Out */}
+              <div className="hidden lg:flex items-center space-x-4">
                 <div className="text-right">
                   <div className="text-sm text-gray-500">{adminUser.email}</div>
                   <div className="text-xs text-gray-400 capitalize">
@@ -591,6 +595,212 @@ export default function AdminDashboard({ adminUser, authError }: AdminDashboardP
                   {isLoading ? 'Signing out...' : 'Sign Out'}
                 </button>
               </div>
+
+              {/* Mobile Menu Button */}
+              <div className="lg:hidden flex items-center">
+                <button
+                  onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+                  className="p-2 rounded-md text-gray-500 hover:text-gray-700 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-indigo-500"
+                >
+                  <span className="sr-only">Open menu</span>
+                  {mobileMenuOpen ? (
+                    <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  ) : (
+                    <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+                    </svg>
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {/* Mobile Slide-in Menu */}
+          <div 
+            className={`lg:hidden fixed inset-0 z-40 transition-opacity duration-300 ${mobileMenuOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'}`}
+            onClick={() => setMobileMenuOpen(false)}
+          >
+            <div className="absolute inset-0 bg-black/50" />
+          </div>
+          <div 
+            className={`lg:hidden fixed top-0 right-0 h-full w-72 bg-white shadow-xl z-50 transform transition-transform duration-300 ease-in-out ${mobileMenuOpen ? 'translate-x-0' : 'translate-x-full'}`}
+          >
+            {/* Mobile Menu Header */}
+            <div className="flex items-center justify-between p-4 border-b border-gray-200">
+              <h2 className="text-lg font-semibold text-gray-900">Menu</h2>
+              <button
+                onClick={() => setMobileMenuOpen(false)}
+                className="p-2 rounded-md text-gray-500 hover:text-gray-700 hover:bg-gray-100"
+              >
+                <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            {/* Mobile Menu Items */}
+            <div className="py-4 px-2 space-y-1 overflow-y-auto max-h-[calc(100vh-200px)]">
+              {/* Dashboard Tab - Only for full admins */}
+              {adminUser.role === 'admin' && (
+                <button
+                  onClick={() => {
+                    setActiveTab('dashboard')
+                    router.replace('/admin?p=dashboard', undefined, { shallow: true })
+                    setMobileMenuOpen(false)
+                  }}
+                  className={`w-full text-left px-4 py-3 rounded-lg text-sm font-medium transition-colors ${
+                    activeTab === 'dashboard'
+                      ? 'bg-indigo-100 text-indigo-700'
+                      : 'text-gray-600 hover:bg-gray-100'
+                  }`}
+                >
+                  📊 Dashboard
+                </button>
+              )}
+              
+              {/* Orders Tab - Available to all admin roles */}
+              <button
+                onClick={() => {
+                  setActiveTab('orders')
+                  router.replace('/admin?p=orders', undefined, { shallow: true })
+                  setMobileMenuOpen(false)
+                }}
+                className={`w-full text-left px-4 py-3 rounded-lg text-sm font-medium transition-colors ${
+                  activeTab === 'orders'
+                    ? 'bg-indigo-100 text-indigo-700'
+                    : 'text-gray-600 hover:bg-gray-100'
+                }`}
+              >
+                📦 Orders
+              </button>
+              
+              {/* Marketing Manager Tab - Available to all admin roles */}
+              <button
+                onClick={() => {
+                  setActiveTab('marketing-manager')
+                  router.replace('/admin?p=marketing-manager', undefined, { shallow: true })
+                  setMobileMenuOpen(false)
+                }}
+                className={`w-full text-left px-4 py-3 rounded-lg text-sm font-medium transition-colors ${
+                  activeTab === 'marketing-manager'
+                    ? 'bg-indigo-100 text-indigo-700'
+                    : 'text-gray-600 hover:bg-gray-100'
+                }`}
+              >
+                📈 Marketing Manager
+              </button>
+
+              {/* Blog Tab - Only for full admins */}
+              {adminUser.role === 'admin' && (
+                <button
+                  onClick={() => {
+                    setActiveTab('blog')
+                    router.replace('/admin?p=blog', undefined, { shallow: true })
+                    setMobileMenuOpen(false)
+                  }}
+                  className={`w-full text-left px-4 py-3 rounded-lg text-sm font-medium transition-colors ${
+                    activeTab === 'blog'
+                      ? 'bg-indigo-100 text-indigo-700'
+                      : 'text-gray-600 hover:bg-gray-100'
+                  }`}
+                >
+                  ✍️ Blog
+                </button>
+              )}
+              
+              {/* Emails Tab - Only for full admins */}
+              {adminUser.role === 'admin' && (
+                <button
+                  onClick={() => {
+                    setActiveTab('emails')
+                    router.replace('/admin?p=emails', undefined, { shallow: true })
+                    setMobileMenuOpen(false)
+                  }}
+                  className={`w-full text-left px-4 py-3 rounded-lg text-sm font-medium transition-colors ${
+                    activeTab === 'emails'
+                      ? 'bg-indigo-100 text-indigo-700'
+                      : 'text-gray-600 hover:bg-gray-100'
+                  }`}
+                >
+                  ✉️ Emails
+                </button>
+              )}
+              
+              {/* Coupons Tab - Only for full admins */}
+              {adminUser.role === 'admin' && (
+                <button
+                  onClick={() => {
+                    setActiveTab('coupons')
+                    router.replace('/admin?p=coupons', undefined, { shallow: true })
+                    setMobileMenuOpen(false)
+                  }}
+                  className={`w-full text-left px-4 py-3 rounded-lg text-sm font-medium transition-colors ${
+                    activeTab === 'coupons'
+                      ? 'bg-indigo-100 text-indigo-700'
+                      : 'text-gray-600 hover:bg-gray-100'
+                  }`}
+                >
+                  🎟️ Coupons
+                </button>
+              )}
+
+              {/* FASHOkens Tab - Only for full admins */}
+              {adminUser.role === 'admin' && (
+                <button
+                  onClick={() => {
+                    setActiveTab('fashokens')
+                    router.replace('/admin?p=fashokens', undefined, { shallow: true })
+                    setMobileMenuOpen(false)
+                  }}
+                  className={`w-full text-left px-4 py-3 rounded-lg text-sm font-medium transition-colors flex items-center ${
+                    activeTab === 'fashokens'
+                      ? 'bg-amber-100 text-amber-700'
+                      : 'text-gray-600 hover:bg-gray-100'
+                  }`}
+                >
+                  <img src="/fashoken.png" alt="" className="w-4 h-4 mr-2" /> FASHOkens
+                </button>
+              )}
+              
+              {/* Settings Tab - Only for full admins */}
+              {adminUser.role === 'admin' && (
+                <button
+                  onClick={() => {
+                    setActiveTab('settings')
+                    router.replace('/admin?p=settings', undefined, { shallow: true })
+                    setMobileMenuOpen(false)
+                  }}
+                  className={`w-full text-left px-4 py-3 rounded-lg text-sm font-medium transition-colors ${
+                    activeTab === 'settings'
+                      ? 'bg-indigo-100 text-indigo-700'
+                      : 'text-gray-600 hover:bg-gray-100'
+                  }`}
+                >
+                  ⚙️ Settings
+                </button>
+              )}
+            </div>
+
+            {/* Mobile Menu Footer - User Info & Sign Out */}
+            <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-gray-200 bg-white">
+              <div className="mb-3">
+                <div className="text-sm font-medium text-gray-900">{adminUser.email}</div>
+                <div className="text-xs text-gray-500 capitalize">
+                  {adminUser.role === 'sub_admin' ? 'Sub Admin' : 'Administrator'}
+                </div>
+              </div>
+              <button
+                onClick={() => {
+                  setMobileMenuOpen(false)
+                  handleSignOut()
+                }}
+                disabled={isLoading}
+                className="w-full bg-red-600 hover:bg-red-700 text-white px-4 py-2.5 rounded-lg text-sm font-medium transition-colors disabled:opacity-50"
+              >
+                {isLoading ? 'Signing out...' : 'Sign Out'}
+              </button>
             </div>
           </div>
         </nav>

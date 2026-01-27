@@ -47,6 +47,35 @@ const responsiveFontStyles = `
   .animate-pricing-message {
     animation: pricingMessageFade 4.2s ease-in-out forwards;
   }
+  
+  /* FASHOkens spend tokens highlight pulse */
+  @keyframes searchHighlightPulse {
+    0% {
+      box-shadow: 0 0 0 0 rgba(89, 227, 165, 0);
+    }
+    15% {
+      box-shadow: 0 0 0 8px rgba(89, 227, 165, 0.4);
+    }
+    30% {
+      box-shadow: 0 0 0 0 rgba(89, 227, 165, 0);
+    }
+    45% {
+      box-shadow: 0 0 0 8px rgba(89, 227, 165, 0.4);
+    }
+    60% {
+      box-shadow: 0 0 0 0 rgba(89, 227, 165, 0);
+    }
+    75% {
+      box-shadow: 0 0 0 8px rgba(89, 227, 165, 0.4);
+    }
+    100% {
+      box-shadow: 0 0 0 0 rgba(89, 227, 165, 0);
+    }
+  }
+  
+  .search-highlight-pulse {
+    animation: searchHighlightPulse 2.4s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+  }
 
   .text-base-mobile-lg-desktop {
     font-size: 1.6rem;
@@ -379,6 +408,7 @@ export default function Home() {
   const [hasSearched, setHasSearched] = useState(false);
   const [searchTimeout, setSearchTimeout] = useState<NodeJS.Timeout | null>(null);
   const [showPricingMessage, setShowPricingMessage] = useState(false);
+  const [showSearchHighlight, setShowSearchHighlight] = useState(false);
   const pricingMessageTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const searchDropdownRef = useRef<HTMLDivElement>(null);
@@ -665,13 +695,43 @@ export default function Home() {
       }, 300);
     }
 
+    // Check URL for spendTokens parameter (from FASHOkens dashboard)
+    if (router.query.spendTokens === 'true') {
+      setTimeout(() => {
+        // Scroll to search input
+        const searchInput = document.getElementById('spotify-search-input');
+        if (searchInput) {
+          const elementRect = searchInput.getBoundingClientRect();
+          const elementCenter = elementRect.top + (elementRect.height / 2);
+          const viewportCenter = window.innerHeight / 2;
+          const offset = elementCenter - viewportCenter;
+          const targetScroll = window.pageYOffset + offset;
+          
+          window.scrollTo({
+            top: targetScroll,
+            behavior: 'smooth'
+          });
+          
+          // Trigger highlight pulse animation
+          setShowSearchHighlight(true);
+          
+          // Remove highlight after animation completes (3 pulses, ~2.4s)
+          setTimeout(() => {
+            setShowSearchHighlight(false);
+          }, 2400);
+        }
+        // Remove the query parameter from URL without refresh
+        router.replace('/', undefined, { shallow: true });
+      }, 300);
+    }
+
     return () => {
       window.removeEventListener('showPricingMessage', handleShowPricingMessage);
       if (pricingMessageTimeoutRef.current) {
         clearTimeout(pricingMessageTimeoutRef.current);
       }
     };
-  }, [router.query.showPricingMessage]);
+  }, [router.query.showPricingMessage, router.query.spendTokens]);
 
   // Viewport animation hooks for PAS section
 
@@ -1766,7 +1826,7 @@ export default function Home() {
                       </div>
 
                       {/* Input and Button Layout - Responsive - SEARCH CONTAINER WITH ESCAPE POSITIONING */}
-                      <div id="spotify-search-input" className="relative mb-8 w-full">
+                      <div id="spotify-search-input" className={`relative mb-8 w-full rounded-2xl ${showSearchHighlight ? 'search-highlight-pulse' : ''}`}>
                         <div className="flex flex-col md:flex-row gap-4 items-stretch md:items-center w-full">
                           <div className="flex-1 relative">
                             <input
