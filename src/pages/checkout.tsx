@@ -13,6 +13,7 @@ import LegalModal from '../components/LegalModal';
 import SpotlightCard from '../components/SpotlightCard';
 import { useAuth } from '../utils/authContext';
 import { analytics } from "../utils/analytics";
+import FashokensSection from '../components/FashokensSection';
 
 interface Package {
   id: string;
@@ -144,6 +145,7 @@ export default function CheckoutPage() {
   const [subtotal, setSubtotal] = useState(0);
   const [discount, setDiscount] = useState(0);
   const [total, setTotal] = useState(0);
+  const [totalBeforeFashokens, setTotalBeforeFashokens] = useState(0); // Cart total after coupon but before fashokens
   const [couponCode, setCouponCode] = useState('');
   const [appliedCoupon, setAppliedCoupon] = useState<{
     id: string;
@@ -175,6 +177,11 @@ export default function CheckoutPage() {
   const [processedTransactionIds, setProcessedTransactionIds] = useState<Set<string>>(new Set()); // Track processed transactions
   const [showProcessingPopup, setShowProcessingPopup] = useState(false); // Show processing payment popup
   const [hasShownProcessingPopup, setHasShownProcessingPopup] = useState(false); // Track if popup has been shown
+
+  // FASHOKENS loyalty state
+  const [appliedFashokens, setAppliedFashokens] = useState(0);
+  const [fashokensDiscount, setFashokensDiscount] = useState(0);
+  const [tokensPerDollar, setTokensPerDollar] = useState(100); // For calculating earned tokens
 
   // Form state
   const [formData, setFormData] = useState({
@@ -413,8 +420,17 @@ export default function CheckoutPage() {
       finalTotal = Math.max(0, finalTotal - couponDiscount); // Don't allow negative totals
     }
     
+    // Store total before fashokens (for FashokensSection to recalculate max)
+    const totalAfterCouponBeforeFashokens = finalTotal;
+    
+    // Apply FASHOKENS discount
+    if (fashokensDiscount > 0) {
+      finalTotal = Math.max(1, finalTotal - fashokensDiscount); // Don't allow below $1 minimum
+    }
+    
     setSubtotal(totalSubtotal);
     setDiscount(totalDiscount);
+    setTotalBeforeFashokens(totalAfterCouponBeforeFashokens);
     setTotal(finalTotal);
   };
 
@@ -497,10 +513,10 @@ export default function CheckoutPage() {
     setCouponError('');
   };
 
-  // Update totals when coupon changes
+  // Update totals when coupon or fashokens changes
   useEffect(() => {
     updateTotals();
-  }, [appliedCoupon, orderItems, addOnOrderItems]);
+  }, [appliedCoupon, orderItems, addOnOrderItems, fashokensDiscount]);
 
   // Validate checkout session and load data
   useEffect(() => {
@@ -731,6 +747,22 @@ export default function CheckoutPage() {
 
     validateSession();
   }, [router.isReady, router.query]);
+
+  // Fetch loyalty settings for earning rate
+  useEffect(() => {
+    const fetchLoyaltySettings = async () => {
+      try {
+        const res = await fetch('/api/loyalty/settings');
+        const data = await res.json();
+        if (data.success && data.settings?.tokens_per_dollar) {
+          setTokensPerDollar(data.settings.tokens_per_dollar);
+        }
+      } catch (err) {
+        console.error('Error fetching loyalty settings:', err);
+      }
+    };
+    fetchLoyaltySettings();
+  }, []);
 
   // Update totals when add-ons change
   useEffect(() => {
@@ -1437,6 +1469,32 @@ export default function CheckoutPage() {
         }
       }
       
+      // Process FASHOKENS loyalty tokens (spending and earning)
+      let loyaltyResult = null;
+      try {
+        console.log('🪙 CHECKOUT: Processing loyalty tokens...');
+        const loyaltyResponse = await fetch('/api/loyalty/process-order', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            userId: userId,
+            orderId: orderResult.order.id,
+            orderNumber: orderResult.order.orderNumber,
+            orderTotal: pendingOrder.total,
+            couponDiscount: pendingOrder.coupon?.calculated_discount || 0,
+            fashokensSpent: pendingOrder.fashokens?.spent || 0,
+            fashokensDiscount: pendingOrder.fashokens?.discount || 0
+          }),
+        });
+        loyaltyResult = await loyaltyResponse.json();
+        console.log('🪙 CHECKOUT: Loyalty processing result:', loyaltyResult);
+      } catch (loyaltyError) {
+        console.error('🪙 CHECKOUT: Error processing loyalty tokens:', loyaltyError);
+        // Don't fail the order if loyalty processing fails
+      }
+      
       // Store order data for thank you page using the pending order data + order number
       const orderData = {
         items: pendingOrder.items,
@@ -1459,6 +1517,11 @@ export default function CheckoutPage() {
         couponId: pendingOrder.coupon?.id || null,
         couponCode: pendingOrder.coupon?.code || null,
         couponDiscount: pendingOrder.coupon?.calculated_discount || null,
+        // FASHOKENS loyalty data
+        fashokensSpent: loyaltyResult?.fashokens_spent || pendingOrder.fashokens?.spent || 0,
+        fashokensEarned: loyaltyResult?.fashokens_earned || 0,
+        fashokensDiscount: pendingOrder.fashokens?.discount || 0,
+        fashokensNewBalance: loyaltyResult?.new_balance || 0,
       };
       console.log('🚀 CHECKOUT: Storing completedOrder in sessionStorage:', orderData);
       sessionStorage.setItem('completedOrder', JSON.stringify(orderData));
@@ -1642,6 +1705,11 @@ export default function CheckoutPage() {
           discount_value: appliedCoupon.discount_value,
           calculated_discount: appliedCoupon.calculated_discount
         } : null,
+        // FASHOKENS loyalty data
+        fashokens: {
+          spent: appliedFashokens,
+          discount: fashokensDiscount
+        },
         createdAt: new Date().toISOString(),
         paymentToken: data.token
       };
@@ -3049,6 +3117,22 @@ export default function CheckoutPage() {
                   )}
                 </div>
 
+                {/* FASHOKENS Loyalty Section */}
+                <FashokensSection
+                  userId={currentUser?.id || null}
+                  cartTotal={totalBeforeFashokens} // Pass total after coupon but before fashokens
+                  onApplyTokens={(tokens, discount) => {
+                    setAppliedFashokens(tokens);
+                    setFashokensDiscount(discount);
+                  }}
+                  onRemoveTokens={() => {
+                    setAppliedFashokens(0);
+                    setFashokensDiscount(0);
+                  }}
+                  appliedTokens={appliedFashokens}
+                  appliedDiscount={fashokensDiscount}
+                />
+
                 {/* Price Summary */}
                 <div className="bg-white/5 rounded-xl p-6 border border-white/20">
                   <div className="space-y-3">
@@ -3071,7 +3155,27 @@ export default function CheckoutPage() {
                       </div>
                     )}
 
-                    
+                    {appliedFashokens > 0 && (
+                      <div className="flex justify-between items-center text-[#59e3a5]">
+                        <span className="flex items-center space-x-1">
+                          <img src="/fashoken.png" alt="FASHOKEN" className="w-4 h-4" />
+                          <span>FASHOKENS ({appliedFashokens.toLocaleString()} applied)</span>
+                        </span>
+                        <div className="flex items-center space-x-2">
+                          <span>-${fashokensDiscount.toFixed(2)}</span>
+                          <button
+                            onClick={() => {
+                              setAppliedFashokens(0);
+                              setFashokensDiscount(0);
+                            }}
+                            className="text-white/50 hover:text-white text-xs underline"
+                          >
+                            Unapply
+                          </button>
+                        </div>
+                      </div>
+                    )}
+
                     <div className="border-t border-white/20 pt-3">
                       <div className="flex justify-between text-xl font-bold">
                         <span>Total</span>
@@ -3156,6 +3260,16 @@ export default function CheckoutPage() {
                         >
                           {isLoading ? 'Processing...' : `Continue to Payment · $${total.toFixed(2)}`}
                         </button>
+                        
+                        {/* FASHOKENS Earning Badge */}
+                        {currentUser && total > 0 && (
+                          <div className="mt-3 flex items-center justify-center space-x-2 bg-[#59e3a5]/10 border border-[#59e3a5]/30 rounded-lg py-2 px-3">
+                            <img src="/fashoken.png" alt="FASHOKEN" className="w-4 h-4" />
+                            <span className="text-[#59e3a5] text-sm font-medium">
+                              You're earning {Math.floor(total * tokensPerDollar).toLocaleString()} FASHOkens from this order!
+                            </span>
+                          </div>
+                        )}
                       </div>
                     </form>
                   </div>

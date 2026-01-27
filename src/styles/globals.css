@@ -24,8 +24,9 @@ body {
   -webkit-text-size-adjust: 100%;
   -ms-text-size-adjust: 100%;
   text-size-adjust: 100%;
-  touch-action: manipulation;
-  overscroll-behavior: none;
+  /* Note: touch-action should only be on specific interactive elements, not body
+     as it can interfere with mouse wheel scrolling in Chrome */
+  overscroll-behavior-x: none;
 }
 
 /* Text overflow prevention - no hyphenation */

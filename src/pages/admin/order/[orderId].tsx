@@ -56,6 +56,10 @@ interface Order {
   saved_by_admin: string | null;
   couponCode?: string | null;
   couponDiscount?: number;
+  // FASHOKENS loyalty fields
+  fashokens_spent?: number;
+  fashokens_earned?: number;
+  fashokens_discount_amount?: number;
   created_at: string;
   updated_at: string;
   items: OrderItem[];
@@ -129,6 +133,9 @@ export default function OrderDetailPage({ adminSession, accessDenied }: OrderDet
   const [loadingHistory, setLoadingHistory] = useState(false);
   const [showHistoryDropdown, setShowHistoryDropdown] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  
+  // FASHOKENS balance state
+  const [customerFashokenBalance, setCustomerFashokenBalance] = useState<number | null>(null);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -154,7 +161,22 @@ export default function OrderDetailPage({ adminSession, accessDenied }: OrderDet
     if (order?.customer_email) {
       fetchCustomerHistory(order.customer_email);
     }
+    if (order?.user_id) {
+      fetchCustomerFashokenBalance(order.user_id);
+    }
   }, [order?.user_id, order?.items, order?.customer_email]);
+
+  const fetchCustomerFashokenBalance = async (userId: string) => {
+    try {
+      const response = await fetch(`/api/admin/fashokens/customer-balance?userId=${userId}`);
+      const data = await response.json();
+      if (data.success) {
+        setCustomerFashokenBalance(data.balance);
+      }
+    } catch (error) {
+      console.error('Failed to fetch FASHOKEN balance', error);
+    }
+  };
 
   const fetchCustomerHistory = async (email: string) => {
     try {
@@ -613,6 +635,14 @@ export default function OrderDetailPage({ adminSession, accessDenied }: OrderDet
             <p className="text-white break-all" style={{ fontSize: '0.875rem' }}>{order.customer_email}</p>
           </div>
 
+          {/* Customer FASHOKEN Balance */}
+          {customerFashokenBalance !== null && order.user_id && (
+            <div className="bg-gradient-to-r from-amber-500/10 to-yellow-500/10 rounded-xl p-4 border border-amber-500/30">
+              <p className="text-amber-400 mb-1 flex items-center space-x-1" style={{ fontSize: '0.75rem' }}><img src="/fashoken.png" alt="FASHOKEN" className="w-4 h-4" /><span>FASHOKEN Balance</span></p>
+              <p className="text-amber-400 font-semibold" style={{ fontSize: '1.25rem' }}>{customerFashokenBalance.toLocaleString()}</p>
+            </div>
+          )}
+
           {/* User Genres - Collapsed */}
           <div className="bg-white/5 rounded-xl p-4 border border-white/20">
             <h2 className="text-lg font-semibold text-white mb-3">Genres</h2>
@@ -770,10 +800,25 @@ export default function OrderDetailPage({ adminSession, accessDenied }: OrderDet
               {order.couponCode && order.couponDiscount && order.couponDiscount > 0 && (
                 <div className="flex justify-between"><span className="text-white/70">Coupon ({order.couponCode})</span><span className="text-green-400">-{formatOrderCurrency(order.couponDiscount)}</span></div>
               )}
+              {order.fashokens_spent && order.fashokens_spent > 0 && (
+                <div className="flex justify-between"><span className="text-white/70 flex items-center space-x-1"><img src="/fashoken.png" alt="FASHOKEN" className="w-4 h-4" /><span>FASHOKENS ({order.fashokens_spent.toLocaleString()})</span></span><span className="text-amber-400">-{formatOrderCurrency(order.fashokens_discount_amount || 0)}</span></div>
+              )}
               <div className="border-t border-white/20 pt-2 flex justify-between font-semibold">
                 <span className="text-white">Total</span><span className="text-white text-lg">{formatOrderCurrency(order.total)}</span>
               </div>
             </div>
+            
+            {/* FASHOKENS Section - Mobile */}
+            {(order.fashokens_spent || order.fashokens_earned) ? (
+              <div className="mt-4 pt-4 border-t border-white/20">
+                <h3 className="text-sm font-semibold text-amber-400 mb-2 flex items-center space-x-1"><img src="/fashoken.png" alt="FASHOKEN" className="w-4 h-4" /><span>FASHOkens</span></h3>
+                <div className="space-y-1 text-sm">
+                  {order.fashokens_spent > 0 && <div className="flex justify-between"><span className="text-white/70">Spent on this order</span><span className="text-red-400">{order.fashokens_spent.toLocaleString()} (-${(order.fashokens_discount_amount || 0).toFixed(2)})</span></div>}
+                  {order.fashokens_earned > 0 && <div className="flex justify-between"><span className="text-white/70">Earned from this order</span><span className="text-green-400">+{order.fashokens_earned.toLocaleString()}</span></div>}
+                  <div className="flex justify-between font-medium"><span className="text-white/70">Net change</span><span className={((order.fashokens_earned || 0) - (order.fashokens_spent || 0)) >= 0 ? 'text-green-400' : 'text-red-400'}>{((order.fashokens_earned || 0) - (order.fashokens_spent || 0)) >= 0 ? '+' : ''}{((order.fashokens_earned || 0) - (order.fashokens_spent || 0)).toLocaleString()}</span></div>
+                </div>
+              </div>
+            ) : null}
           </div>
 
           {/* Admin Notes - Mobile */}
@@ -1045,8 +1090,23 @@ export default function OrderDetailPage({ adminSession, accessDenied }: OrderDet
                 <div className="flex justify-between"><span className="text-white/70">Subtotal</span><span className="text-white">{formatOrderCurrency(order.subtotal)}</span></div>
                 {order.discount > 0 && <div className="flex justify-between"><span className="text-white/70">Discounts</span><span className="text-green-400">-{formatOrderCurrency(order.discount)}</span></div>}
                 {order.couponCode && order.couponDiscount && order.couponDiscount > 0 && <div className="flex justify-between"><span className="text-white/70">Coupon ({order.couponCode})</span><span className="text-green-400">-{formatOrderCurrency(order.couponDiscount)}</span></div>}
+                {order.fashokens_spent && order.fashokens_spent > 0 && (
+                  <div className="flex justify-between"><span className="text-white/70 flex items-center space-x-1"><img src="/fashoken.png" alt="FASHOKEN" className="w-4 h-4" /><span>FASHOKENS ({order.fashokens_spent.toLocaleString()})</span></span><span className="text-amber-400">-{formatOrderCurrency(order.fashokens_discount_amount || 0)}</span></div>
+                )}
                 <div className="border-t border-white/20 pt-2 flex justify-between font-semibold"><span className="text-white">Total</span><span className="text-white">{formatOrderCurrency(order.total)}</span></div>
               </div>
+              
+              {/* FASHOKENS Section - Desktop */}
+              {(order.fashokens_spent || order.fashokens_earned) ? (
+                <div className="mt-4 pt-4 border-t border-white/20">
+                  <h3 className="text-sm font-semibold text-amber-400 mb-2 flex items-center space-x-1"><img src="/fashoken.png" alt="FASHOKEN" className="w-4 h-4" /><span>FASHOkens</span></h3>
+                  <div className="space-y-1 text-sm">
+                    {order.fashokens_spent > 0 && <div className="flex justify-between"><span className="text-white/70">Spent on this order</span><span className="text-red-400">{order.fashokens_spent.toLocaleString()} (-${(order.fashokens_discount_amount || 0).toFixed(2)})</span></div>}
+                    {order.fashokens_earned > 0 && <div className="flex justify-between"><span className="text-white/70">Earned from this order</span><span className="text-green-400">+{order.fashokens_earned.toLocaleString()}</span></div>}
+                    <div className="flex justify-between font-medium"><span className="text-white/70">Net change</span><span className={((order.fashokens_earned || 0) - (order.fashokens_spent || 0)) >= 0 ? 'text-green-400' : 'text-red-400'}>{((order.fashokens_earned || 0) - (order.fashokens_spent || 0)) >= 0 ? '+' : ''}{((order.fashokens_earned || 0) - (order.fashokens_spent || 0)).toLocaleString()}</span></div>
+                  </div>
+                </div>
+              ) : null}
             </div>
           </div>
 

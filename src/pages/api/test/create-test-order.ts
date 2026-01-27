@@ -399,12 +399,115 @@ async function handler(req: NextApiRequest, res: NextApiResponse, adminUser: Adm
     // The marketing campaign will be automatically created by the database trigger
     console.log('🧪 TEST-ORDER: Test order created successfully');
 
+    // Process FASHOKENS loyalty tokens - same as real checkout
+    let fashokensEarned = 0;
+    try {
+      console.log('🪙 TEST-ORDER: Processing loyalty tokens...');
+      
+      // Check if loyalty program is active
+      const { data: loyaltySettings } = await supabase
+        .from('loyalty_settings')
+        .select('is_program_active, tokens_per_dollar')
+        .eq('id', 1)
+        .single();
+
+      if (loyaltySettings?.is_program_active) {
+        // Look up user_id by email from existing orders
+        const { data: existingOrder } = await supabase
+          .from('orders')
+          .select('user_id')
+          .eq('customer_email', customerInfo.customerEmail)
+          .not('user_id', 'is', null)
+          .limit(1)
+          .single();
+
+        const userId = existingOrder?.user_id;
+
+        if (userId) {
+          const tokensPerDollar = loyaltySettings.tokens_per_dollar || 100;
+          // Calculate tokens earned based on actual amount paid
+          fashokensEarned = Math.floor(totalPrice * tokensPerDollar);
+
+          if (fashokensEarned > 0) {
+            // Get or create loyalty account
+            const { data: account } = await supabase
+              .from('loyalty_accounts')
+              .select('*')
+              .eq('user_id', userId)
+              .single();
+
+            let currentBalance = 0;
+            if (account) {
+              currentBalance = account.balance || 0;
+            } else {
+              // Create new loyalty account
+              await supabase
+                .from('loyalty_accounts')
+                .insert({
+                  user_id: userId,
+                  balance: 0,
+                  lifetime_earned: 0,
+                  lifetime_spent: 0
+                });
+            }
+
+            const newBalance = currentBalance + fashokensEarned;
+
+            // Update loyalty account
+            await supabase
+              .from('loyalty_accounts')
+              .update({
+                balance: newBalance,
+                lifetime_earned: (account?.lifetime_earned || 0) + fashokensEarned,
+                updated_at: new Date().toISOString()
+              })
+              .eq('user_id', userId);
+
+            // Create ledger entry for earned tokens
+            await supabase
+              .from('loyalty_ledger')
+              .insert({
+                user_id: userId,
+                type: 'credit',
+                amount: fashokensEarned,
+                reason: `Earned from order #${orderNumber}`,
+                order_id: orderId,
+                order_total: totalPrice,
+                balance_before: currentBalance,
+                balance_after: newBalance,
+                created_at: new Date().toISOString()
+              });
+
+            // Update order with fashokens earned
+            await supabase
+              .from('orders')
+              .update({
+                fashokens_earned: fashokensEarned,
+                fashokens_spent: 0,
+                fashokens_discount_amount: 0
+              })
+              .eq('id', orderId);
+
+            console.log(`🪙 TEST-ORDER: Credited ${fashokensEarned} FASHOKENS to user ${userId}`);
+          }
+        } else {
+          console.log('🪙 TEST-ORDER: No user_id found for customer, skipping loyalty tokens');
+        }
+      } else {
+        console.log('🪙 TEST-ORDER: Loyalty program is not active');
+      }
+    } catch (loyaltyError) {
+      console.error('🪙 TEST-ORDER: Error processing loyalty tokens:', loyaltyError);
+      // Don't fail the order if loyalty processing fails
+    }
+
     res.status(200).json({
       success: true,
       orderId: order.id,
       orderNumber: order.order_number,
       totalPrice: totalPrice,
       itemsCount: orderItems.length,
+      fashokensEarned: fashokensEarned,
       message: 'Test order created successfully'
     });
 

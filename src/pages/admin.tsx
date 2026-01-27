@@ -10,6 +10,7 @@ import AdminSettingsManagement from '../components/AdminSettingsManagement'
 import MarketingManager from '../components/MarketingManager'
 import AdminAccessDenied from '../components/AdminAccessDenied'
 import BlogDashboard from '../../plugins/blog/components/BlogDashboard'
+import AdminFashokensManagement from '../components/AdminFashokensManagement'
 import { verifyAdminToken, getAdminTokenFromRequest, AdminUser } from '../utils/admin/auth'
 import dynamic from 'next/dynamic'
 
@@ -105,6 +106,8 @@ export default function AdminDashboard({ adminUser, authError }: AdminDashboardP
       expectedTab = 'blog'
     } else if (page === 'marketing-manager') {
       expectedTab = 'marketing-manager'
+    } else if (page === 'fashokens' || page === 'fashokens-ledger' || page === 'fashokens-balancer' || page === 'fashokens-settings') {
+      expectedTab = 'fashokens'
     } else {
       expectedTab = 'dashboard'
     }
@@ -382,6 +385,15 @@ export default function AdminDashboard({ adminUser, authError }: AdminDashboardP
     )
   }
 
+  const renderFashokensContent = () => {
+    console.log('🔄 ADMIN-RENDER: Rendering fashokens content...');
+    return (
+      <div className="space-y-6">
+        <AdminFashokensManagement />
+      </div>
+    )
+  }
+
   const renderContent = () => {
     console.log('🔄 ADMIN-RENDER: Rendering content for tab:', activeTab);
     
@@ -405,6 +417,8 @@ export default function AdminDashboard({ adminUser, authError }: AdminDashboardP
         return adminUser.role === 'admin' ? renderCouponsContent() : renderOrdersContent()
       case 'settings':
         return adminUser.role === 'admin' ? renderSettingsContent() : renderOrdersContent()
+      case 'fashokens':
+        return adminUser.role === 'admin' ? renderFashokensContent() : renderOrdersContent()
       default:
         return adminUser.role === 'admin' ? renderDashboardContent() : renderOrdersContent()
     }
@@ -524,6 +538,23 @@ export default function AdminDashboard({ adminUser, authError }: AdminDashboardP
                       }`}
                     >
                       Coupons
+                    </button>
+                  )}
+
+                  {/* FASHOkens Tab - Only for full admins */}
+                  {adminUser.role === 'admin' && (
+                    <button
+                      onClick={() => {
+                        setActiveTab('fashokens')
+                        router.replace('/admin?p=fashokens', undefined, { shallow: true })
+                      }}
+                      className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                        activeTab === 'fashokens'
+                          ? 'bg-amber-100 text-amber-700'
+                          : 'text-gray-500 hover:text-gray-700'
+                      }`}
+                    >
+                      <img src="/fashoken.png" alt="" className="w-4 h-4 inline-block mr-1" /> FASHOkens
                     </button>
                   )}
                   
