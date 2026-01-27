@@ -813,8 +813,8 @@ export default function OrderDetailPage({ adminSession, accessDenied }: OrderDet
               <div className="mt-4 pt-4 border-t border-white/20">
                 <h3 className="text-sm font-semibold text-amber-400 mb-2 flex items-center space-x-1"><img src="/fashoken.png" alt="FASHOKEN" className="w-4 h-4" /><span>FASHOkens</span></h3>
                 <div className="space-y-1 text-sm">
-                  {order.fashokens_spent > 0 && <div className="flex justify-between"><span className="text-white/70">Spent on this order</span><span className="text-red-400">{order.fashokens_spent.toLocaleString()} (-${(order.fashokens_discount_amount || 0).toFixed(2)})</span></div>}
-                  {order.fashokens_earned > 0 && <div className="flex justify-between"><span className="text-white/70">Earned from this order</span><span className="text-green-400">+{order.fashokens_earned.toLocaleString()}</span></div>}
+                  {(order.fashokens_spent ?? 0) > 0 && <div className="flex justify-between"><span className="text-white/70">Spent on this order</span><span className="text-red-400">{(order.fashokens_spent ?? 0).toLocaleString()} (-${(order.fashokens_discount_amount || 0).toFixed(2)})</span></div>}
+                  {(order.fashokens_earned ?? 0) > 0 && <div className="flex justify-between"><span className="text-white/70">Earned from this order</span><span className="text-green-400">+{(order.fashokens_earned ?? 0).toLocaleString()}</span></div>}
                   <div className="flex justify-between font-medium"><span className="text-white/70">Net change</span><span className={((order.fashokens_earned || 0) - (order.fashokens_spent || 0)) >= 0 ? 'text-green-400' : 'text-red-400'}>{((order.fashokens_earned || 0) - (order.fashokens_spent || 0)) >= 0 ? '+' : ''}{((order.fashokens_earned || 0) - (order.fashokens_spent || 0)).toLocaleString()}</span></div>
                 </div>
               </div>
@@ -1101,8 +1101,8 @@ export default function OrderDetailPage({ adminSession, accessDenied }: OrderDet
                 <div className="mt-4 pt-4 border-t border-white/20">
                   <h3 className="text-sm font-semibold text-amber-400 mb-2 flex items-center space-x-1"><img src="/fashoken.png" alt="FASHOKEN" className="w-4 h-4" /><span>FASHOkens</span></h3>
                   <div className="space-y-1 text-sm">
-                    {order.fashokens_spent > 0 && <div className="flex justify-between"><span className="text-white/70">Spent on this order</span><span className="text-red-400">{order.fashokens_spent.toLocaleString()} (-${(order.fashokens_discount_amount || 0).toFixed(2)})</span></div>}
-                    {order.fashokens_earned > 0 && <div className="flex justify-between"><span className="text-white/70">Earned from this order</span><span className="text-green-400">+{order.fashokens_earned.toLocaleString()}</span></div>}
+                    {(order.fashokens_spent ?? 0) > 0 && <div className="flex justify-between"><span className="text-white/70">Spent on this order</span><span className="text-red-400">{(order.fashokens_spent ?? 0).toLocaleString()} (-${(order.fashokens_discount_amount || 0).toFixed(2)})</span></div>}
+                    {(order.fashokens_earned ?? 0) > 0 && <div className="flex justify-between"><span className="text-white/70">Earned from this order</span><span className="text-green-400">+{(order.fashokens_earned ?? 0).toLocaleString()}</span></div>}
                     <div className="flex justify-between font-medium"><span className="text-white/70">Net change</span><span className={((order.fashokens_earned || 0) - (order.fashokens_spent || 0)) >= 0 ? 'text-green-400' : 'text-red-400'}>{((order.fashokens_earned || 0) - (order.fashokens_spent || 0)) >= 0 ? '+' : ''}{((order.fashokens_earned || 0) - (order.fashokens_spent || 0)).toLocaleString()}</span></div>
                   </div>
                 </div>
