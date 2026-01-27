@@ -704,7 +704,7 @@ function SettingsTab() {
 
           {/* Redemption Rate */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Redemption Rate</label>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Redemption Rate (Token Value)</label>
             <div className="flex items-center space-x-2 flex-wrap gap-y-2">
               <input
                 type="number"
@@ -715,6 +715,9 @@ function SettingsTab() {
               />
               <span className="text-gray-600">FASHOKENS = $1.00 discount</span>
             </div>
+            <p className="mt-2 text-sm text-gray-500">
+              With this rate: <span className="font-medium text-amber-600">100 FASHOKENS = ${(100 / settings.redemption_tokens_per_dollar).toFixed(2)} discount</span>
+            </p>
           </div>
 
           {/* Minimum Order */}
