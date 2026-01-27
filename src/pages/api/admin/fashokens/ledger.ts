@@ -9,6 +9,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
   // Verify admin authentication
   const token = getAdminTokenFromRequest(req);
+  if (!token) {
+    return res.status(401).json({ success: false, message: 'Unauthorized' });
+  }
   const adminSession = await verifyAdminToken(token);
 
   if (!adminSession) {
