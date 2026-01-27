@@ -310,11 +310,18 @@ function BalancerTab() {
   const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
+  const [totalCount, setTotalCount] = useState(0);
   const [adjusting, setAdjusting] = useState<string | null>(null);
   const [adjustForm, setAdjustForm] = useState({ amount: '', isAddition: true, reason: '' });
   const [showConfirm, setShowConfirm] = useState(false);
   const [pendingAdjust, setPendingAdjust] = useState<{ customer: CustomerAccount; amount: number; isAddition: boolean; reason: string } | null>(null);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+  
+  // Bulk credit state
+  const [showBulkCredit, setShowBulkCredit] = useState(false);
+  const [bulkCreditForm, setBulkCreditForm] = useState({ amount: '', reason: '' });
+  const [bulkCreditLoading, setBulkCreditLoading] = useState(false);
+  const [showBulkConfirm, setShowBulkConfirm] = useState(false);
 
   const fetchCustomers = async () => {
     try {
@@ -332,11 +339,58 @@ function BalancerTab() {
       if (data.success) {
         setCustomers(data.customers);
         setTotalPages(data.totalPages || 1);
+        setTotalCount(data.totalCount || 0);
       }
     } catch (err) {
       console.error('Fetch customers failed:', err);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleBulkCredit = async () => {
+    const amount = parseInt(bulkCreditForm.amount);
+    if (!amount || amount <= 0) {
+      setMessage({ type: 'error', text: 'Please enter a valid amount' });
+      return;
+    }
+    setShowBulkConfirm(true);
+  };
+
+  const confirmBulkCredit = async () => {
+    const amount = parseInt(bulkCreditForm.amount);
+    setBulkCreditLoading(true);
+    setShowBulkConfirm(false);
+
+    try {
+      const res = await fetch('/api/admin/fashokens/bulk-credit', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({
+          amount,
+          reason: bulkCreditForm.reason
+        })
+      });
+
+      const data = await res.json();
+
+      if (data.success) {
+        setMessage({ 
+          type: 'success', 
+          text: `${data.message}${data.stats?.failCount > 0 ? ` (${data.stats.failCount} failed)` : ''}`
+        });
+        setBulkCreditForm({ amount: '', reason: '' });
+        setShowBulkCredit(false);
+        // Refresh customer list to show updated balances
+        fetchCustomers();
+      } else {
+        setMessage({ type: 'error', text: data.message || 'Bulk credit failed' });
+      }
+    } catch (err) {
+      setMessage({ type: 'error', text: 'Failed to process bulk credit' });
+    } finally {
+      setBulkCreditLoading(false);
     }
   };
 
@@ -412,6 +466,81 @@ function BalancerTab() {
 
   return (
     <div className="space-y-6">
+      {/* Bulk Credit Section */}
+      <div className="bg-gradient-to-r from-amber-50 to-yellow-50 rounded-lg shadow-sm border border-amber-200 p-4">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center space-x-3">
+            <img src="/fashoken.png" alt="FASHOKEN" className="w-8 h-8" />
+            <div>
+              <h3 className="font-semibold text-amber-800">Credit All Customers</h3>
+              <p className="text-sm text-amber-600">Add FASHOKENS to all {totalCount > 0 ? totalCount.toLocaleString() : ''} customer accounts at once</p>
+            </div>
+          </div>
+          <button
+            onClick={() => setShowBulkCredit(!showBulkCredit)}
+            className="px-4 py-2 bg-amber-500 text-white rounded-lg font-medium hover:bg-amber-600 transition-colors flex items-center space-x-2"
+          >
+            <span>{showBulkCredit ? 'Cancel' : 'Bulk Credit'}</span>
+            <svg className={`w-4 h-4 transition-transform ${showBulkCredit ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+            </svg>
+          </button>
+        </div>
+
+        {showBulkCredit && (
+          <div className="mt-4 pt-4 border-t border-amber-200">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-amber-800 mb-1">Amount per Customer</label>
+                <input
+                  type="number"
+                  placeholder="e.g. 500"
+                  value={bulkCreditForm.amount}
+                  onChange={(e) => setBulkCreditForm({ ...bulkCreditForm, amount: e.target.value })}
+                  className="w-full px-4 py-2 border border-amber-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-amber-500"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-amber-800 mb-1">Reason (optional)</label>
+                <input
+                  type="text"
+                  placeholder="e.g. Holiday Bonus"
+                  value={bulkCreditForm.reason}
+                  onChange={(e) => setBulkCreditForm({ ...bulkCreditForm, reason: e.target.value })}
+                  className="w-full px-4 py-2 border border-amber-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-amber-500"
+                />
+              </div>
+              <div className="flex items-end">
+                <button
+                  onClick={handleBulkCredit}
+                  disabled={bulkCreditLoading || !bulkCreditForm.amount}
+                  className="w-full px-4 py-2 bg-green-600 text-white rounded-lg font-medium hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2"
+                >
+                  {bulkCreditLoading ? (
+                    <>
+                      <svg className="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                      </svg>
+                      <span>Processing...</span>
+                    </>
+                  ) : (
+                    <>
+                      <span>Credit All Customers</span>
+                    </>
+                  )}
+                </button>
+              </div>
+            </div>
+            {bulkCreditForm.amount && parseInt(bulkCreditForm.amount) > 0 && totalCount > 0 && (
+              <p className="mt-3 text-sm text-amber-700">
+                This will credit <strong>{parseInt(bulkCreditForm.amount).toLocaleString()} FASHOKENS</strong> to each of <strong>{totalCount.toLocaleString()} customers</strong> (Total: {(parseInt(bulkCreditForm.amount) * totalCount).toLocaleString()} tokens)
+              </p>
+            )}
+          </div>
+        )}
+      </div>
+
       {/* Search */}
       <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
         <label className="block text-sm font-medium text-gray-700 mb-2">Search Customers</label>
@@ -586,7 +715,7 @@ function BalancerTab() {
                 {pendingAdjust.isAddition ? 'add' : 'remove'} {pendingAdjust.amount.toLocaleString()} FASHOKENS
               </span> {pendingAdjust.isAddition ? 'to' : 'from'} <strong>{pendingAdjust.customer.full_name || pendingAdjust.customer.email}</strong>?
             </p>
-            <p className="text-sm text-gray-500 mb-6">Reason: {pendingAdjust.reason}</p>
+            <p className="text-sm text-gray-500 mb-6">Reason: {pendingAdjust.reason || 'Admin'}</p>
             <div className="flex space-x-3">
               <button
                 onClick={confirmAdjustment}
@@ -600,6 +729,50 @@ function BalancerTab() {
                   setPendingAdjust(null);
                 }}
                 className="flex-1 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg font-medium hover:bg-gray-200 transition-colors"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Bulk Credit Confirmation Modal */}
+      {showBulkConfirm && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
+            <div className="flex items-center space-x-3 mb-4">
+              <div className="w-12 h-12 bg-amber-100 rounded-full flex items-center justify-center">
+                <img src="/fashoken.png" alt="FASHOKEN" className="w-8 h-8" />
+              </div>
+              <h3 className="text-lg font-semibold">Confirm Bulk Credit</h3>
+            </div>
+            <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 mb-4">
+              <p className="text-amber-800 font-medium">
+                You are about to credit <span className="text-green-600">{parseInt(bulkCreditForm.amount).toLocaleString()} FASHOKENS</span> to <strong>ALL {totalCount.toLocaleString()} customers</strong>
+              </p>
+              <p className="text-amber-600 text-sm mt-1">
+                Total tokens to be distributed: <strong>{(parseInt(bulkCreditForm.amount) * totalCount).toLocaleString()}</strong>
+              </p>
+            </div>
+            {bulkCreditForm.reason && (
+              <p className="text-sm text-gray-500 mb-4">Reason: Admin - {bulkCreditForm.reason}</p>
+            )}
+            <p className="text-sm text-red-600 mb-6">
+              ⚠️ This action cannot be undone. Please verify the amount before proceeding.
+            </p>
+            <div className="flex space-x-3">
+              <button
+                onClick={confirmBulkCredit}
+                disabled={bulkCreditLoading}
+                className="flex-1 px-4 py-2 bg-green-600 text-white rounded-lg font-medium hover:bg-green-700 transition-colors disabled:opacity-50"
+              >
+                {bulkCreditLoading ? 'Processing...' : 'Yes, Credit All'}
+              </button>
+              <button
+                onClick={() => setShowBulkConfirm(false)}
+                disabled={bulkCreditLoading}
+                className="flex-1 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg font-medium hover:bg-gray-200 transition-colors disabled:opacity-50"
               >
                 Cancel
               </button>
