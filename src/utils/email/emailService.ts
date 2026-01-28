@@ -268,6 +268,14 @@ export class EmailService {
     processedTemplate = processedTemplate.replace(/\{\{orderTotal\}\}/g, data.orderTotal);
     processedTemplate = processedTemplate.replace(/\{\{order_date\}\}/g, data.orderDate);
     processedTemplate = processedTemplate.replace(/\{\{orderDate\}\}/g, data.orderDate);
+    
+    // FASHOkens variables
+    if (data.fashokens_earned) {
+      processedTemplate = processedTemplate.replace(/\{\{fashokens_earned\}\}/g, data.fashokens_earned);
+    }
+    if (data.fashokens_balance) {
+      processedTemplate = processedTemplate.replace(/\{\{fashokens_balance\}\}/g, data.fashokens_balance);
+    }
 
     // Replace any additional variables
     Object.keys(data).forEach(key => {

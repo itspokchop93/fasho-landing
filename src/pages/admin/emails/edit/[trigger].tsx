@@ -697,6 +697,14 @@ export default function EmailEditor({ adminSession, accessDenied }: EmailEditorP
                     <code className="bg-gray-100 px-2 py-1 rounded text-[0.75rem]">{'{{past_orders}}'}</code>
                     <p className="text-gray-600 mt-1">List of past orders with package details</p>
                   </div>
+                  <div className="text-[0.875rem]">
+                    <code className="bg-gray-100 px-2 py-1 rounded text-[0.75rem]">{'{{fashokens_earned}}'}</code>
+                    <p className="text-gray-600 mt-1">FASHOkens earned from this order</p>
+                  </div>
+                  <div className="text-[0.875rem]">
+                    <code className="bg-gray-100 px-2 py-1 rounded text-[0.75rem]">{'{{fashokens_balance}}'}</code>
+                    <p className="text-gray-600 mt-1">Customer's total FASHOkens balance</p>
+                  </div>
                 </div>
               </div>
 

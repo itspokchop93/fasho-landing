@@ -307,6 +307,35 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     console.log('📧 CREATE-ORDER: Sending new order email notifications...');
     
     try {
+      // Fetch FASHOkens data for email
+      let fashokensBalance = 0;
+      let fashokensEarned = 0;
+      
+      if (userId) {
+        // Get loyalty settings to calculate expected earnings
+        const { data: loyaltySettings } = await supabase
+          .from('loyalty_settings')
+          .select('tokens_per_dollar, is_program_active')
+          .eq('id', 1)
+          .single();
+        
+        if (loyaltySettings?.is_program_active) {
+          const tokensPerDollar = loyaltySettings.tokens_per_dollar || 100;
+          fashokensEarned = Math.floor(order.total * tokensPerDollar);
+          console.log('📧 CREATE-ORDER: Calculated FASHOkens to be earned:', fashokensEarned);
+        }
+        
+        // Get user's current balance
+        const { data: loyaltyAccount } = await supabase
+          .from('loyalty_accounts')
+          .select('balance')
+          .eq('user_id', userId)
+          .single();
+        
+        fashokensBalance = loyaltyAccount?.balance || 0;
+        console.log('📧 CREATE-ORDER: User FASHOkens balance:', fashokensBalance);
+      }
+      
       // Send customer confirmation email
       console.log('📧 CREATE-ORDER: Sending customer confirmation email...');
       const customerEmailSent = await sendNewOrderEmail({
@@ -315,7 +344,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         customer_email: order.customer_email,
         customer_name: order.customer_name,
         total: Math.round(order.total * 100), // Convert to cents for email service
-        created_at: order.created_at
+        created_at: order.created_at,
+        // FASHOkens data
+        fashokens_earned: fashokensEarned,
+        fashokens_balance: fashokensBalance + fashokensEarned // Balance after earning
       }, supabase);
 
       if (customerEmailSent) {
