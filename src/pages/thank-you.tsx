@@ -546,8 +546,8 @@ export default function ThankYouPage() {
               <p className="text-xl text-white/70 mb-2">Welcome to the FASHO.co family!</p>
                             {orderData.orderNumber && (
                 <div className="bg-gradient-to-r from-[#59e3a5]/10 to-[#14c0ff]/10 border border-[#59e3a5]/20 rounded-lg p-4 mb-4 mt-3">
-                  <p className="text-[#59e3a5] font-black text-2xl">Order #{orderData.orderNumber}</p>
-                  <p className="text-white/60 text-xs mt-2">The charge on your card will show as "REDRIDGE MEDIA"</p>
+                  <p className="text-[#59e3a5] font-black" style={{ fontSize: '2rem' }}>Order #{orderData.orderNumber}</p>
+                  <p className="text-xs mt-2 flex items-center justify-center gap-1"><span>💳</span><span className="text-white/60">The charge on your card will show as "REDRIDGE MEDIA"</span></p>
                 </div>
               )}
               {orderData.newAccountCreated && (
@@ -572,15 +572,16 @@ export default function ThankYouPage() {
                    If you don't see our welcome email in your inbox, make sure to check your spam folder. If you find it in spam, <strong className="text-yellow-400">MAKE SURE</strong> to click the <strong className="text-yellow-400">"Report not spam"</strong> button so you don't miss any important updates about your campaign!
                  </p>
                </div>
-               <div className="max-w-xs mx-auto">
-                 <Image 
-                   src="/not-spam.png" 
-                   alt="How to mark email as not spam" 
-                   width={300} 
-                   height={225} 
-                   className="w-full h-auto"
-                 />
-               </div>
+              <div className="max-w-xs mx-auto">
+                <Image 
+                  src="https://ctkgmondmikmtkhoizkk.supabase.co/storage/v1/object/public/fasho-images/not-spam.png" 
+                  alt="How to mark email as not spam" 
+                  width={300} 
+                  height={225} 
+                  className="w-full h-auto"
+                  unoptimized
+                />
+              </div>
              </div>
 
             {/* What Happens Next Section */}
@@ -746,6 +747,22 @@ export default function ThankYouPage() {
                       <span className="text-[#59e3a5]">${Number(orderData.total).toFixed(2)}</span>
                     </div>
                   </div>
+                </div>
+              </div>
+
+              {/* FASHOkens Earned Section */}
+              <div className="bg-black/40 rounded-xl p-5 border-2 border-[#59e3a5] mt-4">
+                <div className="flex items-center justify-center gap-3 mb-3">
+                  <img src="/fashoken.png" alt="FASHOKEN" className="w-10 h-10" />
+                  <span className="text-[#59e3a5] font-bold" style={{ fontSize: '1.5rem' }}>
+                    You earned {Math.floor(Number(orderData.total) * 1000).toLocaleString()} FASHOkens from this order!
+                  </span>
+                </div>
+                <div className="flex items-start justify-center gap-2 text-white/60" style={{ fontSize: '0.85rem' }}>
+                  <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4 mt-0.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  <span>FASHOkens are our in-house loyalty tokens that you earn for every dollar you spend! Apply them towards your next campaign while going through checkout.</span>
                 </div>
               </div>
             </div>

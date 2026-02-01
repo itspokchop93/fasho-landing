@@ -152,6 +152,7 @@ interface Campaign {
   orderId: string;
   orderDate: string;
   customerName: string;
+  userId: string | null;
   songName: string;
   songLink: string;
   songImage?: string | null;
@@ -549,6 +550,85 @@ const ActiveCampaigns: React.FC = () => {
     }>;
   }>>({});
 
+  // Order history hover dropdown state
+  interface OrderHistoryItem {
+    id: string;
+    orderNumber: string;
+    date: string;
+    total: number;
+    status: string;
+    trackCount: number;
+    packages: string;
+  }
+  const [orderHistoryHover, setOrderHistoryHover] = useState<{
+    isOpen: boolean;
+    userId: string | null;
+    campaignId: string;
+    position: { top: number; left: number };
+    loading: boolean;
+    orders: OrderHistoryItem[];
+  }>({
+    isOpen: false,
+    userId: null,
+    campaignId: '',
+    position: { top: 0, left: 0 },
+    loading: false,
+    orders: []
+  });
+  const orderHistoryCache = useRef<Record<string, OrderHistoryItem[]>>({});
+  const hoverTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Song placement history hover dropdown state
+  interface SongPlacementItem {
+    playlistName: string;
+    placementDate: string;
+    packageName: string;
+    orderNumber: string;
+  }
+  const [songPlacementHover, setSongPlacementHover] = useState<{
+    isOpen: boolean;
+    songUrl: string;
+    songName: string;
+    position: { top: number; left: number };
+    loading: boolean;
+    placements: SongPlacementItem[];
+  }>({
+    isOpen: false,
+    songUrl: '',
+    songName: '',
+    position: { top: 0, left: 0 },
+    loading: false,
+    placements: []
+  });
+  const songPlacementCache = useRef<Record<string, SongPlacementItem[]>>({});
+  const songHoverTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Account-wide playlist history click dropdown state
+  interface AccountPlaylistItem {
+    playlistName: string;
+    songs: string[];
+    lastPlacementDate: string;
+  }
+  const [accountPlaylistDropdown, setAccountPlaylistDropdown] = useState<{
+    isOpen: boolean;
+    userId: string | null;
+    campaignId: string;
+    position: { top: number; left: number };
+    loading: boolean;
+    playlists: AccountPlaylistItem[];
+    currentPage: number;
+  }>({
+    isOpen: false,
+    userId: null,
+    campaignId: '',
+    position: { top: 0, left: 0 },
+    loading: false,
+    playlists: [],
+    currentPage: 1
+  });
+  const accountPlaylistCache = useRef<Record<string, AccountPlaylistItem[]>>({});
+  const ACCOUNT_PLAYLIST_PAGE_SIZE = 10;
+
   useEffect(() => {
     // Initial load - always fetch SMM status to restore any failure states from DB
     const initializeData = async () => {
@@ -723,6 +803,218 @@ const ActiveCampaigns: React.FC = () => {
   const handleOrderNumberClick = (orderId: string) => {
     window.open(`/admin/order/${orderId}`, '_blank');
   };
+
+  const fetchOrderHistory = async (userId: string) => {
+    // Check cache first
+    if (orderHistoryCache.current[userId]) {
+      return orderHistoryCache.current[userId];
+    }
+    
+    try {
+      const response = await fetch(`/api/marketing-manager/customer-order-history?userId=${userId}`);
+      if (!response.ok) throw new Error('Failed to fetch');
+      const data = await response.json();
+      orderHistoryCache.current[userId] = data;
+      return data;
+    } catch (error) {
+      console.error('Error fetching order history:', error);
+      return [];
+    }
+  };
+
+  const handleOrderNumberHover = async (
+    campaign: Campaign,
+    event: React.MouseEvent<HTMLButtonElement>
+  ) => {
+    // Skip if no userId (guest order)
+    if (!campaign.userId) {
+      console.log('No userId for campaign:', campaign.orderNumber);
+      return;
+    }
+    
+    // Clear any existing timeout
+    if (hoverTimeoutRef.current) {
+      clearTimeout(hoverTimeoutRef.current);
+    }
+    
+    const rect = event.currentTarget.getBoundingClientRect();
+    
+    // Start loading state immediately
+    setOrderHistoryHover({
+      isOpen: true,
+      userId: campaign.userId,
+      campaignId: campaign.id,
+      position: { top: rect.bottom + 5, left: rect.left - 150 },
+      loading: true,
+      orders: []
+    });
+    
+    // Fetch orders
+    const orders = await fetchOrderHistory(campaign.userId);
+    
+    setOrderHistoryHover(prev => ({
+      ...prev,
+      loading: false,
+      orders
+    }));
+  };
+
+  const handleOrderNumberLeave = () => {
+    // Delay close to allow mouse to move to dropdown
+    hoverTimeoutRef.current = setTimeout(() => {
+      setOrderHistoryHover(prev => ({ ...prev, isOpen: false }));
+    }, 150);
+  };
+
+  const handleDropdownEnter = () => {
+    if (hoverTimeoutRef.current) {
+      clearTimeout(hoverTimeoutRef.current);
+    }
+  };
+
+  const handleDropdownLeave = () => {
+    setOrderHistoryHover(prev => ({ ...prev, isOpen: false }));
+  };
+
+  // Song placement history hover handlers
+  const fetchSongPlacementHistory = async (songUrl: string) => {
+    if (songPlacementCache.current[songUrl]) {
+      return songPlacementCache.current[songUrl];
+    }
+    
+    try {
+      const response = await fetch(`/api/marketing-manager/song-placement-history?songUrl=${encodeURIComponent(songUrl)}`);
+      if (!response.ok) throw new Error('Failed to fetch');
+      const data = await response.json();
+      songPlacementCache.current[songUrl] = data.placements || [];
+      return data.placements || [];
+    } catch (error) {
+      console.error('Error fetching song placement history:', error);
+      return [];
+    }
+  };
+
+  const handleSongTitleHover = async (
+    campaign: Campaign,
+    event: React.MouseEvent<HTMLHeadingElement>
+  ) => {
+    if (!campaign.songLink) return;
+    
+    if (songHoverTimeoutRef.current) {
+      clearTimeout(songHoverTimeoutRef.current);
+    }
+    
+    const rect = event.currentTarget.getBoundingClientRect();
+    
+    setSongPlacementHover({
+      isOpen: true,
+      songUrl: campaign.songLink,
+      songName: campaign.songName,
+      position: { top: rect.bottom + 5, left: rect.left },
+      loading: true,
+      placements: []
+    });
+    
+    const placements = await fetchSongPlacementHistory(campaign.songLink);
+    
+    setSongPlacementHover(prev => ({
+      ...prev,
+      loading: false,
+      placements
+    }));
+  };
+
+  const handleSongTitleLeave = () => {
+    songHoverTimeoutRef.current = setTimeout(() => {
+      setSongPlacementHover(prev => ({ ...prev, isOpen: false }));
+    }, 150);
+  };
+
+  const handleSongDropdownEnter = () => {
+    if (songHoverTimeoutRef.current) {
+      clearTimeout(songHoverTimeoutRef.current);
+    }
+  };
+
+  const handleSongDropdownLeave = () => {
+    setSongPlacementHover(prev => ({ ...prev, isOpen: false }));
+  };
+
+  // Account-wide playlist history click handlers
+  const fetchAccountPlaylistHistory = async (userId: string) => {
+    if (accountPlaylistCache.current[userId]) {
+      return accountPlaylistCache.current[userId];
+    }
+    
+    try {
+      const response = await fetch(`/api/marketing-manager/account-playlist-history?userId=${userId}`);
+      if (!response.ok) throw new Error('Failed to fetch');
+      const data = await response.json();
+      accountPlaylistCache.current[userId] = data.playlists || [];
+      return data.playlists || [];
+    } catch (error) {
+      console.error('Error fetching account playlist history:', error);
+      return [];
+    }
+  };
+
+  const handleAccountPlaylistClick = async (
+    campaign: Campaign,
+    event: React.MouseEvent<HTMLButtonElement>
+  ) => {
+    event.stopPropagation();
+    
+    if (!campaign.userId) return;
+    
+    // Toggle off if clicking same campaign
+    if (accountPlaylistDropdown.isOpen && accountPlaylistDropdown.campaignId === campaign.id) {
+      setAccountPlaylistDropdown(prev => ({ ...prev, isOpen: false }));
+      return;
+    }
+    
+    const rect = event.currentTarget.getBoundingClientRect();
+    
+    setAccountPlaylistDropdown({
+      isOpen: true,
+      userId: campaign.userId,
+      campaignId: campaign.id,
+      position: { top: rect.bottom + 5, left: rect.left - 100 },
+      loading: true,
+      playlists: [],
+      currentPage: 1
+    });
+    
+    const playlists = await fetchAccountPlaylistHistory(campaign.userId);
+    
+    // Sort by last placement date - newest first
+    const sortedPlaylists = playlists.sort((a: AccountPlaylistItem, b: AccountPlaylistItem) => 
+      new Date(b.lastPlacementDate).getTime() - new Date(a.lastPlacementDate).getTime()
+    );
+    
+    setAccountPlaylistDropdown(prev => ({
+      ...prev,
+      loading: false,
+      playlists: sortedPlaylists
+    }));
+  };
+
+  // Close account playlist dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (accountPlaylistDropdown.isOpen) {
+        const dropdown = document.getElementById('account-playlist-dropdown');
+        const target = event.target as HTMLElement;
+        // Check if click is on the toggle button itself (has data attribute)
+        const isToggleButton = target.closest('[data-account-playlist-toggle]');
+        if (dropdown && !dropdown.contains(target) && !isToggleButton) {
+          setAccountPlaylistDropdown(prev => ({ ...prev, isOpen: false }));
+        }
+      }
+    };
+    
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [accountPlaylistDropdown.isOpen]);
 
   const showConfirmationModal = (campaignId: string, action: 'direct-streams' | 'playlists-added' | 'de-playlisted' | 'manual-override', event: React.MouseEvent) => {
     const actionMessages = {
@@ -1543,7 +1835,9 @@ const ActiveCampaigns: React.FC = () => {
                         <div className="absolute top-2 right-2 text-right flex flex-col items-end z-10">
                           <button
                             onClick={() => handleOrderNumberClick(campaign.orderId)}
-                            className="text-indigo-600 hover:text-indigo-900 font-bold text-[0.75rem] block leading-none"
+                            onMouseEnter={(e) => handleOrderNumberHover(campaign, e)}
+                            onMouseLeave={handleOrderNumberLeave}
+                            className="text-indigo-600 hover:text-indigo-900 font-bold text-[0.75rem] block leading-none relative"
                           >
                             #{campaign.orderNumber}
                           </button>
@@ -1573,8 +1867,10 @@ const ActiveCampaigns: React.FC = () => {
                           <div className="flex-1 min-w-0 pr-12">
                             {/* Song Title */}
                             <h3 
-                              className="text-[0.85rem] font-bold text-gray-900 leading-tight truncate"
+                              className="text-[0.85rem] font-bold text-gray-900 leading-tight truncate cursor-pointer hover:text-indigo-600 transition-colors"
                               title={campaign.songName}
+                              onMouseEnter={(e) => handleSongTitleHover(campaign, e)}
+                              onMouseLeave={handleSongTitleLeave}
                             >
                               {campaign.songName}
                             </h3>
@@ -1782,7 +2078,22 @@ const ActiveCampaigns: React.FC = () => {
                             </div>
                           )}
                         </div>
+                        
                       </div>
+                      
+                      {/* Account-Wide Playlist History Link - Outside the white container */}
+                      {campaign.userId && (
+                        <button
+                          data-account-playlist-toggle="true"
+                          onClick={(e) => handleAccountPlaylistClick(campaign, e)}
+                          className="mt-2 text-[0.5rem] text-gray-400 hover:text-indigo-600 transition-colors flex items-center justify-center gap-1 w-full"
+                        >
+                          <span>Account-Wide Playlist History</span>
+                          <svg className={`w-3 h-3 transition-transform ${accountPlaylistDropdown.isOpen && accountPlaylistDropdown.campaignId === campaign.id ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                          </svg>
+                        </button>
+                      )}
                     </td>
                     <td className="px-4 py-4 w-40">
                       <ProgressBar
@@ -2423,6 +2734,246 @@ const ActiveCampaigns: React.FC = () => {
           </div>
         </div>
       )}
+
+      {/* Order History Hover Dropdown */}
+      {orderHistoryHover.isOpen && (
+        <div
+          className="fixed z-[200] bg-white border border-gray-200 rounded-lg shadow-xl"
+          style={{
+            top: orderHistoryHover.position.top,
+            left: Math.max(10, orderHistoryHover.position.left)
+          }}
+          onMouseEnter={handleDropdownEnter}
+          onMouseLeave={handleDropdownLeave}
+        >
+          <div className="px-3 py-2 bg-gray-800 rounded-t-lg">
+            <span className="text-[0.7rem] font-bold text-white uppercase tracking-wide">Customer Order History</span>
+          </div>
+          
+          {orderHistoryHover.loading ? (
+            <div className="p-4 text-center">
+              <div className="animate-spin w-5 h-5 border-2 border-indigo-500 border-t-transparent rounded-full mx-auto"></div>
+              <p className="text-[0.7rem] text-gray-500 mt-2">Loading orders...</p>
+            </div>
+          ) : orderHistoryHover.orders.length === 0 ? (
+            <div className="p-4 text-center">
+              <p className="text-[0.75rem] text-gray-500">No order history found</p>
+            </div>
+          ) : (
+            <table className="text-[0.7rem]">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th className="px-3 py-1.5 text-left text-gray-500 font-semibold whitespace-nowrap">Order</th>
+                  <th className="px-3 py-1.5 text-left text-gray-500 font-semibold whitespace-nowrap">Date</th>
+                  <th className="px-3 py-1.5 text-right text-gray-500 font-semibold whitespace-nowrap">Total</th>
+                  <th className="px-3 py-1.5 text-left text-gray-500 font-semibold whitespace-nowrap">Packages</th>
+                </tr>
+              </thead>
+              <tbody>
+                {orderHistoryHover.orders.map((order, idx) => (
+                  <tr 
+                    key={order.id} 
+                    className={`hover:bg-indigo-50 cursor-pointer transition-colors ${idx % 2 === 0 ? 'bg-white' : 'bg-gray-50/50'}`}
+                    onClick={() => {
+                      window.open(`/admin/order/${order.id}`, '_blank');
+                      setOrderHistoryHover(prev => ({ ...prev, isOpen: false }));
+                    }}
+                  >
+                    <td className="px-3 py-1.5 whitespace-nowrap">
+                      <span className="text-indigo-600 font-bold">#{order.orderNumber}</span>
+                      {order.trackCount > 1 && (
+                        <span className="ml-1 text-gray-400">({order.trackCount})</span>
+                      )}
+                    </td>
+                    <td className="px-3 py-1.5 text-gray-600 whitespace-nowrap">
+                      {new Date(order.date).toLocaleDateString()}
+                    </td>
+                    <td className="px-3 py-1.5 text-right font-semibold text-gray-800 whitespace-nowrap">
+                      ${Number(order.total).toFixed(2)}
+                    </td>
+                    <td className="px-3 py-1.5 text-gray-700 whitespace-nowrap">
+                      {order.packages}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+        </div>
+      )}
+
+      {/* Song Placement History Hover Dropdown */}
+      {songPlacementHover.isOpen && (
+        <div
+          className="fixed z-[200] bg-white border border-gray-200 rounded-lg shadow-xl"
+          style={{
+            top: songPlacementHover.position.top,
+            left: Math.max(10, songPlacementHover.position.left)
+          }}
+          onMouseEnter={handleSongDropdownEnter}
+          onMouseLeave={handleSongDropdownLeave}
+        >
+          <div className="px-3 py-2 bg-gray-800 rounded-t-lg">
+            <span className="text-[0.7rem] font-bold text-white uppercase tracking-wide">Song Placement History</span>
+            <div className="text-[0.6rem] text-gray-300 truncate max-w-[280px]">{songPlacementHover.songName}</div>
+          </div>
+          
+          {songPlacementHover.loading ? (
+            <div className="p-4 text-center">
+              <div className="animate-spin w-5 h-5 border-2 border-indigo-500 border-t-transparent rounded-full mx-auto"></div>
+              <p className="text-[0.7rem] text-gray-500 mt-2">Loading placements...</p>
+            </div>
+          ) : songPlacementHover.placements.length === 0 ? (
+            <div className="p-4 text-center">
+              <p className="text-[0.75rem] text-gray-500">No placement history found</p>
+            </div>
+          ) : (
+            <table className="text-[0.7rem]">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th className="px-3 py-1.5 text-left text-gray-500 font-semibold whitespace-nowrap">Playlist</th>
+                  <th className="px-3 py-1.5 text-left text-gray-500 font-semibold whitespace-nowrap">Placed</th>
+                  <th className="px-3 py-1.5 text-left text-gray-500 font-semibold whitespace-nowrap">Package</th>
+                  <th className="px-3 py-1.5 text-left text-gray-500 font-semibold whitespace-nowrap">Order</th>
+                </tr>
+              </thead>
+              <tbody>
+                {songPlacementHover.placements.map((placement, idx) => (
+                  <tr 
+                    key={idx} 
+                    className={`${idx % 2 === 0 ? 'bg-white' : 'bg-gray-50/50'}`}
+                  >
+                    <td className="px-3 py-1.5 whitespace-nowrap">
+                      <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                        🎵 {placement.playlistName}
+                      </span>
+                    </td>
+                    <td className="px-3 py-1.5 text-gray-600 whitespace-nowrap">
+                      {new Date(placement.placementDate).toLocaleDateString()}
+                    </td>
+                    <td className="px-3 py-1.5 text-gray-700 whitespace-nowrap">
+                      {placement.packageName}
+                    </td>
+                    <td className="px-3 py-1.5 whitespace-nowrap">
+                      <span className="text-indigo-600 font-bold">#{placement.orderNumber}</span>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+        </div>
+      )}
+
+      {/* Account-Wide Playlist History Click Dropdown */}
+      {accountPlaylistDropdown.isOpen && (() => {
+        const totalPages = Math.ceil(accountPlaylistDropdown.playlists.length / ACCOUNT_PLAYLIST_PAGE_SIZE);
+        const startIdx = (accountPlaylistDropdown.currentPage - 1) * ACCOUNT_PLAYLIST_PAGE_SIZE;
+        const paginatedPlaylists = accountPlaylistDropdown.playlists.slice(startIdx, startIdx + ACCOUNT_PLAYLIST_PAGE_SIZE);
+        
+        return (
+          <div
+            id="account-playlist-dropdown"
+            className="fixed z-[200] bg-white border border-gray-200 rounded-lg shadow-xl"
+            style={{
+              top: accountPlaylistDropdown.position.top,
+              left: Math.max(10, accountPlaylistDropdown.position.left)
+            }}
+          >
+            <div className="px-3 py-2 bg-gray-800 rounded-t-lg">
+              <span className="text-[0.7rem] font-bold text-white uppercase tracking-wide">Account-Wide Playlist History</span>
+            </div>
+            
+            {accountPlaylistDropdown.loading ? (
+              <div className="p-4 text-center">
+                <div className="animate-spin w-5 h-5 border-2 border-indigo-500 border-t-transparent rounded-full mx-auto"></div>
+                <p className="text-[0.7rem] text-gray-500 mt-2">Loading history...</p>
+              </div>
+            ) : accountPlaylistDropdown.playlists.length === 0 ? (
+              <div className="p-4 text-center">
+                <p className="text-[0.75rem] text-gray-500">No playlist history found</p>
+              </div>
+            ) : (
+              <>
+                <table className="text-[0.7rem]">
+                  <thead className="bg-gray-50">
+                    <tr>
+                      <th className="px-3 py-1.5 text-left text-gray-500 font-semibold whitespace-nowrap">Playlist Name</th>
+                      <th className="px-3 py-1.5 text-left text-gray-500 font-semibold whitespace-nowrap">Songs</th>
+                      <th className="px-3 py-1.5 text-left text-gray-500 font-semibold whitespace-nowrap">Last Placement</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {paginatedPlaylists.map((playlist, idx) => (
+                      <tr 
+                        key={idx} 
+                        className={`${idx % 2 === 0 ? 'bg-white' : 'bg-gray-50/50'}`}
+                      >
+                        <td className="px-3 py-1.5 whitespace-nowrap">
+                          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                            🎵 {playlist.playlistName}
+                          </span>
+                        </td>
+                        <td className="px-3 py-1.5 text-gray-700 max-w-[350px]">
+                          <span className="truncate block" title={playlist.songs.join(', ')}>
+                            {playlist.songs.join(', ')}
+                          </span>
+                        </td>
+                        <td className="px-3 py-1.5 text-gray-600 whitespace-nowrap">
+                          {new Date(playlist.lastPlacementDate).toLocaleDateString()}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+                
+                {/* Pagination Bar */}
+                {totalPages > 1 && (
+                  <div className="px-3 py-2 bg-gray-100 border-t border-gray-200 rounded-b-lg flex items-center justify-between">
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setAccountPlaylistDropdown(prev => ({
+                          ...prev,
+                          currentPage: Math.max(1, prev.currentPage - 1)
+                        }));
+                      }}
+                      disabled={accountPlaylistDropdown.currentPage === 1}
+                      className={`px-2 py-1 text-[0.7rem] font-semibold rounded ${
+                        accountPlaylistDropdown.currentPage === 1 
+                          ? 'text-gray-400 cursor-not-allowed' 
+                          : 'text-indigo-600 hover:bg-indigo-50'
+                      }`}
+                    >
+                      ← Previous
+                    </button>
+                    <span className="text-[0.7rem] text-gray-500">
+                      Page {accountPlaylistDropdown.currentPage} of {totalPages}
+                    </span>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setAccountPlaylistDropdown(prev => ({
+                          ...prev,
+                          currentPage: Math.min(totalPages, prev.currentPage + 1)
+                        }));
+                      }}
+                      disabled={accountPlaylistDropdown.currentPage === totalPages}
+                      className={`px-2 py-1 text-[0.7rem] font-semibold rounded ${
+                        accountPlaylistDropdown.currentPage === totalPages 
+                          ? 'text-gray-400 cursor-not-allowed' 
+                          : 'text-indigo-600 hover:bg-indigo-50'
+                      }`}
+                    >
+                      Next →
+                    </button>
+                  </div>
+                )}
+              </>
+            )}
+          </div>
+        );
+      })()}
     </div>
   );
 };

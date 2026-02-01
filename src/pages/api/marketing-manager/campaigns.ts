@@ -314,7 +314,7 @@ async function handler(req: NextApiRequest, res: NextApiResponse, adminUser: Adm
         time_on_playlists,
         created_at,
         updated_at,
-        orders!inner(created_at, status, billing_info, order_items(track_title, track_image_url))
+        orders!inner(created_at, status, billing_info, user_id, order_items(track_title, track_image_url))
       `)
       .neq('orders.status', 'cancelled')
       .order('created_at', { ascending: false });
@@ -439,7 +439,7 @@ async function handler(req: NextApiRequest, res: NextApiResponse, adminUser: Adm
         time_on_playlists,
         created_at,
         updated_at,
-        orders!inner(created_at, status, billing_info, order_items(track_title, track_image_url))
+        orders!inner(created_at, status, billing_info, user_id, order_items(track_title, track_image_url))
       `)
       .neq('orders.status', 'cancelled')
       .order('created_at', { ascending: false });
@@ -550,6 +550,7 @@ async function handler(req: NextApiRequest, res: NextApiResponse, adminUser: Adm
         orderId: campaign.order_id,
         orderDate: (campaign.orders as any).created_at,
         customerName: campaign.customer_name,
+        userId: (campaign.orders as any).user_id || null,
         songName: campaign.song_name,
         songLink: campaign.song_link,
         songImage: songImage,
