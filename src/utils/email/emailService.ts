@@ -495,12 +495,12 @@ export async function sendNewOrderEmail(
     orderNumber: orderData.order_number,
     orderTotal: `$${(orderData.total / 100).toFixed(2)}`,
     orderDate: new Date(orderData.created_at).toLocaleDateString(),
-    // FASHOKENS placeholders for Mailjet templates
-    fashoken_balance: (orderData.fashokens_balance || 0).toLocaleString(),
-    fashoken_earned: (orderData.fashokens_earned || 0).toLocaleString(),
-    fashoken_spent: (orderData.fashokens_spent || 0).toLocaleString(),
-    fashoken_discount: orderData.fashokens_discount ? `$${orderData.fashokens_discount.toFixed(2)}` : '$0.00',
-    fashoken_balance_after: (orderData.fashokens_balance || 0).toLocaleString()
+    // FASHOKENS placeholders for Mailjet templates (matching {{fashokens_*}} template variables)
+    fashokens_balance: (orderData.fashokens_balance || 0).toLocaleString(),
+    fashokens_earned: (orderData.fashokens_earned || 0).toLocaleString(),
+    fashokens_spent: (orderData.fashokens_spent || 0).toLocaleString(),
+    fashokens_discount: orderData.fashokens_discount ? `$${orderData.fashokens_discount.toFixed(2)}` : '$0.00',
+    fashokens_balance_after: (orderData.fashokens_balance || 0).toLocaleString()
   };
 
   return await emailService.sendNotification('new_order', emailData, supabaseClient);
