@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { useRouter } from 'next/router';
 import Head from 'next/head';
 import Image from 'next/image';
@@ -14,6 +14,8 @@ import SpotlightCard from '../components/SpotlightCard';
 import { useAuth } from '../utils/authContext';
 import { analytics } from "../utils/analytics";
 import FashokensSection from '../components/FashokensSection';
+import { getCountryConfig, isStateRequired, getPhoneCode, COUNTRY_CONFIGS } from '../utils/countryConfig';
+import { useExchangeRates } from '../hooks/useExchangeRates';
 
 interface Package {
   id: string;
@@ -136,6 +138,9 @@ export default function CheckoutPage() {
   
   // Use the auth context instead of managing our own auth state
   const { user: currentUser, loading: authLoading } = useAuth();
+  
+  // Exchange rates for currency conversion display
+  const { getConversionDisplay } = useExchangeRates();
 
   const [tracks, setTracks] = useState<Track[]>([]);
   const [selectedPackages, setSelectedPackages] = useState<{[key: number]: string}>({});
@@ -204,6 +209,9 @@ export default function CheckoutPage() {
     phoneNumber: '',
     musicGenre: '' // User's preferred music genre
   });
+
+  // Get country-specific configuration for dynamic form rendering
+  const countryConfig = useMemo(() => getCountryConfig(billingData.country), [billingData.country]);
 
   // Terms agreement state
   const [termsAgreed, setTermsAgreed] = useState(false);
@@ -821,17 +829,29 @@ export default function CheckoutPage() {
 
   const handleBillingChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     let value = e.target.value;
-    // Defensive: Only allow 2-letter codes for state and country
-    if (e.target.name === 'state' && value.length > 2) {
+    const fieldName = e.target.name;
+    
+    // Defensive: Only allow 2-letter codes for country
+    if (fieldName === 'country' && value.length > 2) {
       value = value.slice(0, 2).toUpperCase();
     }
-    if (e.target.name === 'country' && value.length > 2) {
-      value = value.slice(0, 2).toUpperCase();
+    
+    // When country changes, update phone code and clear state if country doesn't use states
+    if (fieldName === 'country') {
+      const newCountryConfig = getCountryConfig(value);
+      setBillingData(prev => ({
+        ...prev,
+        country: value,
+        countryCode: newCountryConfig.phoneCode,
+        // Clear state if the new country doesn't require it
+        state: newCountryConfig.hasStates ? prev.state : ''
+      }));
+    } else {
+      setBillingData(prev => ({
+        ...prev,
+        [fieldName]: value
+      }));
     }
-    setBillingData(prev => ({
-      ...prev,
-      [e.target.name]: value
-    }));
     
     // Clear form error when user starts typing
     if (formError) {
@@ -931,13 +951,16 @@ export default function CheckoutPage() {
 
   // Validate if form is ready for payment
   const isFormValid = () => {
+    // Check if state is required based on selected country
+    const stateValid = countryConfig.hasStates ? !!billingData.state : true;
+    
     // If user is logged in, only need billing info + music genre + terms agreement
     if (currentUser) {
       return billingData.firstName && 
              billingData.lastName && 
              billingData.address && 
              billingData.city && 
-             billingData.state && 
+             stateValid && 
              billingData.zip &&
              billingData.phoneNumber &&
              billingData.musicGenre &&
@@ -953,7 +976,7 @@ export default function CheckoutPage() {
              billingData.lastName && 
              billingData.address && 
              billingData.city && 
-             billingData.state && 
+             stateValid && 
              billingData.zip &&
              billingData.phoneNumber &&
              billingData.musicGenre &&
@@ -970,7 +993,7 @@ export default function CheckoutPage() {
              billingData.lastName && 
              billingData.address && 
              billingData.city && 
-             billingData.state && 
+             stateValid && 
              billingData.zip &&
              billingData.phoneNumber &&
              billingData.musicGenre &&
@@ -1002,7 +1025,8 @@ export default function CheckoutPage() {
     if (!billingData.lastName) return 'lastName';
     if (!billingData.address) return 'address';
     if (!billingData.city) return 'city';
-    if (!billingData.state) return 'state';
+    // Only require state if country uses states
+    if (countryConfig.hasStates && !billingData.state) return 'state';
     if (!billingData.zip) return 'zip';
     if (!billingData.phoneNumber) return 'phoneNumber';
     if (!billingData.musicGenre) return 'musicGenre';
@@ -2644,77 +2668,48 @@ export default function CheckoutPage() {
                         />
                       </div>
                       
-                      <div>
-                        <label htmlFor="state" className="block text-sm text-white/70 mb-2">
-                          State <span className="text-red-400">*</span>
-                        </label>
-                        <select
-                          id="state"
-                          name="state"
-                          value={billingData.state}
-                          onChange={handleBillingChange}
-                          required
-                          className="w-full bg-white/10 border border-white/20 rounded-lg py-3 px-4 text-white focus:outline-none focus:border-[#59e3a5] transition-colors"
-                        >
-                          <option value="">Select State</option>
-                          <option value="AL">Alabama</option>
-                          <option value="AK">Alaska</option>
-                          <option value="AZ">Arizona</option>
-                          <option value="AR">Arkansas</option>
-                          <option value="CA">California</option>
-                          <option value="CO">Colorado</option>
-                          <option value="CT">Connecticut</option>
-                          <option value="DE">Delaware</option>
-                          <option value="FL">Florida</option>
-                          <option value="GA">Georgia</option>
-                          <option value="HI">Hawaii</option>
-                          <option value="ID">Idaho</option>
-                          <option value="IL">Illinois</option>
-                          <option value="IN">Indiana</option>
-                          <option value="IA">Iowa</option>
-                          <option value="KS">Kansas</option>
-                          <option value="KY">Kentucky</option>
-                          <option value="LA">Louisiana</option>
-                          <option value="ME">Maine</option>
-                          <option value="MD">Maryland</option>
-                          <option value="MA">Massachusetts</option>
-                          <option value="MI">Michigan</option>
-                          <option value="MN">Minnesota</option>
-                          <option value="MS">Mississippi</option>
-                          <option value="MO">Missouri</option>
-                          <option value="MT">Montana</option>
-                          <option value="NE">Nebraska</option>
-                          <option value="NV">Nevada</option>
-                          <option value="NH">New Hampshire</option>
-                          <option value="NJ">New Jersey</option>
-                          <option value="NM">New Mexico</option>
-                          <option value="NY">New York</option>
-                          <option value="NC">North Carolina</option>
-                          <option value="ND">North Dakota</option>
-                          <option value="OH">Ohio</option>
-                          <option value="OK">Oklahoma</option>
-                          <option value="OR">Oregon</option>
-                          <option value="PA">Pennsylvania</option>
-                          <option value="RI">Rhode Island</option>
-                          <option value="SC">South Carolina</option>
-                          <option value="SD">South Dakota</option>
-                          <option value="TN">Tennessee</option>
-                          <option value="TX">Texas</option>
-                          <option value="UT">Utah</option>
-                          <option value="VT">Vermont</option>
-                          <option value="VA">Virginia</option>
-                          <option value="WA">Washington</option>
-                          <option value="WV">West Virginia</option>
-                          <option value="WI">Wisconsin</option>
-                          <option value="WY">Wyoming</option>
-                        </select>
-                      </div>
+                      {/* Dynamic State/Province field - only show if country requires it */}
+                      {countryConfig.hasStates ? (
+                        <div>
+                          <label htmlFor="state" className="block text-sm text-white/70 mb-2">
+                            {countryConfig.stateLabel} <span className="text-red-400">*</span>
+                          </label>
+                          <select
+                            id="state"
+                            name="state"
+                            value={billingData.state}
+                            onChange={handleBillingChange}
+                            required
+                            className="w-full bg-white/10 border border-white/20 rounded-lg py-3 px-4 text-white focus:outline-none focus:border-[#59e3a5] transition-colors"
+                          >
+                            <option value="">Select {countryConfig.stateLabel}</option>
+                            {countryConfig.states?.map(state => (
+                              <option key={state.code} value={state.code}>{state.name}</option>
+                            ))}
+                          </select>
+                        </div>
+                      ) : (
+                        <div>
+                          <label htmlFor="state" className="block text-sm text-white/70 mb-2">
+                            {countryConfig.stateLabel}
+                          </label>
+                          <input
+                            type="text"
+                            id="state"
+                            name="state"
+                            value={billingData.state}
+                            onChange={handleBillingChange}
+                            className="w-full bg-white/10 border border-white/20 rounded-lg py-3 px-4 text-white placeholder-white/50 focus:outline-none focus:border-[#59e3a5] transition-colors"
+                            placeholder={`Enter ${countryConfig.stateLabel.toLowerCase().replace(' (optional)', '')}`}
+                          />
+                        </div>
+                      )}
                     </div>
                     
                     <div className="grid grid-cols-2 gap-4">
                       <div>
                         <label htmlFor="zip" className="block text-sm text-white/70 mb-2">
-                          ZIP Code <span className="text-red-400">*</span>
+                          {countryConfig.postalCodeLabel} <span className="text-red-400">*</span>
                         </label>
                         <input
                           type="text"
@@ -2724,7 +2719,7 @@ export default function CheckoutPage() {
                           onChange={handleBillingChange}
                           required
                           className="w-full bg-white/10 border border-white/20 rounded-lg py-3 px-4 text-white placeholder-white/50 focus:outline-none focus:border-[#59e3a5] transition-colors"
-                          placeholder="12345"
+                          placeholder={countryConfig.postalCodePlaceholder}
                         />
                       </div>
                       
@@ -3138,7 +3133,14 @@ export default function CheckoutPage() {
                   <div className="space-y-3">
                     <div className="flex justify-between">
                       <span className="text-white/70">Subtotal</span>
-                      <span>${subtotal.toFixed(2)}</span>
+                      <span>
+                        ${subtotal.toFixed(2)}
+                        {getConversionDisplay(subtotal, billingData.country) && (
+                          <span className="text-white/50 text-sm ml-1">
+                            {getConversionDisplay(subtotal, billingData.country)}
+                          </span>
+                        )}
+                      </span>
                     </div>
                     
                     {discount > 0 && (
@@ -3179,7 +3181,14 @@ export default function CheckoutPage() {
                     <div className="border-t border-white/20 pt-3">
                       <div className="flex justify-between text-xl font-bold">
                         <span>Total</span>
-                        <span className="text-[#59e3a5]">${total.toFixed(2)}</span>
+                        <div className="text-right">
+                          <span className="text-[#59e3a5]">${total.toFixed(2)}</span>
+                          {getConversionDisplay(total, billingData.country) && (
+                            <div className="text-white/50 text-sm font-normal">
+                              {getConversionDisplay(total, billingData.country)}
+                            </div>
+                          )}
+                        </div>
                       </div>
                     </div>
                   </div>
