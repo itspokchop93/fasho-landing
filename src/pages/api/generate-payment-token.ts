@@ -64,7 +64,14 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       return res.status(400).json({ success: false, message: 'Missing required field: billingInfo' });
     }
     // Validate billing information fields
-    const billingFields = ['firstName', 'lastName', 'address', 'city', 'state', 'zip', 'country'];
+    // State is only required for countries that use states (US, CA, AU)
+    const countriesRequiringState = ['US', 'CA', 'AU'];
+    const requiresState = countriesRequiringState.includes(billingInfo.country);
+    
+    const billingFields = requiresState 
+      ? ['firstName', 'lastName', 'address', 'city', 'state', 'zip', 'country']
+      : ['firstName', 'lastName', 'address', 'city', 'zip', 'country'];
+    
     for (const field of billingFields) {
       if (!(billingInfo as any)[field]) {
         console.error(`DEBUG: Missing billingInfo.${field}`);
@@ -152,21 +159,27 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       }
     });
     // Defensive: Check field lengths and values
-    if (billTo.state && billTo.state.length !== 2) {
-      console.error('DEBUG: billTo.state is not 2 characters:', billTo.state);
-      return res.status(400).json({ success: false, message: 'State must be 2-letter code' });
+    // State validation: only check length if state is provided AND country requires state
+    if (billTo.state && requiresState && billTo.state.length > 3) {
+      console.error('DEBUG: billTo.state is too long:', billTo.state);
+      return res.status(400).json({ success: false, message: 'State/Province code is too long' });
     }
     if (billTo.country && billTo.country.length !== 2) {
       console.error('DEBUG: billTo.country is not 2 characters:', billTo.country);
       return res.status(400).json({ success: false, message: 'Country must be 2-letter code' });
     }
-    if (billTo.zip && !/^\d{5}(-\d{4})?$/.test(billTo.zip)) {
-      console.error('DEBUG: billTo.zip is not valid US ZIP:', billTo.zip);
-      return res.status(400).json({ success: false, message: 'ZIP code must be 5 or 9 digits' });
+    // ZIP/Postal code validation - allow international formats (alphanumeric, spaces, hyphens)
+    if (billTo.zip && !/^[A-Za-z0-9\s\-]{2,10}$/.test(billTo.zip)) {
+      console.error('DEBUG: billTo.zip is not valid postal code:', billTo.zip);
+      return res.status(400).json({ success: false, message: 'Invalid postal code format' });
     }
     
     // Ensure required fields are present and valid
-    if (!billTo.firstName || !billTo.lastName || !billTo.address || !billTo.city || !billTo.state || !billTo.zip || !billTo.country) {
+    // State is only required for US, CA, AU
+    const hasRequiredFields = billTo.firstName && billTo.lastName && billTo.address && billTo.city && billTo.zip && billTo.country;
+    const hasStateIfRequired = requiresState ? !!billTo.state : true;
+    
+    if (!hasRequiredFields || !hasStateIfRequired) {
       console.error('DEBUG: Missing required billing fields:', billTo);
       return res.status(400).json({ success: false, message: 'All billing information fields are required' });
     }
