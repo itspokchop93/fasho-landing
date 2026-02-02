@@ -42,6 +42,10 @@ interface TourStep {
   position?: 'top' | 'top-start' | 'top-end' | 'bottom' | 'bottom-start' | 'bottom-end' | 'left' | 'left-start' | 'left-end' | 'right' | 'right-start' | 'right-end' | 'auto';
   beforeStep?: () => Promise<void> | void; // Action before showing step (e.g., expand accordion)
   skipIfMissing?: boolean; // If true, skip this step if element not found
+  // Mobile-specific overrides
+  mobileElement?: string; // Different element selector for mobile
+  mobilePosition?: 'top' | 'top-start' | 'top-end' | 'bottom' | 'bottom-start' | 'bottom-end' | 'left' | 'left-start' | 'left-end' | 'right' | 'right-start' | 'right-end' | 'auto';
+  mobileScrollToElement?: boolean; // Whether to scroll to the element on mobile
 }
 
 const tourSteps: TourStep[] = [
@@ -53,6 +57,9 @@ const tourSteps: TourStep[] = [
     content: 'You made it! This is your new home base. Everything you need to track your campaign, grow your music, and reach new heights lives right here.',
     position: 'left', // Modal on LEFT of Artist Profile, arrow points RIGHT
     skipIfMissing: false,
+    // Mobile: Point to Dashboard nav item in bottom menu
+    mobileElement: '[data-tour="mobile-nav-dashboard"]',
+    mobilePosition: 'top', // Modal ABOVE the mobile nav, arrow points DOWN
   },
   {
     id: 'all-campaigns',
@@ -71,6 +78,10 @@ const tourSteps: TourStep[] = [
     content: 'This is your campaign\'s current progress. You\'ll always know exactly where your campaign stands and what\'s happening behind the scenes.',
     position: 'bottom', // Modal BELOW progress bar, arrow points UP
     skipIfMissing: true, // Skip if user has no campaigns
+    // Mobile: Use the mobile-specific progress bar element (desktop one is hidden on mobile)
+    mobileElement: '[data-tour="campaign-progress-mobile"]',
+    mobileScrollToElement: true,
+    mobilePosition: 'bottom', // Modal BELOW progress bar on mobile too
   },
   {
     id: 'curator-table',
@@ -80,6 +91,9 @@ const tourSteps: TourStep[] = [
     content: 'This is your secret weapon. Curator Connect+ gives you direct access to hundreds of real playlist curators so you can pitch your music yourself and stack even more placements on top of your campaign.',
     position: 'top', // Modal on TOP, arrow points DOWN
     skipIfMissing: false,
+    // Mobile: Point to Curators nav item in bottom menu
+    mobileElement: '[data-tour="mobile-nav-curators"]',
+    mobilePosition: 'top', // Modal ABOVE the mobile nav, arrow points DOWN
   },
   {
     id: 'curator-contact-button',
@@ -89,6 +103,10 @@ const tourSteps: TourStep[] = [
     content: 'Just hit this "Contact" button and your email will open with a pre-written pitch ready to go. Simply fill in your details, drop your song link, and hit send.',
     position: 'left', // Modal on LEFT, arrow points RIGHT
     skipIfMissing: true, // Skip if no curators loaded
+    // Mobile: Use mobile-specific element (desktop one is hidden on mobile)
+    mobileElement: '[data-tour="curator-contact-button-mobile"]',
+    mobileScrollToElement: true,
+    mobilePosition: 'left', // Modal on LEFT of button, arrow points RIGHT (same as desktop)
   },
   {
     id: 'power-tools-grid',
@@ -138,6 +156,8 @@ interface DashboardTourProps {
   hasCampaigns: boolean;
   /** User ID for persistence */
   userId?: string;
+  /** Callback to expose the startTour function to parent component */
+  onTourReady?: (triggerTour: () => void) => void;
 }
 
 // ============================================================================
@@ -152,6 +172,7 @@ const DashboardTour: React.FC<DashboardTourProps> = ({
   onExpandFirstCampaign,
   hasCampaigns,
   userId,
+  onTourReady,
 }) => {
   const tourInstance = useRef<any>(null);
   const [tourStarted, setTourStarted] = useState(false);
@@ -360,16 +381,22 @@ const DashboardTour: React.FC<DashboardTourProps> = ({
     setTourStarted(true);
     
     try {
-      // Dynamically import Shepherd.js and its CSS (client-side only)
+      // Dynamically import Shepherd.js (client-side only)
       console.log('[DashboardTour] Importing Shepherd.js...');
-      const ShepherdModule = await import('shepherd.js');
-      // @ts-ignore - CSS import for side effects
-      await import('shepherd.js/dist/css/shepherd.css');
-      const Shepherd = ShepherdModule.default || ShepherdModule;
+      const Shepherd = (await import('shepherd.js')).default;
+      
+      if (!Shepherd || !Shepherd.Tour) {
+        console.error('[DashboardTour] Shepherd.Tour not available');
+        throw new Error('Shepherd.Tour class not available');
+      }
       console.log('[DashboardTour] Shepherd.js imported successfully');
       
       // Build steps array, filtering out steps for missing elements
       const shepherdSteps: any[] = [];
+      
+      // Detect if we're on mobile (matches the lg:hidden breakpoint used in dashboard)
+      const isMobile = window.innerWidth < 1024;
+      console.log(`[DashboardTour] Device detection - isMobile: ${isMobile}, width: ${window.innerWidth}`);
       
       // First, determine total valid steps for progress calculation
       const validStepConfigs = tourSteps.filter(step => {
@@ -390,6 +417,13 @@ const DashboardTour: React.FC<DashboardTourProps> = ({
         const currentStep = stepIndex;
         const progressPercent = (currentStep / totalSteps) * 100;
         
+        // Use mobile-specific element/position if available and on mobile
+        const elementSelector = (isMobile && stepConfig.mobileElement) ? stepConfig.mobileElement : stepConfig.element;
+        const stepPosition = (isMobile && stepConfig.mobilePosition) ? stepConfig.mobilePosition : stepConfig.position;
+        const shouldScrollOnMobile = isMobile && stepConfig.mobileScrollToElement;
+        
+        console.log(`[DashboardTour] Building step "${stepConfig.id}" - element: ${elementSelector}, position: ${stepPosition}, mobileScroll: ${shouldScrollOnMobile}`);
+        
         // Create step with beforeShowPromise to handle tab navigation and element waiting
         shepherdSteps.push({
           id: stepConfig.id,
@@ -397,76 +431,122 @@ const DashboardTour: React.FC<DashboardTourProps> = ({
           // Add progress indicator to title
           title: `<div class="shepherd-progress-wrapper"><div class="shepherd-progress-ring" style="--progress: ${progressPercent}%;"></div><span class="shepherd-title-text">${stepConfig.title}</span></div>`,
           attachTo: {
-            element: stepConfig.element,
-            on: stepConfig.position || 'auto',
+            element: elementSelector,
+            on: stepPosition || 'auto',
           },
           beforeShowPromise: async () => {
-            // Navigate to the correct tab first
-            const targetTab = stepConfig.tab;
-            console.log(`[DashboardTour] beforeShowPromise: step "${stepConfig.id}", target tab: ${targetTab}, current tab: ${activeTabRef.current}`);
-            
-            // Always navigate (even if we think we're on the right tab) to ensure consistency
-            console.log(`[DashboardTour] Navigating to tab: ${targetTab}`);
-            const navSuccess = await navigateToTab(targetTab);
-            
-            if (!navSuccess) {
-              console.warn(`[DashboardTour] Navigation may have failed, but continuing...`);
-            }
-            
-            // Verify we're on the correct tab before proceeding
-            let retries = 0;
-            const maxRetries = 5;
-            while (activeTabRef.current !== targetTab && retries < maxRetries) {
-              console.log(`[DashboardTour] Waiting for tab to change... (attempt ${retries + 1}/${maxRetries})`);
-              await new Promise(resolve => setTimeout(resolve, 200));
-              retries++;
-            }
-            
-            if (activeTabRef.current !== targetTab) {
-              console.error(`[DashboardTour] Failed to navigate to tab "${targetTab}" after ${maxRetries} attempts. Current tab: "${activeTabRef.current}"`);
-              // Still try to continue, but log the error
-            }
-            
-            // Scroll to top of page after tab navigation - ensures consistent positioning
-            window.scrollTo({ top: 0, behavior: 'instant' });
-            
-            // Special handling: expand first campaign accordion
-            if (stepConfig.id === 'campaign-progress' && onExpandFirstCampaign) {
-              console.log('[DashboardTour] Expanding first campaign accordion');
-              onExpandFirstCampaign();
-              // Wait for accordion to expand
-              await new Promise(resolve => setTimeout(resolve, 400));
-            }
-            
-            // Extra wait for DOM to fully render after tab change
-            await new Promise(resolve => setTimeout(resolve, 300));
-            
-            // Wait for element to appear - with retry logic
-            let element = await waitForElement(stepConfig.element);
-            
-            // If element not found and we're on the wrong tab, try navigating again
-            if (!element && activeTabRef.current !== targetTab) {
-              console.log(`[DashboardTour] Element not found and wrong tab detected. Retrying navigation...`);
-              await navigateToTab(targetTab);
-              await new Promise(resolve => setTimeout(resolve, 500));
-              element = await waitForElement(stepConfig.element);
-            }
-            
-            if (!element) {
-              if (stepConfig.skipIfMissing) {
-                console.log(`[DashboardTour] Element not found, skipping step "${stepConfig.id}"`);
-                // Return null to skip this step
-                return null;
-              } else {
-                console.error(`[DashboardTour] Required element not found: ${stepConfig.element} on tab "${activeTabRef.current}" (expected "${targetTab}")`);
-                // Still return null to skip, but log error
-                return null;
+            try {
+              // Navigate to the correct tab first
+              const targetTab = stepConfig.tab;
+              console.log(`[DashboardTour] beforeShowPromise: step "${stepConfig.id}", target tab: ${targetTab}, current tab: ${activeTabRef.current}`);
+              
+              // Always navigate (even if we think we're on the right tab) to ensure consistency
+              console.log(`[DashboardTour] Navigating to tab: ${targetTab}`);
+              const navSuccess = await navigateToTab(targetTab);
+              
+              if (!navSuccess) {
+                console.warn(`[DashboardTour] Navigation may have failed, but continuing...`);
               }
+              
+              // Verify we're on the correct tab before proceeding
+              let retries = 0;
+              const maxRetries = 5;
+              while (activeTabRef.current !== targetTab && retries < maxRetries) {
+                console.log(`[DashboardTour] Waiting for tab to change... (attempt ${retries + 1}/${maxRetries})`);
+                await new Promise(resolve => setTimeout(resolve, 200));
+                retries++;
+              }
+              
+              if (activeTabRef.current !== targetTab) {
+                console.error(`[DashboardTour] Failed to navigate to tab "${targetTab}" after ${maxRetries} attempts. Current tab: "${activeTabRef.current}"`);
+                // Still try to continue, but log the error
+              }
+              
+              // Scroll to top of page after tab navigation - ensures consistent positioning
+              // But for mobile scroll-to-element steps, we'll scroll to the element instead
+              if (!shouldScrollOnMobile) {
+                window.scrollTo({ top: 0, behavior: 'instant' });
+              }
+              
+              // Special handling: expand first campaign accordion
+              if (stepConfig.id === 'campaign-progress' && onExpandFirstCampaign) {
+                console.log('[DashboardTour] Expanding first campaign accordion');
+                onExpandFirstCampaign();
+                // Wait for accordion to expand
+                await new Promise(resolve => setTimeout(resolve, 400));
+              }
+              
+              // Extra wait for DOM to fully render after tab change
+              await new Promise(resolve => setTimeout(resolve, 300));
+              
+              // Wait for element to appear - with retry logic (use the correct selector for mobile/desktop)
+              let element = await waitForElement(elementSelector);
+              
+              // If element not found and we're on the wrong tab, try navigating again
+              if (!element && activeTabRef.current !== targetTab) {
+                console.log(`[DashboardTour] Element not found and wrong tab detected. Retrying navigation...`);
+                await navigateToTab(targetTab);
+                await new Promise(resolve => setTimeout(resolve, 500));
+                element = await waitForElement(elementSelector);
+              }
+              
+              if (!element) {
+                if (stepConfig.skipIfMissing) {
+                  console.log(`[DashboardTour] Element not found, skipping step "${stepConfig.id}"`);
+                  // Return null to skip this step
+                  return null;
+                } else {
+                  console.error(`[DashboardTour] Required element not found: ${elementSelector} on tab "${activeTabRef.current}" (expected "${targetTab}")`);
+                  // Still return null to skip, but log error
+                  return null;
+                }
+              }
+              
+              // Mobile: Scroll to element if configured
+              if (shouldScrollOnMobile && element) {
+                console.log(`[DashboardTour] Mobile: Scrolling to element for step "${stepConfig.id}"`);
+                
+                // Get the element's position and dimensions
+                const elementRect = element.getBoundingClientRect();
+                const elementTop = window.scrollY + elementRect.top;
+                const elementHeight = elementRect.height;
+                const viewportHeight = window.innerHeight;
+                
+                // Calculate scroll position to CENTER the element in the viewport
+                // Formula: scroll to position where element's center aligns with viewport center
+                // But offset slightly higher to account for the tour modal that will appear
+                const elementCenter = elementTop + (elementHeight / 2);
+                const viewportCenter = viewportHeight / 2;
+                const scrollTarget = elementCenter - viewportCenter;
+                
+                console.log(`[DashboardTour] Mobile scroll: elementTop=${elementTop}, elementCenter=${elementCenter}, viewportCenter=${viewportCenter}, scrollTarget=${scrollTarget}`);
+                
+                // Single smooth scroll directly to the centered position
+                window.scrollTo({
+                  top: Math.max(0, scrollTarget),
+                  behavior: 'smooth'
+                });
+                
+                // Wait for scroll animation to complete
+                await new Promise(resolve => setTimeout(resolve, 600));
+                
+                // Verify element position
+                const newRect = element.getBoundingClientRect();
+                console.log(`[DashboardTour] Mobile: Element position after scroll - top: ${newRect.top}, center: ${newRect.top + newRect.height/2}, viewport center: ${viewportHeight/2}`);
+              }
+              
+              console.log(`[DashboardTour] ✅ Element found for step "${stepConfig.id}" on tab "${activeTabRef.current}"`);
+              // Return undefined to proceed with the step (Shepherd.js will use the selector from attachTo)
+              return;
+            } catch (error: any) {
+              // Handle AbortError gracefully - this can happen when React cancels async operations
+              if (error?.name === 'AbortError' || error?.message?.includes('abort')) {
+                console.warn(`[DashboardTour] Step "${stepConfig.id}" was aborted (likely due to navigation), continuing...`);
+                return; // Allow the step to continue
+              }
+              console.error(`[DashboardTour] Error in beforeShowPromise for step "${stepConfig.id}":`, error);
+              throw error; // Re-throw other errors
             }
-            
-            console.log(`[DashboardTour] ✅ Element found for step "${stepConfig.id}" on tab "${activeTabRef.current}"`);
-            // Return undefined to proceed with the step (Shepherd.js will use the selector from attachTo)
-            return;
           },
           // Add scroll-to-center-modal behavior for specific steps only
           when: {
@@ -507,12 +587,17 @@ const DashboardTour: React.FC<DashboardTourProps> = ({
                 }, 150);
               }
               
-              // Only auto-scroll to center modal for specific steps
+              // Only auto-scroll to center modal for specific steps (DESKTOP ONLY)
+              // Skip this for mobile steps that already handle their own scrolling via mobileScrollToElement
               const stepsNeedingCenteredModal = ['artist-profile', 'curator-contact-button'];
               const needsCentering = stepsNeedingCenteredModal.includes(stepConfig.id);
-              console.log(`[DashboardTour] Step shown: "${stepConfig.id}", needs centering: ${needsCentering}`);
               
-              if (needsCentering) {
+              // Don't do modal centering scroll on mobile if we already scrolled to the element
+              const skipCenteringOnMobile = shouldScrollOnMobile;
+              
+              console.log(`[DashboardTour] Step shown: "${stepConfig.id}", needs centering: ${needsCentering}, skip on mobile: ${skipCenteringOnMobile}`);
+              
+              if (needsCentering && !skipCenteringOnMobile) {
                 // Wait for modal to be fully positioned, then scroll to center it
                 setTimeout(() => {
                   const modal = document.querySelector('.shepherd-element');
@@ -657,6 +742,30 @@ const DashboardTour: React.FC<DashboardTourProps> = ({
       hasInitialized.current = false; // Allow retry
     }
   }, [navigateToTab, onTabChange, onExpandFirstCampaign, waitForElement, markTourAsSeen, hasCampaigns]);
+
+  // ============================================================================
+  // EXPOSE startTour TO PARENT COMPONENT
+  // ============================================================================
+  
+  // Create a manual trigger function that resets state and starts the tour
+  const triggerTourManually = useCallback(() => {
+    console.log('[DashboardTour] Manual trigger requested');
+    // Reset the initialization state to allow restart
+    hasInitialized.current = false;
+    tourCompletedRef.current = false;
+    setTourStarted(false);
+    // Start the tour after a brief delay
+    setTimeout(() => {
+      startTour();
+    }, 100);
+  }, [startTour]);
+  
+  // Expose the trigger function to parent component
+  useEffect(() => {
+    if (onTourReady) {
+      onTourReady(triggerTourManually);
+    }
+  }, [onTourReady, triggerTourManually]);
 
   // ============================================================================
   // TEST MODE: Auto-start for development/testing (env flag required)

@@ -65,6 +65,9 @@ export default function Dashboard({ user }: DashboardProps) {
   // Intake form state
   const [showIntakeForm, setShowIntakeForm] = useState(false)
   const [checkingIntakeStatus, setCheckingIntakeStatus] = useState(true)
+  
+  // Tour trigger function (exposed by DashboardTour component)
+  const [triggerTour, setTriggerTour] = useState<(() => void) | null>(null)
 
   // Settings state
   const [userProfile, setUserProfile] = useState<any>(null)
@@ -1344,6 +1347,22 @@ export default function Dashboard({ user }: DashboardProps) {
 
   const renderDashboardContent = () => (
     <div className="space-y-4 lg:space-y-8 pb-8">
+      {/* Trigger Intro Tour Button (for testing) */}
+      <div className="flex justify-center">
+        <button
+          onClick={() => {
+            if (triggerTour) {
+              triggerTour();
+            } else {
+              console.log('Tour trigger not ready yet');
+            }
+          }}
+          className="px-4 py-2 text-xs font-medium text-gray-400 hover:text-white bg-gray-800/50 hover:bg-gray-700/50 rounded-lg border border-gray-700/50 hover:border-gray-600/50 transition-all duration-200"
+        >
+          🎯 Trigger Intro Tour
+        </button>
+      </div>
+      
       {/* Mobile-only gradient heading above stats cards */}
       <div className="block md:hidden mb-2 mt-2 text-center">
         <h2 className="text-lg font-black text-white inline-block" style={{letterSpacing: '0.01em', fontSize: '1.5rem'}}>
@@ -2778,7 +2797,7 @@ export default function Dashboard({ user }: DashboardProps) {
                         <div className="absolute -inset-1 bg-gradient-to-r from-cyan-500/20 via-emerald-500/30 to-purple-500/20 rounded-xl blur-lg opacity-75 group-hover:opacity-100 transition-all duration-300 animate-pulse"></div>
                         
                                                                           {/* Main container with liquid glass effect */}
-                          <div className="relative bg-gradient-to-br from-slate-900/90 via-slate-800/70 to-slate-900/90 backdrop-blur-xl rounded-xl p-4 border border-white/10 shadow-2xl overflow-hidden">
+                          <div {...(index === 0 ? { 'data-tour': 'campaign-progress-mobile' } : {})} className="relative bg-gradient-to-br from-slate-900/90 via-slate-800/70 to-slate-900/90 backdrop-blur-xl rounded-xl p-4 border border-white/10 shadow-2xl overflow-hidden">
                           {/* Dynamic gradient overlay */}
                           <div className="absolute inset-0 bg-gradient-to-br from-cyan-500/10 via-transparent to-emerald-500/10 animate-pulse"></div>
                           
@@ -5254,7 +5273,7 @@ Best regards,
             </div>
           ) : (
             <div className="space-y-4">
-              {filteredCurators.map((curator) => {
+              {filteredCurators.map((curator, curatorIndex) => {
                 const isContacted = contactedCurators[curator.id]
                 return (
                   <div 
@@ -5343,6 +5362,7 @@ Best regards,
                       <button
                         onClick={() => handleContactCurator(curator)}
                         className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-lg text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-colors"
+                        {...(curatorIndex === 0 ? { 'data-tour': 'curator-contact-button-mobile' } : {})}
                       >
                         Contact
                       </button>
@@ -5644,9 +5664,17 @@ Thank you,
               
               const isSettingsActive = item.id === 'settings' && (activeTab === 'settings' || activeTab === 'faq' || activeTab === 'contact')
               
+              // Add data-tour attribute for mobile nav items used in intro tour
+              const getMobileTourAttribute = (itemId: string) => {
+                if (itemId === 'dashboard') return 'mobile-nav-dashboard'
+                if (itemId === 'curator-connect') return 'mobile-nav-curators'
+                return undefined
+              }
+              
               return (
                 <button
                   key={item.id}
+                  data-tour={getMobileTourAttribute(item.id)}
                   onClick={() => {
                     if (item.id === 'settings') {
                       setShowMobileSettingsDropdown(true)
@@ -5706,6 +5734,7 @@ Thank you,
           onExpandFirstCampaign={expandFirstCampaign}
           hasCampaigns={orders.length > 0}
           userId={user.id}
+          onTourReady={(trigger) => setTriggerTour(() => trigger)}
         />
 
         {/* Genre Dropdown Portal */}

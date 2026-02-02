@@ -3,7 +3,24 @@
 const nextConfig = {
   // Image optimization for Core Web Vitals
   images: {
-    domains: ["i.scdn.co", "image-cdn-ak.spotifycdn.com", "fasho.co", "www.fasho.co"],
+    remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: 'i.scdn.co',
+      },
+      {
+        protocol: 'https',
+        hostname: 'image-cdn-ak.spotifycdn.com',
+      },
+      {
+        protocol: 'https',
+        hostname: 'fasho.co',
+      },
+      {
+        protocol: 'https',
+        hostname: 'www.fasho.co',
+      },
+    ],
     formats: ['image/webp', 'image/avif'],
     minimumCacheTTL: 60 * 60 * 24 * 365, // 1 year cache
     deviceSizes: [640, 750, 828, 1080, 1200, 1920, 2048, 3840],
@@ -12,11 +29,6 @@ const nextConfig = {
   
   // Compression for better performance
   compress: true,
-  
-  // Performance optimizations
-  experimental: {
-    scrollRestoration: true,
-  },
   
   // Security and Performance Headers
   async headers() {

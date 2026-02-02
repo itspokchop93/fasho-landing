@@ -493,11 +493,14 @@ export default function SignUpPage() {
                 const { formatCustomerName } = await import('../utils/zapier/webhookService');
                 const { first_name, last_name } = formatCustomerName(formData.fullName);
                 
+                // Get user ID from either the confirmResult.user or the original signup data
+                const userId = confirmResult.user?.id || data?.user?.id;
+                
                 const syncResponse = await fetch('/api/sync-user-profile', {
                   method: 'POST',
                   headers: { 'Content-Type': 'application/json' },
                   body: JSON.stringify({
-                    user_id: confirmResult.data.user?.id,
+                    user_id: userId,
                     email: formData.email,
                     first_name,
                     last_name,
@@ -516,29 +519,32 @@ export default function SignUpPage() {
                 // Don't affect the signup flow if sync fails
               }
 
-              // Send Zapier webhook for user signup
+              // Send Zapier webhook for user signup via server-side API
               try {
                 console.log('🔗 SIGNUP: Sending Zapier webhook for user signup...');
                 
-                const { sendZapierWebhook, formatCustomerName } = await import('../utils/zapier/webhookService');
+                const { formatCustomerName } = await import('../utils/zapier/webhookService');
                 
                 // Format customer name
                 const { first_name, last_name } = formatCustomerName(formData.fullName);
                 
-                // Prepare webhook payload
-                const webhookPayload = {
-                  event_type: 'user_signup' as const,
-                  timestamp: new Date().toISOString(),
-                  customer_data: {
-                    first_name,
-                    last_name,
-                    email: formData.email
-                  }
-                };
+                // Send webhook via server-side API to avoid CORS issues
+                const webhookResponse = await fetch('/api/send-zapier-webhook', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({
+                    event_type: 'user_signup',
+                    customer_data: {
+                      first_name,
+                      last_name,
+                      email: formData.email
+                    }
+                  })
+                });
 
-                const webhookSent = await sendZapierWebhook(webhookPayload);
+                const webhookResult = await webhookResponse.json();
                 
-                if (webhookSent) {
+                if (webhookResult.success) {
                   console.log('🔗 SIGNUP: ✅ Zapier webhook sent successfully');
                 } else {
                   console.log('🔗 SIGNUP: ❌ Zapier webhook failed or was not sent');

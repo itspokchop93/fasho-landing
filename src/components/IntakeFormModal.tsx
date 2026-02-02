@@ -135,7 +135,7 @@ const IntakeFormModal: React.FC<IntakeFormModalProps> = ({
       setIsAnimating(false);
       setShowCompletion(false);
       setSelectedAnswer(null);
-      setCountdown(5);
+      setCountdown(3);
       analytics.track("survey_started", {
         survey_id: surveyId,
         order_id: orderId,
@@ -143,15 +143,19 @@ const IntakeFormModal: React.FC<IntakeFormModalProps> = ({
     }
   }, [isOpen, orderId, surveyId]);
 
-  // Countdown timer effect (visual only - modal closes after submission)
+  // Countdown timer effect - closes modal when countdown reaches 0
   useEffect(() => {
     if (showCompletion && countdown > 0) {
       const timer = setTimeout(() => {
         setCountdown(prev => prev - 1);
       }, 1000);
       return () => clearTimeout(timer);
+    } else if (showCompletion && countdown === 0) {
+      // Auto-close the modal when countdown reaches 0
+      console.log('📋 INTAKE-FORM: Countdown reached 0, auto-closing modal');
+      onComplete(responses);
     }
-  }, [showCompletion, countdown]);
+  }, [showCompletion, countdown, onComplete, responses]);
 
   // Handle answer selection
   const handleAnswerSelect = async (answer: string) => {
@@ -179,14 +183,13 @@ const IntakeFormModal: React.FC<IntakeFormModalProps> = ({
         console.log('📋 INTAKE-FORM: Last question completed, showing completion');
         setShowCompletion(true);
         
-        // Submit the form immediately
+        // Submit the form in the background (countdown effect will handle modal close)
         setTimeout(async () => {
           console.log('📋 INTAKE-FORM: Submitting final responses:', newResponses);
           await handleSubmit(newResponses);
-          // Close modal immediately after successful submission
-          console.log('📋 INTAKE-FORM: Form submitted successfully, closing modal');
-          onComplete(newResponses);
-        }, 2000); // Wait 2 seconds before submitting and closing
+          console.log('📋 INTAKE-FORM: Form submitted successfully, countdown will close modal');
+          // Note: Modal closes automatically when countdown reaches 0 via the useEffect
+        }, 500); // Submit form shortly after showing completion screen
       } else {
         console.log('📋 INTAKE-FORM: Moving to next question');
         setCurrentQuestionIndex(prev => prev + 1);
