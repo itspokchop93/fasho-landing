@@ -1,5 +1,5 @@
 import { NextApiRequest, NextApiResponse } from 'next';
-import { createServerClient } from '../../utils/supabase-server';
+import { createClient } from '../../utils/supabase/server';
 import { sendZapierWebhookServer } from '../../utils/zapier/webhookService';
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
@@ -23,7 +23,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     console.log('🔗 SEND-ZAPIER-WEBHOOK-API: Processing webhook request for event:', event_type);
 
     // Create server-side Supabase client
-    const supabase = createServerClient(req, res);
+    const supabase = createClient(req, res);
 
     // Prepare the webhook payload
     const payload = {
