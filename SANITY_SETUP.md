@@ -211,6 +211,307 @@ Once migrated, the Sanity version will take precedence over the legacy version.
 
 ---
 
+## External AI Blog Writer Integration
+
+This section documents how to configure an external AI Blog Writer to push draft posts to Sanity.
+
+### Overview
+
+The AI writer creates **draft posts** via the Sanity API. These drafts:
+- ✅ Appear in Sanity Studio for editing
+- ✅ Can be reviewed and published by your team
+- ❌ Do NOT appear on the public website until published
+
+### Required Configuration for AI Writer
+
+Provide these values to your AI writer application:
+
+```javascript
+// Sanity Configuration
+const config = {
+  projectId: 'vwqzooxn',
+  dataset: 'production',
+  apiVersion: '2024-01-01',
+  token: 'YOUR_WRITE_TOKEN', // See "Creating a Write Token" below
+  useCdn: false, // Must be false for writes
+};
+```
+
+### Creating a Write Token
+
+1. Go to [Sanity Manage → API → Tokens](https://www.sanity.io/manage/project/vwqzooxn/api/tokens)
+2. Click **"Add API token"**
+3. Configure:
+   - **Name**: `AI Blog Writer`
+   - **Permissions**: `Editor` (or `Write` if available)
+4. Copy the generated token
+5. Store it securely in your AI writer's environment variables
+
+⚠️ **Security Warning**: Never expose this token in client-side code or commit it to git.
+
+### Post Schema for AI Writer
+
+The AI writer should send posts in this format:
+
+```javascript
+const post = {
+  // Required: Use drafts.{unique-id} pattern for drafts
+  _id: `drafts.${generateUniqueId()}`,
+  _type: 'post',
+  
+  // Required fields
+  title: 'Your Post Title',
+  slug: {
+    _type: 'slug',
+    current: 'your-post-slug',
+  },
+  body: [
+    // Portable Text blocks (see below)
+  ],
+  
+  // Optional fields
+  excerpt: 'A brief summary of the post...',
+  seoTitle: 'SEO Title | Fasho Blog',
+  seoDescription: 'Meta description for search engines',
+  tags: ['music', 'promotion'],
+  readTime: 5,
+  
+  // Do NOT set publishedAt for drafts
+  // publishedAt: null, // Leave undefined or null
+};
+```
+
+### Portable Text Body Format
+
+The `body` field uses Sanity's Portable Text format:
+
+```javascript
+const body = [
+  // Paragraph
+  {
+    _type: 'block',
+    _key: 'unique-key-1',
+    style: 'normal',
+    markDefs: [],
+    children: [
+      {
+        _type: 'span',
+        _key: 'span-1',
+        text: 'This is a paragraph.',
+        marks: [],
+      },
+    ],
+  },
+  
+  // Heading
+  {
+    _type: 'block',
+    _key: 'unique-key-2',
+    style: 'h2', // h1, h2, h3, h4
+    markDefs: [],
+    children: [
+      {
+        _type: 'span',
+        _key: 'span-2',
+        text: 'This is a heading',
+        marks: [],
+      },
+    ],
+  },
+  
+  // Bold/Italic text
+  {
+    _type: 'block',
+    _key: 'unique-key-3',
+    style: 'normal',
+    markDefs: [],
+    children: [
+      {
+        _type: 'span',
+        _key: 'span-3',
+        text: 'This is bold',
+        marks: ['strong'], // 'em' for italic, 'underline', 'code'
+      },
+    ],
+  },
+  
+  // Link
+  {
+    _type: 'block',
+    _key: 'unique-key-4',
+    style: 'normal',
+    markDefs: [
+      {
+        _type: 'link',
+        _key: 'link-1',
+        href: 'https://example.com',
+      },
+    ],
+    children: [
+      {
+        _type: 'span',
+        _key: 'span-4',
+        text: 'Click here',
+        marks: ['link-1'],
+      },
+    ],
+  },
+  
+  // Blockquote
+  {
+    _type: 'block',
+    _key: 'unique-key-5',
+    style: 'blockquote',
+    markDefs: [],
+    children: [
+      {
+        _type: 'span',
+        _key: 'span-5',
+        text: 'This is a quote.',
+        marks: [],
+      },
+    ],
+  },
+];
+```
+
+### API Calls
+
+**Create or Update Draft:**
+
+```javascript
+import { createClient } from '@sanity/client';
+
+const client = createClient({
+  projectId: 'vwqzooxn',
+  dataset: 'production',
+  apiVersion: '2024-01-01',
+  token: process.env.SANITY_WRITE_TOKEN,
+  useCdn: false,
+});
+
+// Create or update (upsert)
+const result = await client.createOrReplace(post);
+console.log('Draft created:', result._id);
+```
+
+**Check if slug exists:**
+
+```javascript
+const existing = await client.fetch(
+  `*[_type == "post" && slug.current == $slug][0]._id`,
+  { slug: 'your-slug' }
+);
+
+if (existing) {
+  console.log('Slug already exists:', existing);
+}
+```
+
+### Draft vs Published
+
+- **Draft IDs** start with `drafts.` (e.g., `drafts.abc123`)
+- **Published IDs** do NOT have the `drafts.` prefix
+- When you click "Publish" in Studio, Sanity creates a published version
+- The website only displays published posts (drafts are filtered out)
+
+### Testing the Integration
+
+Run the test script included in this repo:
+
+```bash
+# Set your write token
+export SANITY_WRITE_TOKEN=your_token_here
+
+# Run the test
+node scripts/test-sanity-writer.js
+```
+
+This will:
+1. Create a test draft post
+2. Update it (upsert test)
+3. Verify it doesn't appear in published queries
+4. Provide instructions to verify in Studio
+
+### Workflow Summary
+
+1. **AI Writer** creates draft → `client.createOrReplace(post)`
+2. **Draft appears in Sanity Studio** (under "Blog Post" → shows as "Draft")
+3. **Editor reviews and publishes** in Studio
+4. **Webhook triggers** → `/api/sanity/revalidate`
+5. **Website updates** → Post appears on `/blog` and `/blog/[slug]`
+6. **Sitemap auto-updates** → `/sitemap.xml` is regenerated with the new post
+
+---
+
+## Sitemap Integration
+
+The sitemap automatically includes all published Sanity blog posts and updates when content changes.
+
+### Sitemap URLs
+
+| URL | Description |
+|-----|-------------|
+| `/sitemap.xml` | **Main sitemap** - Core pages + all blog posts (recommended for search engines) |
+| `/blog/sitemap.xml` | Blog-only sitemap (includes `/blog` index + all posts) |
+
+### How Auto-Update Works
+
+When you publish, update, or unpublish a post in Sanity:
+
+1. **Sanity webhook fires** → `POST /api/sanity/revalidate`
+2. **Webhook handler**:
+   - Revalidates affected blog pages (`/blog`, `/blog/[slug]`)
+   - **Regenerates the sitemap** via `forceSitemapUpdate()`
+3. **Sitemap cache is cleared** and fresh data is fetched from Sanity
+4. **Search engines** see updated sitemap on next crawl
+
+### Sitemap Features
+
+- **`<lastmod>`** uses Sanity's `_updatedAt` field for accurate timestamps
+- **Drafts are excluded** - Only published posts appear in sitemap
+- **Image sitemap** - Featured images are included with `<image:image>` tags
+- **News sitemap** - Recent posts (< 2 days) include `<news:news>` for Google News
+- **Caching** - 5-minute in-memory cache with stale-while-revalidate for performance
+
+### Webhook Configuration for Sitemap
+
+The existing webhook at `/api/sanity/revalidate` handles sitemap updates. Ensure it's configured in Sanity with these triggers:
+
+| Trigger | Sitemap Effect |
+|---------|----------------|
+| **Create** | New post added to sitemap (when published) |
+| **Update** | Post `<lastmod>` updated |
+| **Delete** | Post removed from sitemap |
+| **Publish** | Post added to sitemap |
+| **Unpublish** | Post removed from sitemap |
+
+### Testing Sitemap Updates
+
+1. **Publish a new post** in Sanity Studio
+2. **Wait 10-30 seconds** for webhook to process
+3. **Visit** `https://fasho.co/sitemap.xml?force=true` to force refresh
+4. **Verify** the new post appears in the sitemap
+
+### Sitemap Response Headers
+
+The sitemap API returns helpful debugging headers:
+
+```
+X-Sitemap-Core-Pages: 10
+X-Sitemap-Blog-Posts: 25
+X-Sitemap-Blog-Cache: HIT
+X-Sitemap-Blog-Age: 120
+```
+
+### CORS (Not Usually Needed)
+
+If your AI writer runs server-side (Node.js), CORS is not an issue. If it runs in a browser, add the origin to:
+
+[Sanity Manage → API → CORS Origins](https://www.sanity.io/manage/project/vwqzooxn/api/cors)
+
+---
+
 ## Support
 
 For issues with:

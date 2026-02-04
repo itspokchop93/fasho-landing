@@ -224,6 +224,14 @@ export default defineType({
         },
       ],
     }),
+    defineField({
+      name: 'featured',
+      title: 'Featured Post',
+      type: 'boolean',
+      group: 'settings',
+      description: 'Mark this post as featured to highlight it on the blog index',
+      initialValue: false,
+    }),
   ],
   preview: {
     select: {

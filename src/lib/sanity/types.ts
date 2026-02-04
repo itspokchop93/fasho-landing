@@ -70,6 +70,7 @@ export interface SanityBlogPost {
 // Simplified post type for list views
 export interface SanityBlogPostSummary {
   _id: string;
+  _updatedAt?: string;
   title: string;
   slug: SanitySlug;
   excerpt?: string;

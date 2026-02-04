@@ -7,6 +7,7 @@ import type { SanityBlogPost, SanityBlogPostSummary, SanityPostResult } from './
 // GROQ query projections
 const postSummaryProjection = `{
   _id,
+  _updatedAt,
   title,
   "slug": slug.current,
   excerpt,
@@ -39,6 +40,7 @@ const postFullProjection = `{
 }`;
 
 // Fetch all published posts for the blog index
+// IMPORTANT: Excludes drafts explicitly to ensure AI writer drafts don't appear publicly
 export async function getPublishedPosts(limit = 50): Promise<SanityBlogPostSummary[]> {
   if (!isSanityConfigured()) {
     console.log('⚠️ SANITY: Not configured, returning empty array for published posts');
@@ -51,7 +53,8 @@ export async function getPublishedPosts(limit = 50): Promise<SanityBlogPostSumma
     return [];
   }
 
-  const query = `*[_type == "post" && defined(publishedAt) && publishedAt <= now()] | order(publishedAt desc) [0...$limit] ${postSummaryProjection}`;
+  // Explicitly exclude drafts: !(_id in path("drafts.**"))
+  const query = `*[_type == "post" && defined(publishedAt) && publishedAt <= now() && !(_id in path("drafts.**"))] | order(publishedAt desc) [0...$limit] ${postSummaryProjection}`;
 
   try {
     const posts = await client.fetch<SanityBlogPostSummary[]>(query, { limit });
@@ -64,6 +67,7 @@ export async function getPublishedPosts(limit = 50): Promise<SanityBlogPostSumma
 }
 
 // Fetch a single published post by slug
+// IMPORTANT: Excludes drafts explicitly to ensure AI writer drafts don't appear publicly
 export async function getPostBySlug(slug: string): Promise<SanityBlogPost | null> {
   if (!isSanityConfigured()) {
     console.log('⚠️ SANITY: Not configured, returning null for post by slug');
@@ -76,7 +80,8 @@ export async function getPostBySlug(slug: string): Promise<SanityBlogPost | null
     return null;
   }
 
-  const query = `*[_type == "post" && slug.current == $slug && defined(publishedAt) && publishedAt <= now()][0] ${postFullProjection}`;
+  // Explicitly exclude drafts: !(_id in path("drafts.**"))
+  const query = `*[_type == "post" && slug.current == $slug && defined(publishedAt) && publishedAt <= now() && !(_id in path("drafts.**"))][0] ${postFullProjection}`;
 
   try {
     const post = await client.fetch<SanityBlogPost | null>(query, { slug });
@@ -104,7 +109,8 @@ export async function getPostByRedirectSlug(slug: string): Promise<{ post: Sanit
     return null;
   }
 
-  const query = `*[_type == "post" && $slug in redirectFrom && defined(publishedAt) && publishedAt <= now()][0] ${postFullProjection}`;
+  // Explicitly exclude drafts: !(_id in path("drafts.**"))
+  const query = `*[_type == "post" && $slug in redirectFrom && defined(publishedAt) && publishedAt <= now() && !(_id in path("drafts.**"))][0] ${postFullProjection}`;
 
   try {
     const post = await client.fetch<SanityBlogPost | null>(query, { slug });
@@ -153,7 +159,8 @@ export async function getAllPublishedSlugs(): Promise<string[]> {
     return [];
   }
 
-  const query = `*[_type == "post" && defined(publishedAt) && publishedAt <= now()] { "slug": slug.current }`;
+  // Explicitly exclude drafts for sitemap
+  const query = `*[_type == "post" && defined(publishedAt) && publishedAt <= now() && !(_id in path("drafts.**"))] { "slug": slug.current }`;
 
   try {
     const results = await client.fetch<{ slug: string }[]>(query);
@@ -177,8 +184,8 @@ export async function getFeaturedPosts(limit = 5): Promise<SanityBlogPostSummary
     return [];
   }
 
-  // Get the most recent posts with cover images as featured
-  const query = `*[_type == "post" && defined(publishedAt) && publishedAt <= now() && defined(coverImage)] | order(publishedAt desc) [0...$limit] ${postSummaryProjection}`;
+  // Get the most recent posts with cover images as featured (exclude drafts)
+  const query = `*[_type == "post" && defined(publishedAt) && publishedAt <= now() && defined(coverImage) && !(_id in path("drafts.**"))] | order(publishedAt desc) [0...$limit] ${postSummaryProjection}`;
 
   try {
     const posts = await client.fetch<SanityBlogPostSummary[]>(query, { limit });
@@ -201,8 +208,8 @@ export async function getRelatedPosts(currentPostId: string, limit = 5): Promise
     return [];
   }
 
-  // Get recent posts excluding the current one
-  const query = `*[_type == "post" && _id != $currentPostId && defined(publishedAt) && publishedAt <= now()] | order(publishedAt desc) [0...$limit] ${postSummaryProjection}`;
+  // Get recent posts excluding the current one (exclude drafts)
+  const query = `*[_type == "post" && _id != $currentPostId && defined(publishedAt) && publishedAt <= now() && !(_id in path("drafts.**"))] | order(publishedAt desc) [0...$limit] ${postSummaryProjection}`;
 
   try {
     const posts = await client.fetch<SanityBlogPostSummary[]>(query, { currentPostId, limit });

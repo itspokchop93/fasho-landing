@@ -5,8 +5,13 @@
 // URL: https://fasho.co/api/sanity/revalidate
 // Secret: Use SANITY_WEBHOOK_SECRET environment variable
 // Events: Create, Update, Delete for "post" document type
+//
+// This webhook:
+// 1. Revalidates affected blog pages (/blog, /blog/[slug])
+// 2. Triggers sitemap regeneration for SEO updates
 
 import type { NextApiRequest, NextApiResponse } from 'next';
+import { forceSitemapUpdate } from '../../../../plugins/blog/utils/sitemap-cache';
 
 // Type for the Sanity webhook payload
 interface SanityWebhookPayload {
@@ -115,9 +120,20 @@ export default async function handler(
       return { success: false, error: String(result.reason) };
     });
     
+    // Trigger sitemap regeneration so new/updated/deleted posts appear in sitemap
+    console.log('🗺️ SANITY WEBHOOK: Triggering sitemap regeneration...');
+    try {
+      await forceSitemapUpdate();
+      console.log('✅ SANITY WEBHOOK: Sitemap regenerated successfully');
+    } catch (sitemapError) {
+      console.error('❌ SANITY WEBHOOK: Sitemap regeneration failed:', sitemapError);
+      // Don't fail the webhook if sitemap regeneration fails
+    }
+    
     return res.status(200).json({
       message: 'Revalidation triggered',
       revalidated: pathsToRevalidate,
+      sitemapUpdated: true,
       results
     });
     

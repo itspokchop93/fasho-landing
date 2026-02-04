@@ -50,9 +50,13 @@ export async function generateSitemapXML(): Promise<string> {
               featuredImageUrl = urlFor(post.coverImage).width(1200).height(630).fit('crop').auto('format').url();
             }
             
+            // Use _updatedAt for lastmod (most accurate for sitemap SEO)
+            // Falls back to publishedAt if _updatedAt is not available
+            const updatedAt = post._updatedAt || post.publishedAt || new Date().toISOString();
+            
             allPosts.push({
               slug,
-              updatedAt: post.publishedAt || new Date().toISOString(),
+              updatedAt,
               publishedAt: post.publishedAt || new Date().toISOString(),
               title: post.title,
               metaDescription: post.excerpt,

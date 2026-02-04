@@ -100,7 +100,21 @@ const nextConfig = {
         ],
       },
       {
-        // Sitemap caching
+        // Main sitemap caching (core pages + blog)
+        source: '/api/sitemap.xml',
+        headers: [
+          {
+            key: 'Content-Type',
+            value: 'application/xml; charset=utf-8',
+          },
+          {
+            key: 'Cache-Control',
+            value: 'public, s-maxage=3600, stale-while-revalidate=86400',
+          },
+        ],
+      },
+      {
+        // Blog-only sitemap caching
         source: '/api/blog/sitemap.xml',
         headers: [
           {
@@ -135,10 +149,10 @@ const nextConfig = {
         destination: '/api/blog/rss.xml',
         permanent: true,
       },
-      // Sitemap discovery
+      // Sitemap discovery (redirects to main sitemap)
       {
         source: '/sitemap',
-        destination: '/api/blog/sitemap.xml',
+        destination: '/sitemap.xml',
         permanent: true,
       },
     ];
@@ -147,7 +161,12 @@ const nextConfig = {
   // Rewrites for better SEO URLs
   async rewrites() {
     return [
-      // RSS and sitemap rewrites for better SEO discovery
+      // Main sitemap (combines core pages + blog posts)
+      {
+        source: '/sitemap.xml',
+        destination: '/api/sitemap.xml',
+      },
+      // RSS and blog-specific sitemap rewrites for better SEO discovery
       {
         source: '/blog/rss.xml',
         destination: '/api/blog/rss.xml',
