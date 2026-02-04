@@ -1,0 +1,6 @@
+# Sanity Studio - deployed separately via sanity deploy
+sanity-studio/
+
+# Documentation
+docs/
+SANITY_SETUP.md
