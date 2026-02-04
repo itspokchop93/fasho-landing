@@ -1,19 +1,23 @@
 // Blog List Page
 // Public page displaying all published blog posts with SEO optimization
+// Integrates Sanity CMS (primary) with legacy Supabase fallback
 
 import { GetServerSideProps } from 'next';
 import Head from 'next/head';
 import Link from 'next/link';
+import Image from 'next/image';
 import { useState, useEffect } from 'react';
 import { getBlogSupabaseClient } from '../../../plugins/blog/utils/supabase';
-import { BlogPost, BlogListResponse } from '../../../plugins/blog/types/blog';
+import { BlogPost } from '../../../plugins/blog/types/blog';
 import { schemaGenerator } from '../../../plugins/blog/utils/schema-generator';
 import BlogHeader from '../../components/BlogHeader';
 import Footer from '../../components/Footer';
+import { getPublishedPosts, getFeaturedPosts, isSanityConfigured, urlFor } from '../../lib/sanity';
+import { UnifiedBlogPost, sanityToUnified, legacyToUnified, mergePostLists, sanitizeForSerialization } from '../../lib/sanity/unified-types';
 
 interface BlogPageProps {
-  posts: BlogPost[];
-  featuredPosts: BlogPost[];
+  posts: UnifiedBlogPost[];
+  featuredPosts: UnifiedBlogPost[];
   pagination: {
     page: number;
     limit: number;
@@ -25,10 +29,11 @@ interface BlogPageProps {
     tag?: string;
     category?: string;
   };
+  sanityEnabled: boolean;
 }
 
 // Featured Hero Carousel Component
-const FeaturedHeroCarousel = ({ featuredPosts }: { featuredPosts: BlogPost[] }) => {
+const FeaturedHeroCarousel = ({ featuredPosts }: { featuredPosts: UnifiedBlogPost[] }) => {
   const [currentIndex, setCurrentIndex] = useState(0);
 
   useEffect(() => {
@@ -65,11 +70,18 @@ const FeaturedHeroCarousel = ({ featuredPosts }: { featuredPosts: BlogPost[] }) 
         >
           {/* Background Image */}
           <div className="absolute inset-0" style={{ zIndex: 1 }}>
-            <img
-              src={post.featured_image_url || '/default-blog-bg.jpg'}
-              alt={post.title}
-              className="w-full h-full object-cover"
-            />
+            {post.coverImageUrl ? (
+              <Image
+                src={post.coverImageUrl}
+                alt={post.title}
+                fill
+                className="object-cover"
+                priority={index === 0}
+                sizes="100vw"
+              />
+            ) : (
+              <div className="w-full h-full bg-gradient-to-br from-[#0a0a13] to-[#1a1a2e]" />
+            )}
             <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/60 to-black/40" style={{ zIndex: 2 }}></div>
           </div>
 
@@ -87,12 +99,12 @@ const FeaturedHeroCarousel = ({ featuredPosts }: { featuredPosts: BlogPost[] }) 
                 </h1>
               </Link>
               <p className="text-xl text-gray-200 mb-8 leading-relaxed" style={{ zIndex: 4 }}>
-                {post.excerpt || post.content.substring(0, 200) + '...'}
+                {post.excerpt || (post.content ? post.content.substring(0, 200) + '...' : '')}
               </p>
               <div className="flex items-center space-x-6 mb-8" style={{ zIndex: 4 }}>
-                <span className="text-gray-300">{formatDate(post.published_at || post.created_at)}</span>
+                <span className="text-gray-300">{formatDate(post.publishedAt)}</span>
                 <span className="text-gray-300">•</span>
-                <span className="text-gray-300">{post.read_time || '5'} min read</span>
+                <span className="text-gray-300">{post.readTime || 5} min read</span>
               </div>
               <Link
                 href={`/blog/${post.slug}`}
@@ -130,7 +142,7 @@ const FeaturedHeroCarousel = ({ featuredPosts }: { featuredPosts: BlogPost[] }) 
   );
 };
 
-export default function BlogPage({ posts, featuredPosts, pagination, filters }: BlogPageProps) {
+export default function BlogPage({ posts, featuredPosts, pagination, filters, sanityEnabled }: BlogPageProps) {
   const [searchTerm, setSearchTerm] = useState(filters.search || '');
 
   // Format date for display
@@ -189,15 +201,15 @@ export default function BlogPage({ posts, featuredPosts, pagination, filters }: 
       "blogPost": posts.slice(0, 10).map(post => ({
         "@type": "BlogPosting",
         "headline": post.title,
-        "description": post.meta_description || post.excerpt,
+        "description": post.metaDescription || post.excerpt,
         "url": `https://fasho.co/blog/${post.slug}`,
-        "datePublished": post.published_at || post.created_at,
-        "dateModified": post.updated_at,
+        "datePublished": post.publishedAt,
+        "dateModified": post.updatedAt || post.publishedAt,
         "author": {
           "@type": "Person",
-          "name": post.author_name
+          "name": post.authorName || "Fasho Team"
         },
-        "image": post.featured_image_url
+        "image": post.coverImageUrl
       }))
     };
 
@@ -276,7 +288,9 @@ export default function BlogPage({ posts, featuredPosts, pagination, filters }: 
         {/* Performance Hints */}
         <link rel="dns-prefetch" href="//fonts.googleapis.com" />
         <link rel="dns-prefetch" href="//www.google-analytics.com" />
+        <link rel="dns-prefetch" href="//cdn.sanity.io" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+        <link rel="preconnect" href="https://cdn.sanity.io" crossOrigin="anonymous" />
         
         {/* Theme Color */}
         <meta name="theme-color" content="#2563eb" />
@@ -413,13 +427,14 @@ export default function BlogPage({ posts, featuredPosts, pagination, filters }: 
                     className="bg-gradient-to-br from-white/10 to-white/5 backdrop-blur-sm rounded-2xl shadow-xl overflow-hidden hover:scale-105 transition-all duration-300 border border-white/20 hover:border-[#59e3a5]/50 hover:shadow-2xl hover:shadow-[#59e3a5]/20"
                     style={{ zIndex: 4 }}
                   >
-                    {post.featured_image_url && (
+                    {post.coverImageUrl && (
                       <div className="aspect-video relative overflow-hidden">
-                        <img
-                          src={post.featured_image_url}
+                        <Image
+                          src={post.coverImageUrl}
                           alt={post.title}
-                          className="w-full h-full object-cover hover:scale-110 transition-transform duration-500"
-                          style={{ zIndex: 5 }}
+                          fill
+                          className="object-cover hover:scale-110 transition-transform duration-500"
+                          sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
                         />
                         <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" style={{ zIndex: 6 }}></div>
                       </div>
@@ -451,13 +466,13 @@ export default function BlogPage({ posts, featuredPosts, pagination, filters }: 
                         </Link>
                       </h2>
                       <p className="text-gray-300 text-sm mb-4 line-clamp-3 leading-relaxed">
-                        {post.excerpt || post.content.substring(0, 150) + '...'}
+                        {post.excerpt || (post.content ? post.content.substring(0, 150) + '...' : '')}
                       </p>
                       <div className="flex items-center justify-between text-sm text-gray-400">
-                        <time dateTime={post.published_at || post.created_at}>
-                          {formatDate(post.published_at || post.created_at)}
+                        <time dateTime={post.publishedAt}>
+                          {formatDate(post.publishedAt)}
                         </time>
-                        <span>{getReadTime(post.read_time)}</span>
+                        <span>{getReadTime(post.readTime)}</span>
                       </div>
                     </div>
                   </article>
@@ -591,8 +606,6 @@ export default function BlogPage({ posts, featuredPosts, pagination, filters }: 
 
 export const getServerSideProps: GetServerSideProps = async (context) => {
   try {
-    const supabase = getBlogSupabaseClient();
-    
     // Extract query parameters
     const {
       page = '1',
@@ -604,93 +617,172 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
     const pageNum = Math.max(1, parseInt(page as string));
     const limit = 12; // Posts per page
 
-    // Build query
-    let query = supabase
-      .from('blog_posts')
-      .select(`
-        id,
-        title,
-        content,
-        excerpt,
-        slug,
-        tags,
-        featured_image_url,
-        author_name,
-        read_time,
-        view_count,
-        published_at,
-        created_at
-      `, { count: 'exact' })
-      .eq('status', 'published')
-      .not('published_at', 'is', null)
-      .lte('published_at', new Date().toISOString());
+    // Check if Sanity is configured
+    const sanityEnabled = isSanityConfigured();
+    console.log(`🔄 BLOG INDEX: Sanity enabled: ${sanityEnabled}`);
 
-    // Apply filters
-    if (search && typeof search === 'string') {
-      query = query.or(`title.ilike.%${search}%,content.ilike.%${search}%,excerpt.ilike.%${search}%`);
-    }
-    
-    if (tag && typeof tag === 'string') {
-      query = query.contains('tags', [tag]);
+    // Unified arrays to hold posts from both sources
+    let unifiedPosts: UnifiedBlogPost[] = [];
+    let unifiedFeaturedPosts: UnifiedBlogPost[] = [];
+    let totalCount = 0;
+
+    // 1. Fetch from Sanity (PRIMARY SOURCE)
+    if (sanityEnabled) {
+      try {
+        console.log('📡 BLOG INDEX: Fetching posts from Sanity...');
+        const [sanityPosts, sanityFeatured] = await Promise.all([
+          getPublishedPosts(100), // Get more to allow for filtering
+          getFeaturedPosts(5)
+        ]);
+
+        // Convert Sanity posts to unified format
+        const sanityCombined = sanityPosts.map(sanityToUnified);
+        const sanityFeaturedUnified = sanityFeatured.map(sanityToUnified);
+
+        console.log(`✅ BLOG INDEX: Fetched ${sanityCombined.length} Sanity posts`);
+
+        // Filter by search/tag if provided
+        let filteredSanity = sanityCombined;
+        if (search && typeof search === 'string') {
+          const searchLower = search.toLowerCase();
+          filteredSanity = filteredSanity.filter(post => 
+            post.title.toLowerCase().includes(searchLower) ||
+            (post.excerpt && post.excerpt.toLowerCase().includes(searchLower))
+          );
+        }
+        if (tag && typeof tag === 'string') {
+          filteredSanity = filteredSanity.filter(post => 
+            post.tags && post.tags.includes(tag)
+          );
+        }
+
+        unifiedPosts = filteredSanity;
+        unifiedFeaturedPosts = sanityFeaturedUnified;
+      } catch (sanityError) {
+        console.error('❌ BLOG INDEX: Sanity fetch error:', sanityError);
+        // Continue with legacy fallback
+      }
     }
 
-    // Apply pagination and ordering
+    // 2. Fetch from Legacy Supabase (FALLBACK)
+    try {
+      console.log('📡 BLOG INDEX: Fetching posts from legacy Supabase...');
+      const supabase = getBlogSupabaseClient();
+      
+      // Build query for legacy posts
+      let query = supabase
+        .from('blog_posts')
+        .select(`
+          id,
+          title,
+          content,
+          excerpt,
+          slug,
+          tags,
+          featured_image_url,
+          author_name,
+          read_time,
+          view_count,
+          published_at,
+          created_at,
+          updated_at,
+          meta_title,
+          meta_description,
+          open_graph_image
+        `, { count: 'exact' })
+        .eq('status', 'published')
+        .not('published_at', 'is', null)
+        .lte('published_at', new Date().toISOString());
+
+      // Apply filters for legacy
+      if (search && typeof search === 'string') {
+        query = query.or(`title.ilike.%${search}%,content.ilike.%${search}%,excerpt.ilike.%${search}%`);
+      }
+      
+      if (tag && typeof tag === 'string') {
+        query = query.contains('tags', [tag]);
+      }
+
+      query = query.order('published_at', { ascending: false });
+
+      const { data: legacyPosts, error: legacyError, count } = await query;
+
+      if (legacyError) {
+        console.error('❌ BLOG INDEX: Legacy fetch error:', legacyError);
+      } else if (legacyPosts) {
+        console.log(`✅ BLOG INDEX: Fetched ${legacyPosts.length} legacy posts`);
+        
+        // Convert legacy posts to unified format
+        const legacyUnified = legacyPosts.map(legacyToUnified);
+        
+        // Merge with Sanity posts (Sanity takes precedence for duplicate slugs)
+        unifiedPosts = mergePostLists(unifiedPosts, legacyUnified);
+        totalCount = count || unifiedPosts.length;
+
+        // Get legacy featured posts if no Sanity featured
+        if (unifiedFeaturedPosts.length === 0) {
+          const { data: legacyFeatured } = await supabase
+            .from('blog_posts')
+            .select(`
+              id,
+              title,
+              content,
+              excerpt,
+              slug,
+              featured_image_url,
+              author_name,
+              read_time,
+              published_at,
+              created_at
+            `)
+            .eq('status', 'published')
+            .not('published_at', 'is', null)
+            .not('featured_image_url', 'is', null)
+            .lte('published_at', new Date().toISOString())
+            .order('published_at', { ascending: false })
+            .limit(5);
+
+          if (legacyFeatured) {
+            unifiedFeaturedPosts = legacyFeatured.map(legacyToUnified);
+          }
+        }
+      }
+    } catch (legacyError) {
+      console.error('❌ BLOG INDEX: Legacy system error:', legacyError);
+    }
+
+    // 3. Apply pagination
     const offset = (pageNum - 1) * limit;
-    query = query
-      .order('published_at', { ascending: false })
-      .range(offset, offset + limit - 1);
+    const paginatedPosts = unifiedPosts.slice(offset, offset + limit);
+    const totalPages = Math.ceil(unifiedPosts.length / limit);
 
-    const { data: posts, error, count } = await query;
+    console.log(`📊 BLOG INDEX: Returning ${paginatedPosts.length} posts (page ${pageNum}/${totalPages})`);
 
-    if (error) {
-      console.error('Error fetching blog posts:', error);
-      throw error;
-    }
-
-    // Fetch featured posts for carousel (latest 5 posts with images)
-    const { data: featuredPosts } = await supabase
-      .from('blog_posts')
-      .select(`
-        id,
-        title,
-        content,
-        excerpt,
-        slug,
-        featured_image_url,
-        author_name,
-        read_time,
-        published_at,
-        created_at
-      `)
-      .eq('status', 'published')
-      .not('published_at', 'is', null)
-      .not('featured_image_url', 'is', null)
-      .lte('published_at', new Date().toISOString())
-      .order('published_at', { ascending: false })
-      .limit(5);
-
-    const totalPages = Math.ceil((count || 0) / limit);
+    // Sanitize posts for Next.js serialization (convert undefined to null)
+    const sanitizedPosts = paginatedPosts.map(sanitizeForSerialization);
+    const sanitizedFeatured = unifiedFeaturedPosts.map(sanitizeForSerialization);
 
     return {
       props: {
-        posts: posts || [],
-        featuredPosts: featuredPosts || [],
+        posts: sanitizedPosts,
+        featuredPosts: sanitizedFeatured,
         pagination: {
           page: pageNum,
           limit,
-          total: count || 0,
+          total: unifiedPosts.length,
           totalPages
         },
         filters: {
           search: search || null,
           tag: tag || null,
           category: category || null
-        }
+        },
+        sanityEnabled
       }
     };
 
   } catch (error) {
-    console.error('Error in blog page getServerSideProps:', error);
+    console.error('❌ BLOG INDEX: Critical error in getServerSideProps:', error);
     
     return {
       props: {
@@ -702,7 +794,8 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
           total: 0,
           totalPages: 0
         },
-        filters: {}
+        filters: {},
+        sanityEnabled: false
       }
     };
   }

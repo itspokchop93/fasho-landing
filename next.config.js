@@ -20,6 +20,16 @@ const nextConfig = {
         protocol: 'https',
         hostname: 'www.fasho.co',
       },
+      // Sanity CMS image CDN
+      {
+        protocol: 'https',
+        hostname: 'cdn.sanity.io',
+      },
+      // Supabase storage for legacy blog images
+      {
+        protocol: 'https',
+        hostname: 'vknvzypshcshynbfrjzb.supabase.co',
+      },
     ],
     formats: ['image/webp', 'image/avif'],
     minimumCacheTTL: 60 * 60 * 24 * 365, // 1 year cache

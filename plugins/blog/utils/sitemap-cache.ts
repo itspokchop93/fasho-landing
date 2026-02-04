@@ -1,12 +1,25 @@
 // Blog Sitemap Cache Manager
 // Handles caching and auto-regeneration of blog sitemap for lightning-fast SEO updates
+// Now includes Sanity CMS posts alongside legacy Supabase posts
 
 import { getBlogSupabaseClient } from './supabase';
+import { getPublishedPosts, getAllPublishedSlugs, isSanityConfigured, urlFor } from '../../../src/lib/sanity';
 
 interface SitemapCache {
   xml: string;
   lastUpdated: string;
   postCount: number;
+}
+
+interface SitemapPost {
+  slug: string;
+  updatedAt: string;
+  publishedAt: string;
+  title: string;
+  metaDescription?: string;
+  featuredImageUrl?: string;
+  tags?: string[];
+  source: 'sanity' | 'legacy';
 }
 
 // In-memory cache for sitemap
@@ -18,21 +31,84 @@ export async function generateSitemapXML(): Promise<string> {
   console.log('🗺️ SITEMAP: Generating fresh sitemap...');
   
   try {
-    const supabase = getBlogSupabaseClient();
+    const allPosts: SitemapPost[] = [];
+    const seenSlugs = new Set<string>();
 
-    // Get all published blog posts
-    const { data: posts, error } = await supabase
-      .from('blog_posts')
-      .select('slug, updated_at, published_at, created_at, title, meta_description, featured_image_url, tags')
-      .eq('status', 'published')
-      .not('published_at', 'is', null)
-      .lte('published_at', new Date().toISOString())
-      .order('updated_at', { ascending: false });
-
-    if (error) {
-      console.error('❌ SITEMAP: Error fetching posts:', error);
-      throw error;
+    // 1. Fetch from Sanity (PRIMARY SOURCE)
+    if (isSanityConfigured()) {
+      try {
+        console.log('📡 SITEMAP: Fetching Sanity posts...');
+        const sanityPosts = await getPublishedPosts(500); // Get all for sitemap
+        
+        for (const post of sanityPosts) {
+          const slug = typeof post.slug === 'string' ? post.slug : post.slug?.current;
+          if (slug && !seenSlugs.has(slug)) {
+            seenSlugs.add(slug);
+            
+            let featuredImageUrl: string | undefined;
+            if (post.coverImage?.asset?._ref) {
+              featuredImageUrl = urlFor(post.coverImage).width(1200).height(630).fit('crop').auto('format').url();
+            }
+            
+            allPosts.push({
+              slug,
+              updatedAt: post.publishedAt || new Date().toISOString(),
+              publishedAt: post.publishedAt || new Date().toISOString(),
+              title: post.title,
+              metaDescription: post.excerpt,
+              featuredImageUrl,
+              tags: post.tags,
+              source: 'sanity'
+            });
+          }
+        }
+        console.log(`✅ SITEMAP: Added ${sanityPosts.length} Sanity posts`);
+      } catch (sanityError) {
+        console.error('❌ SITEMAP: Sanity fetch error:', sanityError);
+      }
     }
+
+    // 2. Fetch from Legacy Supabase (for posts not in Sanity)
+    try {
+      const supabase = getBlogSupabaseClient();
+
+      const { data: legacyPosts, error } = await supabase
+        .from('blog_posts')
+        .select('slug, updated_at, published_at, created_at, title, meta_description, featured_image_url, tags')
+        .eq('status', 'published')
+        .not('published_at', 'is', null)
+        .lte('published_at', new Date().toISOString())
+        .order('updated_at', { ascending: false });
+
+      if (error) {
+        console.error('❌ SITEMAP: Error fetching legacy posts:', error);
+      } else if (legacyPosts) {
+        let legacyCount = 0;
+        for (const post of legacyPosts) {
+          // Only add if not already from Sanity (Sanity takes precedence)
+          if (!seenSlugs.has(post.slug)) {
+            seenSlugs.add(post.slug);
+            legacyCount++;
+            allPosts.push({
+              slug: post.slug,
+              updatedAt: post.updated_at || post.published_at || new Date().toISOString(),
+              publishedAt: post.published_at || post.created_at,
+              title: post.title,
+              metaDescription: post.meta_description,
+              featuredImageUrl: post.featured_image_url,
+              tags: post.tags,
+              source: 'legacy'
+            });
+          }
+        }
+        console.log(`✅ SITEMAP: Added ${legacyCount} legacy posts (${legacyPosts.length - legacyCount} duplicates skipped)`);
+      }
+    } catch (legacyError) {
+      console.error('❌ SITEMAP: Legacy fetch error:', legacyError);
+    }
+
+    // Sort all posts by updated date
+    allPosts.sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime());
 
     // Generate sitemap XML
     const baseUrl = process.env.NODE_ENV === 'production' 
@@ -53,21 +129,10 @@ export async function generateSitemapXML(): Promise<string> {
   </url>`;
 
     // Enhanced blog posts with SEO data
-    if (posts && posts.length > 0) {
-      // Get additional SEO data for enhanced sitemap
-      const { data: postsWithSEO, error: seoError } = await supabase
-        .from('blog_posts')
-        .select('slug, updated_at, published_at, created_at, title, meta_description, featured_image_url, tags')
-        .eq('status', 'published')
-        .not('published_at', 'is', null)
-        .lte('published_at', new Date().toISOString())
-        .order('updated_at', { ascending: false });
-
-      const enhancedPosts = postsWithSEO || posts;
-
-      enhancedPosts.forEach((post) => {
-        const lastmod = post.updated_at || post.published_at || currentDate;
-        const publishedDate = post.published_at || post.created_at;
+    if (allPosts.length > 0) {
+      allPosts.forEach((post) => {
+        const lastmod = post.updatedAt || post.publishedAt || currentDate;
+        const publishedDate = post.publishedAt;
         const isRecent = new Date(publishedDate).getTime() > Date.now() - (7 * 24 * 60 * 60 * 1000);
         
         sitemap += `
@@ -78,13 +143,13 @@ export async function generateSitemapXML(): Promise<string> {
     <priority>${isRecent ? '0.9' : '0.7'}</priority>`;
 
         // Add image sitemap if featured image exists
-        if (post.featured_image_url) {
+        if (post.featuredImageUrl) {
           const safeTitle = (post.title || '').replace(/[<>&"']/g, '');
-          const safeDescription = (post.meta_description || post.title || '').replace(/[<>&"']/g, '');
+          const safeDescription = (post.metaDescription || post.title || '').replace(/[<>&"']/g, '');
           
           sitemap += `
     <image:image>
-      <image:loc>${post.featured_image_url}</image:loc>
+      <image:loc>${post.featuredImageUrl}</image:loc>
       <image:title>${safeTitle}</image:title>
       <image:caption>${safeDescription}</image:caption>
     </image:image>`;
@@ -116,7 +181,7 @@ export async function generateSitemapXML(): Promise<string> {
     sitemap += `
 </urlset>`;
 
-    console.log(`✅ SITEMAP: Generated sitemap with ${posts?.length || 0} posts`);
+    console.log(`✅ SITEMAP: Generated sitemap with ${allPosts.length} total posts`);
     return sitemap;
 
   } catch (error) {
