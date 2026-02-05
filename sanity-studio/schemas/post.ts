@@ -130,8 +130,9 @@ export default defineType({
       title: 'Published At',
       type: 'datetime',
       group: 'content',
-      description: 'Set to schedule the post for a future date',
+      description: 'Required! Set the publish date. Use a future date to schedule.',
       initialValue: () => new Date().toISOString(),
+      validation: (Rule) => Rule.required().error('Published At date is required for the post to appear on the website'),
     }),
     defineField({
       name: 'tags',

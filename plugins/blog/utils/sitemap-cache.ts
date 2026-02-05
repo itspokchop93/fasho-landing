@@ -26,6 +26,17 @@ interface SitemapPost {
 let sitemapCache: SitemapCache | null = null;
 let isRegenerating = false;
 
+// Escape special XML characters to prevent parsing errors
+function escapeXml(str: string): string {
+  if (!str) return '';
+  return str
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&apos;');
+}
+
 // Generate fresh sitemap XML
 export async function generateSitemapXML(): Promise<string> {
   console.log('🗺️ SITEMAP: Generating fresh sitemap...');
@@ -148,12 +159,13 @@ export async function generateSitemapXML(): Promise<string> {
 
         // Add image sitemap if featured image exists
         if (post.featuredImageUrl) {
-          const safeTitle = (post.title || '').replace(/[<>&"']/g, '');
-          const safeDescription = (post.metaDescription || post.title || '').replace(/[<>&"']/g, '');
+          const safeImageUrl = escapeXml(post.featuredImageUrl);
+          const safeTitle = escapeXml(post.title || '');
+          const safeDescription = escapeXml(post.metaDescription || post.title || '');
           
           sitemap += `
     <image:image>
-      <image:loc>${post.featuredImageUrl}</image:loc>
+      <image:loc>${safeImageUrl}</image:loc>
       <image:title>${safeTitle}</image:title>
       <image:caption>${safeDescription}</image:caption>
     </image:image>`;
@@ -162,8 +174,8 @@ export async function generateSitemapXML(): Promise<string> {
         // Add news sitemap for recent articles (within 2 days for Google News)
         const isBrandNew = new Date(publishedDate).getTime() > Date.now() - (2 * 24 * 60 * 60 * 1000);
         if (isBrandNew && post.title) {
-          const safeTitle = post.title.replace(/[<>&"']/g, '');
-          const keywords = (post.tags || []).join(', ');
+          const safeNewsTitle = escapeXml(post.title);
+          const keywords = escapeXml((post.tags || []).join(', '));
           
           sitemap += `
     <news:news>
@@ -172,7 +184,7 @@ export async function generateSitemapXML(): Promise<string> {
         <news:language>en</news:language>
       </news:publication>
       <news:publication_date>${publishedDate}</news:publication_date>
-      <news:title>${safeTitle}</news:title>
+      <news:title>${safeNewsTitle}</news:title>
       <news:keywords>${keywords}</news:keywords>
     </news:news>`;
         }
