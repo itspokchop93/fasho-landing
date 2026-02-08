@@ -1,7 +1,7 @@
 import { NextApiRequest, NextApiResponse } from 'next';
 import { createAdminClient } from '../../../../utils/supabase/server';
 import { requireAdminAuth, AdminUser } from '../../../../utils/admin/auth';
-import { submitFollowizOrder, getFollowizBalance, getFollowizServices } from '../../../../utils/followiz-api';
+import { submitFollowizOrder, getFollowizBalance } from '../../../../utils/followiz-api';
 
 interface SubmitPlaylistPurchaseBody {
   playlistId: string;
@@ -13,33 +13,28 @@ interface SubmitPlaylistPurchaseBody {
   intervalMinutes?: number | null;
 }
 
-// Helper function to get service info from Followiz API
-async function getServiceInfo(serviceId: string): Promise<{ name: string | null; price: number | null }> {
-  try {
-    const result = await getFollowizServices();
-    
-    if (!result.success || !result.services) {
-      return { name: null, price: null };
-    }
-
-    const service = result.services.find(s => s.service.toString() === serviceId);
-    
-    if (service) {
-      return { name: service.name, price: parseFloat(service.rate) };
-    }
-    
-    return { name: null, price: null };
-  } catch (error) {
-    console.error('Error fetching service info:', error);
-    return { name: null, price: null };
-  }
+interface OrderSet {
+  id: string;
+  package_name: string;
+  service_id: string;
+  quantity: number;
+  drip_runs: number | null;
+  interval_minutes: number | null;
+  price_per_1k: number | null;
+  set_cost: number | null;
 }
 
-// Calculate cost based on quantity and price per 1k
-function calculateCost(quantity: number, dripRuns: number | null, pricePerK: number | null): number | null {
-  if (pricePerK === null) return null;
-  const totalQuantity = dripRuns && dripRuns > 0 ? quantity * dripRuns : quantity;
-  return (totalQuantity / 1000) * pricePerK;
+interface SubmissionResult {
+  orderSetId: string;
+  serviceId: string;
+  quantity: number;
+  dripRuns: number | null;
+  intervalMinutes: number | null;
+  success: boolean;
+  followizOrderId?: number;
+  error?: string;
+  pricePerK?: number | null;
+  setCost?: number | null;
 }
 
 async function handler(req: NextApiRequest, res: NextApiResponse, adminUser: AdminUser) {
@@ -54,10 +49,10 @@ async function handler(req: NextApiRequest, res: NextApiResponse, adminUser: Adm
       playlistId, 
       playlistName, 
       playlistLink, 
-      serviceType, 
-      quantity, 
-      dripRuns, 
-      intervalMinutes 
+      serviceType,
+      quantity,
+      dripRuns,
+      intervalMinutes,
     } = req.body as SubmitPlaylistPurchaseBody;
 
     // Validation
@@ -75,96 +70,129 @@ async function handler(req: NextApiRequest, res: NextApiResponse, adminUser: Adm
       });
     }
 
+    // Map serviceType to the package_name used in smm_order_sets
+    const packageName = serviceType === 'playlist_followers' ? 'PLAYLIST_FOLLOWERS' : 'PLAYLIST_STREAMS';
+
     console.log(`📤 Starting playlist ${serviceType} purchase for: ${playlistName}`);
 
-    // Fetch the service configuration from database
-    const { data: serviceConfig, error: serviceError } = await supabase
-      .from('smm_playlist_services')
+    // Fetch all active order sets for this playlist service type
+    const { data: orderSets, error: orderSetsError } = await supabase
+      .from('smm_order_sets')
       .select('*')
-      .eq('service_type', serviceType)
+      .eq('package_name', packageName)
       .eq('is_active', true)
-      .single();
+      .order('display_order', { ascending: true });
 
-    if (serviceError || !serviceConfig) {
-      console.error('Error fetching service config:', serviceError);
+    if (orderSetsError) {
+      console.error('Error fetching playlist order sets:', orderSetsError);
+      return res.status(500).json({ 
+        success: false, 
+        error: 'Failed to fetch order sets configuration' 
+      });
+    }
+
+    if (!orderSets || orderSets.length === 0) {
       return res.status(400).json({ 
         success: false, 
-        error: `No ${serviceType.replace('_', ' ')} service configured. Please set up the service ID in Purchase API Settings.` 
+        error: `No order sets configured for ${serviceType.replace('_', ' ')}. Please set up order sets in Purchase API Settings.` 
       });
     }
 
-    console.log(`📋 Service config:`, {
-      serviceId: serviceConfig.service_id,
-      serviceName: serviceConfig.service_name,
-      pricePerK: serviceConfig.price_per_1k,
-    });
+    console.log(`📦 Found ${orderSets.length} order sets for ${packageName}`);
 
-    // Get current balance before purchase
+    // Get current balance before purchases
     const balanceBefore = await getFollowizBalance();
-    
-    // Get service info for accurate pricing
-    const serviceInfo = await getServiceInfo(serviceConfig.service_id);
-    const pricePerK = serviceInfo.price || serviceConfig.price_per_1k;
-    const estimatedCost = calculateCost(quantity, dripRuns || null, pricePerK);
 
-    // Submit the order to Followiz
-    const result = await submitFollowizOrder({
-      serviceId: serviceConfig.service_id,
-      link: playlistLink,
-      quantity: quantity,
-      runs: dripRuns || null,
-      interval: intervalMinutes || null,
-    });
+    // Submit each order set to Followiz
+    const results: SubmissionResult[] = [];
+    let allSuccessful = true;
 
-    // Log the submission to database
-    const { error: logError } = await supabase
-      .from('smm_playlist_purchase_logs')
-      .insert({
-        playlist_id: playlistId,
-        playlist_name: playlistName,
-        playlist_link: playlistLink,
-        service_type: serviceType,
-        service_id: serviceConfig.service_id,
-        quantity: quantity,
-        drip_runs: dripRuns || null,
-        interval_minutes: intervalMinutes || null,
-        followiz_order_id: result.orderId?.toString() || null,
-        status: result.success ? 'success' : 'failed',
-        error_message: result.error || null,
-        api_response: result.rawResponse || null,
-        submitted_by: adminUser.id,
+    // Use the quantity/drip values from the request body (entered by admin per-playlist)
+    const submissionQuantity = quantity;
+    const submissionDripRuns = dripRuns || null;
+    const submissionInterval = intervalMinutes || null;
+
+    for (const orderSet of orderSets as OrderSet[]) {
+      console.log(`🚀 Submitting playlist order: Service ${orderSet.service_id}, Qty ${submissionQuantity}, Drip ${submissionDripRuns || 'none'}`);
+
+      const result = await submitFollowizOrder({
+        serviceId: orderSet.service_id,
+        link: playlistLink,
+        quantity: submissionQuantity,
+        runs: submissionDripRuns,
+        interval: submissionInterval,
       });
 
-    if (logError) {
-      console.error('Error logging playlist purchase:', logError);
+      // Log the submission to database
+      const { error: logError } = await supabase
+        .from('smm_playlist_purchase_logs')
+        .insert({
+          playlist_id: playlistId,
+          playlist_name: playlistName,
+          playlist_link: playlistLink,
+          service_type: serviceType,
+          service_id: orderSet.service_id,
+          quantity: submissionQuantity,
+          drip_runs: submissionDripRuns,
+          interval_minutes: submissionInterval,
+          followiz_order_id: result.orderId?.toString() || null,
+          status: result.success ? 'success' : 'failed',
+          error_message: result.error || null,
+          api_response: result.rawResponse || null,
+          submitted_by: adminUser.id,
+        });
+
+      if (logError) {
+        console.error('Error logging playlist purchase:', logError);
+      }
+
+      // Estimate cost using price_per_1k from the order set if available
+      const estimatedCost = orderSet.price_per_1k 
+        ? (submissionQuantity / 1000) * orderSet.price_per_1k 
+        : null;
+
+      const submissionResult: SubmissionResult = {
+        orderSetId: orderSet.id,
+        serviceId: orderSet.service_id,
+        quantity: submissionQuantity,
+        dripRuns: submissionDripRuns,
+        intervalMinutes: submissionInterval,
+        success: result.success,
+        followizOrderId: result.orderId,
+        error: result.error,
+        pricePerK: orderSet.price_per_1k,
+        setCost: estimatedCost,
+      };
+
+      results.push(submissionResult);
+
+      if (!result.success) {
+        allSuccessful = false;
+        console.error(`❌ Failed to submit playlist order for service ${orderSet.service_id}:`, result.error);
+      } else {
+        console.log(`✅ Playlist order submitted successfully. Followiz Order ID: ${result.orderId}`);
+      }
     }
 
-    // Get updated balance after purchase
+    // Get updated balance after purchases
     const balanceAfter = await getFollowizBalance();
 
-    if (!result.success) {
-      console.error(`❌ Failed to submit playlist ${serviceType} order:`, result.error);
-      return res.status(400).json({
-        success: false,
-        error: result.error || 'Failed to submit order to SMM panel',
-        balanceBefore: balanceBefore.success ? balanceBefore.balance : null,
-        balanceAfter: balanceAfter.success ? balanceAfter.balance : null,
-      });
-    }
+    const successCount = results.filter(r => r.success).length;
+    const failedCount = results.filter(r => !r.success).length;
+    const totalCost = results.reduce((sum, r) => sum + (r.setCost || 0), 0);
 
-    console.log(`✅ Playlist ${serviceType} order submitted successfully. Order ID: ${result.orderId}`);
+    console.log(`📊 Playlist purchase submission complete: ${successCount} successful, ${failedCount} failed`);
 
     return res.status(200).json({
-      success: true,
-      message: `Successfully submitted ${serviceType.replace('_', ' ')} order`,
-      orderId: result.orderId,
-      serviceId: serviceConfig.service_id,
-      serviceName: serviceConfig.service_name || serviceInfo.name,
-      quantity: quantity,
-      dripRuns: dripRuns || null,
-      intervalMinutes: intervalMinutes || null,
-      pricePerK: pricePerK,
-      estimatedCost: estimatedCost,
+      success: allSuccessful,
+      message: allSuccessful 
+        ? `Successfully submitted ${successCount} order${successCount !== 1 ? 's' : ''} to SMM panel` 
+        : `Completed with ${failedCount} failed submission${failedCount !== 1 ? 's' : ''}`,
+      results,
+      totalSubmitted: results.length,
+      successCount,
+      failedCount,
+      totalEstimatedCost: totalCost,
       balanceBefore: balanceBefore.success ? balanceBefore.balance : null,
       balanceAfter: balanceAfter.success ? balanceAfter.balance : null,
       currency: balanceAfter.success ? balanceAfter.currency : 'USD',

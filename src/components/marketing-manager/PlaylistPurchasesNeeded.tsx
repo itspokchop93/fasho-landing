@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 // Types
@@ -16,12 +16,28 @@ interface PlaylistPurchaseItem {
   currentSaves?: number; // Current saves count from API
 }
 
-interface PlaylistService {
+interface PlaylistOrderSet {
   id: string;
-  service_type: string;
+  package_name: string;
   service_id: string;
-  service_name: string | null;
+  quantity: number;
+  drip_runs: number | null;
+  interval_minutes: number | null;
   price_per_1k: number | null;
+  set_cost: number | null;
+}
+
+interface SubmissionResult {
+  orderSetId: string;
+  serviceId: string;
+  quantity: number;
+  dripRuns: number | null;
+  intervalMinutes: number | null;
+  success: boolean;
+  followizOrderId?: number;
+  error?: string;
+  pricePerK?: number | null;
+  setCost?: number | null;
 }
 
 interface PurchaseReceiptModalProps {
@@ -31,16 +47,15 @@ interface PurchaseReceiptModalProps {
   isSubmitting: boolean;
   purchaseType: 'followers' | 'streams';
   playlistName: string;
+  serviceIds: string[]; // Just the service IDs from order sets
   quantity: number;
-  dripRuns?: number;
-  interval?: number;
-  serviceId: string | null;
-  pricePerK: number | null;
+  dripRuns?: number | null;
+  intervalMinutes?: number | null;
   currentBalance: string | null;
-  estimatedCost: number | null;
-  // Success state
+  // Success/result state
   isSuccess?: boolean;
-  orderId?: number;
+  isPartialSuccess?: boolean;
+  results?: SubmissionResult[];
   newBalance?: string | null;
   errorMessage?: string | null;
 }
@@ -166,7 +181,7 @@ const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
   );
 };
 
-// Purchase Receipt Modal Component
+// Purchase Receipt Modal Component - shows confirmation before submitting to all service IDs
 const PurchaseReceiptModal: React.FC<PurchaseReceiptModalProps> = ({
   isOpen,
   onClose,
@@ -174,24 +189,18 @@ const PurchaseReceiptModal: React.FC<PurchaseReceiptModalProps> = ({
   isSubmitting,
   purchaseType,
   playlistName,
+  serviceIds,
   quantity,
   dripRuns,
-  interval,
-  serviceId,
-  pricePerK,
+  intervalMinutes,
   currentBalance,
-  estimatedCost,
   isSuccess,
-  orderId,
+  isPartialSuccess,
+  results,
   newBalance,
   errorMessage,
 }) => {
   if (!isOpen) return null;
-
-  const totalQuantity = dripRuns && dripRuns > 0 ? quantity * dripRuns : quantity;
-  const balanceAfter = currentBalance && estimatedCost 
-    ? (parseFloat(currentBalance) - estimatedCost).toFixed(2)
-    : null;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
@@ -200,17 +209,24 @@ const PurchaseReceiptModal: React.FC<PurchaseReceiptModalProps> = ({
         initial={{ opacity: 0, scale: 0.95 }}
         animate={{ opacity: 1, scale: 1 }}
         exit={{ opacity: 0, scale: 0.95 }}
-        className="relative bg-white rounded-xl shadow-2xl w-full max-w-md mx-4 overflow-hidden"
+        className="relative bg-white rounded-xl shadow-2xl w-full max-w-lg mx-4 overflow-hidden max-h-[90vh] flex flex-col"
       >
         {/* Header */}
-        <div className={`px-6 py-4 ${isSuccess ? 'bg-gradient-to-r from-green-500 to-emerald-500' : errorMessage ? 'bg-gradient-to-r from-red-500 to-rose-500' : 'bg-gradient-to-r from-purple-600 to-indigo-600'}`}>
+        <div className={`px-6 py-4 flex-shrink-0 ${isSuccess ? 'bg-gradient-to-r from-green-500 to-emerald-500' : isPartialSuccess ? 'bg-gradient-to-r from-yellow-500 to-orange-500' : errorMessage ? 'bg-gradient-to-r from-red-500 to-rose-500' : 'bg-gradient-to-r from-purple-600 to-indigo-600'}`}>
           <h3 className="text-white font-bold text-lg flex items-center gap-2">
             {isSuccess ? (
               <>
                 <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                 </svg>
-                Purchase Successful!
+                All Orders Submitted!
+              </>
+            ) : isPartialSuccess ? (
+              <>
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z" />
+                </svg>
+                Partial Success
               </>
             ) : errorMessage ? (
               <>
@@ -224,31 +240,63 @@ const PurchaseReceiptModal: React.FC<PurchaseReceiptModalProps> = ({
                 <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                 </svg>
-                Order Receipt
+                Confirm Purchase — {serviceIds.length} Service{serviceIds.length !== 1 ? 's' : ''}
               </>
             )}
           </h3>
         </div>
 
-        {/* Content */}
-        <div className="p-6 space-y-4">
-          {isSuccess ? (
-            // Success content
+        {/* Content - scrollable */}
+        <div className="p-6 space-y-4 overflow-y-auto flex-grow">
+          {(isSuccess || isPartialSuccess) && results ? (
+            // Results content
             <div className="space-y-4">
-              <div className="bg-green-50 border border-green-200 rounded-lg p-4 text-center">
-                <div className="text-[0.7rem] font-bold text-green-500 uppercase tracking-wider mb-1">Order ID</div>
-                <div className="text-2xl font-black text-green-700">#{orderId}</div>
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="bg-gray-50 rounded-lg p-3">
-                  <div className="text-[0.65rem] font-bold text-gray-400 uppercase">Type</div>
-                  <div className="text-[0.9rem] font-bold text-gray-700 capitalize">{purchaseType}</div>
-                </div>
-                <div className="bg-gray-50 rounded-lg p-3">
-                  <div className="text-[0.65rem] font-bold text-gray-400 uppercase">Quantity</div>
-                  <div className="text-[0.9rem] font-bold text-gray-700">{totalQuantity.toLocaleString()}</div>
+              <div className={`${isSuccess ? 'bg-green-50 border-green-200' : 'bg-yellow-50 border-yellow-200'} border rounded-lg p-4 text-center`}>
+                <div className={`text-[0.7rem] font-bold ${isSuccess ? 'text-green-500' : 'text-yellow-600'} uppercase tracking-wider mb-1`}>
+                  {results.filter(r => r.success).length} of {results.length} Orders Submitted
                 </div>
               </div>
+
+              <div className="space-y-2">
+                {results.map((result, idx) => (
+                  <div key={idx} className={`rounded-lg p-3 border ${result.success ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200'}`}>
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        {result.success ? (
+                          <svg className="w-4 h-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
+                          </svg>
+                        ) : (
+                          <svg className="w-4 h-4 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M6 18L18 6M6 6l12 12" />
+                          </svg>
+                        )}
+                        <span className="text-[0.8rem] font-bold text-gray-700">
+                          Service {result.serviceId}
+                        </span>
+                      </div>
+                      <div className="text-right">
+                        {result.success && result.followizOrderId && (
+                          <span className="text-[0.7rem] font-bold text-green-600">#{result.followizOrderId}</span>
+                        )}
+                        {!result.success && result.error && (
+                          <span className="text-[0.65rem] text-red-600 truncate max-w-[150px] inline-block">{result.error}</span>
+                        )}
+                      </div>
+                    </div>
+                    <div className="mt-1 flex gap-3 text-[0.7rem] text-gray-500">
+                      <span>Qty: {result.quantity.toLocaleString()}</span>
+                      {result.dripRuns && result.dripRuns > 0 && (
+                        <span>Drip: {result.dripRuns} runs</span>
+                      )}
+                      {result.setCost && (
+                        <span className="text-green-600 font-bold">${result.setCost.toFixed(2)}</span>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+
               {newBalance && (
                 <div className="bg-green-50 border border-green-200 rounded-lg p-4">
                   <div className="text-[0.65rem] font-bold text-green-500 uppercase mb-1">New Balance</div>
@@ -257,7 +305,6 @@ const PurchaseReceiptModal: React.FC<PurchaseReceiptModalProps> = ({
               )}
             </div>
           ) : errorMessage ? (
-            // Error content
             <div className="bg-red-50 border border-red-200 rounded-lg p-4">
               <div className="text-[0.7rem] font-bold text-red-500 uppercase mb-2">Error Message</div>
               <div className="text-[0.85rem] text-red-700">{errorMessage}</div>
@@ -270,64 +317,56 @@ const PurchaseReceiptModal: React.FC<PurchaseReceiptModalProps> = ({
                 <div className="text-[0.95rem] font-bold text-purple-800 truncate">{playlistName}</div>
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-2 gap-3">
                 <div className="bg-gray-50 rounded-lg p-3">
-                  <div className="text-[0.65rem] font-bold text-gray-400 uppercase">Purchase Type</div>
+                  <div className="text-[0.65rem] font-bold text-gray-400 uppercase mb-1">Purchase Type</div>
                   <div className="text-[0.9rem] font-bold text-gray-700 capitalize">{purchaseType}</div>
                 </div>
                 <div className="bg-gray-50 rounded-lg p-3">
-                  <div className="text-[0.65rem] font-bold text-gray-400 uppercase">Service ID</div>
-                  <div className="text-[0.9rem] font-bold text-gray-700">
-                    {serviceId || 'N/A'}
-                  </div>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div className="bg-gray-50 rounded-lg p-3">
-                  <div className="text-[0.65rem] font-bold text-gray-400 uppercase">Quantity</div>
+                  <div className="text-[0.65rem] font-bold text-gray-400 uppercase mb-1">Quantity</div>
                   <div className="text-[0.9rem] font-bold text-gray-700">{quantity.toLocaleString()}</div>
                 </div>
-                {dripRuns && dripRuns > 0 && (
-                  <div className="bg-blue-50 rounded-lg p-3 border border-blue-100">
-                    <div className="text-[0.65rem] font-bold text-blue-400 uppercase">Drip Feed</div>
-                    <div className="text-[0.85rem] font-bold text-blue-700">
-                      {dripRuns} runs x {interval === 1440 ? '1 day' : `${interval}min`}
-                    </div>
-                  </div>
-                )}
               </div>
 
               {dripRuns && dripRuns > 0 && (
-                <div className="bg-indigo-50 border border-indigo-200 rounded-lg p-3">
-                  <div className="text-[0.65rem] font-bold text-indigo-400 uppercase">Total Quantity</div>
-                  <div className="text-lg font-black text-indigo-700">{totalQuantity.toLocaleString()}</div>
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                  <div className="flex items-center gap-4">
+                    <div className="flex items-center gap-1.5">
+                      <svg className="w-3.5 h-3.5 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                      </svg>
+                      <span className="text-[0.7rem] font-bold text-blue-700">Drip Feed</span>
+                    </div>
+                    <span className="text-[0.7rem] text-blue-600">
+                      <span className="font-bold">{dripRuns}</span> runs
+                    </span>
+                    <span className="text-[0.7rem] text-blue-600">
+                      every <span className="font-bold">{intervalMinutes === 1440 ? '1 day' : `${intervalMinutes}min`}</span>
+                    </span>
+                  </div>
                 </div>
               )}
 
+              {/* Service IDs that will receive this order */}
+              <div className="space-y-2">
+                <div className="text-[0.7rem] font-bold text-gray-500 uppercase tracking-wider">
+                  Sending to {serviceIds.length} Service ID{serviceIds.length !== 1 ? 's' : ''}
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {serviceIds.map((sid, idx) => (
+                    <div key={idx} className="bg-white rounded-lg border border-gray-200 px-3 py-2 shadow-sm">
+                      <div className="text-[0.55rem] font-bold text-gray-400 uppercase">Service</div>
+                      <div className="text-[0.85rem] font-bold text-gray-900">{sid}</div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
               <div className="border-t border-gray-100 pt-4 space-y-3">
-                <div className="flex justify-between items-center">
-                  <span className="text-[0.8rem] text-gray-500">Price per 1K:</span>
-                  <span className="text-[0.9rem] font-bold text-gray-700">
-                    {pricePerK ? `$${pricePerK.toFixed(4)}` : 'N/A'}
-                  </span>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-[0.8rem] text-gray-500">Estimated Cost:</span>
-                  <span className="text-[0.9rem] font-bold text-orange-600">
-                    {estimatedCost ? `$${estimatedCost.toFixed(2)}` : 'N/A'}
-                  </span>
-                </div>
                 <div className="flex justify-between items-center">
                   <span className="text-[0.8rem] text-gray-500">Current Balance:</span>
                   <span className="text-[0.9rem] font-bold text-green-600">
                     {currentBalance ? `$${parseFloat(currentBalance).toFixed(2)}` : 'N/A'}
-                  </span>
-                </div>
-                <div className="flex justify-between items-center bg-yellow-50 -mx-6 px-6 py-2 border-y border-yellow-200">
-                  <span className="text-[0.8rem] font-bold text-yellow-700">Balance After:</span>
-                  <span className="text-lg font-black text-yellow-700">
-                    {balanceAfter ? `$${balanceAfter}` : 'N/A'}
                   </span>
                 </div>
               </div>
@@ -336,8 +375,8 @@ const PurchaseReceiptModal: React.FC<PurchaseReceiptModalProps> = ({
         </div>
 
         {/* Footer */}
-        <div className="px-6 pb-6 flex gap-3">
-          {isSuccess || errorMessage ? (
+        <div className="px-6 pb-6 flex gap-3 flex-shrink-0">
+          {isSuccess || isPartialSuccess || errorMessage ? (
             <button
               onClick={onClose}
               className="flex-1 px-5 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg font-bold transition-colors"
@@ -355,7 +394,7 @@ const PurchaseReceiptModal: React.FC<PurchaseReceiptModalProps> = ({
               </button>
               <button
                 onClick={onConfirm}
-                disabled={isSubmitting}
+                disabled={isSubmitting || serviceIds.length === 0}
                 className="flex-1 px-6 py-2.5 bg-purple-600 hover:bg-purple-700 text-white rounded-lg font-bold transition-colors disabled:opacity-50 flex items-center justify-center gap-2 whitespace-nowrap"
               >
                 {isSubmitting ? (
@@ -364,14 +403,14 @@ const PurchaseReceiptModal: React.FC<PurchaseReceiptModalProps> = ({
                       <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                       <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                     </svg>
-                    Submitting...
+                    Submitting to {serviceIds.length} Service{serviceIds.length !== 1 ? 's' : ''}...
                   </>
                 ) : (
                   <>
                     <svg className="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                     </svg>
-                    Confirm Purchase
+                    Submit to {serviceIds.length} Service{serviceIds.length !== 1 ? 's' : ''}
                   </>
                 )}
               </button>
@@ -395,13 +434,13 @@ const PlaylistPurchasesNeeded: React.FC = () => {
   // Animation state for re-copy feedback
   const [copyAnimating, setCopyAnimating] = useState<string | null>(null);
   
-  // Playlist service settings
-  const [playlistServices, setPlaylistServices] = useState<{ [key: string]: PlaylistService }>({});
+  // Playlist order sets (fetched from smm_order_sets with PLAYLIST_FOLLOWERS / PLAYLIST_STREAMS)
+  const [playlistOrderSets, setPlaylistOrderSets] = useState<PlaylistOrderSet[]>([]);
   const [currentBalance, setCurrentBalance] = useState<string | null>(null);
   
-  // Form inputs for each playlist
-  const [followersInputs, setFollowersInputs] = useState<{ [playlistId: string]: string }>({});
-  const [streamsInputs, setStreamsInputs] = useState<{ [playlistId: string]: { qty: string; dripRuns: string; interval: string } }>({});
+  // Per-playlist input fields for followers (qty only) and streams (qty + drip)
+  const [followersInputs, setFollowersInputs] = useState<{[playlistId: string]: { quantity: string }}>({});
+  const [streamsInputs, setStreamsInputs] = useState<{[playlistId: string]: { quantity: string; dripRuns: string; intervalMinutes: string }}>({});
   
   // Purchase receipt modal state
   const [receiptModal, setReceiptModal] = useState<{
@@ -410,11 +449,12 @@ const PlaylistPurchasesNeeded: React.FC = () => {
     playlistName: string;
     purchaseType: 'followers' | 'streams';
     quantity: number;
-    dripRuns?: number;
-    interval?: number;
+    dripRuns?: number | null;
+    intervalMinutes?: number | null;
     isSubmitting: boolean;
     isSuccess?: boolean;
-    orderId?: number;
+    isPartialSuccess?: boolean;
+    results?: SubmissionResult[];
     newBalance?: string | null;
     errorMessage?: string | null;
   }>({
@@ -467,16 +507,18 @@ const PlaylistPurchasesNeeded: React.FC = () => {
     .copy-click { animation: copy-click 0.2s ease-in-out; }
   `;
 
-  // Fetch playlist services and balance
-  const fetchPlaylistServicesAndBalance = async () => {
+  // Fetch playlist order sets and balance
+  const fetchPlaylistOrderSetsAndBalance = async () => {
     try {
-      // Fetch playlist service settings
-      const servicesResponse = await fetch('/api/marketing-manager/smm-panel/playlist-services');
-      if (servicesResponse.ok) {
-        const data = await servicesResponse.json();
-        if (data.success) {
-          setPlaylistServices(data.services || {});
-        }
+      // Fetch all order sets (includes PLAYLIST_FOLLOWERS and PLAYLIST_STREAMS)
+      const orderSetsResponse = await fetch('/api/marketing-manager/smm-panel/order-sets');
+      if (orderSetsResponse.ok) {
+        const data = await orderSetsResponse.json();
+        // Filter to only playlist order sets
+        const playlistSets = (data || []).filter((os: PlaylistOrderSet) => 
+          os.package_name === 'PLAYLIST_FOLLOWERS' || os.package_name === 'PLAYLIST_STREAMS'
+        );
+        setPlaylistOrderSets(playlistSets);
       }
 
       // Fetch current balance
@@ -488,36 +530,47 @@ const PlaylistPurchasesNeeded: React.FC = () => {
         }
       }
     } catch (error) {
-      console.error('Error fetching playlist services/balance:', error);
+      console.error('Error fetching playlist order sets/balance:', error);
     }
+  };
+
+  // Helper to get order sets for a specific type
+  const getOrderSetsForType = (type: 'followers' | 'streams'): PlaylistOrderSet[] => {
+    const packageName = type === 'followers' ? 'PLAYLIST_FOLLOWERS' : 'PLAYLIST_STREAMS';
+    return playlistOrderSets.filter(os => os.package_name === packageName);
+  };
+
+  // Helper to get service IDs for a type
+  const getServiceIdsForType = (type: 'followers' | 'streams'): string[] => {
+    return getOrderSetsForType(type).map(os => os.service_id);
   };
 
   // Open the receipt modal for followers purchase
   const openFollowersPurchaseModal = async (playlistId: string, playlistName: string) => {
-    const qty = parseInt(followersInputs[playlistId] || '0');
-    if (!qty || qty <= 0) {
-      alert('Please enter a valid quantity');
+    const serviceIds = getServiceIdsForType('followers');
+    if (serviceIds.length === 0) {
+      alert('No Playlist Followers services configured. Please add service IDs in Purchase API Settings.');
       return;
     }
-    
-    if (!playlistServices.playlist_followers) {
-      alert('Playlist Followers Service not configured. Please set it up in Purchase API Settings.');
+
+    const input = followersInputs[playlistId];
+    const qty = parseInt(input?.quantity || '0');
+    if (!qty || qty <= 0) {
+      alert('Please enter a valid quantity for followers.');
       return;
     }
 
     // Fetch the LIVE balance from API before opening the modal
     try {
-      console.log('📋 PLAYLIST-PURCHASES: Fetching live balance before opening followers modal...');
       const balanceResponse = await fetch('/api/marketing-manager/smm-panel/balance');
       if (balanceResponse.ok) {
         const data = await balanceResponse.json();
         if (data.success) {
           setCurrentBalance(data.balance);
-          console.log('📋 PLAYLIST-PURCHASES: Live balance fetched:', data.balance);
         }
       }
     } catch (error) {
-      console.error('📋 PLAYLIST-PURCHASES: Error fetching live balance:', error);
+      console.error('Error fetching live balance:', error);
     }
 
     setReceiptModal({
@@ -526,40 +579,41 @@ const PlaylistPurchasesNeeded: React.FC = () => {
       playlistName,
       purchaseType: 'followers',
       quantity: qty,
+      dripRuns: null,
+      intervalMinutes: null,
       isSubmitting: false,
     });
   };
 
   // Open the receipt modal for streams purchase
   const openStreamsPurchaseModal = async (playlistId: string, playlistName: string) => {
-    const inputs = streamsInputs[playlistId] || { qty: '', dripRuns: '', interval: '1440' };
-    const qty = parseInt(inputs.qty || '0');
-    const dripRuns = parseInt(inputs.dripRuns || '0');
-    const interval = parseInt(inputs.interval || '1440');
+    const serviceIds = getServiceIdsForType('streams');
+    if (serviceIds.length === 0) {
+      alert('No Playlist Streams services configured. Please add service IDs in Purchase API Settings.');
+      return;
+    }
 
+    const input = streamsInputs[playlistId];
+    const qty = parseInt(input?.quantity || '0');
     if (!qty || qty <= 0) {
-      alert('Please enter a valid quantity');
+      alert('Please enter a valid quantity for streams.');
       return;
     }
 
-    if (!playlistServices.playlist_streams) {
-      alert('Playlist Streams Service not configured. Please set it up in Purchase API Settings.');
-      return;
-    }
+    const dripRuns = input?.dripRuns ? parseInt(input.dripRuns) : null;
+    const intervalMinutes = input?.intervalMinutes ? parseInt(input.intervalMinutes) : null;
 
     // Fetch the LIVE balance from API before opening the modal
     try {
-      console.log('📋 PLAYLIST-PURCHASES: Fetching live balance before opening streams modal...');
       const balanceResponse = await fetch('/api/marketing-manager/smm-panel/balance');
       if (balanceResponse.ok) {
         const data = await balanceResponse.json();
         if (data.success) {
           setCurrentBalance(data.balance);
-          console.log('📋 PLAYLIST-PURCHASES: Live balance fetched:', data.balance);
         }
       }
     } catch (error) {
-      console.error('📋 PLAYLIST-PURCHASES: Error fetching live balance:', error);
+      console.error('Error fetching live balance:', error);
     }
 
     setReceiptModal({
@@ -568,15 +622,15 @@ const PlaylistPurchasesNeeded: React.FC = () => {
       playlistName,
       purchaseType: 'streams',
       quantity: qty,
-      dripRuns: dripRuns > 0 ? dripRuns : undefined,
-      interval: dripRuns > 0 ? interval : undefined,
+      dripRuns: dripRuns && dripRuns > 0 ? dripRuns : null,
+      intervalMinutes: intervalMinutes && intervalMinutes > 0 ? intervalMinutes : null,
       isSubmitting: false,
     });
   };
 
-  // Submit playlist purchase
+  // Submit playlist purchase (sends qty/drip to all service IDs for the type)
   const submitPlaylistPurchase = async () => {
-    const { playlistId, playlistName, purchaseType, quantity, dripRuns, interval } = receiptModal;
+    const { playlistId, playlistName, purchaseType, quantity, dripRuns: modalDripRuns, intervalMinutes: modalInterval } = receiptModal;
     
     // Find playlist link
     const playlist = playlistPurchases.find(p => p.id === playlistId);
@@ -603,8 +657,8 @@ const PlaylistPurchasesNeeded: React.FC = () => {
           playlistLink,
           serviceType: purchaseType === 'followers' ? 'playlist_followers' : 'playlist_streams',
           quantity,
-          dripRuns: dripRuns || null,
-          intervalMinutes: interval || null,
+          dripRuns: modalDripRuns || null,
+          intervalMinutes: modalInterval || null,
         }),
       });
 
@@ -615,7 +669,7 @@ const PlaylistPurchasesNeeded: React.FC = () => {
           ...prev,
           isSubmitting: false,
           isSuccess: true,
-          orderId: data.orderId,
+          results: data.results,
           newBalance: data.balanceAfter,
         }));
         
@@ -623,11 +677,25 @@ const PlaylistPurchasesNeeded: React.FC = () => {
         if (data.balanceAfter) {
           setCurrentBalance(data.balanceAfter);
         }
+      } else if (data.results && data.successCount > 0) {
+        // Partial success - some orders succeeded, some failed
+        setReceiptModal(prev => ({
+          ...prev,
+          isSubmitting: false,
+          isPartialSuccess: true,
+          results: data.results,
+          newBalance: data.balanceAfter,
+        }));
+        
+        if (data.balanceAfter) {
+          setCurrentBalance(data.balanceAfter);
+        }
       } else {
         setReceiptModal(prev => ({
           ...prev,
           isSubmitting: false,
-          errorMessage: data.error || 'Failed to submit order',
+          errorMessage: data.error || 'Failed to submit orders',
+          results: data.results,
         }));
       }
     } catch (error) {
@@ -642,9 +710,9 @@ const PlaylistPurchasesNeeded: React.FC = () => {
 
   // Close receipt modal and update purchased state
   const closeReceiptModal = () => {
-    const { isSuccess, playlistId, purchaseType } = receiptModal;
+    const { isSuccess, isPartialSuccess, playlistId, purchaseType } = receiptModal;
     
-    if (isSuccess) {
+    if (isSuccess || isPartialSuccess) {
       // Mark as purchased
       setPlaylistPurchases(prev => prev.map(item => {
         if (item.id === playlistId) {
@@ -655,13 +723,6 @@ const PlaylistPurchasesNeeded: React.FC = () => {
         }
         return item;
       }));
-      
-      // Clear the input fields
-      if (purchaseType === 'followers') {
-        setFollowersInputs(prev => ({ ...prev, [playlistId]: '' }));
-      } else {
-        setStreamsInputs(prev => ({ ...prev, [playlistId]: { qty: '', dripRuns: '', interval: '1440' } }));
-      }
     }
 
     setReceiptModal({
@@ -672,13 +733,6 @@ const PlaylistPurchasesNeeded: React.FC = () => {
       quantity: 0,
       isSubmitting: false,
     });
-  };
-
-  // Calculate estimated cost
-  const calculateEstimatedCost = (quantity: number, dripRuns: number | undefined, pricePerK: number | null): number | null => {
-    if (!pricePerK) return null;
-    const totalQty = dripRuns && dripRuns > 0 ? quantity * dripRuns : quantity;
-    return (totalQty / 1000) * pricePerK;
   };
 
   // Load data from localStorage on component mount
@@ -711,8 +765,8 @@ const PlaylistPurchasesNeeded: React.FC = () => {
     // Fetch playlist network data to populate images and links
     fetchPlaylistNetwork();
     
-    // Fetch playlist services and balance
-    fetchPlaylistServicesAndBalance();
+    // Fetch playlist order sets and balance
+    fetchPlaylistOrderSetsAndBalance();
 
     // Listen for "Added to Playlists" events from ActiveCampaigns
     const handlePlaylistsAdded = (event: CustomEvent) => {
@@ -1238,10 +1292,10 @@ const PlaylistPurchasesNeeded: React.FC = () => {
                 <th className="px-3 py-3 text-center text-[0.65rem] font-black text-gray-500 uppercase tracking-widest w-24">
                   Session
                 </th>
-                <th className="px-3 py-3 text-center text-[0.65rem] font-black text-purple-600 uppercase tracking-widest w-28">
-                  Followers QTY
+                <th className="px-3 py-3 text-center text-[0.65rem] font-black text-purple-600 uppercase tracking-widest w-32">
+                  Followers
                 </th>
-                <th className="px-3 py-3 text-center text-[0.65rem] font-black text-purple-600 uppercase tracking-widest w-52">
+                <th className="px-3 py-3 text-center text-[0.65rem] font-black text-purple-600 uppercase tracking-widest w-32">
                   Streams
                 </th>
                 <th className="px-4 py-3 text-center text-[0.65rem] font-black text-gray-500 uppercase tracking-widest w-24">
@@ -1371,8 +1425,8 @@ const PlaylistPurchasesNeeded: React.FC = () => {
                       </div>
                     </td>
 
-                    {/* Followers QTY Column */}
-                    <td className="px-3 py-4 whitespace-nowrap w-28">
+                    {/* Followers Column — qty input + submit */}
+                    <td className="px-3 py-4 whitespace-nowrap w-32">
                       <AnimatePresence mode="wait">
                         {item.followersPurchased ? (
                           <motion.div
@@ -1394,30 +1448,41 @@ const PlaylistPurchasesNeeded: React.FC = () => {
                             initial={{ opacity: 1 }}
                             exit={{ opacity: 0, scale: 0.8 }}
                             transition={{ duration: 0.2, ease: "easeOut" }}
-                            className="flex flex-col items-center gap-1"
+                            className="flex flex-col items-center gap-1.5"
                           >
                             <input
                               type="number"
                               min="1"
-                              value={followersInputs[item.id] || ''}
-                              onChange={(e) => setFollowersInputs(prev => ({ ...prev, [item.id]: e.target.value }))}
-                              placeholder="QTY"
-                              className="w-full px-2 py-1.5 text-[0.75rem] text-center border-2 border-purple-200 rounded-lg focus:border-purple-500 focus:ring-0 outline-none transition-colors"
+                              placeholder="Qty"
+                              value={followersInputs[item.id]?.quantity || ''}
+                              onChange={(e) => setFollowersInputs(prev => ({
+                                ...prev,
+                                [item.id]: { quantity: e.target.value }
+                              }))}
+                              className="w-20 px-2 py-1.5 text-[0.7rem] border-2 border-gray-200 rounded-lg focus:border-purple-400 focus:ring-0 outline-none text-center font-bold"
                             />
                             <button
                               onClick={() => openFollowersPurchaseModal(item.id, item.playlistName)}
-                              disabled={!followersInputs[item.id] || !playlistServices.playlist_followers}
-                              className="text-[0.6rem] font-bold text-purple-600 hover:text-purple-800 disabled:text-gray-300 disabled:cursor-not-allowed transition-colors"
+                              disabled={getServiceIdsForType('followers').length === 0 || !followersInputs[item.id]?.quantity}
+                              className="inline-flex items-center px-3 py-1.5 rounded-lg text-[0.55rem] font-black uppercase tracking-wider text-white bg-purple-600 hover:bg-purple-700 active:scale-95 transition-all shadow-sm gap-1 disabled:opacity-40 disabled:cursor-not-allowed"
                             >
+                              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+                              </svg>
                               Submit
                             </button>
+                            {getServiceIdsForType('followers').length > 0 && (
+                              <span className="text-[0.5rem] text-gray-400 font-medium">
+                                {getServiceIdsForType('followers').length} service{getServiceIdsForType('followers').length !== 1 ? 's' : ''}
+                              </span>
+                            )}
                           </motion.div>
                         )}
                       </AnimatePresence>
                     </td>
 
-                    {/* Streams Column */}
-                    <td className="px-3 py-4 whitespace-nowrap w-52">
+                    {/* Streams Column — qty + drip inputs + submit */}
+                    <td className="px-3 py-4 w-48">
                       <AnimatePresence mode="wait">
                         {item.streamsPurchased ? (
                           <motion.div
@@ -1435,63 +1500,64 @@ const PlaylistPurchasesNeeded: React.FC = () => {
                           </motion.div>
                         ) : (
                           <motion.div
-                            key="inputs"
+                            key="input"
                             initial={{ opacity: 1 }}
                             exit={{ opacity: 0, scale: 0.8 }}
                             transition={{ duration: 0.2, ease: "easeOut" }}
-                            className="flex flex-col gap-1"
+                            className="flex flex-col items-center gap-1.5"
                           >
-                            <div className="flex gap-1">
-                              <div className="flex-1">
-                                <input
-                                  type="number"
-                                  min="1"
-                                  value={streamsInputs[item.id]?.qty || ''}
-                                  onChange={(e) => setStreamsInputs(prev => ({
-                                    ...prev,
-                                    [item.id]: { ...prev[item.id], qty: e.target.value, dripRuns: prev[item.id]?.dripRuns || '', interval: prev[item.id]?.interval || '1440' }
-                                  }))}
-                                  placeholder="QTY"
-                                  className="w-full px-1.5 py-1 text-[0.7rem] text-center border-2 border-purple-200 rounded focus:border-purple-500 focus:ring-0 outline-none transition-colors"
-                                />
-                              </div>
-                              <div className="flex-1">
-                                <input
-                                  type="number"
-                                  min="1"
-                                  value={streamsInputs[item.id]?.dripRuns || ''}
-                                  onChange={(e) => setStreamsInputs(prev => ({
-                                    ...prev,
-                                    [item.id]: { ...prev[item.id], qty: prev[item.id]?.qty || '', dripRuns: e.target.value, interval: prev[item.id]?.interval || '1440' }
-                                  }))}
-                                  placeholder="Runs"
-                                  className="w-full px-1.5 py-1 text-[0.7rem] text-center border-2 border-blue-200 rounded focus:border-blue-500 focus:ring-0 outline-none transition-colors"
-                                />
-                              </div>
-                              <div className="flex-1">
-                                <input
-                                  type="number"
-                                  min="1"
-                                  value={streamsInputs[item.id]?.interval || '1440'}
-                                  onChange={(e) => setStreamsInputs(prev => ({
-                                    ...prev,
-                                    [item.id]: { ...prev[item.id], qty: prev[item.id]?.qty || '', dripRuns: prev[item.id]?.dripRuns || '', interval: e.target.value }
-                                  }))}
-                                  placeholder="Int"
-                                  className="w-full px-1.5 py-1 text-[0.7rem] text-center border-2 border-gray-200 rounded focus:border-gray-400 focus:ring-0 outline-none transition-colors"
-                                />
-                              </div>
+                            <div className="flex items-center gap-1">
+                              <input
+                                type="number"
+                                min="1"
+                                placeholder="Qty"
+                                value={streamsInputs[item.id]?.quantity || ''}
+                                onChange={(e) => setStreamsInputs(prev => ({
+                                  ...prev,
+                                  [item.id]: { ...prev[item.id], quantity: e.target.value }
+                                }))}
+                                className="w-16 px-1.5 py-1.5 text-[0.65rem] border-2 border-gray-200 rounded-lg focus:border-purple-400 focus:ring-0 outline-none text-center font-bold"
+                              />
+                              <input
+                                type="number"
+                                min="1"
+                                placeholder="Runs"
+                                value={streamsInputs[item.id]?.dripRuns || ''}
+                                onChange={(e) => setStreamsInputs(prev => ({
+                                  ...prev,
+                                  [item.id]: { ...prev[item.id], dripRuns: e.target.value }
+                                }))}
+                                className="w-14 px-1 py-1.5 text-[0.65rem] border-2 border-blue-200 rounded-lg focus:border-blue-400 focus:ring-0 outline-none text-center font-bold"
+                                title="Drip runs"
+                              />
+                              <input
+                                type="number"
+                                min="1"
+                                placeholder="Min"
+                                value={streamsInputs[item.id]?.intervalMinutes || ''}
+                                onChange={(e) => setStreamsInputs(prev => ({
+                                  ...prev,
+                                  [item.id]: { ...prev[item.id], intervalMinutes: e.target.value }
+                                }))}
+                                className="w-14 px-1 py-1.5 text-[0.65rem] border-2 border-blue-200 rounded-lg focus:border-blue-400 focus:ring-0 outline-none text-center font-bold"
+                                title="Interval minutes (1440 = 1 day)"
+                              />
                             </div>
-                            <div className="flex justify-between items-center px-1">
-                              <span className="text-[0.5rem] text-gray-400">QTY / Drip Runs / Interval</span>
-                              <button
-                                onClick={() => openStreamsPurchaseModal(item.id, item.playlistName)}
-                                disabled={!streamsInputs[item.id]?.qty || !playlistServices.playlist_streams}
-                                className="text-[0.6rem] font-bold text-purple-600 hover:text-purple-800 disabled:text-gray-300 disabled:cursor-not-allowed transition-colors"
-                              >
-                                Submit
-                              </button>
-                            </div>
+                            <button
+                              onClick={() => openStreamsPurchaseModal(item.id, item.playlistName)}
+                              disabled={getServiceIdsForType('streams').length === 0 || !streamsInputs[item.id]?.quantity}
+                              className="inline-flex items-center px-3 py-1.5 rounded-lg text-[0.55rem] font-black uppercase tracking-wider text-white bg-purple-600 hover:bg-purple-700 active:scale-95 transition-all shadow-sm gap-1 disabled:opacity-40 disabled:cursor-not-allowed"
+                            >
+                              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+                              </svg>
+                              Submit
+                            </button>
+                            {getServiceIdsForType('streams').length > 0 && (
+                              <span className="text-[0.5rem] text-gray-400 font-medium">
+                                {getServiceIdsForType('streams').length} service{getServiceIdsForType('streams').length !== 1 ? 's' : ''}
+                              </span>
+                            )}
                           </motion.div>
                         )}
                       </AnimatePresence>
@@ -1539,29 +1605,14 @@ const PlaylistPurchasesNeeded: React.FC = () => {
             isSubmitting={receiptModal.isSubmitting}
             purchaseType={receiptModal.purchaseType}
             playlistName={receiptModal.playlistName}
+            serviceIds={getServiceIdsForType(receiptModal.purchaseType)}
             quantity={receiptModal.quantity}
             dripRuns={receiptModal.dripRuns}
-            interval={receiptModal.interval}
-            serviceId={
-              receiptModal.purchaseType === 'followers'
-                ? playlistServices.playlist_followers?.service_id || null
-                : playlistServices.playlist_streams?.service_id || null
-            }
-            pricePerK={
-              receiptModal.purchaseType === 'followers'
-                ? playlistServices.playlist_followers?.price_per_1k || null
-                : playlistServices.playlist_streams?.price_per_1k || null
-            }
+            intervalMinutes={receiptModal.intervalMinutes}
             currentBalance={currentBalance}
-            estimatedCost={calculateEstimatedCost(
-              receiptModal.quantity,
-              receiptModal.dripRuns,
-              receiptModal.purchaseType === 'followers'
-                ? playlistServices.playlist_followers?.price_per_1k || null
-                : playlistServices.playlist_streams?.price_per_1k || null
-            )}
             isSuccess={receiptModal.isSuccess}
-            orderId={receiptModal.orderId}
+            isPartialSuccess={receiptModal.isPartialSuccess}
+            results={receiptModal.results}
             newBalance={receiptModal.newBalance}
             errorMessage={receiptModal.errorMessage}
           />

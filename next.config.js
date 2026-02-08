@@ -1,6 +1,13 @@
+const path = require('path');
+
 /** @type {import('next').NextConfig} */
 // Config file for Next.js application
 const nextConfig = {
+  // Pin the turbopack root to this project directory to avoid issues
+  // with special characters (like **) in parent directory names
+  turbopack: {
+    root: path.resolve(__dirname),
+  },
   // Image optimization for Core Web Vitals
   images: {
     remotePatterns: [

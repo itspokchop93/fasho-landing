@@ -94,7 +94,7 @@ async function handler(req: NextApiRequest, res: NextApiResponse, adminUser: Adm
     try {
       const { package_name, service_id, quantity, drip_runs, interval_minutes } = req.body;
 
-      if (!package_name || !service_id || !quantity) {
+      if (!package_name || !service_id || (quantity === undefined || quantity === null || quantity === '')) {
         return res.status(400).json({ error: 'Missing required fields: package_name, service_id, quantity' });
       }
 
