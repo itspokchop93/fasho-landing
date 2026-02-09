@@ -130,9 +130,10 @@ export default defineType({
       title: 'Published At',
       type: 'datetime',
       group: 'content',
-      description: 'Required! Set the publish date. Use a future date to schedule.',
+      description: 'Auto-set when document is created. Use a future date to schedule.',
       initialValue: () => new Date().toISOString(),
-      validation: (Rule) => Rule.required().error('Published At date is required for the post to appear on the website'),
+      // No longer required - we'll handle this with a document action
+      // If empty, the post won't appear on the site (treated as draft)
     }),
     defineField({
       name: 'tags',

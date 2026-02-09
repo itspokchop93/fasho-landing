@@ -1473,6 +1473,27 @@ export default function CheckoutPage() {
 
       console.log('🚀 CHECKOUT: Order created successfully:', orderResult.order);
       trackPaymentSuccess(orderResult.order?.id);
+
+      // ── PostHog: Rich purchase tracking for Growth Accounting ────────
+      try {
+        const firstItem = pendingOrder.items?.[0];
+        analytics.trackPurchase({
+          order_id: orderResult.order?.id,
+          order_number: orderResult.order?.orderNumber,
+          total: pendingOrder.total,
+          subtotal: pendingOrder.subtotal,
+          discount: pendingOrder.discount || 0,
+          coupon_code: pendingOrder.coupon?.code || undefined,
+          package_name: firstItem?.packageName || firstItem?.package_name,
+          package_id: firstItem?.packageId || firstItem?.package_id,
+          track_title: firstItem?.trackTitle || firstItem?.track_title,
+          track_artist: firstItem?.trackArtist || firstItem?.track_artist,
+          item_count: pendingOrder.items?.length || 0,
+          is_first_purchase: !currentUser, // new account = first purchase
+        });
+      } catch (purchaseTrackError) {
+        console.error('PostHog purchase tracking error:', purchaseTrackError);
+      }
       
       // Mark checkout session as completed
       if (sessionId) {

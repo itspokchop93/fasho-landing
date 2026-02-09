@@ -58,7 +58,7 @@
     "jsonwebtoken": "^9.0.2",
     "lottie-react": "^2.4.1",
     "motion-utils": "^12.23.6",
-    "next": "^14.2.28",
+    "next": "^16.1.6",
     "node-fetch": "^2.7.0",
     "nodemailer": "^7.0.4",
     "ogl": "^1.0.11",

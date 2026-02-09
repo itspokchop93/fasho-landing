@@ -56,7 +56,7 @@ const nextConfig = {
           // Security Headers
           {
             key: 'X-Frame-Options',
-            value: 'DENY',
+            value: 'SAMEORIGIN', // SAMEORIGIN allows PostHog toolbar to work
           },
           {
             key: 'X-Content-Type-Options',
@@ -165,7 +165,7 @@ const nextConfig = {
     ];
   },
   
-  // Rewrites for better SEO URLs
+  // Rewrites for better SEO URLs & PostHog reverse proxy
   async rewrites() {
     return [
       // Main sitemap (combines core pages + blog posts)
@@ -181,6 +181,22 @@ const nextConfig = {
       {
         source: '/blog/sitemap.xml',
         destination: '/api/blog/sitemap.xml',
+      },
+      // ── PostHog Reverse Proxy ────────────────────────────────────────
+      // Routes PostHog requests through your own domain so ad blockers
+      // can't block them (they target us.posthog.com / us-assets.i.posthog.com)
+      // NOTE: More specific routes MUST come before wildcards
+      {
+        source: '/ingest/static/:path*',
+        destination: 'https://us-assets.i.posthog.com/static/:path*',
+      },
+      {
+        source: '/ingest/decide',
+        destination: 'https://us.i.posthog.com/decide',
+      },
+      {
+        source: '/ingest/:path*',
+        destination: 'https://us.i.posthog.com/:path*',
       },
     ];
   },

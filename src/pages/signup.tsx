@@ -7,6 +7,7 @@ import { createClient } from '../utils/supabase/client';
 import Header from '../components/Header';
 import VerticalShapeDivider from '../components/VerticalShapeDivider';
 import * as gtag from '../utils/gtag';
+import { analytics } from '../utils/analytics';
 
 export default function SignUpPage() {
   const [isLogin, setIsLogin] = useState(true);
@@ -409,6 +410,16 @@ export default function SignUpPage() {
             method: 'email'
           });
           
+          // Track login for PostHog Growth Accounting
+          analytics.track("user_logged_in", {
+            method: "email",
+          });
+          if (data?.user?.id) {
+            analytics.setPersonProperties({
+              last_login_at: new Date().toISOString(),
+            });
+          }
+          
           setMessage('Login successful! Redirecting...');
           router.push('/dashboard');
         }
@@ -471,6 +482,16 @@ export default function SignUpPage() {
 
               // Track for Google Analytics 4
               gtag.trackGA4Signup('email');
+
+              // Track signup for PostHog Growth Accounting
+              analytics.track("user_signed_up", {
+                method: "email",
+              });
+              analytics.setPersonPropertiesOnce({
+                signup_date: new Date().toISOString(),
+                signup_source: document.referrer || "$direct",
+                signup_page: window.location.pathname,
+              });
 
               console.log('🎯 GOOGLE ADS: User signup tracked');
               

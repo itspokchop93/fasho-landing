@@ -2,6 +2,7 @@ import "../styles/globals.css";
 import type { AppProps } from "next/app";
 import { useEffect } from "react";
 import { useRouter } from "next/router";
+import posthog from "posthog-js";
 import * as gtag from "../utils/gtag";
 import LeadTracker from "../utils/leadTracking";
 import { AuthProvider } from "../utils/authContext";
@@ -13,9 +14,15 @@ export default function App({ Component, pageProps }: AppProps) {
   const router = useRouter();
 
   useEffect(() => {
-    // Google Analytics page view tracking
+    // Track page views on route changes (Google Analytics + PostHog)
     const handleRouteChange = (url: string) => {
       gtag.pageview(url);
+      // Skip PostHog tracking on admin pages
+      if (!url.startsWith("/admin")) {
+        posthog.capture("$pageview", {
+          $current_url: window.location.origin + url,
+        });
+      }
     };
 
     router.events.on('routeChangeComplete', handleRouteChange);
