@@ -183,11 +183,20 @@ async function handler(req: NextApiRequest, res: NextApiResponse, adminUser: Adm
 
     console.log(`📊 Playlist purchase submission complete: ${successCount} successful, ${failedCount} failed`);
 
+    // Build a detailed error summary if there were failures
+    let errorSummary: string | undefined;
+    if (!allSuccessful) {
+      const failedResults = results.filter(r => !r.success);
+      const errorDetails = failedResults.map(r => `Service ${r.serviceId}: ${r.error || 'Unknown error'}`);
+      errorSummary = `${failedCount} of ${results.length} order${results.length !== 1 ? 's' : ''} failed. Details: ${errorDetails.join('; ')}`;
+    }
+
     return res.status(200).json({
       success: allSuccessful,
       message: allSuccessful 
         ? `Successfully submitted ${successCount} order${successCount !== 1 ? 's' : ''} to SMM panel` 
         : `Completed with ${failedCount} failed submission${failedCount !== 1 ? 's' : ''}`,
+      error: allSuccessful ? undefined : errorSummary,
       results,
       totalSubmitted: results.length,
       successCount,

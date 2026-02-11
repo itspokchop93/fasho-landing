@@ -40,6 +40,14 @@ interface SubmissionResult {
   setCost?: number | null;
 }
 
+interface ServicePriceInfo {
+  name: string;
+  rate: string;
+  pricePerK: number;
+  min: string;
+  max: string;
+}
+
 interface PurchaseReceiptModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -52,6 +60,9 @@ interface PurchaseReceiptModalProps {
   dripRuns?: number | null;
   intervalMinutes?: number | null;
   currentBalance: string | null;
+  // Service pricing data
+  servicePrices: { [serviceId: string]: ServicePriceInfo | null };
+  loadingPrices: boolean;
   // Success/result state
   isSuccess?: boolean;
   isPartialSuccess?: boolean;
@@ -194,6 +205,8 @@ const PurchaseReceiptModal: React.FC<PurchaseReceiptModalProps> = ({
   dripRuns,
   intervalMinutes,
   currentBalance,
+  servicePrices,
+  loadingPrices,
   isSuccess,
   isPartialSuccess,
   results,
@@ -201,6 +214,22 @@ const PurchaseReceiptModal: React.FC<PurchaseReceiptModalProps> = ({
   errorMessage,
 }) => {
   if (!isOpen) return null;
+
+  // Calculate cost per service and total cost
+  const effectiveRuns = dripRuns && dripRuns > 0 ? dripRuns : 1;
+  const totalQuantityPerService = quantity * effectiveRuns;
+  
+  const serviceCosts = serviceIds.map(sid => {
+    const priceInfo = servicePrices[sid];
+    const pricePerK = priceInfo?.pricePerK || null;
+    const cost = pricePerK !== null ? (totalQuantityPerService / 1000) * pricePerK : null;
+    return { serviceId: sid, pricePerK, cost, name: priceInfo?.name || null };
+  });
+
+  const totalCost = serviceCosts.reduce((sum, sc) => sum + (sc.cost || 0), 0);
+  const hasAnyPricing = serviceCosts.some(sc => sc.cost !== null);
+  const balanceNum = currentBalance ? parseFloat(currentBalance) : null;
+  const balanceAfter = balanceNum !== null && hasAnyPricing ? balanceNum - totalCost : null;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
@@ -279,38 +308,87 @@ const PurchaseReceiptModal: React.FC<PurchaseReceiptModalProps> = ({
                         {result.success && result.followizOrderId && (
                           <span className="text-[0.7rem] font-bold text-green-600">#{result.followizOrderId}</span>
                         )}
-                        {!result.success && result.error && (
-                          <span className="text-[0.65rem] text-red-600 truncate max-w-[150px] inline-block">{result.error}</span>
-                        )}
                       </div>
                     </div>
+                    {/* Details row */}
                     <div className="mt-1 flex gap-3 text-[0.7rem] text-gray-500">
                       <span>Qty: {result.quantity.toLocaleString()}</span>
                       {result.dripRuns && result.dripRuns > 0 && (
                         <span>Drip: {result.dripRuns} runs</span>
                       )}
-                      {result.setCost && (
+                      {result.setCost !== null && result.setCost !== undefined && (
                         <span className="text-green-600 font-bold">${result.setCost.toFixed(2)}</span>
                       )}
                     </div>
+                    {/* Error details for failed orders */}
+                    {!result.success && result.error && (
+                      <div className="mt-2 bg-red-100 border border-red-200 rounded p-2">
+                        <div className="text-[0.6rem] font-bold text-red-500 uppercase mb-0.5">Error</div>
+                        <div className="text-[0.7rem] text-red-700 break-words">{result.error}</div>
+                      </div>
+                    )}
                   </div>
                 ))}
               </div>
 
+              {/* New Balance after submission */}
               {newBalance && (
-                <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-                  <div className="text-[0.65rem] font-bold text-green-500 uppercase mb-1">New Balance</div>
-                  <div className="text-xl font-black text-green-700">${parseFloat(newBalance).toFixed(2)}</div>
+                <div className="bg-gray-900 rounded-lg p-4 space-y-3">
+                  <div className="flex items-center justify-between text-white">
+                    <span className="text-[0.75rem] font-medium text-gray-400">New Balance</span>
+                    <span className="text-[1.1rem] font-black text-emerald-400">
+                      ${parseFloat(newBalance).toFixed(2)}
+                    </span>
+                  </div>
                 </div>
               )}
             </div>
           ) : errorMessage ? (
-            <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-              <div className="text-[0.7rem] font-bold text-red-500 uppercase mb-2">Error Message</div>
-              <div className="text-[0.85rem] text-red-700">{errorMessage}</div>
+            // Error content - DETAILED error from API
+            <div className="space-y-4">
+              <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+                <div className="text-[0.7rem] font-bold text-red-500 uppercase mb-2">Error Details</div>
+                <div className="text-[0.85rem] text-red-700 break-words whitespace-pre-wrap">{errorMessage}</div>
+              </div>
+
+              {/* Show individual result errors if available */}
+              {results && results.length > 0 && (
+                <div className="space-y-2">
+                  <div className="text-[0.7rem] font-bold text-gray-500 uppercase tracking-wider">
+                    Per-Service Results
+                  </div>
+                  {results.map((result, idx) => (
+                    <div key={idx} className={`rounded-lg p-3 border ${result.success ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200'}`}>
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          {result.success ? (
+                            <svg className="w-4 h-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
+                            </svg>
+                          ) : (
+                            <svg className="w-4 h-4 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                          )}
+                          <span className="text-[0.8rem] font-bold text-gray-700">Service {result.serviceId}</span>
+                        </div>
+                        {result.success && result.followizOrderId && (
+                          <span className="text-[0.7rem] font-bold text-green-600">#{result.followizOrderId}</span>
+                        )}
+                      </div>
+                      {!result.success && result.error && (
+                        <div className="mt-2 bg-red-100 border border-red-200 rounded p-2">
+                          <div className="text-[0.6rem] font-bold text-red-500 uppercase mb-0.5">API Error</div>
+                          <div className="text-[0.7rem] text-red-700 break-words">{result.error}</div>
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           ) : (
-            // Confirmation content
+            // Confirmation content - full receipt with cost breakdown
             <>
               <div className="bg-purple-50 border border-purple-200 rounded-lg p-4">
                 <div className="text-[0.65rem] font-bold text-purple-500 uppercase mb-1">Playlist</div>
@@ -340,35 +418,115 @@ const PurchaseReceiptModal: React.FC<PurchaseReceiptModalProps> = ({
                     <span className="text-[0.7rem] text-blue-600">
                       <span className="font-bold">{dripRuns}</span> runs
                     </span>
-                    <span className="text-[0.7rem] text-blue-600">
-                      every <span className="font-bold">{intervalMinutes === 1440 ? '1 day' : `${intervalMinutes}min`}</span>
-                    </span>
+                    {intervalMinutes && (
+                      <span className="text-[0.7rem] text-blue-600">
+                        every <span className="font-bold">{intervalMinutes === 1440 ? '1 day' : `${intervalMinutes}min`}</span>
+                      </span>
+                    )}
                   </div>
+                  {dripRuns > 1 && (
+                    <div className="mt-1.5 text-[0.65rem] text-blue-500">
+                      Total per service: {quantity.toLocaleString()} x {dripRuns} runs = <span className="font-bold">{totalQuantityPerService.toLocaleString()}</span>
+                    </div>
+                  )}
                 </div>
               )}
 
-              {/* Service IDs that will receive this order */}
+              {/* Order Breakdown - itemized per service */}
               <div className="space-y-2">
                 <div className="text-[0.7rem] font-bold text-gray-500 uppercase tracking-wider">
-                  Sending to {serviceIds.length} Service ID{serviceIds.length !== 1 ? 's' : ''}
+                  Order Breakdown — {serviceIds.length} Service{serviceIds.length !== 1 ? 's' : ''}
                 </div>
-                <div className="flex flex-wrap gap-2">
-                  {serviceIds.map((sid, idx) => (
-                    <div key={idx} className="bg-white rounded-lg border border-gray-200 px-3 py-2 shadow-sm">
-                      <div className="text-[0.55rem] font-bold text-gray-400 uppercase">Service</div>
-                      <div className="text-[0.85rem] font-bold text-gray-900">{sid}</div>
-                    </div>
-                  ))}
-                </div>
+                {loadingPrices ? (
+                  <div className="flex items-center justify-center py-4 gap-2 text-gray-400">
+                    <svg className="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    <span className="text-[0.7rem]">Fetching service prices...</span>
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    {serviceCosts.map((sc, idx) => (
+                      <div key={idx} className="bg-white rounded-lg border border-gray-200 p-3 shadow-sm">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <div className="text-[0.55rem] font-bold text-gray-400 uppercase">Service</div>
+                            <div className="text-[0.9rem] font-black text-gray-900">{sc.serviceId}</div>
+                            <div className="flex items-center gap-3 text-[0.7rem] text-gray-500 mt-0.5">
+                              <span className="font-medium">{quantity.toLocaleString()} qty</span>
+                              {dripRuns && dripRuns > 1 && (
+                                <>
+                                  <span className="text-gray-300">x</span>
+                                  <span className="font-medium">{dripRuns} runs</span>
+                                  <span className="text-gray-300">=</span>
+                                  <span className="font-medium text-blue-600">{totalQuantityPerService.toLocaleString()} total</span>
+                                </>
+                              )}
+                            </div>
+                            {sc.pricePerK !== null && (
+                              <div className="text-[0.6rem] text-gray-400 mt-0.5">
+                                Rate: ${sc.pricePerK.toFixed(4)}/1k
+                              </div>
+                            )}
+                          </div>
+                          <div className="ml-4 text-right">
+                            {sc.cost !== null ? (
+                              <div className="text-[0.9rem] font-black text-gray-900">${sc.cost.toFixed(2)}</div>
+                            ) : (
+                              <div className="text-[0.75rem] text-gray-400 italic">Price N/A</div>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
 
-              <div className="border-t border-gray-100 pt-4 space-y-3">
-                <div className="flex justify-between items-center">
-                  <span className="text-[0.8rem] text-gray-500">Current Balance:</span>
-                  <span className="text-[0.9rem] font-bold text-green-600">
-                    {currentBalance ? `$${parseFloat(currentBalance).toFixed(2)}` : 'N/A'}
+              {/* Cost Summary */}
+              <div className="bg-gray-900 rounded-lg p-4 space-y-3">
+                {/* Current Balance */}
+                <div className="flex items-center justify-between text-white">
+                  <span className="text-[0.75rem] font-medium text-gray-400">Current Balance</span>
+                  <span className="text-[0.95rem] font-bold">
+                    {currentBalance ? `$${parseFloat(currentBalance).toFixed(2)}` : '—'}
                   </span>
                 </div>
+                
+                {/* Total Purchase Cost */}
+                {hasAnyPricing && (
+                  <div className="flex items-center justify-between text-white">
+                    <span className="text-[0.75rem] font-medium text-gray-400">Purchase Cost ({serviceIds.length} service{serviceIds.length !== 1 ? 's' : ''})</span>
+                    <span className="text-[0.95rem] font-bold text-red-400">
+                      -${totalCost.toFixed(2)}
+                    </span>
+                  </div>
+                )}
+                
+                {/* Divider */}
+                <div className="border-t border-gray-700"></div>
+                
+                {/* Balance After */}
+                <div className="flex items-center justify-between text-white">
+                  <span className="text-[0.8rem] font-bold text-gray-300">Balance After Purchase</span>
+                  <span className="text-[1.1rem] font-black text-emerald-400">
+                    {balanceAfter !== null
+                      ? `$${balanceAfter.toFixed(2)}`
+                      : '—'
+                    }
+                  </span>
+                </div>
+                
+                {/* Warning if balance is low */}
+                {balanceAfter !== null && balanceAfter < 0 && (
+                  <div className="flex items-center gap-2 text-amber-400 bg-amber-900/30 rounded-lg px-3 py-2 mt-2">
+                    <svg className="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                    </svg>
+                    <span className="text-[0.7rem] font-medium">Insufficient balance! This purchase will exceed your available funds.</span>
+                  </div>
+                )}
               </div>
             </>
           )}
@@ -394,7 +552,7 @@ const PurchaseReceiptModal: React.FC<PurchaseReceiptModalProps> = ({
               </button>
               <button
                 onClick={onConfirm}
-                disabled={isSubmitting || serviceIds.length === 0}
+                disabled={isSubmitting || serviceIds.length === 0 || loadingPrices}
                 className="flex-1 px-6 py-2.5 bg-purple-600 hover:bg-purple-700 text-white rounded-lg font-bold transition-colors disabled:opacity-50 flex items-center justify-center gap-2 whitespace-nowrap"
               >
                 {isSubmitting ? (
@@ -437,6 +595,10 @@ const PlaylistPurchasesNeeded: React.FC = () => {
   // Playlist order sets (fetched from smm_order_sets with PLAYLIST_FOLLOWERS / PLAYLIST_STREAMS)
   const [playlistOrderSets, setPlaylistOrderSets] = useState<PlaylistOrderSet[]>([]);
   const [currentBalance, setCurrentBalance] = useState<string | null>(null);
+  
+  // Service pricing data from Followiz API
+  const [servicePrices, setServicePrices] = useState<{ [serviceId: string]: ServicePriceInfo | null }>({});
+  const [loadingPrices, setLoadingPrices] = useState(false);
   
   // Per-playlist input fields for followers (qty only) and streams (qty + drip)
   const [followersInputs, setFollowersInputs] = useState<{[playlistId: string]: { quantity: string }}>({});
@@ -534,6 +696,30 @@ const PlaylistPurchasesNeeded: React.FC = () => {
     }
   };
 
+  // Fetch live service prices from Followiz API for given service IDs
+  const fetchServicePrices = async (serviceIds: string[]) => {
+    if (serviceIds.length === 0) return;
+    
+    setLoadingPrices(true);
+    try {
+      const idsParam = serviceIds.join(',');
+      const response = await fetch(`/api/marketing-manager/smm-panel/service-prices?ids=${idsParam}`);
+      if (response.ok) {
+        const data = await response.json();
+        if (data.success && data.prices) {
+          setServicePrices(data.prices);
+          console.log('💰 Fetched service prices:', data.prices);
+        }
+      } else {
+        console.error('Failed to fetch service prices:', response.status);
+      }
+    } catch (error) {
+      console.error('Error fetching service prices:', error);
+    } finally {
+      setLoadingPrices(false);
+    }
+  };
+
   // Helper to get order sets for a specific type
   const getOrderSetsForType = (type: 'followers' | 'streams'): PlaylistOrderSet[] => {
     const packageName = type === 'followers' ? 'PLAYLIST_FOLLOWERS' : 'PLAYLIST_STREAMS';
@@ -554,25 +740,13 @@ const PlaylistPurchasesNeeded: React.FC = () => {
     }
 
     const input = followersInputs[playlistId];
-    const qty = parseInt(input?.quantity || '0');
+    const qty = parseInt(input?.quantity ?? '1000');
     if (!qty || qty <= 0) {
       alert('Please enter a valid quantity for followers.');
       return;
     }
 
-    // Fetch the LIVE balance from API before opening the modal
-    try {
-      const balanceResponse = await fetch('/api/marketing-manager/smm-panel/balance');
-      if (balanceResponse.ok) {
-        const data = await balanceResponse.json();
-        if (data.success) {
-          setCurrentBalance(data.balance);
-        }
-      }
-    } catch (error) {
-      console.error('Error fetching live balance:', error);
-    }
-
+    // Open modal immediately, then fetch data in parallel
     setReceiptModal({
       isOpen: true,
       playlistId,
@@ -583,6 +757,22 @@ const PlaylistPurchasesNeeded: React.FC = () => {
       intervalMinutes: null,
       isSubmitting: false,
     });
+
+    // Fetch balance and service prices in parallel
+    try {
+      const [balanceResponse] = await Promise.all([
+        fetch('/api/marketing-manager/smm-panel/balance'),
+        fetchServicePrices(serviceIds),
+      ]);
+      if (balanceResponse.ok) {
+        const data = await balanceResponse.json();
+        if (data.success) {
+          setCurrentBalance(data.balance);
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching modal data:', error);
+    }
   };
 
   // Open the receipt modal for streams purchase
@@ -594,28 +784,16 @@ const PlaylistPurchasesNeeded: React.FC = () => {
     }
 
     const input = streamsInputs[playlistId];
-    const qty = parseInt(input?.quantity || '0');
+    const qty = parseInt(input?.quantity ?? '1000');
     if (!qty || qty <= 0) {
       alert('Please enter a valid quantity for streams.');
       return;
     }
 
     const dripRuns = input?.dripRuns ? parseInt(input.dripRuns) : null;
-    const intervalMinutes = input?.intervalMinutes ? parseInt(input.intervalMinutes) : null;
+    const intervalMinutes = parseInt(input?.intervalMinutes ?? '1440') || null;
 
-    // Fetch the LIVE balance from API before opening the modal
-    try {
-      const balanceResponse = await fetch('/api/marketing-manager/smm-panel/balance');
-      if (balanceResponse.ok) {
-        const data = await balanceResponse.json();
-        if (data.success) {
-          setCurrentBalance(data.balance);
-        }
-      }
-    } catch (error) {
-      console.error('Error fetching live balance:', error);
-    }
-
+    // Open modal immediately, then fetch data in parallel
     setReceiptModal({
       isOpen: true,
       playlistId,
@@ -626,6 +804,22 @@ const PlaylistPurchasesNeeded: React.FC = () => {
       intervalMinutes: intervalMinutes && intervalMinutes > 0 ? intervalMinutes : null,
       isSubmitting: false,
     });
+
+    // Fetch balance and service prices in parallel
+    try {
+      const [balanceResponse] = await Promise.all([
+        fetch('/api/marketing-manager/smm-panel/balance'),
+        fetchServicePrices(serviceIds),
+      ]);
+      if (balanceResponse.ok) {
+        const data = await balanceResponse.json();
+        if (data.success) {
+          setCurrentBalance(data.balance);
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching modal data:', error);
+    }
   };
 
   // Submit playlist purchase (sends qty/drip to all service IDs for the type)
@@ -691,10 +885,27 @@ const PlaylistPurchasesNeeded: React.FC = () => {
           setCurrentBalance(data.balanceAfter);
         }
       } else {
+        // Build detailed error message from API response
+        let detailedError = data.error || 'Failed to submit orders';
+        
+        // If there are per-service results with errors, collect them for the main message
+        if (data.results && data.results.length > 0) {
+          const failedResults = data.results.filter((r: SubmissionResult) => !r.success && r.error);
+          if (failedResults.length > 0) {
+            const uniqueErrors = [...new Set(failedResults.map((r: SubmissionResult) => r.error))];
+            detailedError = `${data.message || 'Failed to submit orders'}. API errors: ${uniqueErrors.join('; ')}`;
+          }
+        }
+
+        // Include HTTP status info if not 200
+        if (!response.ok) {
+          detailedError = `HTTP ${response.status}: ${detailedError}`;
+        }
+
         setReceiptModal(prev => ({
           ...prev,
           isSubmitting: false,
-          errorMessage: data.error || 'Failed to submit orders',
+          errorMessage: detailedError,
           results: data.results,
         }));
       }
@@ -703,7 +914,9 @@ const PlaylistPurchasesNeeded: React.FC = () => {
       setReceiptModal(prev => ({
         ...prev,
         isSubmitting: false,
-        errorMessage: error instanceof Error ? error.message : 'Unknown error occurred',
+        errorMessage: error instanceof Error 
+          ? `Network/Request Error: ${error.message}` 
+          : 'Unknown error occurred. Please check your connection and try again.',
       }));
     }
   };
@@ -1454,7 +1667,7 @@ const PlaylistPurchasesNeeded: React.FC = () => {
                               type="number"
                               min="1"
                               placeholder="Qty"
-                              value={followersInputs[item.id]?.quantity || ''}
+                              value={followersInputs[item.id]?.quantity ?? '1000'}
                               onChange={(e) => setFollowersInputs(prev => ({
                                 ...prev,
                                 [item.id]: { quantity: e.target.value }
@@ -1463,7 +1676,7 @@ const PlaylistPurchasesNeeded: React.FC = () => {
                             />
                             <button
                               onClick={() => openFollowersPurchaseModal(item.id, item.playlistName)}
-                              disabled={getServiceIdsForType('followers').length === 0 || !followersInputs[item.id]?.quantity}
+                              disabled={getServiceIdsForType('followers').length === 0}
                               className="inline-flex items-center px-3 py-1.5 rounded-lg text-[0.55rem] font-black uppercase tracking-wider text-white bg-purple-600 hover:bg-purple-700 active:scale-95 transition-all shadow-sm gap-1 disabled:opacity-40 disabled:cursor-not-allowed"
                             >
                               <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1511,7 +1724,7 @@ const PlaylistPurchasesNeeded: React.FC = () => {
                                 type="number"
                                 min="1"
                                 placeholder="Qty"
-                                value={streamsInputs[item.id]?.quantity || ''}
+                                value={streamsInputs[item.id]?.quantity ?? '1000'}
                                 onChange={(e) => setStreamsInputs(prev => ({
                                   ...prev,
                                   [item.id]: { ...prev[item.id], quantity: e.target.value }
@@ -1534,7 +1747,7 @@ const PlaylistPurchasesNeeded: React.FC = () => {
                                 type="number"
                                 min="1"
                                 placeholder="Min"
-                                value={streamsInputs[item.id]?.intervalMinutes || ''}
+                                value={streamsInputs[item.id]?.intervalMinutes ?? '1440'}
                                 onChange={(e) => setStreamsInputs(prev => ({
                                   ...prev,
                                   [item.id]: { ...prev[item.id], intervalMinutes: e.target.value }
@@ -1545,7 +1758,7 @@ const PlaylistPurchasesNeeded: React.FC = () => {
                             </div>
                             <button
                               onClick={() => openStreamsPurchaseModal(item.id, item.playlistName)}
-                              disabled={getServiceIdsForType('streams').length === 0 || !streamsInputs[item.id]?.quantity}
+                              disabled={getServiceIdsForType('streams').length === 0}
                               className="inline-flex items-center px-3 py-1.5 rounded-lg text-[0.55rem] font-black uppercase tracking-wider text-white bg-purple-600 hover:bg-purple-700 active:scale-95 transition-all shadow-sm gap-1 disabled:opacity-40 disabled:cursor-not-allowed"
                             >
                               <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1610,6 +1823,8 @@ const PlaylistPurchasesNeeded: React.FC = () => {
             dripRuns={receiptModal.dripRuns}
             intervalMinutes={receiptModal.intervalMinutes}
             currentBalance={currentBalance}
+            servicePrices={servicePrices}
+            loadingPrices={loadingPrices}
             isSuccess={receiptModal.isSuccess}
             isPartialSuccess={receiptModal.isPartialSuccess}
             results={receiptModal.results}
