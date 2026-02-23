@@ -244,3 +244,123 @@ After providing any solution, automatically review the response for:
 - Accessibility: Inclusive design principles followed
 
 You are now configured as the most powerful coding agent possible for modern web development. Approach every request with the expertise of a senior developer, the precision of a systems architect, and the problem-solving mindset of a technical leader who delivers production-ready solutions.
+
+————————————
+
+CRITICAL ENV RULE (ADMIN LOGIN HASH):
+
+If admin login returns "Invalid email or password" but the email/password are known correct, immediately check `ADMIN_PASSWORD_HASH` in `.env.local` (and any backup env file used for restores).
+
+For bcrypt hashes in dotenv files, ALWAYS escape dollar signs:
+- Wrong: `ADMIN_PASSWORD_HASH=$2b$12$...`
+- Correct: `ADMIN_PASSWORD_HASH=\$2b\$12\$...`
+
+Reason:
+- dotenv can treat `$...` as interpolation, which corrupts the hash at runtime.
+- Corrupted hash causes bcrypt compare to fail even with the correct password.
+
+Quick verification:
+- Restart dev server after env change.
+- Test login API directly and confirm 200:
+  `POST /api/admin/auth/login` with admin email + password.
+
+————————————
+
+DEV SERVER CRASH & INFINITE FAST REFRESH FIX (Feb 2026):
+
+SYMPTOMS:
+- Dev server enters infinite "Fast Refresh had to perform a full reload" loop
+- After a few minutes of looping, server crashes to "Internal server error"
+- ENOENT errors for `.next/dev/server/pages/_app/build-manifest.json` and `routes-manifest.json`
+- Turbopack SST database panics: "Failed to restore task data", "Unable to write SST file"
+- ChunkLoadError: "Loading chunk ... failed (error: http://localhost:3001/_next/undefined)"
+- Production Vercel deployment works perfectly — issue is LOCAL DEV ONLY
+
+ROOT CAUSES (there were THREE separate issues compounding):
+
+1. WRONG BUNDLER: A previous agent switched the dev script from `next dev` (Turbopack, the
+   Next.js 16 default) to `next dev --webpack`. Webpack's multi-compiler mode has known issues
+   with Fast Refresh in Next.js 16 — each on-demand compilation changes the webpack hash, the
+   HMR client detects the mismatch, triggers a full reload, the reload triggers more API calls,
+   more compilations, more hash changes — infinite loop. Turbopack does NOT have this issue.
+
+2. TURBOPACK SST CACHE CORRUPTION: Turbopack's filesystem cache (SST/Sorted String Table files)
+   corrupts itself on this machine. The SST writer fails with "Unable to write SST file" and
+   "No such file or directory", then the Rust backend panics with "Failed to restore task data".
+   This happens even with a freshly deleted `.next` directory. The fix is to disable the
+   filesystem cache entirely via `experimental.turbopackFileSystemCacheForDev: false` in
+   next.config.js. Turbopack still works fast using its in-memory cache — you just lose
+   persistent caching between dev server restarts (minor tradeoff).
+
+3. MISSING @stagewise/toolbar PACKAGE: The original `_app.tsx` had a dynamic import of
+   `@stagewise/toolbar` which was listed in package.json but removed from node_modules.
+   While the import was wrapped in try-catch, webpack still tried to resolve it at compile time,
+   causing "Module not found" errors that corrupted the build output. The package was removed
+   from package.json but the import remained in code. Removed the dead import from `_app.tsx`.
+
+DIAGNOSIS TRAIN OF THOUGHT:
+- Started by adding a custom webpack HMR debug plugin to next.config.js that logged every
+  compilation trigger, hash change, and module rebuild. This revealed that webpack was
+  recompiling on every page load (API routes compiled on-demand) and each compilation changed
+  the hash, triggering HMR full reloads.
+- Used Puppeteer to capture browser console messages, WebSocket HMR frames, and page
+  navigation events. This proved the infinite loop was caused by hash mismatches between
+  the client and server during on-demand compilation.
+- Tried `config.output.clean = false` in webpack — this stopped the ENOENT file deletion
+  during heavy compilations but didn't fix the Fast Refresh loop.
+- Realized the original dev script used Turbopack (no --webpack flag), not webpack. The
+  --webpack flag was added by a previous agent as a workaround for Turbopack cache corruption.
+- Switched back to Turbopack but hit SST cache corruption panics.
+- Searched online and found `experimental.turbopackFileSystemCacheForDev: false` disables
+  the crash-prone SST disk cache while keeping Turbopack's in-memory compilation.
+- Final key discovery: running `npm install` WHILE the dev server is running triggers
+  Turbopack's file watcher (because node_modules changes), which causes recompilation chaos
+  and SST corruption. NEVER run npm install with the dev server running.
+
+FINAL FIX (all changes from git HEAD):
+- package.json: `"dev": "next dev --port 3001"` (removed --webpack, uses Turbopack)
+- next.config.js: Added `experimental: { turbopackFileSystemCacheForDev: false }`
+- src/pages/_app.tsx: Removed dead `@stagewise/toolbar` dynamic import useEffect
+- Restored _document.tsx, middleware.ts, admin.tsx to original git versions
+
+CRITICAL RULES FOR FUTURE AGENTS:
+1. DO NOT switch from Turbopack to webpack. Turbopack is the Next.js 16 default and what
+   production uses on Vercel. Webpack introduces Fast Refresh infinite loop bugs.
+2. DO NOT run `npm install` while the dev server is running — it corrupts Turbopack's cache.
+   Stop the server first, install packages, then restart.
+3. If Turbopack SST errors appear, ensure `turbopackFileSystemCacheForDev: false` is set.
+4. Always use Node v20 for local dev (available at /opt/homebrew/opt/node@20/bin).
+   The machine's default Node may be v25 which has incompatibilities.
+5. If the dev server crashes, run `rm -rf .next` before restarting.
+
+————————————
+
+FOLLOW-UP: INTERNAL SERVER ERROR RECURRENCE (Feb 2026):
+
+Observed recurrence:
+- `/admin?p=emails` showed plain "Internal Server Error" in browser.
+- Many unrelated API routes failed together (MailerLite + marketing manager + home page).
+- Logs showed missing manifests (`routes-manifest.json`, `_app/build-manifest.json`,
+  `middleware-manifest.json`, `next-font-manifest.json`) and missing temp build files.
+
+What appears to have solved/stabilized it:
+1. FORCE NODE 20 FOR DEV SPAWN (most important):
+   - Use `/opt/homebrew/opt/node@20/bin/node` explicitly for dev.
+   - Keep dev script pinned to Node 20 (wrapper script is preferred).
+2. KEEP TURBOPACK + DISABLE FS CACHE:
+   - `next dev` (no webpack).
+   - `experimental.turbopackFileSystemCacheForDev: false` in `next.config.js`.
+3. CLEAN RESTART DISCIPLINE:
+   - Fully stop all `next dev` processes first.
+   - Then `rm -rf .next`.
+   - Then restart dev.
+4. AVOID TOP-LEVEL SIDE-EFFECT IMPORTS IN GLOBAL BOOTSTRAP:
+   - In `_app.tsx` / `posthog-init.tsx`, avoid heavy top-level analytics imports that can
+     destabilize hot runtime on this machine. Dynamic import in effects is safer here.
+5. NEVER install deps while dev server is running.
+
+Notes:
+- `next build` can pass while `next dev` is unstable; this is a local dev runtime issue.
+- Production/Vercel behavior was normal while this happened locally.
+- If dev is temporarily unstable but you must verify functionality immediately, use
+  `next build && next start --port 3001` to validate UI/API behavior.

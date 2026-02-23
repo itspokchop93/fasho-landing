@@ -504,6 +504,39 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       // Don't fail the entire order creation if AirTable fails
     }
 
+    // Push subscriber to MailerLite (non-blocking, never fails the order)
+    try {
+      console.log('📬 CREATE-ORDER: Pushing subscriber to MailerLite...');
+      const { pushSubscriberToMailerLite, getActiveGroupIds } = await import('../../utils/mailerlite/mailerliteService');
+      const { groupIds, groupNames } = await getActiveGroupIds(supabase);
+
+      if (groupIds.length > 0) {
+        const mlResult = await pushSubscriberToMailerLite(
+          {
+            email: customerEmail,
+            firstName: billingInfo.firstName,
+            lastName: billingInfo.lastName,
+            fullName: customerName,
+            zip: billingInfo.zip,
+            groupIds,
+            groupNames,
+            source: 'checkout',
+          },
+          supabase
+        );
+
+        if (mlResult.success) {
+          console.log('📬 CREATE-ORDER: MailerLite subscriber push successful');
+        } else {
+          console.log('📬 CREATE-ORDER: MailerLite subscriber push failed:', mlResult.errorMessage);
+        }
+      } else {
+        console.log('📬 CREATE-ORDER: No active MailerLite groups, skipping push');
+      }
+    } catch (mlError) {
+      console.error('📬 CREATE-ORDER: Error pushing to MailerLite:', mlError);
+    }
+
     return res.status(200).json({
       success: true,
       order: {

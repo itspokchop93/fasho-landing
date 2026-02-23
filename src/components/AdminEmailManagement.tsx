@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
+import AdminMailerLiteManagement from './AdminMailerLiteManagement';
 
 interface EmailTemplate {
   id: string;
@@ -28,6 +29,7 @@ interface AdminSettings {
 
 export default function AdminEmailManagement() {
   const router = useRouter();
+  const [activeSubTab, setActiveSubTab] = useState<'transactional' | 'mailerlite'>('transactional');
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [emailTemplates, setEmailTemplates] = useState<EmailTemplate[]>([]);
@@ -384,45 +386,75 @@ export default function AdminEmailManagement() {
     }
   };
 
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center p-8">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-        <span className="ml-2 text-gray-600">Loading email data...</span>
-      </div>
-    );
-  }
+  const renderTransactionalLoading = () => (
+    <div className="flex items-center justify-center p-8">
+      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+      <span className="ml-2 text-gray-600">Loading email data...</span>
+    </div>
+  );
 
-  if (error) {
-    return (
-      <div className="bg-red-50 border border-red-200 rounded-md p-4">
-        <div className="flex">
-          <div className="flex-shrink-0">
-            <svg className="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
-              <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
-            </svg>
+  const renderTransactionalError = () => (
+    <div className="bg-red-50 border border-red-200 rounded-md p-4">
+      <div className="flex">
+        <div className="flex-shrink-0">
+          <svg className="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
+            <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+          </svg>
+        </div>
+        <div className="ml-3">
+          <h3 className="text-sm font-medium text-red-800">Error Loading Email Data</h3>
+          <div className="mt-2 text-sm text-red-700">
+            <p>{error}</p>
           </div>
-          <div className="ml-3">
-            <h3 className="text-sm font-medium text-red-800">Error Loading Email Data</h3>
-            <div className="mt-2 text-sm text-red-700">
-              <p>{error}</p>
-            </div>
-            <div className="mt-4">
-              <button
-                onClick={fetchEmailData}
-                className="bg-red-100 px-3 py-2 rounded-md text-sm font-medium text-red-800 hover:bg-red-200"
-              >
-                Try Again
-              </button>
-            </div>
+          <div className="mt-4">
+            <button
+              onClick={fetchEmailData}
+              className="bg-red-100 px-3 py-2 rounded-md text-sm font-medium text-red-800 hover:bg-red-200"
+            >
+              Try Again
+            </button>
           </div>
         </div>
       </div>
-    );
-  }
+    </div>
+  );
 
   return (
     <div className="space-y-6">
+      {/* Sub-Tab Navigation */}
+      <div className="border-b border-gray-200">
+        <nav className="-mb-px flex space-x-8">
+          <button
+            onClick={() => setActiveSubTab('transactional')}
+            className={`whitespace-nowrap py-3 px-1 border-b-2 font-medium text-sm transition-colors ${
+              activeSubTab === 'transactional'
+                ? 'border-indigo-500 text-indigo-600'
+                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+            }`}
+          >
+            Transactional Emails
+          </button>
+          <button
+            onClick={() => setActiveSubTab('mailerlite')}
+            className={`whitespace-nowrap py-3 px-1 border-b-2 font-medium text-sm transition-colors ${
+              activeSubTab === 'mailerlite'
+                ? 'border-indigo-500 text-indigo-600'
+                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+            }`}
+          >
+            MailerLite API
+          </button>
+        </nav>
+      </div>
+
+      {activeSubTab === 'mailerlite' ? (
+        <AdminMailerLiteManagement />
+      ) : isLoading ? (
+        renderTransactionalLoading()
+      ) : error ? (
+        renderTransactionalError()
+      ) : (
+      <>
       <div className="sm:flex sm:items-center">
         <div className="sm:flex-auto">
           <h1 className="text-xl font-semibold text-gray-900">Email Notifications</h1>
@@ -633,6 +665,8 @@ export default function AdminEmailManagement() {
           </div>
         </details>
       </div>
+      </>
+      )}
     </div>
   );
 } 

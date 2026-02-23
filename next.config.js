@@ -3,8 +3,9 @@ const path = require('path');
 /** @type {import('next').NextConfig} */
 // Config file for Next.js application
 const nextConfig = {
-  // Pin the turbopack root to this project directory to avoid issues
-  // with special characters (like **) in parent directory names
+  experimental: {
+    turbopackFileSystemCacheForDev: false,
+  },
   turbopack: {
     root: path.resolve(__dirname),
   },

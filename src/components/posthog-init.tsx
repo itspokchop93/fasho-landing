@@ -1,6 +1,5 @@
 import type { ReactNode } from "react";
 import { useEffect, useRef } from "react";
-import posthog from "posthog-js";
 import { PostHogProvider } from "posthog-js/react";
 import { initPostHog, getPostHogClient } from "../utils/posthog-client";
 import { useAuth } from "../utils/authContext";
@@ -30,6 +29,7 @@ const PostHogInit = ({ children }: PostHogInitProps) => {
     if (loading) return;
 
     const userId = user?.id || null;
+    const posthogClient = getPostHogClient();
 
     if (userId && userId !== lastUserId.current) {
       const email = user?.email;
@@ -39,10 +39,10 @@ const PostHogInit = ({ children }: PostHogInitProps) => {
       const plan = user?.user_metadata?.plan || user?.app_metadata?.plan;
 
       // Alias anonymous ID → user ID (once, for merging pre-auth activity)
-      const distinctId = posthog.get_distinct_id?.();
+      const distinctId = posthogClient.get_distinct_id?.();
       const aliasKey = `posthog_alias_${userId}`;
       if (distinctId && distinctId !== userId && typeof localStorage !== "undefined" && !localStorage.getItem(aliasKey)) {
-        posthog.alias(userId, distinctId);
+        posthogClient.alias(userId, distinctId);
         localStorage.setItem(aliasKey, "true");
       }
 
@@ -50,7 +50,7 @@ const PostHogInit = ({ children }: PostHogInitProps) => {
       // • Growth Accounting (new / returning / resurrecting / dormant)
       // • Cohort analysis
       // • User-level analytics & filtering
-      posthog.identify(userId, {
+      posthogClient.identify(userId, {
         // $set properties (overwritten on each identify)
         email: email,
         name: fullName,
@@ -67,7 +67,7 @@ const PostHogInit = ({ children }: PostHogInitProps) => {
       });
 
       // Also set person properties via $set for any we want updated every session
-      posthog.people.set({
+      posthogClient.people.set({
         last_seen_at: new Date().toISOString(),
         last_page: window.location.pathname,
       });
@@ -75,7 +75,7 @@ const PostHogInit = ({ children }: PostHogInitProps) => {
 
     // User logged out — reset PostHog so a new anonymous ID is assigned
     if (!userId && lastUserId.current) {
-      posthog.reset();
+      posthogClient.reset();
     }
 
     lastUserId.current = userId;

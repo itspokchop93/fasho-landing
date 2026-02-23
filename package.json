@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "node ./scripts/validate-env.js && next dev",
+    "dev": "bash ./scripts/dev-with-node20.sh",
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
@@ -19,7 +19,6 @@
     "@sanity/image-url": "^2.0.3",
     "@splidejs/react-splide": "^0.7.12",
     "@splidejs/splide-extension-auto-scroll": "^0.5.3",
-    "@stagewise/toolbar": "^0.5.2",
     "@supabase/ssr": "^0.6.1",
     "@supabase/supabase-js": "^2.38.4",
     "@tiptap/extension-blockquote": "^3.3.0",

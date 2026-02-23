@@ -576,6 +576,28 @@ export default function SignUpPage() {
                 // Don't affect the signup flow if webhook fails
               }
 
+              // Push subscriber to MailerLite
+              try {
+                console.log('📬 SIGNUP: Sending MailerLite subscriber push...');
+                const mlResponse = await fetch('/api/mailerlite-subscribe', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({
+                    email: formData.email,
+                    fullName: formData.fullName,
+                    source: 'signup',
+                  }),
+                });
+                const mlResult = await mlResponse.json();
+                if (mlResult.success) {
+                  console.log('📬 SIGNUP: MailerLite subscriber push successful');
+                } else {
+                  console.log('📬 SIGNUP: MailerLite subscriber push failed or skipped:', mlResult.errorMessage || mlResult.reason);
+                }
+              } catch (mlError) {
+                console.error('📬 SIGNUP: Error pushing to MailerLite:', mlError);
+              }
+
               // Redirect to dashboard since user is now authenticated
               setTimeout(() => {
                 router.push('/dashboard');
