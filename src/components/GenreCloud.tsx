@@ -358,7 +358,7 @@ export default function GenreCloud({ groups, selectedGenres, onSelectionChange, 
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
         ctx.fillStyle = GROUP_LABEL_COLOR;
-        ctx.letterSpacing = '2px';
+        (ctx as any).letterSpacing = '2px';
         ctx.fillText(l.label.toUpperCase(), l.x, l.y);
       });
 
