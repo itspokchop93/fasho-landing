@@ -557,17 +557,18 @@ export default function AddSongsPage() {
   // Check for authentication state
   useEffect(() => {
     const checkUser = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      console.log('🔐 ADD: Auth check:', user?.email || 'No user');
-      setCurrentUser(user);
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        setCurrentUser(session?.user ?? null);
+      } catch {
+        setCurrentUser(null);
+      }
       setIsAuthLoading(false);
     };
     checkUser();
 
-    // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, session) => {
-        console.log('🔐 ADD: Auth state changed:', event, session?.user?.email);
+      (_event, session) => {
         setCurrentUser(session?.user ?? null);
         setIsAuthLoading(false);
       }

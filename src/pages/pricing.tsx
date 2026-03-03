@@ -13,9 +13,13 @@ const PricingPage = () => {
 
   useEffect(() => {
     const getUser = async () => {
-      const supabase = createClient();
-      const { data: { user } } = await supabase.auth.getUser();
-      setCurrentUser(user);
+      try {
+        const supabase = createClient();
+        const { data: { session } } = await supabase.auth.getSession();
+        setCurrentUser(session?.user ?? null);
+      } catch {
+        setCurrentUser(null);
+      }
     };
     getUser();
   }, []);

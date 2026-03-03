@@ -2,12 +2,10 @@ import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 
 export async function middleware(request: NextRequest) {
-  // Skip middleware during build time or if environment is not properly configured
   if (process.env.NEXT_PHASE === 'phase-production-build') {
     return NextResponse.next()
   }
 
-  // Validate environment variables
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
   const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
 
@@ -65,35 +63,39 @@ export async function middleware(request: NextRequest) {
     }
   )
 
-  // Refresh session if expired - required for Server Components
-  const { data: { user }, error } = await supabase.auth.getUser()
+  // Refresh session if exists — wrapped in try/catch because getUser()
+  // throws AuthSessionMissingError when no session cookie is present
+  let user = null
+  let authError = null
+  try {
+    const { data, error } = await supabase.auth.getUser()
+    user = data?.user ?? null
+    authError = error
+  } catch {
+    // No session — user is a guest, which is fine for most routes
+  }
 
-  // Define protected routes that require authentication
-  const protectedRoutes = ['/dashboard', '/add', '/packages', '/checkout', '/thank-you']
+  // Only /dashboard requires authentication.
+  // The checkout funnel (/add, /packages, /checkout, /thank-you) is
+  // intentionally public — guests sign up on the checkout page itself.
+  const protectedRoutes = ['/dashboard']
   const isProtectedRoute = protectedRoutes.some(route => 
     request.nextUrl.pathname.startsWith(route)
   )
 
-  // If accessing a protected route without authentication, redirect to signup
-  if (isProtectedRoute && (!user || error)) {
+  if (isProtectedRoute && !user) {
     const signupUrl = new URL('/signup', request.url)
-    if (process.env.NODE_ENV === 'development') {
-      console.log('🔐 MIDDLEWARE: Redirecting unauthenticated user to signup from:', request.nextUrl.pathname)
-    }
     return NextResponse.redirect(signupUrl)
   }
 
-  // If user is authenticated and trying to access auth pages, redirect to dashboard
+  // Redirect authenticated users away from auth pages to dashboard
   const authRoutes = ['/signup', '/a-login']
   const isAuthRoute = authRoutes.some(route => 
     request.nextUrl.pathname.startsWith(route)
   )
 
-  if (isAuthRoute && user && !error) {
+  if (isAuthRoute && user) {
     const dashboardUrl = new URL('/dashboard', request.url)
-    if (process.env.NODE_ENV === 'development') {
-      console.log('🔐 MIDDLEWARE: Redirecting authenticated user to dashboard from:', request.nextUrl.pathname)
-    }
     return NextResponse.redirect(dashboardUrl)
   }
 

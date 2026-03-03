@@ -10,7 +10,8 @@ export default function ConfirmPage() {
     // Email verification is now disabled, redirect users to dashboard if logged in, otherwise to signup
     const checkAuthAndRedirect = async () => {
       try {
-        const { data: { user } } = await supabase.auth.getUser()
+        const { data: { session } } = await supabase.auth.getSession()
+        const user = session?.user ?? null
         
         if (user) {
           // User is logged in, redirect to dashboard

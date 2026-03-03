@@ -142,23 +142,19 @@ export default function PackagesPage() {
 
   // Check for authentication state
   useEffect(() => {
-    console.log('🔐 PACKAGES: useEffect started - checking auth');
-    
     const checkUser = async () => {
       try {
-        console.log('🔐 PACKAGES: About to call supabase.auth.getUser()');
-        const { data: { user }, error } = await supabase.auth.getUser();
-        console.log('🔐 PACKAGES: supabase.auth.getUser() response:', { user: user?.email || null, error });
+        const { data: { session }, error: sessionError } = await supabase.auth.getSession();
         
-        if (error) {
-          console.error('🔐 PACKAGES: Error in getUser:', error);
+        if (sessionError || !session?.user) {
+          setCurrentUser(null);
+          setIsAuthLoading(false);
+          return;
         }
         
-        console.log('🔐 PACKAGES: Setting currentUser to:', user?.email || 'No user');
-        setCurrentUser(user);
+        setCurrentUser(session.user);
         setIsAuthLoading(false);
       } catch (err) {
-        console.error('🔐 PACKAGES: Exception in checkUser:', err);
         setCurrentUser(null);
         setIsAuthLoading(false);
       }
@@ -166,20 +162,15 @@ export default function PackagesPage() {
     
     checkUser();
 
-    // TEMPORARILY DISABLED: Listen for auth changes
-    console.log('🔐 PACKAGES: SKIPPING onAuthStateChange listener for testing');
-    // const { data: { subscription } } = supabase.auth.onAuthStateChange(
-    //   (event, session) => {
-    //     console.log('🔐 PACKAGES: Auth state changed:', event, session?.user?.email || 'No user');
-    //     console.log('🔐 PACKAGES: Full session object:', session);
-    //     setCurrentUser(session?.user ?? null);
-    //     setIsAuthLoading(false);
-    //   }
-    // );
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      (_event, session) => {
+        setCurrentUser(session?.user ?? null);
+        setIsAuthLoading(false);
+      }
+    );
 
     return () => {
-      console.log('🔐 PACKAGES: Cleaning up auth listener (none set)');
-      // subscription.unsubscribe();
+      subscription.unsubscribe();
     };
   }, []);
 
@@ -555,30 +546,20 @@ export default function PackagesPage() {
       return;
     }
 
-    // Double-check authentication state before proceeding
-    console.log('🔐 PACKAGES: handleNext called - performing final auth check');
-    
     let finalUserId = currentUser?.id || null;
     
-    // If no current user, do one final check
     if (!currentUser) {
-      console.log('🔐 PACKAGES: No currentUser found, doing final auth check...');
       try {
-        const { data: { user }, error } = await supabase.auth.getUser();
-        console.log('🔐 PACKAGES: Final auth check result:', { user: user?.email || null, error });
+        const { data: { session }, error: sessionError } = await supabase.auth.getSession();
         
-        if (user && !error) {
-          finalUserId = user.id;
-          setCurrentUser(user); // Update state for future use
-          console.log('🔐 PACKAGES: Updated currentUser from final check:', user.email);
+        if (session?.user && !sessionError) {
+          finalUserId = session.user.id;
+          setCurrentUser(session.user);
         }
       } catch (err) {
-        console.error('🔐 PACKAGES: Final auth check failed:', err);
+        // Guest user — proceed without userId
       }
     }
-
-    console.log('🔐 PACKAGES: Final userId for checkout session:', finalUserId);
-    console.log('🔐 PACKAGES: Final currentUser email:', currentUser?.email || 'none');
 
     if (isLastSong || isOnlySong) {
       try {

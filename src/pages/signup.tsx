@@ -103,53 +103,24 @@ export default function SignUpPage() {
       try {
         console.log('🔐 SIGNUP: 🚀 IMMEDIATE AUTH CHECK - Checking if user is logged in...');
         
-        // Multiple auth checks for maximum reliability
         let isAuthenticated = false;
         let userEmail = '';
         let authMethod = 'none';
         
-        // Method 1: getUser (most reliable for current auth state)
         try {
-          const { data: { user }, error: userError } = await supabase.auth.getUser();
-          console.log('🔐 SIGNUP: getUser() check:', { 
-            hasUser: !!user, 
-            email: user?.email || 'No user', 
-            error: userError?.message || 'No error' 
-          });
+          const { data: { session }, error: sessionError } = await supabase.auth.getSession();
           
-          if (user && !userError) {
+          if (session?.user && !sessionError) {
             isAuthenticated = true;
-            userEmail = user.email || '';
-            authMethod = 'getUser';
+            userEmail = session.user.email || '';
+            authMethod = 'getSession';
           }
         } catch (err) {
-          console.log('🔐 SIGNUP: getUser() failed:', err);
+          // No session available
         }
         
-        // Method 2: getSession (fallback)
         if (!isAuthenticated) {
           try {
-            const { data: { session }, error: sessionError } = await supabase.auth.getSession();
-            console.log('🔐 SIGNUP: getSession() check:', { 
-              hasSession: !!session?.user, 
-              email: session?.user?.email || 'No session', 
-              error: sessionError?.message || 'No error' 
-            });
-            
-            if (session?.user && !sessionError) {
-              isAuthenticated = true;
-              userEmail = session.user.email || '';
-              authMethod = 'getSession';
-            }
-          } catch (err) {
-            console.log('🔐 SIGNUP: getSession() failed:', err);
-          }
-        }
-        
-        // Method 3: Server-side check (final fallback)
-        if (!isAuthenticated) {
-          try {
-            console.log('🔐 SIGNUP: Trying server-side auth check...');
             const response = await fetch('/api/get-user-first-name');
             if (response.ok) {
               const data = await response.json();
@@ -157,11 +128,10 @@ export default function SignUpPage() {
                 isAuthenticated = true;
                 userEmail = data.user.email;
                 authMethod = 'serverCheck';
-                console.log('🔐 SIGNUP: Server auth check found user:', userEmail);
               }
             }
           } catch (err) {
-            console.log('🔐 SIGNUP: Server auth check failed:', err);
+            // Server check failed
           }
         }
         
