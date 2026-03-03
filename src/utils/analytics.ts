@@ -11,6 +11,7 @@ export type AnalyticsEventName =
   | "add_song_clicked"
   | "remove_song_clicked"
   | "add_step_completed"
+  | "vibe_step_completed"
   | "packages_page_viewed"
   | "package_viewed"
   | "package_selected"
