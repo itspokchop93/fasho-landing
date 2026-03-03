@@ -32,55 +32,66 @@ export default function FashokensSection({
   const [isApplying, setIsApplying] = useState(false);
   const [settings, setSettings] = useState<LoyaltySettings | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [hasFetched, setHasFetched] = useState(false);
   const [error, setError] = useState('');
 
-  // Fetch loyalty settings and balance
-  const fetchLoyaltyData = useCallback(async () => {
-    if (!userId) {
-      setIsLoading(false);
+  // Fetch loyalty settings and balance when userId is available and cartTotal > 0
+  useEffect(() => {
+    if (!userId || cartTotal <= 0) {
+      if (!userId) setIsLoading(false);
       return;
     }
+    if (hasFetched) return;
 
-    try {
-      setIsLoading(true);
-      
-      // Fetch settings
-      const settingsRes = await fetch('/api/loyalty/settings');
-      const settingsData = await settingsRes.json();
-      
-      if (!settingsData.success || !settingsData.settings?.is_program_active) {
+    let cancelled = false;
+
+    (async () => {
+      try {
+        setIsLoading(true);
+        
+        const settingsRes = await fetch('/api/loyalty/settings');
+        const settingsData = await settingsRes.json();
+        
+        if (cancelled) return;
+
+        if (!settingsData.success || !settingsData.settings?.is_program_active) {
+          setIsLoading(false);
+          setHasFetched(true);
+          return;
+        }
+        
+        setSettings(settingsData.settings);
+        setRedemptionRate(settingsData.settings.redemption_tokens_per_dollar);
+
+        const maxRes = await fetch('/api/loyalty/calculate-max', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ cartTotal })
+        });
+        const maxData = await maxRes.json();
+        
+        if (cancelled) return;
+
+        if (maxData.success) {
+          setBalance(maxData.balance);
+          setMaxTokens(maxData.maxTokens);
+          setMaxDiscount(maxData.maxDiscount);
+          setRedemptionRate(maxData.redemptionRate || 100);
+        }
+        
         setIsLoading(false);
-        return;
+        setHasFetched(true);
+      } catch (err) {
+        if (!cancelled) {
+          console.error('Error fetching loyalty data:', err);
+          setIsLoading(false);
+          setHasFetched(true);
+        }
       }
-      
-      setSettings(settingsData.settings);
-      setRedemptionRate(settingsData.settings.redemption_tokens_per_dollar);
+    })();
 
-      // Fetch balance and max tokens
-      const maxRes = await fetch('/api/loyalty/calculate-max', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ cartTotal })
-      });
-      const maxData = await maxRes.json();
-      
-      if (maxData.success) {
-        setBalance(maxData.balance);
-        setMaxTokens(maxData.maxTokens);
-        setMaxDiscount(maxData.maxDiscount);
-        setRedemptionRate(maxData.redemptionRate || 100);
-      }
-      
-      setIsLoading(false);
-    } catch (err) {
-      console.error('Error fetching loyalty data:', err);
-      setIsLoading(false);
-    }
-  }, [userId, cartTotal]);
-
-  useEffect(() => {
-    fetchLoyaltyData();
-  }, [fetchLoyaltyData]);
+    return () => { cancelled = true; };
+  }, [userId, cartTotal, hasFetched]);
 
   // Recalculate max tokens when cartTotal changes (e.g., when coupon is applied)
   useEffect(() => {

@@ -8,13 +8,14 @@ import StepIndicator from '../components/StepIndicator';
 import SalesBanner from '../components/SalesBanner';
 import { createClient } from '../utils/supabase/client';
 import { userProfileService, UserProfileData, ArtistProfile } from '../utils/userProfile';
-import { MUSIC_GENRES } from '../constants/genres';
 import LegalModal from '../components/LegalModal';
 import SpotlightCard from '../components/SpotlightCard';
 import { useAuth } from '../utils/authContext';
 import { analytics } from "../utils/analytics";
+import { migrateGenres } from '../constants/genres';
 import FashokensSection from '../components/FashokensSection';
 import { getCountryConfig, isStateRequired, getPhoneCode, COUNTRY_CONFIGS } from '../utils/countryConfig';
+
 import { useExchangeRates } from '../hooks/useExchangeRates';
 
 interface Package {
@@ -207,8 +208,23 @@ export default function CheckoutPage() {
     country: 'US', // 2-letter code only
     countryCode: '+1', // Default to US country code
     phoneNumber: '',
-    musicGenre: '' // User's preferred music genre
+    musicGenre: ''
   });
+
+  // Pre-fill genre from the VIBE step (sessionStorage), with legacy migration
+  useEffect(() => {
+    const savedVibes = sessionStorage.getItem('selectedVibes');
+    if (savedVibes) {
+      try {
+        const genres = migrateGenres(JSON.parse(savedVibes) as string[]);
+        if (genres.length > 0) {
+          setBillingData(prev => ({ ...prev, musicGenre: genres.join(', ') }));
+        }
+      } catch {
+        // ignore
+      }
+    }
+  }, []);
 
   // Get country-specific configuration for dynamic form rendering
   const countryConfig = useMemo(() => getCountryConfig(billingData.country), [billingData.country]);
@@ -345,8 +361,6 @@ export default function CheckoutPage() {
     
     // Save to localStorage for persistence
     localStorage.setItem('selectedAddOns', JSON.stringify(Array.from(newSelectedAddOns)));
-    
-    updateTotals();
   };
 
   // Remove add-on from line items
@@ -1082,7 +1096,7 @@ export default function CheckoutPage() {
         } else if (firstMissingField === 'termsAgreed') {
           errorMessage = 'Please agree to the Terms & Conditions, Privacy Policy, Disclaimer, and Refund Policy before continuing.';
         } else if (firstMissingField === 'musicGenre') {
-          errorMessage = 'Please select your music genre before continuing.';
+          errorMessage = 'Genre selection is missing. Please go back to the Vibe step to select your genres.';
         } else {
           errorMessage = 'Please complete your billing information before continuing.';
         }
@@ -2299,7 +2313,7 @@ export default function CheckoutPage() {
         
         <div className="relative z-20">
           {/* Step Indicator - Inside main content */}
-          <StepIndicator currentStep={3} />
+          <StepIndicator currentStep={4} />
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="text-center mb-8">
                           <h1 className="text-3xl md:text-4xl font-bold mb-2 mt-[-38px] sm:mt-[-30px] bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] bg-clip-text text-transparent">🚀 Complete Your Order</h1>
@@ -2583,7 +2597,7 @@ export default function CheckoutPage() {
                       billingData.city || billingData.state || billingData.zip || billingData.phoneNumber) && (
                       <button
                         type="button"
-                        onClick={() => setBillingData({
+                        onClick={() => setBillingData(prev => ({
                           firstName: '',
                           lastName: '',
                           address: '',
@@ -2594,8 +2608,8 @@ export default function CheckoutPage() {
                           country: 'US',
                           countryCode: '+1',
                           phoneNumber: '',
-                          musicGenre: ''
-                        })}
+                          musicGenre: prev.musicGenre
+                        }))}
                         className="text-red-400 hover:text-red-300 text-sm transition-colors"
                       >
                         Clear billing form
@@ -2885,85 +2899,53 @@ export default function CheckoutPage() {
                   </div>
                 </div>
 
-                {/* Genre Selection & Terms Agreement Row - Desktop: Side by side, Mobile: Stacked */}
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                  {/* Music Genre Selection */}
-                  <div className="bg-white/5 rounded-xl p-6 border border-white/20">
-                    <h2 className="text-lg font-semibold mb-2">Your Genre <span className="text-red-400">*</span></h2>
-                    <p className="text-sm text-white/60 mb-4">
-                      Select the genre that best describes your music style
-                    </p>
-                    
-                    <div>
-                      <select
-                        id="musicGenre"
-                        name="musicGenre"
-                        value={billingData.musicGenre}
-                        onChange={handleBillingChange}
-                        required
-                        className="w-full bg-white/10 border border-white/20 rounded-lg py-3 px-4 text-white focus:outline-none focus:border-[#59e3a5] transition-colors"
-                        style={{ zIndex: 10 }}
-                        suppressHydrationWarning={true}
+                {/* Terms Agreement */}
+                <div className="bg-white/5 rounded-xl px-5 py-4 border border-white/20">
+                  <div className="flex items-start space-x-3">
+                    <input
+                      type="checkbox"
+                      id="termsAgreed"
+                      name="termsAgreed"
+                      checked={termsAgreed}
+                      onChange={(e) => setTermsAgreed(e.target.checked)}
+                      required
+                      className="w-4 h-4 bg-white/10 border border-white/20 rounded focus:ring-[#59e3a5] focus:ring-2 text-[#59e3a5] transition-colors flex-shrink-0"
+                    />
+                    <label htmlFor="termsAgreed" className="text-white/70 leading-snug text-sm">
+                      I have read and understand the{' '}
+                      <button 
+                        type="button"
+                        onClick={() => setShowTermsModal(true)}
+                        className="text-[#59e3a5] hover:text-[#4bc995] underline transition-colors"
                       >
-                        <option value="" className="bg-gray-800 text-white">Select a genre...</option>
-                        {MUSIC_GENRES.map(genre => (
-                          <option key={genre} value={genre} className="bg-gray-800 text-white">
-                            {genre}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-                  </div>
-
-                  {/* Terms Agreement */}
-                  <div className="bg-white/5 rounded-xl p-6 border border-white/20">
-                    <h2 className="text-lg font-semibold mb-2">Agreement</h2>
-                    <div className="flex items-start space-x-3">
-                      <input
-                        type="checkbox"
-                        id="termsAgreed"
-                        name="termsAgreed"
-                        checked={termsAgreed}
-                        onChange={(e) => setTermsAgreed(e.target.checked)}
-                        required
-                        className="mt-1 w-4 h-4 bg-white/10 border border-white/20 rounded focus:ring-[#59e3a5] focus:ring-2 text-[#59e3a5] transition-colors"
-                      />
-                      <label htmlFor="termsAgreed" className="text-sm text-white/70 leading-relaxed">
-                        I have read and understand the{' '}
-                        <button 
-                          type="button"
-                          onClick={() => setShowTermsModal(true)}
-                          className="text-[#59e3a5] hover:text-[#4bc995] underline transition-colors"
-                        >
-                          Terms & Conditions
-                        </button>
-                        ,{' '}
-                        <button 
-                          type="button"
-                          onClick={() => setShowPrivacyModal(true)}
-                          className="text-[#59e3a5] hover:text-[#4bc995] underline transition-colors"
-                        >
-                          Privacy Policy
-                        </button>
-                        ,{' '}
-                        <button 
-                          type="button"
-                          onClick={() => setShowDisclaimerModal(true)}
-                          className="text-[#59e3a5] hover:text-[#4bc995] underline transition-colors"
-                        >
-                          Disclaimer
-                        </button>
-                        , and{' '}
-                        <button 
-                          type="button"
-                          onClick={() => setShowRefundModal(true)}
-                          className="text-[#59e3a5] hover:text-[#4bc995] underline transition-colors"
-                        >
-                          Refund Policy
-                        </button>
-                        . <span className="text-red-400">*</span>
-                      </label>
-                    </div>
+                        Terms & Conditions
+                      </button>
+                      ,{' '}
+                      <button 
+                        type="button"
+                        onClick={() => setShowPrivacyModal(true)}
+                        className="text-[#59e3a5] hover:text-[#4bc995] underline transition-colors"
+                      >
+                        Privacy Policy
+                      </button>
+                      ,{' '}
+                      <button 
+                        type="button"
+                        onClick={() => setShowDisclaimerModal(true)}
+                        className="text-[#59e3a5] hover:text-[#4bc995] underline transition-colors"
+                      >
+                        Disclaimer
+                      </button>
+                      , and{' '}
+                      <button 
+                        type="button"
+                        onClick={() => setShowRefundModal(true)}
+                        className="text-[#59e3a5] hover:text-[#4bc995] underline transition-colors"
+                      >
+                        Refund Policy
+                      </button>
+                      . <span className="text-red-400">*</span>
+                    </label>
                   </div>
                 </div>
 
@@ -3216,52 +3198,84 @@ export default function CheckoutPage() {
                 </div>
 
                 {/* Popular Add-ons */}
-                <div className="bg-white/5 rounded-xl p-6 border border-white/20">
-                  <h3 className="text-lg font-semibold mb-4">Level Up Your Launch 🔥</h3>
+                <div className="bg-white/5 rounded-xl p-5 border border-white/20">
+                  <h3 className="text-lg font-semibold mb-3">Level Up Your Launch 🔥</h3>
                   
-                  <div className="space-y-4">
-                    {addOnProducts.map((addOn, index) => (
-                      <SpotlightCard 
-                        key={`spotlight-${addOn.id}-${index}`} 
-                        className={`border ${addOn.borderColor} pt-3 pl-3 pr-4 pb-4 ${addOn.bgGradient} rounded-lg !border-opacity-100`}
-                        spotlightColor={addOn.id === 'express-launch' ? 'rgba(255, 193, 7, 0.3)' : 'rgba(220, 53, 69, 0.3)'}
-                      >
-                        <div className="flex items-start justify-between mb-2 pointer-events-none">
-                          <div className="pr-4 flex-1">
-                            <h4 className={`font-semibold ${addOn.color}`}>{addOn.emoji} {addOn.name}</h4>
-                            <div className="text-sm text-white/70 mt-1 pr-8">
-                              <p>{addOn.description[0]}</p>
-                          </div>
-                        </div>
-                        <button 
-                            onClick={() => toggleAddOn(addOn.id)}
-                            className={`p-2 rounded-lg transition-colors flex-shrink-0 pointer-events-auto ${
-                              selectedAddOns.has(addOn.id) 
-                              ? 'bg-[#59e3a5] text-black hover:bg-[#4bc995]' 
-                              : 'bg-white/20 hover:bg-white/30 text-white'
-                          }`}
+                  <style jsx>{`
+                    @keyframes addPop {
+                      0% { transform: scale(1); }
+                      30% { transform: scale(1.25); }
+                      60% { transform: scale(0.9); }
+                      100% { transform: scale(1); }
+                    }
+                    .addon-pop {
+                      animation: addPop 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+                    }
+                  `}</style>
+
+                  <div className="space-y-3">
+                    {addOnProducts.map((addOn, index) => {
+                      const isSelected = selectedAddOns.has(addOn.id);
+                      return (
+                        <SpotlightCard
+                          key={`spotlight-${addOn.id}-${index}`}
+                          className={`border ${isSelected ? 'border-[#59e3a5]/50' : addOn.borderColor} ${isSelected ? 'bg-[#59e3a5]/5' : addOn.bgGradient} rounded-xl !border-opacity-100 p-4`}
+                          spotlightColor={addOn.id === 'express-launch' ? 'rgba(255, 193, 7, 0.3)' : 'rgba(220, 53, 69, 0.3)'}
                         >
-                            {selectedAddOns.has(addOn.id) ? (
-                            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                            </svg>
-                          ) : (
-                            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-                            </svg>
-                          )}
-                        </button>
-                      </div>
-                        <div className="flex items-center space-x-2 pointer-events-none">
-                          <span className="text-white/50 line-through">${addOn.originalPrice}</span>
-                          <span className={`font-bold ${addOn.color}`}>${addOn.salePrice}</span>
-                      </div>
-                        {/* 50% OFF badge in bottom right corner */}
-                        <div className="absolute bottom-2 right-2 bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] text-black text-xs font-bold px-2 py-1 rounded-full pointer-events-none">
-                          50% OFF
-                    </div>
-                      </SpotlightCard>
-                    ))}
+                          <div className="flex items-start gap-3 pointer-events-none">
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-2 flex-wrap mb-1">
+                                <h4 className={`font-semibold ${addOn.color}`} style={{ fontSize: '0.9rem' }}>
+                                  {addOn.emoji} {addOn.name}
+                                </h4>
+                                <span className="bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] text-black font-bold px-1.5 py-0.5 rounded-full" style={{ fontSize: '0.6rem' }}>
+                                  50% OFF
+                                </span>
+                              </div>
+                              <p className="text-white/60 leading-snug" style={{ fontSize: '0.78rem' }}>{addOn.description[0]}</p>
+                              <div className="flex items-center gap-2 mt-1.5">
+                                <span className="text-white/40 line-through" style={{ fontSize: '0.8rem' }}>${addOn.originalPrice}</span>
+                                <span className={`font-bold ${addOn.color}`} style={{ fontSize: '1rem' }}>${addOn.salePrice}</span>
+                              </div>
+                            </div>
+
+                            <button
+                              type="button"
+                              onClick={() => toggleAddOn(addOn.id)}
+                              className="pointer-events-auto flex-shrink-0 mt-1"
+                            >
+                              <div
+                                key={isSelected ? 'selected' : 'unselected'}
+                                className={`addon-pop flex items-center justify-center rounded-lg font-bold transition-colors ${
+                                  isSelected
+                                    ? 'bg-[#59e3a5] text-black'
+                                    : 'bg-white/15 hover:bg-white/25 text-white border border-white/20 hover:border-white/40'
+                                }`}
+                                style={{
+                                  padding: isSelected ? '8px 12px' : '8px 14px',
+                                  fontSize: '0.75rem',
+                                  minWidth: '68px',
+                                  letterSpacing: isSelected ? '0' : '0.03em',
+                                }}
+                              >
+                                {isSelected ? (
+                                  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                                  </svg>
+                                ) : (
+                                  <span className="flex items-center gap-1">
+                                    <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                                      <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v12m6-6H6" />
+                                    </svg>
+                                    ADD
+                                  </span>
+                                )}
+                              </div>
+                            </button>
+                          </div>
+                        </SpotlightCard>
+                      );
+                    })}
                   </div>
                 </div>
               </div>
@@ -3292,10 +3306,13 @@ export default function CheckoutPage() {
                         </button>
                         
                         {/* FASHOKENS Earning Badge */}
-                        {currentUser && total > 0 && (
-                          <div className="mt-3 flex items-center justify-center space-x-2 bg-[#59e3a5]/10 border border-[#59e3a5]/30 rounded-lg py-2 px-3">
+                        {currentUser && (
+                          <div
+                            className="mt-3 w-[calc(100%-1.5rem)] md:w-full mx-auto flex items-center justify-center space-x-2 bg-[#59e3a5]/10 border border-[#59e3a5]/30 rounded-lg py-2 px-3 transition-opacity duration-200"
+                            style={{ opacity: total > 0 ? 1 : 0 }}
+                          >
                             <img src="/fashoken.png" alt="FASHOKEN" className="w-4 h-4" />
-                            <span className="text-[#59e3a5] text-sm font-medium">
+                            <span className="text-[#59e3a5] font-medium" style={{ fontSize: 'clamp(0.72rem, 2.5vw, 0.875rem)' }}>
                               You're earning {Math.floor(total * tokensPerDollar).toLocaleString()} FASHOkens from this order!
                             </span>
                           </div>

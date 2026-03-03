@@ -1525,7 +1525,7 @@ export default function CheckoutSquarePage() {
         ></div>
         
         <div className="relative z-20">
-          <StepIndicator currentStep={3} />
+          <StepIndicator currentStep={4} />
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="text-center mb-8">
               <h1 className="text-3xl md:text-4xl font-bold mb-2 mt-[-38px] sm:mt-[-30px] bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] bg-clip-text text-transparent">🚀 Complete Your Order</h1>

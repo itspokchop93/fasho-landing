@@ -991,7 +991,7 @@ export default function PackagesPage() {
         </div>
         <div className="relative z-20">
         {/* Step Indicator - Inside main content */}
-        <StepIndicator currentStep={2} />
+        <StepIndicator currentStep={3} />
         <div className="max-w-7xl mx-auto">
           <h1 className={`${isDiscountedSong ? 'text-3xl' : 'text-4xl'} md:text-5xl font-extrabold text-center mb-6 md:mb-12 -mt-5`}>
             <span className="text-white">Choose Your Campaign</span>{isDiscountedSong && <> for <span className="text-[#59e3a5]">25% OFF</span></>}

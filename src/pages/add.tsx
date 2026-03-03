@@ -544,9 +544,9 @@ export default function AddSongsPage() {
       discount_applied: tracks.length > 1,
     });
 
-    // Normal flow - go to packages page
+    // Normal flow - go to vibe selection page
     router.push({
-      pathname: "/packages",
+      pathname: "/vibe",
       query: {
         tracks: JSON.stringify(tracks),
         ...preservedParams

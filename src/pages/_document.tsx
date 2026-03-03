@@ -37,6 +37,11 @@ export default function Document() {
         <link rel="icon" type="image/png" sizes="16x16" href="/fasho_ico/favicon-16x16.png" />
         <link rel="manifest" href="/fasho_ico/site.webmanifest" />
         <link rel="icon" href="/fasho_ico/favicon.ico" />
+
+        {/* Inter font for UI elements */}
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+        <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
         
         {/* Google Analytics 4 & Google Ads - Combined gtag.js */}
         {(GA4_MEASUREMENT_ID || GA_TRACKING_ID) && (

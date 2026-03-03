@@ -76,7 +76,7 @@ export async function middleware(request: NextRequest) {
   }
 
   // Only /dashboard requires authentication.
-  // The checkout funnel (/add, /packages, /checkout, /thank-you) is
+  // The checkout funnel (/add, /vibe, /packages, /checkout, /thank-you) is
   // intentionally public — guests sign up on the checkout page itself.
   const protectedRoutes = ['/dashboard']
   const isProtectedRoute = protectedRoutes.some(route => 
