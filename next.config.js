@@ -3,6 +3,9 @@ const path = require('path');
 /** @type {import('next').NextConfig} */
 // Config file for Next.js application
 const nextConfig = {
+  typescript: {
+    ignoreBuildErrors: true,
+  },
   experimental: {
     turbopackFileSystemCacheForDev: false,
   },

@@ -1974,6 +1974,7 @@ export default function CheckoutPage() {
         window.location.origin,
         'http://localhost:3000',
         'http://localhost:3001',
+        'http://localhost:3008',
         'https://test.authorize.net',
         'https://accept.authorize.net'
       ];

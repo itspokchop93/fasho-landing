@@ -451,6 +451,7 @@ const ActiveCampaigns: React.FC = () => {
   const [editingGenre, setEditingGenre] = useState<{
     campaignId: string;
   } | null>(null);
+  const [expandedGenres, setExpandedGenres] = useState<Set<string>>(new Set());
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
   
   // Pagination state
@@ -1875,30 +1876,53 @@ const ActiveCampaigns: React.FC = () => {
                               {campaign.songName}
                             </h3>
 
-                            {/* Genre Pill - Under Song Title (Constant Color) */}
-                            <div className="mt-1">
-                              {editingGenre?.campaignId === campaign.id ? (
-                                <div className="flex items-center space-x-1">
-                                  <select
-                                    defaultValue={campaign.userGenre || 'General'}
-                                    onChange={(e) => updateGenre(campaign.id, e.target.value)}
-                                    className="text-[0.6rem] border border-gray-300 rounded px-1 py-0.5 bg-white"
-                                  >
-                                    {MUSIC_GENRES.map(genre => (
-                                      <option key={genre} value={genre}>{genre}</option>
+                            {/* Genre Tags - Under Song Title (Read-only display) */}
+                            {(() => {
+                              const genreStr = campaign.userGenre || 'Unknown';
+                              const genres = genreStr.split(',').map(g => g.trim()).filter(Boolean);
+                              const isExpanded = expandedGenres.has(campaign.id);
+                              const needsTruncation = genres.length > 3;
+                              return (
+                                <div className="mt-1">
+                                  <div className={`flex flex-wrap items-center gap-[3px] ${!isExpanded && needsTruncation ? 'max-h-[16px] overflow-hidden' : ''}`}>
+                                    {genres.map((g, i) => (
+                                      <span key={i} className="inline-block px-1.5 py-[1px] rounded text-[0.45rem] font-black uppercase tracking-wide text-gray-500 bg-gray-100 border border-gray-200 whitespace-nowrap leading-tight">
+                                        {g}
+                                      </span>
                                     ))}
-                                  </select>
-                                  <button onClick={() => setEditingGenre(null)} className="text-[0.6rem] text-gray-500 hover:text-gray-700">✕</button>
+                                  </div>
+                                  {needsTruncation && (
+                                    <button
+                                      onClick={() => {
+                                        setExpandedGenres(prev => {
+                                          const next = new Set(prev);
+                                          if (next.has(campaign.id)) {
+                                            next.delete(campaign.id);
+                                          } else {
+                                            next.add(campaign.id);
+                                          }
+                                          return next;
+                                        });
+                                      }}
+                                      className="flex items-center gap-0.5 mt-[2px] group"
+                                    >
+                                      <span className="text-[0.4rem] text-gray-400 group-hover:text-gray-600 transition-colors">
+                                        {isExpanded ? 'less' : `+${genres.length - 3} more`}
+                                      </span>
+                                      <svg
+                                        className={`w-[7px] h-[7px] text-gray-400 group-hover:text-gray-600 transition-all ${isExpanded ? 'rotate-180' : ''}`}
+                                        fill="none"
+                                        stroke="currentColor"
+                                        viewBox="0 0 24 24"
+                                        strokeWidth={3}
+                                      >
+                                        <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+                                      </svg>
+                                    </button>
+                                  )}
                                 </div>
-                              ) : (
-                                <button
-                                  onClick={() => setEditingGenre({ campaignId: campaign.id })}
-                                  className="inline-flex px-2 py-0.5 rounded-full text-[0.6rem] font-black uppercase tracking-wider border bg-gray-50 text-gray-600 border-gray-200 hover:bg-gray-100 transition-colors shadow-sm"
-                                >
-                                  {campaign.userGenre || 'Unknown'}
-                                </button>
-                              )}
-                            </div>
+                              );
+                            })()}
                           </div>
                         </div>
 
