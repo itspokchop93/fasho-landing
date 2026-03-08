@@ -1,6 +1,10 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import CampaignTotals from './CampaignTotals';
-import { MUSIC_GENRES } from '../../constants/genres';
+import {
+  PLAYLIST_GENRE_OPTIONS,
+  formatPlaylistGenres,
+  parsePlaylistGenres,
+} from '../../utils/playlist-genres';
 
 // Custom Confirmation Modal Component for Delete Actions
 interface DeleteConfirmationModalProps {
@@ -94,6 +98,371 @@ const DeleteConfirmationModal: React.FC<DeleteConfirmationModalProps> = ({
   );
 };
 
+type PlaylistFormValue = string | number | boolean | string[];
+
+interface GenreMultiSelectProps {
+  selectedGenres: string[];
+  onChange: (genres: string[]) => void;
+  placeholder?: string;
+  disabled?: boolean;
+}
+
+const GenreMultiSelect: React.FC<GenreMultiSelectProps> = ({
+  selectedGenres,
+  onChange,
+  placeholder = 'Select genres...',
+  disabled = false,
+}) => {
+  const [isOpen, setIsOpen] = useState(false);
+  const containerRef = React.useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    if (!isOpen) {
+      return;
+    }
+
+    const handleClickOutside = (event: MouseEvent) => {
+      if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
+        setIsOpen(false);
+      }
+    };
+
+    const handleEscape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        setIsOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    document.addEventListener('keydown', handleEscape);
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('keydown', handleEscape);
+    };
+  }, [isOpen]);
+
+  const availableGenres = useMemo(() => {
+    const mergedGenres: string[] = [];
+    const seenGenres = new Set<string>();
+
+    [...selectedGenres, ...PLAYLIST_GENRE_OPTIONS].forEach((genre) => {
+      const trimmedGenre = genre.trim();
+      if (!trimmedGenre) {
+        return;
+      }
+
+      const normalizedGenre = trimmedGenre.toLowerCase();
+      if (seenGenres.has(normalizedGenre)) {
+        return;
+      }
+
+      seenGenres.add(normalizedGenre);
+      mergedGenres.push(trimmedGenre);
+    });
+
+    return mergedGenres;
+  }, [selectedGenres]);
+
+  const selectionSummary = selectedGenres.length > 0
+    ? formatPlaylistGenres(selectedGenres)
+    : placeholder;
+
+  const handleToggleGenre = (genre: string) => {
+    const isSelected = selectedGenres.some(
+      (selectedGenre) => selectedGenre.toLowerCase() === genre.toLowerCase()
+    );
+
+    if (isSelected) {
+      onChange(
+        selectedGenres.filter(
+          (selectedGenre) => selectedGenre.toLowerCase() !== genre.toLowerCase()
+        )
+      );
+      return;
+    }
+
+    onChange([...selectedGenres, genre]);
+  };
+
+  return (
+    <div ref={containerRef} className="relative">
+      <button
+        type="button"
+        disabled={disabled}
+        onClick={() => setIsOpen((currentValue) => !currentValue)}
+        aria-haspopup="listbox"
+        aria-expanded={isOpen}
+        className="flex w-full items-center justify-between rounded-md border border-gray-300 bg-white px-3 py-2 text-left shadow-sm transition-colors hover:border-indigo-300 focus:outline-none focus:ring-2 focus:ring-indigo-500 disabled:cursor-not-allowed disabled:bg-gray-50"
+      >
+        <span
+          className={`block truncate ${selectedGenres.length === 0 ? 'text-gray-400' : 'text-gray-900'}`}
+          style={{ fontSize: '0.875rem' }}
+        >
+          {selectionSummary}
+        </span>
+        <div className="ml-3 flex items-center gap-2">
+          {selectedGenres.length > 0 && (
+            <span
+              className="inline-flex min-w-[1.5rem] items-center justify-center rounded-full bg-indigo-100 px-2 py-0.5 font-semibold text-indigo-700"
+              style={{ fontSize: '0.75rem' }}
+            >
+              {selectedGenres.length}
+            </span>
+          )}
+          <svg
+            className={`h-4 w-4 text-gray-400 transition-transform ${isOpen ? 'rotate-180' : ''}`}
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+          </svg>
+        </div>
+      </button>
+
+      {isOpen && (
+        <div className="absolute z-30 mt-2 w-full overflow-hidden rounded-lg border border-gray-200 bg-white shadow-xl">
+          <div
+            className="max-h-64 overflow-y-auto py-2"
+            role="listbox"
+            aria-multiselectable="true"
+          >
+            {availableGenres.map((genre) => {
+              const isChecked = selectedGenres.some(
+                (selectedGenre) => selectedGenre.toLowerCase() === genre.toLowerCase()
+              );
+
+              return (
+                <label
+                  key={genre}
+                  className="flex cursor-pointer items-center justify-between px-3 py-2 transition-colors hover:bg-indigo-50"
+                >
+                  <div className="flex items-center gap-3">
+                    <input
+                      type="checkbox"
+                      checked={isChecked}
+                      onChange={() => handleToggleGenre(genre)}
+                      className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                    />
+                    <span className="text-gray-900" style={{ fontSize: '0.875rem' }}>
+                      {genre}
+                    </span>
+                  </div>
+                </label>
+              );
+            })}
+          </div>
+
+          <div className="flex items-center justify-between border-t border-gray-100 px-3 py-2">
+            <span className="text-gray-500" style={{ fontSize: '0.75rem' }}>
+              {selectedGenres.length} selected
+            </span>
+            <button
+              type="button"
+              onClick={() => onChange([])}
+              className="font-medium text-indigo-600 transition-colors hover:text-indigo-800"
+              style={{ fontSize: '0.75rem' }}
+            >
+              Clear all
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+interface EditPlaylistModalProps {
+  isOpen: boolean;
+  formData: EditPlaylistForm;
+  onClose: () => void;
+  onFieldChange: (field: keyof EditPlaylistForm, value: PlaylistFormValue) => void;
+  onSubmit: (event: React.FormEvent) => Promise<void> | void;
+  isSaving: boolean;
+}
+
+const PlaylistEditModal: React.FC<EditPlaylistModalProps> = ({
+  isOpen,
+  formData,
+  onClose,
+  onFieldChange,
+  onSubmit,
+  isSaving,
+}) => {
+  useEffect(() => {
+    if (!isOpen) {
+      return;
+    }
+
+    const previousOverflow = document.body.style.overflow;
+    const handleEscape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        onClose();
+      }
+    };
+
+    document.body.style.overflow = 'hidden';
+    document.addEventListener('keydown', handleEscape);
+
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      document.removeEventListener('keydown', handleEscape);
+    };
+  }, [isOpen, onClose]);
+
+  if (!isOpen) {
+    return null;
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      <div className="absolute inset-0 bg-black/50" onClick={onClose} />
+
+      <div className="relative z-10 w-full max-w-2xl rounded-2xl border border-gray-200 bg-white shadow-2xl">
+        <form onSubmit={onSubmit}>
+          <div className="flex items-start justify-between border-b border-gray-200 px-6 py-5">
+            <div>
+              <h3 className="font-semibold text-gray-900" style={{ fontSize: '1.125rem' }}>
+                Edit Playlist
+              </h3>
+              <p className="mt-1 text-gray-500" style={{ fontSize: '0.875rem' }}>
+                Save updates directly to the playlist network database record.
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={onClose}
+              className="text-gray-400 transition-colors hover:text-gray-600"
+              aria-label="Close edit playlist modal"
+            >
+              <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
+
+          <div className="max-h-[75vh] overflow-y-auto px-6 py-5">
+            <div className="space-y-4">
+              <div>
+                <label className="mb-1 block font-medium text-gray-700" style={{ fontSize: '0.875rem' }}>
+                  Playlist Name *
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={formData.playlistName}
+                  onChange={(event) => onFieldChange('playlistName', event.target.value)}
+                  className="w-full rounded-md border border-gray-300 px-3 py-2 focus:border-transparent focus:ring-2 focus:ring-indigo-500"
+                  style={{ fontSize: '0.875rem' }}
+                  placeholder="Playlist name"
+                />
+              </div>
+
+              <div>
+                <label className="mb-1 block font-medium text-gray-700" style={{ fontSize: '0.875rem' }}>
+                  Playlist Link *
+                </label>
+                <input
+                  type="url"
+                  required
+                  value={formData.playlistLink}
+                  onChange={(event) => onFieldChange('playlistLink', event.target.value)}
+                  className="w-full rounded-md border border-gray-300 px-3 py-2 focus:border-transparent focus:ring-2 focus:ring-indigo-500"
+                  style={{ fontSize: '0.875rem' }}
+                  placeholder="https://open.spotify.com/playlist/..."
+                />
+                <p className="mt-1 text-gray-500" style={{ fontSize: '0.75rem' }}>
+                  If the Spotify link changes, the playlist ID and cached Spotify data will refresh on save.
+                </p>
+              </div>
+
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                <div>
+                  <label className="mb-1 block font-medium text-gray-700" style={{ fontSize: '0.875rem' }}>
+                    Genres *
+                  </label>
+                  <GenreMultiSelect
+                    selectedGenres={formData.genres}
+                    onChange={(genres) => onFieldChange('genres', genres)}
+                    placeholder="Select genres..."
+                  />
+                </div>
+
+                <div>
+                  <label className="mb-1 block font-medium text-gray-700" style={{ fontSize: '0.875rem' }}>
+                    Account Email *
+                  </label>
+                  <input
+                    type="email"
+                    required
+                    value={formData.accountEmail}
+                    onChange={(event) => onFieldChange('accountEmail', event.target.value)}
+                    className="w-full rounded-md border border-gray-300 px-3 py-2 focus:border-transparent focus:ring-2 focus:ring-indigo-500"
+                    style={{ fontSize: '0.875rem' }}
+                    placeholder="owner@example.com"
+                  />
+                </div>
+
+                <div>
+                  <label className="mb-1 block font-medium text-gray-700" style={{ fontSize: '0.875rem' }}>
+                    Max Songs
+                  </label>
+                  <input
+                    type="number"
+                    min="1"
+                    max="10000"
+                    value={formData.maxSongs}
+                    onChange={(event) => onFieldChange('maxSongs', parseInt(event.target.value, 10) || 35)}
+                    className="w-full rounded-md border border-gray-300 px-3 py-2 focus:border-transparent focus:ring-2 focus:ring-indigo-500"
+                    style={{ fontSize: '0.875rem' }}
+                  />
+                </div>
+
+                <div className="flex items-center rounded-lg border border-gray-200 bg-gray-50 px-4 py-3">
+                  <input
+                    id="edit-playlist-active"
+                    type="checkbox"
+                    checked={formData.isActive}
+                    onChange={(event) => onFieldChange('isActive', event.target.checked)}
+                    className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                  />
+                  <label
+                    htmlFor="edit-playlist-active"
+                    className="ml-3 font-medium text-gray-800"
+                    style={{ fontSize: '0.875rem' }}
+                  >
+                    Active playlist
+                  </label>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="flex justify-end gap-3 border-t border-gray-200 px-6 py-4">
+            <button
+              type="button"
+              onClick={onClose}
+              className="rounded-md bg-gray-100 px-4 py-2 font-medium text-gray-700 transition-colors hover:bg-gray-200"
+              style={{ fontSize: '0.875rem' }}
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              disabled={isSaving}
+              className="rounded-md bg-indigo-600 px-4 py-2 font-medium text-white transition-colors hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-50"
+              style={{ fontSize: '0.875rem' }}
+            >
+              {isSaving ? 'Saving...' : 'Save Changes'}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+};
+
 interface Playlist {
   id: string;
   playlistName: string;
@@ -110,7 +479,6 @@ interface Playlist {
   healthLastChecked?: string;
   healthErrorMessage?: string;
   createdAt: string;
-  nextStreamPurchase?: string;
 }
 
 interface StreamPurchase {
@@ -146,18 +514,34 @@ interface StreamPurchaseForm {
 }
 
 interface NewPlaylistForm {
-  playlistName: string;
-  genre: string;
+  genres: string[];
   accountEmail: string;
   playlistLink: string;
   maxSongs: number;
+}
+
+interface EditPlaylistForm {
+  playlistName: string;
+  genres: string[];
+  accountEmail: string;
+  playlistLink: string;
+  maxSongs: number;
+  isActive: boolean;
 }
 
 interface SystemSettingsProps {
   onlyPlaylistNetwork?: boolean;
 }
 
+const getDefaultNewPlaylistForm = (): NewPlaylistForm => ({
+  genres: [],
+  accountEmail: '',
+  playlistLink: '',
+  maxSongs: 35
+});
+
 const SystemSettings: React.FC<SystemSettingsProps> = ({ onlyPlaylistNetwork = false }) => {
+  const playlistLinkInputRef = React.useRef<HTMLInputElement | null>(null);
   const [playlists, setPlaylists] = useState<Playlist[]>([]);
   const [streamPurchases, setStreamPurchases] = useState<StreamPurchase[]>([]);
   const [currentPlacements, setCurrentPlacements] = useState<{ [playlistId: string]: CurrentPlacement[] }>({});
@@ -166,8 +550,10 @@ const SystemSettings: React.FC<SystemSettingsProps> = ({ onlyPlaylistNetwork = f
   const [showAddForm, setShowAddForm] = useState(false);
   const [showStreamPurchaseForm, setShowStreamPurchaseForm] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isSavingPlaylistEdits, setIsSavingPlaylistEdits] = useState(false);
   const [isSubmittingStreamPurchase, setIsSubmittingStreamPurchase] = useState(false);
   const [expandedPlaylist, setExpandedPlaylist] = useState<string | null>(null);
+  const [editingPlaylistId, setEditingPlaylistId] = useState<string | null>(null);
   const [showSuccessBanner, setShowSuccessBanner] = useState(false);
   const [successMessage, setSuccessMessage] = useState('');
   const [confirmationModal, setConfirmationModal] = useState<{
@@ -210,12 +596,14 @@ const SystemSettings: React.FC<SystemSettingsProps> = ({ onlyPlaylistNetwork = f
     remainingCampaigns: 0,
     isProcessing: false
   });
-  const [newPlaylist, setNewPlaylist] = useState<NewPlaylistForm>({
+  const [newPlaylist, setNewPlaylist] = useState<NewPlaylistForm>(getDefaultNewPlaylistForm);
+  const [editPlaylistForm, setEditPlaylistForm] = useState<EditPlaylistForm>({
     playlistName: '',
-    genre: '',
+    genres: [],
     accountEmail: '',
     playlistLink: '',
-    maxSongs: 35
+    maxSongs: 35,
+    isActive: true
   });
   const [streamPurchaseForm, setStreamPurchaseForm] = useState<StreamPurchaseForm>({
     playlistId: '',
@@ -326,14 +714,6 @@ const SystemSettings: React.FC<SystemSettingsProps> = ({ onlyPlaylistNetwork = f
     }
   };
 
-  const getLatestStreamPurchaseForPlaylist = (playlistId: string): StreamPurchase | null => {
-    const playlistPurchases = streamPurchases
-      .filter(purchase => purchase.playlistId === playlistId)
-      .sort((a, b) => new Date(b.purchaseDate).getTime() - new Date(a.purchaseDate).getTime());
-    
-    return playlistPurchases.length > 0 ? playlistPurchases[0] : null;
-  };
-
   const formatNextPurchaseDate = (dateString: string): string => {
     const date = new Date(dateString);
     return date.toLocaleDateString('en-US', { 
@@ -341,30 +721,6 @@ const SystemSettings: React.FC<SystemSettingsProps> = ({ onlyPlaylistNetwork = f
       day: 'numeric', 
       year: '2-digit' 
     });
-  };
-
-  const getDateUrgency = (dateString: string) => {
-    const now = new Date();
-    const purchaseDate = new Date(dateString);
-    const diffTime = purchaseDate.getTime() - now.getTime();
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-    
-    const isOverdue = diffTime < 0;
-    
-    let colorClass = '';
-    if (diffDays >= 5) {
-      colorClass = 'text-green-600 font-medium';
-    } else if (diffDays >= 2) {
-      colorClass = 'text-orange-500 font-medium';
-    } else {
-      colorClass = 'text-red-600 font-medium';
-    }
-    
-    return {
-      colorClass,
-      isOverdue,
-      daysAway: diffDays
-    };
   };
 
   const fetchPlaylists = async (forceRefresh: boolean = false) => {
@@ -378,17 +734,7 @@ const SystemSettings: React.FC<SystemSettingsProps> = ({ onlyPlaylistNetwork = f
       const response = await fetch(`/api/marketing-manager/system-settings/playlists${forceRefresh ? '?refresh=true' : ''}`);
       if (response.ok) {
         const data = await response.json();
-        
-        // Enhance playlists with next stream purchase data
-        const enhancedPlaylists = data.map((playlist: Playlist) => {
-          const latestPurchase = getLatestStreamPurchaseForPlaylist(playlist.id);
-          return {
-            ...playlist,
-            nextStreamPurchase: latestPurchase ? latestPurchase.nextPurchaseDate : null
-          };
-        });
-        
-        setPlaylists(enhancedPlaylists);
+        setPlaylists(data);
       } else {
         console.error('Failed to fetch playlists:', response.statusText);
       }
@@ -425,17 +771,24 @@ const SystemSettings: React.FC<SystemSettingsProps> = ({ onlyPlaylistNetwork = f
     return url.replace(/[^a-zA-Z0-9]/g, '');
   };
 
-  const handleInputChange = (field: keyof NewPlaylistForm, value: string | number) => {
+  const handleInputChange = (field: keyof NewPlaylistForm, value: PlaylistFormValue) => {
     setNewPlaylist(prev => ({
       ...prev,
       [field]: value
     }));
   };
 
+  const handleClearNewPlaylistForm = () => {
+    setNewPlaylist(getDefaultNewPlaylistForm());
+    window.setTimeout(() => {
+      playlistLinkInputRef.current?.focus();
+    }, 0);
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!newPlaylist.genre || !newPlaylist.accountEmail || !newPlaylist.playlistLink) {
+    if (newPlaylist.genres.length === 0 || !newPlaylist.accountEmail || !newPlaylist.playlistLink) {
       alert('Please fill in all required fields.');
       return;
     }
@@ -451,7 +804,7 @@ const SystemSettings: React.FC<SystemSettingsProps> = ({ onlyPlaylistNetwork = f
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          genre: newPlaylist.genre,
+          genres: newPlaylist.genres,
           accountEmail: newPlaylist.accountEmail,
           playlistLink: newPlaylist.playlistLink,
           maxSongs: newPlaylist.maxSongs,
@@ -460,17 +813,17 @@ const SystemSettings: React.FC<SystemSettingsProps> = ({ onlyPlaylistNetwork = f
       });
 
       if (response.ok) {
-        // Reset form and refresh data
-        setNewPlaylist({
-          playlistName: '',
-          genre: '',
-          accountEmail: '',
-          playlistLink: '',
-          maxSongs: 35
-        });
-        setShowAddForm(false);
+        // Keep the add form open and preserve reusable values for rapid bulk entry.
+        setNewPlaylist((prev) => ({
+          ...prev,
+          playlistLink: ''
+        }));
         fetchPlaylists();
         fetchStreamPurchases(); // Also refresh stream purchases to update dropdown
+        showSuccessBannerWithMessage('Playlist added successfully');
+        window.setTimeout(() => {
+          playlistLinkInputRef.current?.focus();
+        }, 0);
       } else {
         const errorData = await response.json();
         alert(`Failed to add playlist: ${errorData.error || response.statusText}`);
@@ -480,6 +833,89 @@ const SystemSettings: React.FC<SystemSettingsProps> = ({ onlyPlaylistNetwork = f
       alert('An error occurred while adding the playlist.');
     } finally {
       setIsSubmitting(false);
+    }
+  };
+
+  const handleEditPlaylistInputChange = (field: keyof EditPlaylistForm, value: PlaylistFormValue) => {
+    setEditPlaylistForm((prev) => ({
+      ...prev,
+      [field]: value
+    }));
+  };
+
+  const openEditPlaylistModal = (playlist: Playlist) => {
+    setEditingPlaylistId(playlist.id);
+    setEditPlaylistForm({
+      playlistName: playlist.playlistName,
+      genres: parsePlaylistGenres(playlist.genre),
+      accountEmail: playlist.accountEmail,
+      playlistLink: playlist.playlistLink,
+      maxSongs: playlist.maxSongs,
+      isActive: playlist.isActive
+    });
+  };
+
+  const closeEditPlaylistModal = () => {
+    setEditingPlaylistId(null);
+    setEditPlaylistForm({
+      playlistName: '',
+      genres: [],
+      accountEmail: '',
+      playlistLink: '',
+      maxSongs: 35,
+      isActive: true
+    });
+  };
+
+  const handleEditPlaylistSubmit = async (event: React.FormEvent) => {
+    event.preventDefault();
+
+    if (!editingPlaylistId) {
+      return;
+    }
+
+    if (
+      !editPlaylistForm.playlistName ||
+      editPlaylistForm.genres.length === 0 ||
+      !editPlaylistForm.accountEmail ||
+      !editPlaylistForm.playlistLink
+    ) {
+      alert('Please fill in all required playlist fields.');
+      return;
+    }
+
+    setIsSavingPlaylistEdits(true);
+
+    try {
+      const response = await fetch('/api/marketing-manager/system-settings/update-playlist', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          playlistId: editingPlaylistId,
+          playlistName: editPlaylistForm.playlistName,
+          genres: editPlaylistForm.genres,
+          accountEmail: editPlaylistForm.accountEmail,
+          playlistLink: editPlaylistForm.playlistLink,
+          maxSongs: editPlaylistForm.maxSongs,
+          isActive: editPlaylistForm.isActive,
+        }),
+      });
+
+      if (response.ok) {
+        closeEditPlaylistModal();
+        await fetchPlaylists();
+        showSuccessBannerWithMessage('Playlist updated successfully');
+      } else {
+        const errorData = await response.json();
+        alert(`Failed to update playlist: ${errorData.error || response.statusText}`);
+      }
+    } catch (error) {
+      console.error('Error updating playlist:', error);
+      alert('An error occurred while updating the playlist.');
+    } finally {
+      setIsSavingPlaylistEdits(false);
     }
   };
 
@@ -609,23 +1045,6 @@ const SystemSettings: React.FC<SystemSettingsProps> = ({ onlyPlaylistNetwork = f
             aValue = a.saves || 0;
             bValue = b.saves || 0;
             break;
-          case 'nextStreamPurchase':
-            // Get the latest purchase for each playlist
-            const aLatestPurchase = streamPurchases
-              .filter(purchase => purchase.playlistId === a.id)
-              .sort((x, y) => new Date(y.purchaseDate).getTime() - new Date(x.purchaseDate).getTime())[0];
-            const bLatestPurchase = streamPurchases
-              .filter(purchase => purchase.playlistId === b.id)
-              .sort((x, y) => new Date(y.purchaseDate).getTime() - new Date(x.purchaseDate).getTime())[0];
-            
-            // If no purchase data, put at end
-            if (!aLatestPurchase && !bLatestPurchase) return 0;
-            if (!aLatestPurchase) return 1;
-            if (!bLatestPurchase) return -1;
-            
-            aValue = new Date(aLatestPurchase.nextPurchaseDate).getTime();
-            bValue = new Date(bLatestPurchase.nextPurchaseDate).getTime();
-            break;
           default:
             return 0;
         }
@@ -641,7 +1060,7 @@ const SystemSettings: React.FC<SystemSettingsProps> = ({ onlyPlaylistNetwork = f
     }
     
     return sortableItems;
-  }, [playlists, sortConfig, streamPurchases]);
+  }, [playlists, sortConfig]);
 
   const showDeleteConfirmation = (purchaseId: string, event: React.MouseEvent) => {
     const button = event.currentTarget as HTMLButtonElement;
@@ -982,19 +1401,7 @@ const SystemSettings: React.FC<SystemSettingsProps> = ({ onlyPlaylistNetwork = f
               <span>Add Stream Purchase</span>
             </button>
             <button
-              onClick={() => {
-                if (!showAddForm) {
-                  // Reset form state when opening
-                  setNewPlaylist({
-                    playlistName: '',
-                    genre: '',
-                    accountEmail: '',
-                    playlistLink: '',
-                    maxSongs: 35
-                  });
-                }
-                setShowAddForm(!showAddForm);
-              }}
+              onClick={() => setShowAddForm(!showAddForm)}
               className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg font-medium flex items-center space-x-2"
             >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1117,13 +1524,25 @@ const SystemSettings: React.FC<SystemSettingsProps> = ({ onlyPlaylistNetwork = f
         {/* Add Playlist Form */}
         {showAddForm && (
           <div className="mb-6 bg-gray-50 rounded-lg p-4 border border-gray-200">
-            <h3 className="text-md font-medium text-gray-900 mb-4">Add New Playlist</h3>
+            <div className="mb-4 flex items-center justify-between gap-4">
+              <h3 className="text-md font-medium text-gray-900">Add New Playlist</h3>
+              <button
+                type="button"
+                onClick={handleClearNewPlaylistForm}
+                disabled={isSubmitting}
+                className="text-gray-500 transition-colors hover:text-gray-700 disabled:cursor-not-allowed disabled:opacity-50"
+                style={{ fontSize: '0.75rem' }}
+              >
+                Clear all
+              </button>
+            </div>
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   Playlist Link *
                 </label>
                 <input
+                  ref={playlistLinkInputRef}
                   type="url"
                   required
                   value={newPlaylist.playlistLink}
@@ -1138,21 +1557,13 @@ const SystemSettings: React.FC<SystemSettingsProps> = ({ onlyPlaylistNetwork = f
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Genre *
+                    Genres *
                   </label>
-                  <select
-                    required
-                    value={newPlaylist.genre}
-                    onChange={(e) => handleInputChange('genre', e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-                  >
-                    <option value="">Select a genre...</option>
-                    {MUSIC_GENRES.map(genre => (
-                      <option key={genre} value={genre}>
-                        {genre}
-                      </option>
-                    ))}
-                  </select>
+                  <GenreMultiSelect
+                    selectedGenres={newPlaylist.genres}
+                    onChange={(genres) => handleInputChange('genres', genres)}
+                    placeholder="Select genres..."
+                  />
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -1397,22 +1808,13 @@ const SystemSettings: React.FC<SystemSettingsProps> = ({ onlyPlaylistNetwork = f
                     {getSortIcon('saves')}
                   </div>
                 </th>
-                <th 
-                      className="px-2 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 select-none w-24 bg-gray-50"
-                  onClick={() => handleSort('nextStreamPurchase')}
-                >
-                  <div className="flex items-center space-x-1">
-                        <span>Next Stream</span>
-                    {getSortIcon('nextStreamPurchase')}
-                  </div>
-                </th>
-                    <th className="px-2 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider w-16 bg-gray-50">
-                  Last QTY
+                    <th className="px-2 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider w-20 bg-gray-50">
+                  Edit
                 </th>
                     <th className="px-2 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider w-16 bg-gray-50">
                   Status
                 </th>
-                    <th className="px-2 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider w-20 bg-gray-50">
+                    <th className="px-2 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider w-28 bg-gray-50">
                   Actions
                 </th>
               </tr>
@@ -1422,10 +1824,6 @@ const SystemSettings: React.FC<SystemSettingsProps> = ({ onlyPlaylistNetwork = f
                   const playlistPurchases = streamPurchases
                     .filter(purchase => purchase.playlistId === playlist.id)
                     .sort((a, b) => new Date(b.purchaseDate).getTime() - new Date(a.purchaseDate).getTime());
-                  
-
-                  
-                  const latestPurchase = playlistPurchases[0];
                   const isExpanded = expandedPlaylist === playlist.id;
 
                   return (
@@ -1480,9 +1878,12 @@ const SystemSettings: React.FC<SystemSettingsProps> = ({ onlyPlaylistNetwork = f
                             Max: {playlist.maxSongs}
                           </div>
                         </td>
-                        <td className="px-2 py-4 whitespace-nowrap w-20">
-                          <span className="inline-flex px-1 py-1 text-xs font-medium rounded bg-gray-100 text-gray-800">
-                            {playlist.genre}
+                        <td className="px-2 py-4 w-32">
+                          <span
+                            className="inline-block max-w-[9rem] truncate rounded bg-gray-100 px-2 py-1 font-medium text-gray-800"
+                            style={{ fontSize: '0.75rem' }}
+                          >
+                            {formatPlaylistGenres(playlist.genre)}
                           </span>
                         </td>
                         <td className="px-2 py-4 whitespace-nowrap w-32 text-sm text-gray-900 truncate" title={playlist.accountEmail}>
@@ -1514,29 +1915,17 @@ const SystemSettings: React.FC<SystemSettingsProps> = ({ onlyPlaylistNetwork = f
                             </div>
                           </div>
                         </td>
-                        <td className="px-2 py-4 whitespace-nowrap w-24">
-                          {latestPurchase ? (
-                            (() => {
-                              const urgency = getDateUrgency(latestPurchase.nextPurchaseDate);
-                              return (
-                                <div className={`text-xs ${urgency.colorClass} flex items-center space-x-1`}>
-                                  <span>{formatNextPurchaseDate(latestPurchase.nextPurchaseDate)}</span>
-                                  {urgency.isOverdue && <span>⚠️</span>}
-                                </div>
-                              );
-                            })()
-                          ) : (
-                            <span className="text-xs text-gray-400">No data</span>
-                          )}
-                        </td>
-                        <td className="px-2 py-4 whitespace-nowrap w-16 text-center">
-                          {latestPurchase ? (
-                            <div className="text-xs font-medium text-gray-900">
-                              {(latestPurchase.streamQty * latestPurchase.drips).toLocaleString()}
-                            </div>
-                          ) : (
-                            <span className="text-xs text-gray-400">-</span>
-                          )}
+                        <td className="px-2 py-4 whitespace-nowrap w-20 text-center">
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              openEditPlaylistModal(playlist);
+                            }}
+                            className="rounded-md border border-indigo-200 bg-indigo-50 px-2.5 py-1 font-medium text-indigo-700 transition-colors hover:bg-indigo-100"
+                            style={{ fontSize: '0.75rem' }}
+                          >
+                            Edit
+                          </button>
                         </td>
                         <td className="px-2 py-4 whitespace-nowrap w-16 text-center">
                           {(() => {
@@ -1562,8 +1951,8 @@ const SystemSettings: React.FC<SystemSettingsProps> = ({ onlyPlaylistNetwork = f
                             );
                           })()}
                         </td>
-                        <td className="px-2 py-4 whitespace-nowrap w-20 text-center text-sm font-medium">
-                          <div className="flex items-center space-x-2">
+                        <td className="px-2 py-4 whitespace-nowrap w-28 text-center text-sm font-medium">
+                          <div className="flex items-center justify-center space-x-2">
                             <button
                               onClick={(e) => {
                                 e.stopPropagation();
@@ -1621,9 +2010,29 @@ const SystemSettings: React.FC<SystemSettingsProps> = ({ onlyPlaylistNetwork = f
                       {/* Accordion Details Section */}
                       {isExpanded && (
                         <tr>
-                          <td colSpan={12} className="px-0 py-0">
+                          <td colSpan={11} className="px-0 py-0">
                             <div className="bg-gray-50 border-t border-gray-200 animate-slide-down w-full">
                               <div className="px-4 py-4 max-h-96 overflow-y-auto w-full">
+                                <div className="mb-6 rounded-lg border border-gray-200 bg-white p-4">
+                                  <div
+                                    className="mb-2 font-semibold uppercase tracking-wide text-gray-500"
+                                    style={{ fontSize: '0.75rem' }}
+                                  >
+                                    Full Genres
+                                  </div>
+                                  <div className="flex flex-wrap gap-2">
+                                    {parsePlaylistGenres(playlist.genre).map((genre) => (
+                                      <span
+                                        key={`${playlist.id}-${genre}`}
+                                        className="inline-flex rounded-full bg-indigo-50 px-2.5 py-1 font-medium text-indigo-700"
+                                        style={{ fontSize: '0.75rem' }}
+                                      >
+                                        {genre}
+                                      </span>
+                                    ))}
+                                  </div>
+                                </div>
+
                                 {/* Current Placements Section */}
                                 <h4 className="text-sm font-medium text-gray-900 mb-3">Current Placements</h4>
                                 {(() => {
@@ -1812,6 +2221,15 @@ const SystemSettings: React.FC<SystemSettingsProps> = ({ onlyPlaylistNetwork = f
         )}
       </div>
       
+      <PlaylistEditModal
+        isOpen={editingPlaylistId !== null}
+        formData={editPlaylistForm}
+        onClose={closeEditPlaylistModal}
+        onFieldChange={handleEditPlaylistInputChange}
+        onSubmit={handleEditPlaylistSubmit}
+        isSaving={isSavingPlaylistEdits}
+      />
+
       {/* Delete Confirmation Modal */}
       <DeleteConfirmationModal
         isOpen={confirmationModal.isOpen}

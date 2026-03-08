@@ -591,6 +591,7 @@ const PlaylistPurchasesNeeded: React.FC = () => {
   const [lastCopiedId, setLastCopiedId] = useState<string | null>(null);
   // Animation state for re-copy feedback
   const [copyAnimating, setCopyAnimating] = useState<string | null>(null);
+  const [hasHydratedLocalState, setHasHydratedLocalState] = useState(false);
   
   // Playlist order sets (fetched from smm_order_sets with PLAYLIST_FOLLOWERS / PLAYLIST_STREAMS)
   const [playlistOrderSets, setPlaylistOrderSets] = useState<PlaylistOrderSet[]>([]);
@@ -1001,6 +1002,7 @@ const PlaylistPurchasesNeeded: React.FC = () => {
     console.log('📋 PLAYLIST-PURCHASES: 🎧 DEBUG - Current playlist purchases on mount:', playlistPurchases);
     console.log('📋 PLAYLIST-PURCHASES: 🎧 DEBUG - localStorage campaign tracker:', localStorage.getItem('playlistPurchasesCampaignTracker'));
     console.log('📋 PLAYLIST-PURCHASES: 🎧 DEBUG - localStorage playlist purchases:', localStorage.getItem('playlistPurchasesNeeded'));
+    setHasHydratedLocalState(true);
     
     // TEST: Add a simple test event listener to verify the system is working
     const testListener = (event: CustomEvent) => {
@@ -1018,15 +1020,21 @@ const PlaylistPurchasesNeeded: React.FC = () => {
 
   // Save to localStorage whenever playlistPurchases changes
   useEffect(() => {
+    if (!hasHydratedLocalState) {
+      return;
+    }
     localStorage.setItem('playlistPurchasesNeeded', JSON.stringify(playlistPurchases));
     console.log('📋 PLAYLIST-PURCHASES: Saved data to localStorage', playlistPurchases);
-  }, [playlistPurchases]);
+  }, [hasHydratedLocalState, playlistPurchases]);
 
   // Save campaign tracker to localStorage
   useEffect(() => {
+    if (!hasHydratedLocalState) {
+      return;
+    }
     localStorage.setItem('playlistPurchasesCampaignTracker', JSON.stringify(campaignTracker));
     console.log('📋 PLAYLIST-PURCHASES: Saved campaign tracker to localStorage', campaignTracker);
-  }, [campaignTracker]);
+  }, [campaignTracker, hasHydratedLocalState]);
 
   // Fetch playlist network data (with optional force refresh from Spotify API)
   const fetchPlaylistNetwork = async (forceRefresh: boolean = false) => {

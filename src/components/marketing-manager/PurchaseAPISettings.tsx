@@ -162,20 +162,40 @@ const PurchaseAPISettings: React.FC = () => {
     fetchBalance();
   }, []);
 
-  const fetchOrderSets = async () => {
+  const sortOrderSets = (sets: OrderSet[]) => {
+    return [...sets].sort((a, b) => {
+      if (a.package_name === b.package_name) {
+        return a.display_order - b.display_order;
+      }
+      return a.package_name.localeCompare(b.package_name);
+    });
+  };
+
+  const upsertOrderSetLocally = (savedOrderSet: OrderSet) => {
+    setOrderSets((currentOrderSets) => {
+      const nextOrderSets = currentOrderSets.filter((orderSet) => orderSet.id !== savedOrderSet.id);
+      nextOrderSets.push(savedOrderSet);
+      return sortOrderSets(nextOrderSets);
+    });
+  };
+
+  const fetchOrderSets = async (): Promise<OrderSet[] | null> => {
     try {
       const response = await fetch('/api/marketing-manager/smm-panel/order-sets');
       if (response.ok) {
         const data = await response.json();
-        setOrderSets(data);
+        const normalizedData = Array.isArray(data) ? data : [];
+        setOrderSets(sortOrderSets(normalizedData));
+        return normalizedData;
       } else {
-        console.error('Failed to fetch order sets');
+        console.error('Failed to fetch order sets', response.status, response.statusText);
       }
     } catch (error) {
       console.error('Error fetching order sets:', error);
     } finally {
       setIsLoading(false);
     }
+    return null;
   };
 
   const fetchBalance = async () => {
@@ -367,6 +387,13 @@ const PurchaseAPISettings: React.FC = () => {
 
   const handlePlaylistSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    const trimmedServiceId = playlistServiceIdInput.trim();
+
+    if (!trimmedServiceId) {
+      alert('Please enter a valid service ID.');
+      return;
+    }
+
     setIsPlaylistSubmitting(true);
 
     try {
@@ -377,7 +404,7 @@ const PurchaseAPISettings: React.FC = () => {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             package_name: selectedPlaylistType,
-            service_id: playlistServiceIdInput,
+            service_id: trimmedServiceId,
             quantity: 0,
             drip_runs: null,
             interval_minutes: null,
@@ -385,8 +412,10 @@ const PurchaseAPISettings: React.FC = () => {
         });
 
         if (response.ok) {
-          await fetchOrderSets();
+          const savedOrderSet = await response.json();
+          upsertOrderSetLocally(savedOrderSet);
           closePlaylistModal();
+          void fetchOrderSets();
         } else {
           const error = await response.json();
           alert(`Error: ${error.error}`);
@@ -397,7 +426,7 @@ const PurchaseAPISettings: React.FC = () => {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             id: editingPlaylistOrderSet?.id,
-            service_id: playlistServiceIdInput,
+            service_id: trimmedServiceId,
             quantity: 0,
             drip_runs: null,
             interval_minutes: null,
@@ -405,8 +434,10 @@ const PurchaseAPISettings: React.FC = () => {
         });
 
         if (response.ok) {
-          await fetchOrderSets();
+          const savedOrderSet = await response.json();
+          upsertOrderSetLocally(savedOrderSet);
           closePlaylistModal();
+          void fetchOrderSets();
         } else {
           const error = await response.json();
           alert(`Error: ${error.error}`);

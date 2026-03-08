@@ -1,6 +1,10 @@
 import { NextApiRequest, NextApiResponse } from 'next';
 import { createAdminClient } from '../../../../utils/supabase/server';
 import { requireAdminAuth, AdminUser } from '../../../../utils/admin/auth';
+import {
+  formatPlaylistGenres,
+  parsePlaylistGenres,
+} from '../../../../utils/playlist-genres';
 
 async function handler(req: NextApiRequest, res: NextApiResponse, adminUser: AdminUser) {
   if (req.method !== 'POST') {
@@ -8,23 +12,26 @@ async function handler(req: NextApiRequest, res: NextApiResponse, adminUser: Adm
   }
 
   const { 
+    genres,
     genre, 
     accountEmail, 
     playlistLink, 
     spotifyPlaylistId, 
     maxSongs 
   } = req.body;
+  const parsedGenres = parsePlaylistGenres(Array.isArray(genres) ? genres : genre);
+  const trimmedPlaylistLink = typeof playlistLink === 'string' ? playlistLink.trim() : '';
+  const trimmedAccountEmail = typeof accountEmail === 'string' ? accountEmail.trim().toLowerCase() : '';
+  const sanitizedMaxSongs = Math.max(1, Number(maxSongs) || 35);
 
   // Validate required fields (playlist name will be fetched automatically)
-  if (!genre || !accountEmail || !playlistLink) {
+  if (parsedGenres.length === 0 || !trimmedAccountEmail || !trimmedPlaylistLink) {
     return res.status(400).json({ 
-      error: 'Genre, account email, and playlist link are required' 
+      error: 'At least one genre, account email, and playlist link are required' 
     });
   }
 
-  // Validate playlist link format
-  const spotifyUrlPattern = /(?:https?:\/\/)?(?:open\.)?spotify\.com\/playlist\/([a-zA-Z0-9]+)|spotify:playlist:([a-zA-Z0-9]+)/;
-  const extractedId = spotifyPlaylistId || extractSpotifyPlaylistId(playlistLink);
+  const extractedId = spotifyPlaylistId || extractSpotifyPlaylistId(trimmedPlaylistLink);
   
   if (!extractedId) {
     return res.status(400).json({ 
@@ -35,21 +42,39 @@ async function handler(req: NextApiRequest, res: NextApiResponse, adminUser: Adm
   try {
     const supabase = createAdminClient();
 
-    // Check if playlist already exists (by Spotify ID or link)
-    const { data: existingPlaylist, error: checkError } = await supabase
+    // Check if playlist already exists by Spotify playlist ID
+    const { data: existingBySpotifyId, error: spotifyIdCheckError } = await supabase
       .from('playlist_network')
       .select('id, playlist_name')
-      .or(`spotify_playlist_id.eq.${extractedId},playlist_link.eq.${playlistLink}`)
-      .single();
+      .eq('spotify_playlist_id', extractedId)
+      .maybeSingle();
 
-    if (checkError && checkError.code !== 'PGRST116') { // PGRST116 = no rows returned
-      console.error('Error checking existing playlist:', checkError);
+    if (spotifyIdCheckError) {
+      console.error('Error checking existing playlist by Spotify ID:', spotifyIdCheckError);
       return res.status(500).json({ error: 'Failed to check for existing playlist' });
     }
 
-    if (existingPlaylist) {
+    if (existingBySpotifyId) {
       return res.status(409).json({ 
-        error: `Playlist already exists: ${existingPlaylist.playlist_name}` 
+        error: `Playlist already exists: ${existingBySpotifyId.playlist_name}` 
+      });
+    }
+
+    // Check if playlist already exists by exact link
+    const { data: existingByLink, error: playlistLinkCheckError } = await supabase
+      .from('playlist_network')
+      .select('id, playlist_name')
+      .eq('playlist_link', trimmedPlaylistLink)
+      .maybeSingle();
+
+    if (playlistLinkCheckError) {
+      console.error('Error checking existing playlist by link:', playlistLinkCheckError);
+      return res.status(500).json({ error: 'Failed to check for existing playlist' });
+    }
+
+    if (existingByLink) {
+      return res.status(409).json({ 
+        error: `Playlist already exists: ${existingByLink.playlist_name}` 
       });
     }
 
@@ -61,7 +86,7 @@ async function handler(req: NextApiRequest, res: NextApiResponse, adminUser: Adm
     try {
       console.log('🎵 FETCH: Getting playlist data from Spotify...');
       const { getSpotifyPlaylistData } = await import('../../../../utils/spotify-api');
-      const playlistData = await getSpotifyPlaylistData(playlistLink.trim());
+      const playlistData = await getSpotifyPlaylistData(trimmedPlaylistLink);
       if (playlistData) {
         playlistName = playlistData.name;
         initialSongCount = playlistData.trackCount;
@@ -85,11 +110,11 @@ async function handler(req: NextApiRequest, res: NextApiResponse, adminUser: Adm
       .insert([
         {
           playlist_name: playlistName.trim(),
-          genre: genre.trim(),
-          account_email: accountEmail.trim().toLowerCase(),
-          playlist_link: playlistLink.trim(),
+          genre: formatPlaylistGenres(parsedGenres),
+          account_email: trimmedAccountEmail,
+          playlist_link: trimmedPlaylistLink,
           spotify_playlist_id: extractedId,
-          max_songs: maxSongs || 25,
+          max_songs: sanitizedMaxSongs,
           cached_song_count: initialSongCount,
           cached_image_url: initialImageUrl,
           last_scraped_at: new Date().toISOString(),

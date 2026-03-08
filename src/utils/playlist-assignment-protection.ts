@@ -4,6 +4,11 @@
  */
 
 import { getSpotifyPlaylistDataWithHealth } from './spotify-api';
+import {
+  parsePlaylistGenres,
+  playlistHasGenre,
+  playlistMatchesRequestedGenres,
+} from './playlist-genres';
 
 // Extract Spotify track ID from song URL
 export function extractTrackIdFromUrl(url: string): string | null {
@@ -175,7 +180,10 @@ export async function getAvailablePlaylistsWithProtection(
   trackId: string,
   excludeCampaignId?: string
 ): Promise<any[]> {
-  console.log(`🎵 PLAYLIST-ASSIGNMENT: Starting assignment for ${playlistsNeeded} playlists, genre "${userGenre}"`);
+  const requestedGenres = parsePlaylistGenres(userGenre);
+  console.log(
+    `🎵 PLAYLIST-ASSIGNMENT: Starting assignment for ${playlistsNeeded} playlists, genres "${requestedGenres.join(', ') || 'None'}"`
+  );
   
   // STEP 1: Refresh playlist health status before assignment
   console.log(`🔄 HEALTH-REFRESH: Updating playlist health status before assignment...`);
@@ -184,87 +192,75 @@ export async function getAvailablePlaylistsWithProtection(
   // Get excluded playlists for this track
   const excludedPlaylistIds = await getExcludedPlaylistsForTrack(supabase, trackId, excludeCampaignId);
   
-  console.log(`🎵 PLAYLIST-ASSIGNMENT: Looking for ${playlistsNeeded} playlists for genre "${userGenre}" with ${excludedPlaylistIds.length} exclusions`);
+  console.log(
+    `🎵 PLAYLIST-ASSIGNMENT: Looking for ${playlistsNeeded} playlists for genres "${requestedGenres.join(', ') || 'None'}" with ${excludedPlaylistIds.length} exclusions`
+  );
 
-  // Get available playlists matching the user's genre, excluding duplicate assignments
-  // IMPORTANT: Only select playlists with 'active' health status (not 'removed', 'private', or 'error')
-  let genreQuery = supabase
+  // Get all eligible playlists once, then apply multi-genre matching in memory.
+  // This keeps matching exact on each comma-separated genre while still honoring
+  // duplicate protection, health status, and playlist capacity limits.
+  let eligiblePlaylistsQuery = supabase
     .from('playlist_network')
     .select('id, playlist_name, genre, cached_song_count, max_songs, health_status')
     .eq('is_active', true)
-    .eq('genre', userGenre)
     .in('health_status', ['active', 'public']) // Only healthy playlists
     .order('playlist_name', { ascending: true });
 
   // Exclude playlists already assigned to running campaigns with same track
   if (excludedPlaylistIds.length > 0) {
-    genreQuery = genreQuery.not('id', 'in', `(${excludedPlaylistIds.join(',')})`);
+    eligiblePlaylistsQuery = eligiblePlaylistsQuery.not('id', 'in', `(${excludedPlaylistIds.join(',')})`);
   }
 
-  const { data: genreMatchingPlaylists, error: genrePlaylistError } = await genreQuery;
+  const { data: eligiblePlaylists, error: eligiblePlaylistsError } = await eligiblePlaylistsQuery;
 
-  if (genrePlaylistError) {
-    console.error('🚫 DUPLICATE-PROTECTION: Error fetching genre-matching playlists:', genrePlaylistError);
+  if (eligiblePlaylistsError) {
+    console.error('🚫 DUPLICATE-PROTECTION: Error fetching eligible playlists:', eligiblePlaylistsError);
     return [];
   }
 
   let selectedPlaylists: any[] = [];
+  const availableEligiblePlaylists = (eligiblePlaylists || []).filter(
+    (playlist: any) => (playlist.cached_song_count || 0) < (playlist.max_songs || 25)
+  );
+  const genreMatchingPlaylists = availableEligiblePlaylists.filter((playlist: any) =>
+    playlistMatchesRequestedGenres(playlist.genre, requestedGenres)
+  );
 
   // Add genre-specific playlists first (with capacity check)
   if (genreMatchingPlaylists && genreMatchingPlaylists.length > 0) {
-    // Filter out full playlists
-    const availableGenrePlaylists = genreMatchingPlaylists.filter((playlist: any) => 
-      (playlist.cached_song_count || 0) < (playlist.max_songs || 25)
-    );
-
-    const genrePlaylistsToAdd = Math.min(availableGenrePlaylists.length, playlistsNeeded);
-    selectedPlaylists = availableGenrePlaylists.slice(0, genrePlaylistsToAdd).map((playlist: any) => ({
+    const genrePlaylistsToAdd = Math.min(genreMatchingPlaylists.length, playlistsNeeded);
+    selectedPlaylists = genreMatchingPlaylists.slice(0, genrePlaylistsToAdd).map((playlist: any) => ({
       id: playlist.id,
       name: playlist.playlist_name,
       genre: playlist.genre
     }));
 
-    console.log(`🎵 PLAYLIST-ASSIGNMENT: Added ${genrePlaylistsToAdd} available ${userGenre} playlists (after duplicate protection)`);
+    console.log(
+      `🎵 PLAYLIST-ASSIGNMENT: Added ${genrePlaylistsToAdd} matching playlists for genres "${requestedGenres.join(', ') || 'None'}" (after duplicate protection)`
+    );
   }
 
   // If we still need more playlists, fill with General playlists
   if (selectedPlaylists.length < playlistsNeeded) {
     const remainingNeeded = playlistsNeeded - selectedPlaylists.length;
     const selectedIds = selectedPlaylists.map(p => p.id);
-
-    let generalQuery = supabase
-      .from('playlist_network')
-      .select('id, playlist_name, genre, cached_song_count, max_songs, health_status')
-      .eq('is_active', true)
-      .eq('genre', 'General')
-      .in('health_status', ['active', 'public']) // Only healthy playlists
-      .order('playlist_name', { ascending: true })
-      .limit(remainingNeeded);
-
-    // Exclude already selected playlists and duplicate-protected playlists
-    const allExclusions = [...selectedIds, ...excludedPlaylistIds];
-    if (allExclusions.length > 0) {
-      generalQuery = generalQuery.not('id', 'in', `(${allExclusions.join(',')})`);
-    }
-
-    const { data: generalPlaylists, error: generalPlaylistError } = await generalQuery;
-
-    if (generalPlaylistError) {
-      console.error('🚫 DUPLICATE-PROTECTION: Error fetching general playlists:', generalPlaylistError);
-    } else if (generalPlaylists && generalPlaylists.length > 0) {
-      // Filter out full playlists
-      const availableGeneralPlaylists = generalPlaylists.filter((playlist: any) => 
-        (playlist.cached_song_count || 0) < (playlist.max_songs || 25)
-      );
-
-      const generalPlaylistsToAdd = availableGeneralPlaylists.map((playlist: any) => ({
+    const generalPlaylists = availableEligiblePlaylists
+      .filter(
+        (playlist: any) =>
+          !selectedIds.includes(playlist.id) && playlistHasGenre(playlist.genre, 'General')
+      )
+      .slice(0, remainingNeeded)
+      .map((playlist: any) => ({
         id: playlist.id,
         name: playlist.playlist_name,
         genre: playlist.genre
       }));
 
-      selectedPlaylists = [...selectedPlaylists, ...generalPlaylistsToAdd];
-      console.log(`🎵 PLAYLIST-ASSIGNMENT: Added ${generalPlaylistsToAdd.length} General playlists to fill remaining slots (after duplicate protection)`);
+    if (generalPlaylists.length > 0) {
+      selectedPlaylists = [...selectedPlaylists, ...generalPlaylists];
+      console.log(
+        `🎵 PLAYLIST-ASSIGNMENT: Added ${generalPlaylists.length} General playlists to fill remaining slots (after duplicate protection)`
+      );
     }
   }
 
