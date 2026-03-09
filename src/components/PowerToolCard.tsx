@@ -97,11 +97,13 @@ export default function PowerToolCard({ tool, className = '' }: PowerToolCardPro
           className="w-full h-full object-cover transition-transform duration-300 hover:scale-110"
           onError={(e) => {
             const target = e.target as HTMLImageElement
-            // If TubeBuddy image fails, use the backup TubeBuddy URL
+            if (target.dataset.fallbackAttempted) return;
+            target.dataset.fallbackAttempted = 'true';
             if (tool.productName.toLowerCase().includes('tubebuddy')) {
               target.src = 'https://www.tubebuddy.com/wp-content/uploads/2019/07/TubeBuddy-Pro.jpg'
             } else {
-              target.src = '/default-tool.png' // fallback image for other tools
+              target.style.display = 'none';
+              target.parentElement!.style.background = 'linear-gradient(135deg, rgba(59,130,246,0.15), rgba(139,92,246,0.15))';
             }
           }}
         />

@@ -231,7 +231,12 @@ export default function VibePage() {
               `}
               style={{ fontSize: 'clamp(0.95rem, 3vw, 1.125rem)' }}
             >
-              {isLoading ? 'Loading...' : selectedGenres.length === 0 ? 'Select at least one vibe' : 'Continue to Campaign'}
+              {isLoading ? (
+                <span className="flex items-center justify-center gap-2">
+                  <span className="w-5 h-5 border-2 border-black border-t-transparent rounded-full animate-spin inline-block"></span>
+                  Continuing...
+                </span>
+              ) : selectedGenres.length === 0 ? 'Select at least one vibe' : 'Continue to Campaign'}
             </button>
 
             {selectedGenres.length > 0 && (

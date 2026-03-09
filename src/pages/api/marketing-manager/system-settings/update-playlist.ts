@@ -10,6 +10,7 @@ import {
   formatPlaylistGenres,
   parsePlaylistGenres,
 } from '../../../../utils/playlist-genres';
+import { scrapeSpotifyPlaylistData } from '../../../../utils/apify-spotify-playlist';
 
 async function handler(req: NextApiRequest, res: NextApiResponse, adminUser: AdminUser) {
   if (req.method !== 'PUT') {
@@ -143,6 +144,23 @@ async function handler(req: NextApiRequest, res: NextApiResponse, adminUser: Adm
       updatePayload.cached_image_url = refreshedPlaylistData.imageUrl;
       updatePayload.cached_saves = refreshedPlaylistData.followers || 0;
       updatePayload.last_scraped_at = now;
+
+      // Apify fallback for saves/trackCount if Spotify returns 0
+      const saves = (updatePayload.cached_saves as number) || 0;
+      const trackCount = (updatePayload.cached_song_count as number) || 0;
+      if (saves === 0 || trackCount === 0) {
+        try {
+          console.log(`🔮 APIFY-FALLBACK: Trying Apify for missing data on updated playlist...`);
+          const apifyData = await scrapeSpotifyPlaylistData(trimmedPlaylistLink, false);
+          if (apifyData) {
+            if (saves === 0 && apifyData.followers > 0) updatePayload.cached_saves = apifyData.followers;
+            if (trackCount === 0 && apifyData.trackCount > 0) updatePayload.cached_song_count = apifyData.trackCount;
+            if (!updatePayload.cached_image_url && apifyData.imageUrl) updatePayload.cached_image_url = apifyData.imageUrl;
+          }
+        } catch (apifyErr) {
+          console.error('🔮 APIFY-FALLBACK: Failed:', apifyErr);
+        }
+      }
     }
 
     if (refreshedHealthStatus) {

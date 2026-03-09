@@ -82,6 +82,7 @@ async function handler(req: NextApiRequest, res: NextApiResponse, adminUser: Adm
     let playlistName = '';
     let initialSongCount = 0;
     let initialImageUrl = '';
+    let initialSaves = 0;
     
     try {
       console.log('🎵 FETCH: Getting playlist data from Spotify...');
@@ -91,7 +92,24 @@ async function handler(req: NextApiRequest, res: NextApiResponse, adminUser: Adm
         playlistName = playlistData.name;
         initialSongCount = playlistData.trackCount;
         initialImageUrl = playlistData.imageUrl;
-        console.log(`✅ FETCHED: ${playlistName} - Songs: ${initialSongCount}, Image: ${initialImageUrl ? 'Yes' : 'No'}`);
+        initialSaves = playlistData.followers || 0;
+        console.log(`✅ FETCHED: ${playlistName} - Songs: ${initialSongCount}, Image: ${initialImageUrl ? 'Yes' : 'No'}, Saves: ${initialSaves}`);
+
+        // Apify fallback for saves/trackCount if Spotify returns 0
+        if (initialSaves === 0 || initialSongCount === 0) {
+          try {
+            console.log(`🔮 APIFY-FALLBACK: Trying Apify for missing data...`);
+            const { scrapeSpotifyPlaylistData } = await import('../../../../utils/apify-spotify-playlist');
+            const apifyData = await scrapeSpotifyPlaylistData(trimmedPlaylistLink, false);
+            if (apifyData) {
+              if (initialSaves === 0 && apifyData.followers > 0) initialSaves = apifyData.followers;
+              if (initialSongCount === 0 && apifyData.trackCount > 0) initialSongCount = apifyData.trackCount;
+              if (!initialImageUrl && apifyData.imageUrl) initialImageUrl = apifyData.imageUrl;
+            }
+          } catch (apifyErr) {
+            console.error('🔮 APIFY-FALLBACK: Failed:', apifyErr);
+          }
+        }
       } else {
         return res.status(400).json({ 
           error: 'Could not fetch playlist information from Spotify. Please check the URL and try again.' 
@@ -117,6 +135,7 @@ async function handler(req: NextApiRequest, res: NextApiResponse, adminUser: Adm
           max_songs: sanitizedMaxSongs,
           cached_song_count: initialSongCount,
           cached_image_url: initialImageUrl,
+          cached_saves: initialSaves,
           last_scraped_at: new Date().toISOString(),
           is_active: true,
           created_at: new Date().toISOString(),

@@ -1,8 +1,8 @@
 import { NextApiRequest, NextApiResponse } from 'next';
 import { createAdminClient } from '../../../utils/supabase/server';
 import { requireAdminAuth, AdminUser } from '../../../utils/admin/auth';
+import { getTrackById } from '../../../utils/spotify-api';
 
-// Define available packages (consistent with the main application)
 const AVAILABLE_PACKAGES = [
   {
     id: "test-campaign",
@@ -53,39 +53,6 @@ const AVAILABLE_PACKAGES = [
     description: ""
   }
 ];
-
-// Spotify API functions (reused from existing validation endpoint)
-async function getSpotifyAccessToken(): Promise<string> {
-  const response = await fetch('https://accounts.spotify.com/api/token', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/x-www-form-urlencoded',
-      'Authorization': `Basic ${Buffer.from(`${process.env.SPOTIFY_CLIENT_ID}:${process.env.SPOTIFY_CLIENT_SECRET}`).toString('base64')}`
-    },
-    body: 'grant_type=client_credentials'
-  });
-
-  if (!response.ok) {
-    throw new Error('Failed to get Spotify access token');
-  }
-
-  const data = await response.json();
-  return data.access_token;
-}
-
-async function fetchSpotifyTrackDetails(trackId: string, accessToken: string): Promise<any> {
-  const response = await fetch(`https://api.spotify.com/v1/tracks/${trackId}`, {
-    headers: {
-      'Authorization': `Bearer ${accessToken}`
-    }
-  });
-
-  if (!response.ok) {
-    throw new Error('Failed to fetch track details from Spotify');
-  }
-
-  return await response.json();
-}
 
 async function handler(req: NextApiRequest, res: NextApiResponse, adminUser: AdminUser) {
   if (req.method !== 'POST') {
@@ -145,26 +112,24 @@ async function handler(req: NextApiRequest, res: NextApiResponse, adminUser: Adm
     const trackId = match[1];
     console.log(`🎵 ADD-ORDER-ITEM: Extracted track ID: ${trackId}`);
 
-    // Get Spotify track details
-    const accessToken = await getSpotifyAccessToken();
-    const spotifyTrack = await fetchSpotifyTrackDetails(trackId, accessToken);
-
-    // Extract track information
-    const primaryArtist = spotifyTrack.artists[0];
-    const artistProfileUrl = primaryArtist?.external_urls?.spotify || '';
+    const spotifyTrack = await getTrackById(trackId);
     
+    if (!spotifyTrack) {
+      return res.status(400).json({ error: 'Failed to fetch track details from Spotify' });
+    }
+
     const trackInfo = {
       trackId: spotifyTrack.id,
-      title: spotifyTrack.name,
-      artist: spotifyTrack.artists.map((artist: any) => artist.name).join(', '),
-      artistProfileUrl: artistProfileUrl,
-      album: spotifyTrack.album.name,
-      imageUrl: spotifyTrack.album.images[0]?.url || '',
-      duration: spotifyTrack.duration_ms,
-      isPlayable: spotifyTrack.is_playable,
-      previewUrl: spotifyTrack.preview_url,
-      popularity: spotifyTrack.popularity,
-      releaseDate: spotifyTrack.album.release_date,
+      title: spotifyTrack.title,
+      artist: spotifyTrack.artist,
+      artistProfileUrl: spotifyTrack.artistProfileUrl,
+      album: spotifyTrack.album,
+      imageUrl: spotifyTrack.imageUrl,
+      duration: spotifyTrack.duration,
+      isPlayable: spotifyTrack.isPlayable,
+      previewUrl: spotifyTrack.previewUrl,
+      popularity: 0,
+      releaseDate: spotifyTrack.releaseDate,
       url: spotifyUrl
     };
 

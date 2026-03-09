@@ -597,6 +597,7 @@ const SystemSettings: React.FC<SystemSettingsProps> = ({ onlyPlaylistNetwork = f
     isProcessing: false
   });
   const [newPlaylist, setNewPlaylist] = useState<NewPlaylistForm>(getDefaultNewPlaylistForm);
+  const [refreshDebugLog, setRefreshDebugLog] = useState<string[]>([]);
   const [editPlaylistForm, setEditPlaylistForm] = useState<EditPlaylistForm>({
     playlistName: '',
     genres: [],
@@ -724,26 +725,82 @@ const SystemSettings: React.FC<SystemSettingsProps> = ({ onlyPlaylistNetwork = f
   };
 
   const fetchPlaylists = async (forceRefresh: boolean = false) => {
+    if (forceRefresh) {
+      startStreamingRefresh();
+      return;
+    }
     try {
-      if (forceRefresh) {
-        setIsRefreshing(true);
-      } else {
-        setIsLoading(true);
-      }
-      
-      const response = await fetch(`/api/marketing-manager/system-settings/playlists${forceRefresh ? '?refresh=true' : ''}`);
+      setIsLoading(true);
+      const response = await fetch('/api/marketing-manager/system-settings/playlists');
       if (response.ok) {
         const data = await response.json();
-        setPlaylists(data);
-      } else {
-        console.error('Failed to fetch playlists:', response.statusText);
+        if (Array.isArray(data)) {
+          setPlaylists(data);
+        } else if (data.playlists) {
+          setPlaylists(data.playlists);
+        }
       }
     } catch (error) {
       console.error('Error fetching playlists:', error);
     } finally {
       setIsLoading(false);
-      setIsRefreshing(false);
     }
+  };
+
+  const startStreamingRefresh = () => {
+    setIsRefreshing(true);
+    setRefreshDebugLog(['🔄 Connecting to streaming refresh...']);
+
+    const eventSource = new EventSource('/api/marketing-manager/system-settings/playlists-refresh-stream');
+
+    eventSource.addEventListener('log', (e) => {
+      const data = JSON.parse(e.data);
+      setRefreshDebugLog(prev => [...prev, data.message]);
+    });
+
+    eventSource.addEventListener('total', (e) => {
+      const data = JSON.parse(e.data);
+      setRefreshDebugLog(prev => [...prev, `📋 ${data.count} playlists to process`]);
+    });
+
+    eventSource.addEventListener('playlist', (e) => {
+      const updatedPlaylist = JSON.parse(e.data);
+      setPlaylists(prev => {
+        const idx = prev.findIndex(p => p.id === updatedPlaylist.id);
+        if (idx >= 0) {
+          const next = [...prev];
+          next[idx] = { ...next[idx], ...updatedPlaylist };
+          return next;
+        }
+        return [...prev, updatedPlaylist];
+      });
+    });
+
+    eventSource.addEventListener('complete', () => {
+      setIsRefreshing(false);
+      eventSource.close();
+    });
+
+    eventSource.addEventListener('error', (e) => {
+      // SSE 'error' event fires on connection close too
+      if (eventSource.readyState === EventSource.CLOSED) {
+        setIsRefreshing(false);
+        return;
+      }
+      setRefreshDebugLog(prev => [...prev, `❌ Connection error`]);
+      setIsRefreshing(false);
+      eventSource.close();
+    });
+
+    eventSource.onerror = () => {
+      if (eventSource.readyState === EventSource.CLOSED) {
+        setIsRefreshing(false);
+        return;
+      }
+      setRefreshDebugLog(prev => [...prev, `❌ Stream disconnected`]);
+      setIsRefreshing(false);
+      eventSource.close();
+    };
   };
 
   const handleRefresh = () => {
@@ -1341,6 +1398,31 @@ const SystemSettings: React.FC<SystemSettingsProps> = ({ onlyPlaylistNetwork = f
       {/* Campaign Totals Section - only show in System Settings */}
       {!onlyPlaylistNetwork && <CampaignTotals />}
       
+      {/* Refresh Debug Log */}
+      {refreshDebugLog.length > 0 && (
+        <div className="bg-gray-900 rounded-xl p-4 shadow-lg border border-gray-700 mb-6">
+          <div className="flex items-center justify-between mb-2">
+            <h3 className="text-sm font-bold text-green-400 font-mono">Refresh Log</h3>
+            <button
+              onClick={() => setRefreshDebugLog([])}
+              className="text-xs text-gray-500 hover:text-gray-300 transition-colors"
+            >
+              Clear
+            </button>
+          </div>
+          <div className="max-h-48 overflow-y-auto space-y-0.5 font-mono text-xs">
+            {refreshDebugLog.map((line, i) => (
+              <div key={i} className={`${line.startsWith('❌') ? 'text-red-400' : line.startsWith('✅') ? 'text-green-400' : line.startsWith('⚠️') ? 'text-yellow-400' : line.startsWith('🔮') ? 'text-purple-400' : 'text-gray-300'}`}>
+                {line}
+              </div>
+            ))}
+            {isRefreshing && (
+              <div className="text-blue-400 animate-pulse">⏳ Processing...</div>
+            )}
+          </div>
+        </div>
+      )}
+
       {/* Playlist Network Section */}
       <div className="bg-white rounded-xl p-6 shadow-lg border border-gray-100">
         {/* Success Banner */}
@@ -1852,22 +1934,23 @@ const SystemSettings: React.FC<SystemSettingsProps> = ({ onlyPlaylistNetwork = f
                         </td>
                         <td className="px-2 py-4 whitespace-nowrap w-12">
                           <div className="flex-shrink-0 h-8 w-8">
-                            <img
-                              className="h-8 w-8 rounded object-cover border border-gray-200"
-                              src={playlist.imageUrl || 'https://via.placeholder.com/32x32/1DB954/FFFFFF?text=♪'}
-                              alt={`${playlist.playlistName} cover`}
-                              onError={(e) => {
-                                const target = e.target as HTMLImageElement;
-                                console.log('🖼️ IMAGE ERROR: Failed to load:', playlist.imageUrl);
-                                target.src = 'https://via.placeholder.com/32x32/1DB954/FFFFFF?text=♪';
-                              }}
-                              onLoad={(e) => {
-                                const target = e.target as HTMLImageElement;
-                                if (playlist.imageUrl) {
-                                  console.log('🖼️ IMAGE SUCCESS: Loaded:', playlist.imageUrl);
-                                }
-                              }}
-                            />
+                            {playlist.healthStatus === 'removed' ? (
+                              <div className="h-8 w-8 rounded bg-red-100 border border-red-300 flex items-center justify-center" title="Playlist removed by Spotify">
+                                <svg className="h-5 w-5 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                                </svg>
+                              </div>
+                            ) : (
+                              <img
+                                className="h-8 w-8 rounded object-cover border border-gray-200"
+                                src={playlist.imageUrl || 'https://via.placeholder.com/32x32/1DB954/FFFFFF?text=♪'}
+                                alt={`${playlist.playlistName} cover`}
+                                onError={(e) => {
+                                  const target = e.target as HTMLImageElement;
+                                  target.src = 'https://via.placeholder.com/32x32/1DB954/FFFFFF?text=♪';
+                                }}
+                              />
+                            )}
                           </div>
                         </td>
                         <td className="px-2 py-4 whitespace-nowrap w-40">

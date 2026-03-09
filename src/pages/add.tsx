@@ -56,6 +56,7 @@ export default function AddSongsPage() {
   const [hasSearched, setHasSearched] = useState(false);
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [isAuthLoading, setIsAuthLoading] = useState(true);
+  const [isNavigating, setIsNavigating] = useState(false);
   const [showSearchResults, setShowSearchResults] = useState(false);
   const [isSpotifyUrl, setIsSpotifyUrl] = useState(false);
   const [dropdownPosition, setDropdownPosition] = useState({ top: 0, left: 0, width: 0 });
@@ -513,7 +514,8 @@ export default function AddSongsPage() {
 
   const promote = async () => {
     if (tracks.length === 0) return;
-    
+    setIsNavigating(true);
+
     // Save tracks to session storage for potential return
     sessionStorage.setItem("selectedTracks", JSON.stringify(tracks));
 
@@ -704,18 +706,25 @@ export default function AddSongsPage() {
         </div>
 
         <button
-          disabled={tracks.length === 0}
+          disabled={tracks.length === 0 || isNavigating}
           onClick={promote}
-              className="w-full bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] text-black font-semibold px-4 md:px-8 py-3 md:py-4 rounded-lg md:rounded-xl disabled:opacity-50 hover:shadow-lg hover:shadow-[#14c0ff]/30 transition-all duration-300 text-sm md:text-base"
+              className="w-full bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] text-black font-semibold px-4 md:px-8 py-3 md:py-4 rounded-lg md:rounded-xl disabled:opacity-50 hover:shadow-lg hover:shadow-[#14c0ff]/30 transition-all duration-300 text-sm md:text-base flex items-center justify-center gap-2"
         >
-          Promote selected songs →
+          {isNavigating ? (
+            <>
+              <div className="w-5 h-5 border-2 border-black border-t-transparent rounded-full animate-spin"></div>
+              Continuing...
+            </>
+          ) : (
+            <>Promote selected songs →</>
+          )}
         </button>
 
         {/* Live Counter */}
         <LiveCounter />
 
         {/* Conditional "No thanks" button - only show when user has exactly 1 song */}
-        {tracks.length === 1 && (
+        {tracks.length === 1 && !isNavigating && (
           <button
             onClick={promote}
             className="w-full text-gray-400 text-xs opacity-50 mt-3 hover:opacity-75 transition-opacity duration-200 underline"

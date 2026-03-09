@@ -2,7 +2,10 @@
 // Production-ready implementation that handles failures gracefully
 
 interface SpotifyPlaylistResponse {
-  tracks: {
+  items?: {
+    total: number;
+  };
+  tracks?: {
     total: number;
   };
   name: string;
@@ -216,6 +219,255 @@ function clearTokenCache(): void {
 }
 
 // ============================================================================
+// CENTRALIZED SPOTIFY HELPERS (track, artist, search)
+// ============================================================================
+
+export interface SpotifyTrackData {
+  id: string;
+  title: string;
+  artist: string;
+  artists: Array<{ id: string; name: string; url: string }>;
+  album: string;
+  imageUrl: string;
+  url: string;
+  artistProfileUrl: string;
+  duration: number;
+  isPlayable?: boolean;
+  previewUrl: string | null;
+  releaseDate?: string;
+}
+
+export interface SpotifyArtistData {
+  id: string;
+  name: string;
+  imageUrl: string | null;
+  followersCount: number;
+  genres: string[];
+  spotifyUrl: string;
+}
+
+/**
+ * Fetch a single track by Spotify track ID
+ */
+export async function getTrackById(trackId: string): Promise<SpotifyTrackData | null> {
+  try {
+    const accessToken = await getSpotifyAccessToken();
+    const response = await fetchWithTimeout(
+      `https://api.spotify.com/v1/tracks/${trackId}`,
+      { headers: { 'Authorization': `Bearer ${accessToken}`, 'Accept': 'application/json' } }
+    );
+
+    if (!response.ok) {
+      if (response.status === 401) { clearTokenCache(); }
+      console.error(`🎵 SPOTIFY-API: getTrackById failed: ${response.status}`);
+      return null;
+    }
+
+    const track = await response.json();
+    const primaryArtist = track.artists?.[0];
+
+    return {
+      id: track.id,
+      title: track.name,
+      artist: track.artists?.map((a: any) => a.name).join(', ') || '',
+      artists: track.artists?.map((a: any) => ({
+        id: a.id,
+        name: a.name,
+        url: a.external_urls?.spotify || ''
+      })) || [],
+      album: track.album?.name || '',
+      imageUrl: track.album?.images?.[0]?.url || '',
+      url: track.external_urls?.spotify || `https://open.spotify.com/track/${track.id}`,
+      artistProfileUrl: primaryArtist?.external_urls?.spotify || '',
+      duration: track.duration_ms || 0,
+      isPlayable: track.is_playable,
+      previewUrl: track.preview_url || null,
+      releaseDate: track.album?.release_date,
+    };
+  } catch (error) {
+    console.error('🎵 SPOTIFY-API: getTrackById error:', error);
+    return null;
+  }
+}
+
+/**
+ * Fetch multiple tracks by their Spotify IDs (batch, max 50 per call)
+ * Returns a map of trackId -> album image URL
+ */
+export async function getTrackImagesByIds(trackIds: string[]): Promise<Record<string, string>> {
+  const result: Record<string, string> = {};
+  if (!trackIds.length) return result;
+
+  try {
+    const accessToken = await getSpotifyAccessToken();
+    const chunks: string[][] = [];
+    for (let i = 0; i < trackIds.length; i += 50) {
+      chunks.push(trackIds.slice(i, i + 50));
+    }
+
+    for (const chunk of chunks) {
+      const response = await fetchWithTimeout(
+        `https://api.spotify.com/v1/tracks?ids=${chunk.join(',')}`,
+        { headers: { 'Authorization': `Bearer ${accessToken}`, 'Accept': 'application/json' } }
+      );
+      if (!response.ok) {
+        if (response.status === 401) { clearTokenCache(); }
+        console.error(`🎵 SPOTIFY-API: getTrackImagesByIds failed: ${response.status}`);
+        continue;
+      }
+      const data = await response.json();
+      for (const track of (data.tracks || [])) {
+        if (track?.id && track?.album?.images?.[0]?.url) {
+          result[track.id] = track.album.images[0].url;
+        }
+      }
+    }
+  } catch (error) {
+    console.error('🎵 SPOTIFY-API: getTrackImagesByIds error:', error);
+  }
+  return result;
+}
+
+/**
+ * Fetch a single artist by Spotify artist ID
+ */
+export async function getArtistById(artistId: string): Promise<SpotifyArtistData | null> {
+  try {
+    const accessToken = await getSpotifyAccessToken();
+    const response = await fetchWithTimeout(
+      `https://api.spotify.com/v1/artists/${artistId}`,
+      { headers: { 'Authorization': `Bearer ${accessToken}`, 'Accept': 'application/json' } }
+    );
+
+    if (!response.ok) {
+      if (response.status === 401) { clearTokenCache(); }
+      console.error(`🎵 SPOTIFY-API: getArtistById failed: ${response.status}`);
+      return null;
+    }
+
+    const artist = await response.json();
+    return {
+      id: artist.id,
+      name: artist.name,
+      imageUrl: artist.images?.[0]?.url || null,
+      followersCount: artist.followers?.total || 0,
+      genres: artist.genres || [],
+      spotifyUrl: artist.external_urls?.spotify || `https://open.spotify.com/artist/${artist.id}`,
+    };
+  } catch (error) {
+    console.error('🎵 SPOTIFY-API: getArtistById error:', error);
+    return null;
+  }
+}
+
+/**
+ * Search Spotify for tracks
+ */
+export async function searchTracks(query: string, limit: number = 10): Promise<{ tracks: SpotifyTrackData[]; total: number }> {
+  const accessToken = await getSpotifyAccessToken();
+  const safeLimit = Math.min(limit, 10);
+  const response = await fetchWithTimeout(
+    `https://api.spotify.com/v1/search?q=${encodeURIComponent(query)}&type=track&limit=${safeLimit}`,
+    { headers: { 'Authorization': `Bearer ${accessToken}`, 'Accept': 'application/json' } }
+  );
+
+  if (!response.ok) {
+    if (response.status === 401) { clearTokenCache(); }
+    throw new Error(`Spotify search failed: ${response.status}`);
+  }
+
+  const data = await response.json();
+  const tracks: SpotifyTrackData[] = (data.tracks?.items || []).map((track: any) => {
+    const primaryArtist = track.artists?.[0];
+    return {
+      id: track.id,
+      title: track.name,
+      artist: track.artists?.map((a: any) => a.name).join(', ') || '',
+      artists: track.artists?.map((a: any) => ({
+        id: a.id,
+        name: a.name,
+        url: a.external_urls?.spotify || ''
+      })) || [],
+      album: track.album?.name || '',
+      imageUrl: track.album?.images?.[0]?.url || '',
+      url: track.external_urls?.spotify || '',
+      artistProfileUrl: primaryArtist?.external_urls?.spotify || '',
+      duration: track.duration_ms || 0,
+      isPlayable: track.is_playable,
+      previewUrl: track.preview_url || null,
+      releaseDate: track.album?.release_date,
+    };
+  });
+
+  return { tracks, total: data.tracks?.total || 0 };
+}
+
+/**
+ * Search Spotify for artists
+ */
+export async function searchArtists(query: string, limit: number = 10): Promise<SpotifyArtistData[]> {
+  const accessToken = await getSpotifyAccessToken();
+  const safeLimit = Math.min(limit, 10);
+  const response = await fetchWithTimeout(
+    `https://api.spotify.com/v1/search?q=${encodeURIComponent(query)}&type=artist&market=US&limit=${safeLimit}`,
+    { headers: { 'Authorization': `Bearer ${accessToken}`, 'Accept': 'application/json' } }
+  );
+
+  if (!response.ok) {
+    if (response.status === 401) { clearTokenCache(); }
+    throw new Error(`Spotify artist search failed: ${response.status}`);
+  }
+
+  const data = await response.json();
+  return (data.artists?.items || []).map((artist: any) => ({
+    id: artist.id,
+    name: artist.name,
+    imageUrl: artist.images?.[0]?.url || null,
+    followersCount: artist.followers?.total || 0,
+    genres: artist.genres || [],
+    spotifyUrl: artist.external_urls?.spotify || `https://open.spotify.com/artist/${artist.id}`,
+  }));
+}
+
+/**
+ * Fetch artist's albums from Spotify
+ */
+export async function getArtistAlbums(artistId: string, limit: number = 50): Promise<any[]> {
+  try {
+    const accessToken = await getSpotifyAccessToken();
+    const response = await fetchWithTimeout(
+      `https://api.spotify.com/v1/artists/${artistId}/albums?include_groups=album,single&market=US&limit=${limit}`,
+      { headers: { 'Authorization': `Bearer ${accessToken}`, 'Accept': 'application/json' } }
+    );
+    if (!response.ok) return [];
+    const data = await response.json();
+    return data.items || [];
+  } catch (error) {
+    console.error('🎵 SPOTIFY-API: getArtistAlbums error:', error);
+    return [];
+  }
+}
+
+/**
+ * Fetch album tracks from Spotify
+ */
+export async function getAlbumTracks(albumId: string): Promise<any[]> {
+  try {
+    const accessToken = await getSpotifyAccessToken();
+    const response = await fetchWithTimeout(
+      `https://api.spotify.com/v1/albums/${albumId}/tracks?market=US`,
+      { headers: { 'Authorization': `Bearer ${accessToken}`, 'Accept': 'application/json' } }
+    );
+    if (!response.ok) return [];
+    const data = await response.json();
+    return data.items || [];
+  } catch (error) {
+    console.error('🎵 SPOTIFY-API: getAlbumTracks error:', error);
+    return [];
+  }
+}
+
+// ============================================================================
 // PLAYLIST DATA FETCHING WITH RETRY
 // ============================================================================
 
@@ -223,7 +475,7 @@ function clearTokenCache(): void {
  * Fetch playlist data with retry logic
  */
 async function fetchPlaylistDataWithRetry(playlistId: string, accessToken: string): Promise<SpotifyPlaylistResponse | null> {
-  const fields = 'name,description,tracks.total,images,followers.total,owner.display_name,owner.external_urls.spotify,external_urls.spotify,public';
+  const fields = 'name,description,tracks.total,items.total,images,followers.total,owner.display_name,owner.external_urls.spotify,external_urls.spotify,public';
   const url = `https://api.spotify.com/v1/playlists/${playlistId}?fields=${encodeURIComponent(fields)}`;
 
   const response = await fetchWithTimeout(url, {
@@ -287,10 +539,13 @@ export async function getSpotifyPlaylistData(playlistUrl: string): Promise<Spoti
       }
 
       // Transform to the expected format
+      const trackCount = data.items?.total ?? data.tracks?.total ?? 0;
+      console.log(`🎵 SPOTIFY-API: Track count parsing: items.total=${data.items?.total}, tracks.total=${data.tracks?.total}, resolved=${trackCount}`);
+
       const playlistData: SpotifyPlaylistData = {
         name: data.name || 'Unknown Playlist',
         description: data.description || '',
-        trackCount: data.tracks?.total || 0,
+        trackCount,
         imageUrl: data.images && data.images.length > 0 ? data.images[0].url : '',
         followers: data.followers?.total || 0,
         owner: {
@@ -337,7 +592,7 @@ export async function checkPlaylistHealth(playlistUrl: string): Promise<Playlist
       const accessToken = await getSpotifyAccessToken();
       
       const response = await fetchWithTimeout(
-        `https://api.spotify.com/v1/playlists/${playlistId}?fields=name,public,tracks.total`,
+        `https://api.spotify.com/v1/playlists/${playlistId}?fields=name,public,tracks.total,items.total`,
         {
           method: 'GET',
           headers: {
@@ -439,7 +694,7 @@ export async function getSpotifyPlaylistTrackCount(playlistId: string): Promise<
   try {
     const accessToken = await getSpotifyAccessToken();
     const response = await fetchWithTimeout(
-      `https://api.spotify.com/v1/playlists/${playlistId}?fields=tracks.total`,
+      `https://api.spotify.com/v1/playlists/${playlistId}?fields=tracks.total,items.total`,
       {
         method: 'GET',
         headers: {
@@ -451,7 +706,7 @@ export async function getSpotifyPlaylistTrackCount(playlistId: string): Promise<
 
     if (response.ok) {
       const data = await response.json();
-      return data.tracks?.total || 0;
+      return data.items?.total ?? data.tracks?.total ?? 0;
     }
     return 0;
   } catch (error) {
@@ -463,7 +718,7 @@ export async function getSpotifyPlaylistTrackCount(playlistId: string): Promise<
 export async function getSpotifyPlaylistTrackCountWithAuth(playlistId: string, accessToken: string): Promise<number> {
   try {
     const response = await fetchWithTimeout(
-      `https://api.spotify.com/v1/playlists/${playlistId}?fields=tracks.total`,
+      `https://api.spotify.com/v1/playlists/${playlistId}?fields=tracks.total,items.total`,
       {
         method: 'GET',
         headers: {
@@ -475,7 +730,7 @@ export async function getSpotifyPlaylistTrackCountWithAuth(playlistId: string, a
 
     if (response.ok) {
       const data = await response.json();
-      return data.tracks?.total || 0;
+      return data.items?.total ?? data.tracks?.total ?? 0;
     }
     return 0;
   } catch (error) {

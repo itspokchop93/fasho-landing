@@ -2,6 +2,7 @@ import { NextApiRequest, NextApiResponse } from 'next';
 import { createAdminClient } from '../../../utils/supabase/server';
 import { requireAdminAuth, AdminUser } from '../../../utils/admin/auth';
 import { v4 as uuidv4 } from 'uuid';
+import { getTrackById } from '../../../utils/spotify-api';
 
 interface TestOrderRequest {
   customerInfo: {
@@ -23,50 +24,8 @@ interface TestOrderRequest {
   }[];
 }
 
-// Spotify API functions - EXACT COPY from other API files
-async function getSpotifyAccessToken(): Promise<string> {
-  const clientId = process.env.SPOTIFY_CLIENT_ID;
-  const clientSecret = process.env.SPOTIFY_CLIENT_SECRET;
-
-  if (!clientId || !clientSecret) {
-    throw new Error('Missing Spotify credentials');
-  }
-
-  const response = await fetch('https://accounts.spotify.com/api/token', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/x-www-form-urlencoded',
-      'Authorization': `Basic ${Buffer.from(`${clientId}:${clientSecret}`).toString('base64')}`
-    },
-    body: 'grant_type=client_credentials'
-  });
-
-  if (!response.ok) {
-    throw new Error(`Failed to get Spotify access token: ${response.status}`);
-  }
-
-  const data = await response.json();
-  return data.access_token;
-}
-
-async function fetchSpotifyTrackDetails(trackId: string, accessToken: string): Promise<any> {
-  const response = await fetch(`https://api.spotify.com/v1/tracks/${trackId}`, {
-    headers: {
-      'Authorization': `Bearer ${accessToken}`
-    }
-  });
-
-  if (!response.ok) {
-    throw new Error('Failed to fetch track details from Spotify');
-  }
-
-  return await response.json();
-}
-
-// Function to get real track information from Spotify API
 async function getTrackInfo(spotifyUrl: string): Promise<{ title: string; artist: string; artistProfileUrl: string; imageUrl: string }> {
   try {
-    // Extract track ID from URL
     const trackIdMatch = spotifyUrl.match(/track\/([a-zA-Z0-9]+)/);
     if (!trackIdMatch) {
       throw new Error('Could not extract track ID from Spotify URL');
@@ -75,23 +34,20 @@ async function getTrackInfo(spotifyUrl: string): Promise<{ title: string; artist
     const trackId = trackIdMatch[1];
     console.log(`🎵 TEST-ORDER: Fetching track details for ID: ${trackId}`);
     
-    // Get Spotify access token and track details
-    const accessToken = await getSpotifyAccessToken();
-    const spotifyTrack = await fetchSpotifyTrackDetails(trackId, accessToken);
+    const spotifyTrack = await getTrackById(trackId);
     
-    // Extract track information exactly like the normal order process
-    const primaryArtist = spotifyTrack.artists[0];
-    const artistProfileUrl = primaryArtist?.external_urls?.spotify || '';
+    if (!spotifyTrack) {
+      throw new Error('Track not found on Spotify');
+    }
     
     return {
-      title: spotifyTrack.name,
-      artist: spotifyTrack.artists.map((artist: any) => artist.name).join(', '),
-      artistProfileUrl: artistProfileUrl,
-      imageUrl: spotifyTrack.album.images[0]?.url || ''
+      title: spotifyTrack.title,
+      artist: spotifyTrack.artist,
+      artistProfileUrl: spotifyTrack.artistProfileUrl,
+      imageUrl: spotifyTrack.imageUrl,
     };
   } catch (error) {
     console.error('🎵 TEST-ORDER: Error getting track info from Spotify:', error);
-    // Fallback to basic info if Spotify API fails
     return {
       title: 'Unknown Track',
       artist: 'Unknown Artist', 

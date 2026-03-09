@@ -102,6 +102,7 @@ export default function PackagesPage() {
   const [existingSessionId, setExistingSessionId] = useState<string | null>(null); // Track existing session for renewal
   const [drawerClosed, setDrawerClosed] = useState(false); // Track if drawer is closed (mobile only)
   const [showChangeSongPopup, setShowChangeSongPopup] = useState(false); // Track change song popup visibility
+  const [isNavigating, setIsNavigating] = useState(false); // Track checkout session creation
   const carouselRef = useRef<HTMLDivElement>(null);
   const lottieRef = useRef<any>(null);
   const selectedPackageRef = useRef<HTMLDivElement>(null);
@@ -562,6 +563,7 @@ export default function PackagesPage() {
     }
 
     if (isLastSong || isOnlySong) {
+      setIsNavigating(true);
       try {
         // Track begin checkout for Google Ads
         const checkoutItems = tracks.map((track, index) => {
@@ -643,6 +645,7 @@ export default function PackagesPage() {
         });
       } catch (error) {
         console.error('Error creating checkout session:', error);
+        setIsNavigating(false);
         alert('Failed to proceed to checkout. Please try again.');
       }
     } else {
@@ -1283,7 +1286,7 @@ export default function PackagesPage() {
                 
                 <button
                   onClick={handleNext}
-                  disabled={!selectedPackage || isAuthLoading}
+                  disabled={!selectedPackage || isAuthLoading || isNavigating}
                   className="relative w-full bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] text-black font-semibold px-8 py-4 rounded-md disabled:opacity-50 hover:opacity-90 hover:-translate-y-1 transition-all duration-300 text-lg flex items-center justify-center gap-2"
                   style={{ zIndex: 2 }}
                   suppressHydrationWarning={true}
@@ -1292,6 +1295,11 @@ export default function PackagesPage() {
                     <>
                       <div className="w-5 h-5 border-2 border-black border-t-transparent rounded-full animate-spin"></div>
                       Checking account...
+                    </>
+                  ) : isNavigating ? (
+                    <>
+                      <div className="w-5 h-5 border-2 border-black border-t-transparent rounded-full animate-spin"></div>
+                      Continuing...
                     </>
                   ) : (
                     <>
@@ -2041,7 +2049,7 @@ export default function PackagesPage() {
                <div className="space-y-4">
                  <div className="relative">
                    {/* Pulsing gradient glow background - only when button is active */}
-                   {selectedPackage && !isAuthLoading && (
+                   {selectedPackage && !isAuthLoading && !isNavigating && (
                      <div 
                        className="absolute inset-0 bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] rounded-md animate-fast-pulse-glow"
                        style={{ zIndex: 1 }}
@@ -2051,7 +2059,7 @@ export default function PackagesPage() {
                    
                    <button
                      onClick={handleNext}
-                     disabled={!selectedPackage || isAuthLoading}
+                     disabled={!selectedPackage || isAuthLoading || isNavigating}
                      className="relative w-full bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] text-black font-semibold px-8 py-4 rounded-md disabled:opacity-50 hover:opacity-90 hover:-translate-y-1 transition-all duration-300 text-lg flex items-center justify-center gap-2"
                      style={{ zIndex: 2 }}
                      suppressHydrationWarning={true}
@@ -2060,6 +2068,11 @@ export default function PackagesPage() {
                        <>
                          <div className="w-5 h-5 border-2 border-black border-t-transparent rounded-full animate-spin"></div>
                          Checking account...
+                       </>
+                     ) : isNavigating ? (
+                       <>
+                         <div className="w-5 h-5 border-2 border-black border-t-transparent rounded-full animate-spin"></div>
+                         Continuing...
                        </>
                      ) : (
                        <>

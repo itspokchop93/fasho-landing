@@ -1,67 +1,13 @@
 import { NextApiRequest, NextApiResponse } from 'next';
-import { createClient } from '../../utils/supabase/server';
+import { createClient, createAdminClient } from '../../utils/supabase/server';
+import { getArtistById, getTrackImagesByIds, searchTracks } from '../../utils/spotify-api';
+import { getArtistStats } from '../../utils/apify-artist-stats';
 
-// Helper function to get Spotify access token
-async function getSpotifyAccessToken(): Promise<string> {
-  const clientId = process.env.SPOTIFY_CLIENT_ID;
-  const clientSecret = process.env.SPOTIFY_CLIENT_SECRET;
-  
-  if (!clientId || !clientSecret) {
-    throw new Error('Spotify credentials not configured');
-  }
-  
-  const response = await fetch('https://accounts.spotify.com/api/token', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/x-www-form-urlencoded',
-      'Authorization': `Basic ${Buffer.from(`${clientId}:${clientSecret}`).toString('base64')}`,
-    },
-    body: 'grant_type=client_credentials',
-  });
-
-  if (!response.ok) {
-    throw new Error('Failed to get Spotify access token');
-  }
-
-  const data = await response.json();
-  return data.access_token;
-}
-
-// Helper function to fetch artist data from Spotify
-async function fetchSpotifyArtist(artistId: string) {
-  try {
-    const accessToken = await getSpotifyAccessToken();
-    
-    const response = await fetch(`https://api.spotify.com/v1/artists/${artistId}`, {
-      headers: {
-        'Authorization': `Bearer ${accessToken}`,
-      },
-    });
-
-    if (!response.ok) {
-      throw new Error(`Spotify API error: ${response.status}`);
-    }
-
-    const artist = await response.json();
-    
-    return {
-      id: artist.id,
-      name: artist.name,
-      imageUrl: artist.images?.[0]?.url || null,
-      followersCount: artist.followers?.total || 0,
-      genres: artist.genres || [],
-      spotifyUrl: artist.external_urls?.spotify || `https://open.spotify.com/artist/${artist.id}`,
-    };
-  } catch (error) {
-    console.error('Error fetching Spotify artist:', error);
-    return null;
-  }
-}
+const APIFY_CACHE_TTL_MS = 24 * 60 * 60 * 1000; // 24 hours
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   const supabase = createClient(req, res);
 
-  // Check authentication
   const { data: { user }, error: authError } = await supabase.auth.getUser();
   
   if (authError || !user) {
@@ -90,13 +36,96 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   }
 }
 
+function normalizeTrackName(value: string): string {
+  return value.toLowerCase().replace(/\([^)]*\)/g, '').replace(/\[[^\]]*\]/g, '').replace(/[^a-z0-9]+/g, ' ').trim();
+}
+
+async function getUserSelectedGenres(supabase: any, userId: string): Promise<string | null> {
+  try {
+    const { data: userProfile } = await supabase
+      .from('user_profiles')
+      .select('music_genre')
+      .eq('user_id', userId)
+      .single();
+
+    const rawProfileGenre = userProfile?.music_genre;
+    if (typeof rawProfileGenre === 'string' && rawProfileGenre.trim()) {
+      return rawProfileGenre.trim();
+    }
+  } catch {
+    // Ignore and fall back to order data.
+  }
+
+  try {
+    const { data: latestOrder } = await supabase
+      .from('orders')
+      .select('billing_info')
+      .eq('user_id', userId)
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    const rawOrderGenre =
+      latestOrder?.billing_info?.musicGenre ??
+      latestOrder?.billing_info?.music_genre ??
+      null;
+
+    if (Array.isArray(rawOrderGenre)) {
+      const joined = rawOrderGenre.map((genre: string) => genre.trim()).filter(Boolean).join(', ');
+      return joined || null;
+    }
+
+    if (typeof rawOrderGenre === 'string' && rawOrderGenre.trim()) {
+      return rawOrderGenre.trim();
+    }
+  } catch {
+    // Ignore and return null below.
+  }
+
+  return null;
+}
+
+async function hydrateTrackImages(
+  topTracks: Array<{ id: string; name: string; streamCount: number; duration: number; imageUrl: string | null }>,
+  artistName: string
+) {
+  const trackIds = topTracks.map((track) => track.id).filter(Boolean);
+  if (trackIds.length > 0) {
+    try {
+      const imageMap = await getTrackImagesByIds(trackIds);
+      for (const track of topTracks) {
+        if (imageMap[track.id]) {
+          track.imageUrl = imageMap[track.id];
+        }
+      }
+    } catch (e) {
+      console.error('🔐 USER-ARTIST-PROFILE: Failed to fetch track images by id:', e);
+    }
+  }
+
+  for (const track of topTracks) {
+    if (track.imageUrl) continue;
+
+    try {
+      const { tracks } = await searchTracks(`${track.name} ${artistName}`, 5);
+      const normalizedName = normalizeTrackName(track.name);
+      const matchedTrack =
+        tracks.find((candidate) => normalizeTrackName(candidate.title) === normalizedName) ||
+        tracks[0];
+
+      if (matchedTrack?.imageUrl) {
+        track.imageUrl = matchedTrack.imageUrl;
+      }
+    } catch (e) {
+      console.error(`🔐 USER-ARTIST-PROFILE: Failed search fallback for "${track.name}":`, e);
+    }
+  }
+}
+
 // GET - Fetch user's artist profile
 async function handleGet(supabase: any, userId: string, res: NextApiResponse) {
   console.log('🔐 USER-ARTIST-PROFILE-GET: Fetching artist profile for user:', userId);
 
-
-
-  // First, try to get existing profile
   const { data: existingProfile, error: profileError } = await supabase
     .from('user_artist_profiles')
     .select('*')
@@ -108,11 +137,34 @@ async function handleGet(supabase: any, userId: string, res: NextApiResponse) {
     return res.status(500).json({ error: 'Failed to fetch artist profile' });
   }
 
+  const userMusicGenre = await getUserSelectedGenres(supabase, userId);
+
   if (existingProfile) {
     console.log('🔐 USER-ARTIST-PROFILE-GET: Found existing artist profile:', existingProfile.artist_name);
-    const result = { profile: existingProfile };
-    
-    return res.status(200).json(result);
+
+    const profileWithGenre = { ...existingProfile, user_music_genre: userMusicGenre };
+
+    const cachedAt = existingProfile.apify_cached_at ? new Date(existingProfile.apify_cached_at).getTime() : 0;
+    const isStale = !cachedAt || (Date.now() - cachedAt > APIFY_CACHE_TTL_MS);
+    const hasApifyData = !!existingProfile.apify_monthly_listeners || !!existingProfile.apify_top_tracks;
+
+    if (hasApifyData && !isStale) {
+      console.log('🔐 USER-ARTIST-PROFILE-GET: Returning cached Apify data');
+      return res.status(200).json({ profile: profileWithGenre, apifyCacheStatus: 'fresh' });
+    }
+
+    // Return profile immediately, then try to refresh Apify data
+    if (existingProfile.spotify_artist_url && isStale) {
+      console.log('🔐 USER-ARTIST-PROFILE-GET: Apify data stale/missing, refreshing in background');
+      refreshApifyData(userId, existingProfile.spotify_artist_url).catch(e =>
+        console.error('🔐 USER-ARTIST-PROFILE-GET: Background Apify refresh failed:', e)
+      );
+    }
+
+    return res.status(200).json({
+      profile: profileWithGenre,
+      apifyCacheStatus: hasApifyData ? 'stale' : 'missing',
+    });
   }
 
   // No existing profile found, try to create one from order history
@@ -176,7 +228,7 @@ async function handleGet(supabase: any, userId: string, res: NextApiResponse) {
 
     // Fetch artist details from Spotify
     try {
-      const artistData = await fetchSpotifyArtist(artistId);
+      const artistData = await getArtistById(artistId);
       
       if (!artistData) {
         console.log('🔐 USER-ARTIST-PROFILE-GET: Failed to fetch artist details from Spotify');
@@ -212,7 +264,7 @@ async function handleGet(supabase: any, userId: string, res: NextApiResponse) {
       }
 
       console.log('🔐 USER-ARTIST-PROFILE-GET: Successfully created profile from order history');
-      const result = { profile: newProfile };
+      const result = { profile: { ...newProfile, user_music_genre: userMusicGenre } };
       
       return res.status(200).json(result);
 
@@ -311,6 +363,12 @@ async function handlePut(supabase: any, userId: string, body: any, res: NextApiR
       spotify_artist_url,
       followers_count: followers_count || 0,
       genres: genres || [],
+      apify_monthly_listeners: null,
+      apify_world_rank: null,
+      apify_top_cities: null,
+      apify_top_tracks: null,
+      apify_verified: null,
+      apify_cached_at: null,
       updated_at: new Date().toISOString(),
     })
     .eq('user_id', userId)
@@ -348,4 +406,51 @@ async function handleDelete(supabase: any, userId: string, res: NextApiResponse)
   console.log('🔐 USER-ARTIST-PROFILE-DELETE: Deleted artist profile successfully');
   
   return res.status(200).json({ message: 'Artist profile deleted successfully' });
+}
+
+// Background function to refresh Apify data and cache it in the profile
+async function refreshApifyData(userId: string, artistUrl: string) {
+  console.log('🔐 USER-ARTIST-PROFILE: Refreshing Apify data for:', artistUrl);
+  const adminSupabase = createAdminClient();
+
+  const stats = await getArtistStats(artistUrl);
+  if (!stats) {
+    console.log('🔐 USER-ARTIST-PROFILE: Apify returned no data');
+    return;
+  }
+
+  const topTracks: { id: string; name: string; streamCount: number; duration: number; imageUrl: string | null }[] = stats.topTracks?.map((t: any) => ({
+    id: t.id,
+    name: t.name,
+    streamCount: t.streamCount || 0,
+    duration: t.duration || 0,
+    imageUrl: null as string | null,
+  })) || [];
+
+  await hydrateTrackImages(topTracks, stats.name || '');
+
+  const topCities = stats.topCities?.map((c: any) => ({
+    city: c.city,
+    country: c.country,
+    listeners: c.numberOfListeners || 0,
+  })) || [];
+
+  const { error } = await adminSupabase
+    .from('user_artist_profiles')
+    .update({
+      apify_monthly_listeners: stats.monthlyListeners || 0,
+      apify_world_rank: stats.worldRank || null,
+      apify_top_cities: topCities,
+      apify_top_tracks: topTracks,
+      apify_verified: stats.verified || false,
+      followers_count: stats.followers || undefined,
+      apify_cached_at: new Date().toISOString(),
+    })
+    .eq('user_id', userId);
+
+  if (error) {
+    console.error('🔐 USER-ARTIST-PROFILE: Failed to cache Apify data:', error);
+  } else {
+    console.log(`🔐 USER-ARTIST-PROFILE: Cached Apify data — ${stats.monthlyListeners?.toLocaleString()} listeners, rank #${stats.worldRank}`);
+  }
 } 

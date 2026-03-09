@@ -3,6 +3,7 @@ import { createAdminClient } from '../../../utils/supabase/server';
 import { requireAdminAuth, AdminUser } from '../../../utils/admin/auth';
 
 import { getSpotifyPlaylistData } from '../../../utils/spotify-api';
+import { scrapeSpotifyPlaylistData } from '../../../utils/apify-spotify-playlist';
 
 async function handler(req: NextApiRequest, res: NextApiResponse, adminUser: AdminUser) {
   if (req.method !== 'GET') {
@@ -69,7 +70,20 @@ async function handler(req: NextApiRequest, res: NextApiResponse, adminUser: Adm
             if (playlistData) {
               songCount = playlistData.trackCount;
               
-              // Update database with fresh data
+              // Apify fallback if Spotify returns 0 for track count
+              if (songCount === 0) {
+                try {
+                  console.log(`🔮 APIFY-FALLBACK: Trying Apify for track count of "${playlist.playlist_name}"`);
+                  const apifyData = await scrapeSpotifyPlaylistData(playlist.playlist_link, false);
+                  if (apifyData && apifyData.trackCount > 0) {
+                    songCount = apifyData.trackCount;
+                    console.log(`🔮 APIFY-FALLBACK: Got songCount=${songCount} from Apify`);
+                  }
+                } catch (apifyErr) {
+                  console.error(`🔮 APIFY-FALLBACK: Failed for "${playlist.playlist_name}":`, apifyErr);
+                }
+              }
+              
               await supabase
                 .from('playlist_network')
                 .update({

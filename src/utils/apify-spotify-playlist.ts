@@ -5,9 +5,9 @@
 import { ApifyClient } from 'apify-client';
 import { playlistCache } from './playlist-cache';
 
-// Initialize the ApifyClient with your API token from environment variables
+// Initialize the ApifyClient with API key (APIFY_API_KEY preferred, APIFY_API_TOKEN as fallback)
 const client = new ApifyClient({
-  token: process.env.APIFY_API_TOKEN || '',
+  token: process.env.APIFY_API_KEY || process.env.APIFY_API_TOKEN || '',
 });
 
 // Actor ID for the Spotify Playlists scraper
@@ -95,10 +95,18 @@ export async function scrapeSpotifyPlaylistData(playlistUrl: string, useCache: b
       expand: true
     };
 
-    console.log('🎵 APIFY: Running actor with input:', input);
+    console.log('🎵 APIFY: Running actor with input:', JSON.stringify(input));
 
-    // Run the Actor synchronously and get dataset items
-    const response = await fetch(`https://api.apify.com/v2/acts/${SPOTIFY_PLAYLISTS_ACTOR_ID}/run-sync-get-dataset-items?token=${process.env.APIFY_API_TOKEN}`, {
+    const apiToken = process.env.APIFY_API_KEY || process.env.APIFY_API_TOKEN;
+    if (!apiToken) {
+      console.error('🎵 APIFY: No API key found (checked APIFY_API_KEY and APIFY_API_TOKEN)');
+      return null;
+    }
+
+    const apiUrl = `https://api.apify.com/v2/acts/${SPOTIFY_PLAYLISTS_ACTOR_ID}/run-sync-get-dataset-items?token=${apiToken}`;
+    console.log('🎵 APIFY: Calling:', apiUrl.replace(apiToken, '***'));
+
+    const response = await fetch(apiUrl, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -107,12 +115,13 @@ export async function scrapeSpotifyPlaylistData(playlistUrl: string, useCache: b
     });
 
     if (!response.ok) {
-      console.error('Apify API error:', response.status, response.statusText);
+      const errBody = await response.text().catch(() => '');
+      console.error(`🎵 APIFY: API error ${response.status} ${response.statusText}: ${errBody.substring(0, 200)}`);
       return null;
     }
 
     const items = await response.json();
-    console.log('🎵 APIFY: Received response:', items);
+    console.log('🎵 APIFY: Received', Array.isArray(items) ? items.length : 0, 'items');
 
     if (!items || !Array.isArray(items) || items.length === 0) {
       console.error('No data returned from Apify actor');

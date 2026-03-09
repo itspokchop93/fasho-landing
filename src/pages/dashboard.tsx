@@ -39,12 +39,15 @@ export default function Dashboard({ user }: DashboardProps) {
   const [showUserDropdown, setShowUserDropdown] = useState(false)
   const [artistProfile, setArtistProfile] = useState<any>(null)
   const [artistProfileLoading, setArtistProfileLoading] = useState(true)
+  const [apifyRefreshing, setApifyRefreshing] = useState(false)
+  const [apifyLoadProgress, setApifyLoadProgress] = useState(0)
   const [showArtistProfileEditor, setShowArtistProfileEditor] = useState(false)
   const [artistSearchQuery, setArtistSearchQuery] = useState('')
   const [artistSearchResults, setArtistSearchResults] = useState<any[]>([])
   const [artistSearchLoading, setArtistSearchLoading] = useState(false)
   const [artistTracks, setArtistTracks] = useState<any[]>([])
   const [artistTracksLoading, setArtistTracksLoading] = useState(false)
+  const [apifyArtistData, setApifyArtistData] = useState<any>(null)
   const [statsBoxesAnimated, setStatsBoxesAnimated] = useState(false)
   const [campaignsAnimated, setCampaignsAnimated] = useState(false)
   const [dashboardCampaignsAnimated, setDashboardCampaignsAnimated] = useState(false)
@@ -1191,13 +1194,64 @@ export default function Dashboard({ user }: DashboardProps) {
       
       if (data.profile) {
         setArtistProfile(data.profile)
-        // Fetch artist tracks when profile is loaded
-        await fetchArtistTracks(data.profile.spotify_artist_id)
+
+        // Use cached Apify top tracks if available
+        if (data.profile.apify_top_tracks && data.profile.apify_top_tracks.length > 0) {
+          setArtistTracks(data.profile.apify_top_tracks.map((t: any) => ({
+            id: t.id,
+            name: t.name,
+            streamCount: t.streamCount,
+            duration_ms: t.duration,
+            imageUrl: t.imageUrl || null,
+            album: '',
+            previewUrl: null,
+            spotifyUrl: `https://open.spotify.com/track/${t.id}`,
+          })))
+        } else {
+          fetchArtistTracks(data.profile.spotify_artist_id)
+        }
+
+        // If Apify data is missing or stale, refresh it
+        if (data.apifyCacheStatus === 'missing' || data.apifyCacheStatus === 'stale') {
+          refreshApifyProfileData()
+        }
       }
     } catch (error) {
       console.error('Failed to fetch artist profile:', error)
     } finally {
       setArtistProfileLoading(false)
+    }
+  }
+
+  const apifyAbortRef = useRef<AbortController | null>(null)
+  const refreshApifyProfileData = async () => {
+    if (apifyAbortRef.current) apifyAbortRef.current.abort('superseded')
+    const controller = new AbortController()
+    apifyAbortRef.current = controller
+    try {
+      setApifyRefreshing(true)
+      const response = await fetch('/api/apify/refresh-artist-profile', { method: 'POST', signal: controller.signal })
+      const data = await response.json()
+      if (data.success && data.profile) {
+        setArtistProfile(data.profile)
+        if (data.profile.apify_top_tracks && data.profile.apify_top_tracks.length > 0) {
+          setArtistTracks(data.profile.apify_top_tracks.map((t: any) => ({
+            id: t.id,
+            name: t.name,
+            streamCount: t.streamCount,
+            duration_ms: t.duration,
+            imageUrl: t.imageUrl || null,
+            album: '',
+            previewUrl: null,
+            spotifyUrl: `https://open.spotify.com/track/${t.id}`,
+          })))
+        }
+      }
+    } catch (error: any) {
+      if (error?.name === 'AbortError') return
+      console.error('Failed to refresh Apify artist data:', error)
+    } finally {
+      setApifyRefreshing(false)
     }
   }
 
@@ -1207,7 +1261,7 @@ export default function Dashboard({ user }: DashboardProps) {
       const response = await fetch(`/api/spotify/artist?artistId=${artistId}&includeAlbums=true`)
       const data = await response.json()
       
-      if (data.topTracks) {
+      if (data.topTracks && data.topTracks.length > 0) {
         setArtistTracks(data.topTracks)
       }
     } catch (error) {
@@ -1258,12 +1312,21 @@ export default function Dashboard({ user }: DashboardProps) {
           genres: selectedArtist.genres
         })
       })
+      const data = await response.json()
 
       if (response.ok) {
         setShowArtistProfileEditor(false)
         setArtistSearchQuery('')
         setArtistSearchResults([])
-        await fetchArtistProfile() // Refresh profile data
+        setApifyArtistData(null)
+        setArtistTracks([])
+        setArtistProfile(data.profile || null)
+        setArtistProfileLoading(true)
+        try {
+          await refreshApifyProfileData()
+        } finally {
+          setArtistProfileLoading(false)
+        }
       }
     } catch (error) {
       console.error('Failed to save artist profile:', error)
@@ -1271,6 +1334,61 @@ export default function Dashboard({ user }: DashboardProps) {
   }
 
 
+
+  const formatStatCount = (count: number): string => {
+    if (count >= 1000000000) return `${(count / 1000000000).toFixed(1)}B`
+    if (count >= 1000000) return `${(count / 1000000).toFixed(1)}M`
+    if (count >= 1000) return `${(count / 1000).toFixed(1)}K`
+    return count.toString()
+  }
+
+  const getSelectedGenresLabel = (profile: any): string => {
+    if (!profile) return '—'
+
+    const rawGenres = profile.user_music_genre
+    if (Array.isArray(rawGenres)) {
+      const joined = rawGenres.map((genre: string) => genre.trim()).filter(Boolean).slice(0, 3).join(', ')
+      return joined || '—'
+    }
+
+    if (typeof rawGenres === 'string' && rawGenres.trim()) {
+      const joined = rawGenres.split(',').map((genre: string) => genre.trim()).filter(Boolean).slice(0, 3).join(', ')
+      return joined || '—'
+    }
+
+    if (Array.isArray(profile.genres) && profile.genres.length > 0) {
+      return profile.genres.slice(0, 3).join(', ')
+    }
+
+    return '—'
+  }
+
+  const getSelectedGenresLabelMobile = (profile: any): string => {
+    if (!profile) return '—'
+    const rawGenres = profile.user_music_genre
+    let genres: string[] = []
+    if (Array.isArray(rawGenres)) {
+      genres = rawGenres.map((g: string) => g.trim()).filter(Boolean).slice(0, 2)
+    } else if (typeof rawGenres === 'string' && rawGenres.trim()) {
+      genres = rawGenres.split(',').map((g: string) => g.trim()).filter(Boolean).slice(0, 2)
+    } else if (Array.isArray(profile.genres) && profile.genres.length > 0) {
+      genres = profile.genres.slice(0, 2)
+    }
+    return genres.length > 0 ? genres.join(', ') : '—'
+  }
+
+  const hasRenderableArtistInsights = (profile: any): boolean => {
+    if (!profile) return false
+
+    const hasMonthlyListeners = typeof profile.apify_monthly_listeners === 'number'
+    const hasTopTracks = Array.isArray(profile.apify_top_tracks) && profile.apify_top_tracks.length > 0
+    const hasTopCities = Array.isArray(profile.apify_top_cities) && profile.apify_top_cities.length > 0
+
+    return Boolean(profile.apify_cached_at && hasMonthlyListeners && hasTopTracks && hasTopCities)
+  }
+
+  const shouldShowArtistProfileLoader =
+    artistProfileLoading || (apifyRefreshing && !hasRenderableArtistInsights(artistProfile))
 
   const handlePromoteTrack = (track: any) => {
     // Create track object in the format expected by /add page
@@ -1291,8 +1409,77 @@ export default function Dashboard({ user }: DashboardProps) {
 
   // Fetch artist profile on component mount
   useEffect(() => {
-    fetchArtistProfile()
+    let cancelled = false
+    const load = async () => {
+      try {
+        setArtistProfileLoading(true)
+        const response = await fetch('/api/user-artist-profile')
+        if (cancelled) return
+        const data = await response.json()
+        
+        if (data.profile) {
+          setArtistProfile(data.profile)
+          if (data.profile.apify_top_tracks && data.profile.apify_top_tracks.length > 0) {
+            setArtistTracks(data.profile.apify_top_tracks.map((t: any) => ({
+              id: t.id, name: t.name, streamCount: t.streamCount, duration_ms: t.duration,
+              imageUrl: t.imageUrl || null, album: '', previewUrl: null, spotifyUrl: `https://open.spotify.com/track/${t.id}`,
+            })))
+          } else {
+            fetchArtistTracks(data.profile.spotify_artist_id)
+          }
+          if (data.apifyCacheStatus === 'missing' || data.apifyCacheStatus === 'stale') {
+            if (hasRenderableArtistInsights(data.profile)) {
+              refreshApifyProfileData()
+            } else {
+              await refreshApifyProfileData()
+            }
+          }
+        }
+      } catch (error: any) {
+        if (error?.name !== 'AbortError') console.error('Failed to fetch artist profile:', error)
+      } finally {
+        if (!cancelled) setArtistProfileLoading(false)
+      }
+    }
+    load()
+    return () => { cancelled = true }
   }, [])
+
+  // Progress bar for Apify loading — staged advancement over ~10s
+  useEffect(() => {
+    if (!apifyRefreshing && !artistProfileLoading) {
+      setApifyLoadProgress(0)
+      return
+    }
+    const isLoading = artistProfileLoading || apifyRefreshing
+    if (!isLoading) return
+
+    setApifyLoadProgress(5)
+    const stages = [
+      { ms: 400, pct: 12 },
+      { ms: 1200, pct: 25 },
+      { ms: 2500, pct: 40 },
+      { ms: 4000, pct: 55 },
+      { ms: 5500, pct: 68 },
+      { ms: 7000, pct: 78 },
+      { ms: 8500, pct: 86 },
+      { ms: 10000, pct: 92 },
+      { ms: 12000, pct: 96 },
+    ]
+    const timers = stages.map(s => setTimeout(() => setApifyLoadProgress(s.pct), s.ms))
+    return () => timers.forEach(clearTimeout)
+  }, [apifyRefreshing, artistProfileLoading])
+
+  // When loading finishes, snap to 100% briefly
+  const apifyLoadProgressRef = useRef(apifyLoadProgress)
+  apifyLoadProgressRef.current = apifyLoadProgress
+  useEffect(() => {
+    if (!apifyRefreshing && !artistProfileLoading && apifyLoadProgressRef.current > 0) {
+      setApifyLoadProgress(100)
+      const t = setTimeout(() => setApifyLoadProgress(0), 500)
+      return () => clearTimeout(t)
+    }
+  }, [apifyRefreshing, artistProfileLoading])
 
   // Debounced artist search
   useEffect(() => {
@@ -1347,22 +1534,6 @@ export default function Dashboard({ user }: DashboardProps) {
 
   const renderDashboardContent = () => (
     <div className="space-y-4 lg:space-y-8 pb-8">
-      {/* Trigger Intro Tour Button (for testing) */}
-      <div className="flex justify-center">
-        <button
-          onClick={() => {
-            if (triggerTour) {
-              triggerTour();
-            } else {
-              console.log('Tour trigger not ready yet');
-            }
-          }}
-          className="px-4 py-2 text-xs font-medium text-gray-400 hover:text-white bg-gray-800/50 hover:bg-gray-700/50 rounded-lg border border-gray-700/50 hover:border-gray-600/50 transition-all duration-200"
-        >
-          🎯 Trigger Intro Tour
-        </button>
-      </div>
-      
       {/* Mobile-only gradient heading above stats cards */}
       <div className="block md:hidden mb-2 mt-2 text-center">
         <h2 className="text-lg font-black text-white inline-block" style={{letterSpacing: '0.01em', fontSize: '1.5rem'}}>
@@ -1525,30 +1696,22 @@ export default function Dashboard({ user }: DashboardProps) {
                 {fashokenLedger[0]?.order_number && (
                   <p className="text-white/30 text-[10px]">Order #{fashokenLedger[0].order_number}</p>
                 )}
-                <div className="mt-1 text-right">
-                  <button 
-                    onClick={() => changeTab('fashokens')}
-                    className="text-[#59e3a5]/70 hover:text-[#59e3a5] text-[10px] transition-colors"
-                  >
-                    View all changes →
-                  </button>
-                </div>
               </div>
             )}
 
-            {/* Bottom Row: Description + Button */}
-            <div className="flex items-end justify-between gap-3">
-              <div className="flex items-start space-x-2 text-white/50 text-[10px] leading-tight flex-1">
+            {/* Bottom Row: Description + View Changes Button */}
+            <div className="flex items-center justify-between gap-3 mt-3">
+              <div className="flex items-start space-x-2 text-white/50 text-[10px] leading-tight flex-1 min-w-0">
                 <svg className="w-3.5 h-3.5 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
                 <span>Earn FSHKS with every dollar you spend, then use them towards your next campaign!</span>
               </div>
               <button
-                onClick={() => router.push('/?spendTokens=true#start-campaign')}
-                className="px-3 py-1.5 bg-[#59e3a5] text-black font-semibold rounded-lg hover:bg-[#4ade80] transition-colors text-[11px] whitespace-nowrap"
+                onClick={() => changeTab('fashokens')}
+                className="flex-shrink-0 px-3 py-1.5 bg-[#59e3a5] text-black font-semibold rounded-lg hover:bg-[#4ade80] transition-colors text-[11px] whitespace-nowrap"
               >
-                Spend Tokens
+                View Changes
               </button>
             </div>
           </div>
@@ -1557,193 +1720,190 @@ export default function Dashboard({ user }: DashboardProps) {
 
       {/* Mobile Artist Profile Section */}
       <div className="lg:hidden mb-6">
-        <div className="bg-gradient-to-br from-purple-900/20 via-pink-900/20 to-orange-900/20 backdrop-blur-sm rounded-2xl p-6 border border-gray-800/30 relative z-10 overflow-hidden">
-          {/* Background gradient overlay */}
+        <div className="bg-gradient-to-br from-purple-900/20 via-pink-900/20 to-orange-900/20 backdrop-blur-sm rounded-2xl border border-gray-800/30 relative z-10 overflow-hidden">
           <div className="absolute inset-0 bg-gradient-to-br from-purple-600/5 via-pink-600/5 to-orange-600/5 animate-pulse"></div>
           
           <div className="relative z-10">
-            {/* Header with title and change button */}
-            <div className="flex items-center justify-between mb-6">
-              <h3 className="text-lg font-semibold text-white">Your Artist Profile</h3>
-              {artistProfile ? (
-                <button
-                  onClick={() => setShowArtistProfileEditor(!showArtistProfileEditor)}
-                  className="text-xs text-gray-400 hover:text-white transition-colors"
-                >
-                  Change Artist Profile
-                </button>
-              ) : (
-                <button
-                  onClick={() => setShowArtistProfileEditor(!showArtistProfileEditor)}
-                  className="text-xs text-gray-400 hover:text-white transition-colors"
-                >
-                  Change Artist Profile
-                </button>
-              )}
-            </div>
-
-            {artistProfileLoading ? (
-              <div className="flex items-center justify-center h-32">
-                <div className="text-gray-400 text-sm">Loading artist profile...</div>
+            {shouldShowArtistProfileLoader ? (
+              <div className="flex flex-col items-center justify-center py-10 px-4 relative">
+                <div className="absolute inset-0 pointer-events-none" style={{ overflow: 'hidden' }}>
+                  <div className="dap-star dap-star-1" style={{ left: '15%', top: '30%' }}></div>
+                  <div className="dap-star dap-star-2" style={{ left: '10%', top: '50%' }}></div>
+                  <div className="dap-star dap-star-5" style={{ right: '15%', top: '25%' }}></div>
+                  <div className="dap-star dap-star-6" style={{ right: '10%', top: '55%' }}></div>
+                </div>
+                <div className="relative mb-4">
+                  <div className="dap-glow-ring"></div>
+                  <div className="relative w-12 h-12 rounded-2xl bg-gradient-to-br from-[#8b5cf6]/20 to-[#14c0ff]/20 border border-white/10 flex items-center justify-center backdrop-blur-sm" style={{ zIndex: 2 }}>
+                    <svg className="w-6 h-6" viewBox="0 0 24 24" fill="none">
+                      <path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2" stroke="url(#dap-rg-m)" strokeWidth="1.5" strokeLinecap="round"/>
+                      <rect x="9" y="3" width="6" height="4" rx="1" stroke="url(#dap-rg-m)" strokeWidth="1.5"/>
+                      <path d="M9 12h6M9 16h4" stroke="url(#dap-rg-m)" strokeWidth="1.5" strokeLinecap="round"/>
+                      <defs><linearGradient id="dap-rg-m" x1="5" y1="3" x2="19" y2="21" gradientUnits="userSpaceOnUse"><stop stopColor="#59e3a5"/><stop offset="0.5" stopColor="#14c0ff"/><stop offset="1" stopColor="#8b5cf6"/></linearGradient></defs>
+                    </svg>
+                  </div>
+                </div>
+                <p className="text-transparent bg-clip-text bg-gradient-to-r from-[#59e3a5] via-[#14c0ff] to-[#8b5cf6] font-semibold" style={{ fontSize: '0.85rem' }}>
+                  Our AI is generating your profile card...
+                </p>
+                <div className="mt-2 w-24 h-1 rounded-full overflow-hidden bg-white/5">
+                  <div className="h-full bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] rounded-full transition-all duration-700 ease-out" style={{ width: `${apifyLoadProgress}%` }}></div>
+                </div>
+                <div className="mt-1 text-gray-500" style={{ fontSize: '0.55rem' }}>{apifyLoadProgress}%</div>
               </div>
             ) : artistProfile ? (
-              <div className="space-y-4">
-                {/* Artist Info */}
-                <div className="flex flex-col items-center text-center">
-                  <div className="w-20 h-20 rounded-full overflow-hidden mb-3 border-2 border-gray-700">
-                    <img 
-                      src={artistProfile.artist_image_url || '/default-artist.jpg'} 
-                      alt={artistProfile.artist_name}
-                      className="w-full h-full object-cover"
-                    />
+              <div>
+                {/* Hero Header */}
+                <div className="flex items-center gap-3 p-4 pb-3 border-b border-white/5">
+                  <div className="w-12 h-12 rounded-full overflow-hidden border-2 border-purple-500/40 flex-shrink-0">
+                    <img src={artistProfile.artist_image_url || '/default-artist.jpg'} alt={artistProfile.artist_name} className="w-full h-full object-cover" />
                   </div>
-                  <h4 className="text-xl font-bold text-white mb-1">{artistProfile.artist_name}</h4>
-                  <p className="text-sm text-gray-400">{artistProfile.followers_count?.toLocaleString()} followers</p>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-1.5">
+                      <h4 className="text-white font-bold truncate" style={{ fontSize: '1rem' }}>{artistProfile.artist_name}</h4>
+                      {artistProfile.apify_verified && (
+                        <svg className="w-3.5 h-3.5 flex-shrink-0 text-blue-400" viewBox="0 0 24 24" fill="currentColor"><path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                      )}
+                    </div>
+                    <p className="text-gray-400" style={{ fontSize: '0.7rem' }}>{artistProfile.followers_count?.toLocaleString()} followers</p>
+                  </div>
+                  <button onClick={() => setShowArtistProfileEditor(!showArtistProfileEditor)} className="text-[10px] text-gray-500 hover:text-white transition-colors">Change</button>
                 </div>
 
-                {/* Artist Tracks */}
-                <div className="space-y-3">
-                  <h5 className="text-base font-semibold text-white text-center">Your Top Tracks</h5>
+                {/* Stats */}
+                <div className={`grid ${artistProfile.apify_world_rank ? 'grid-cols-4' : 'grid-cols-3'} gap-2 px-4 pt-3 pb-2`}>
+                  <div className="bg-black/20 rounded-lg p-2 text-center border border-white/5 flex flex-col justify-between min-h-[3.25rem]">
+                    <div className="text-[#59e3a5] font-bold" style={{ fontSize: '0.9rem' }}>{formatStatCount(artistProfile.followers_count || 0)}</div>
+                    <div className="text-gray-500" style={{ fontSize: '0.55rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Followers</div>
+                  </div>
+                  <div className="bg-black/20 rounded-lg p-2 text-center border border-white/5 flex flex-col justify-between min-h-[3.25rem]">
+                    <div className="text-[#14c0ff] font-bold" style={{ fontSize: '0.9rem' }}>{formatStatCount(artistProfile.apify_monthly_listeners || 0)}</div>
+                    <div className="text-gray-500" style={{ fontSize: '0.55rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Mo. Listeners</div>
+                  </div>
+                  <div className="bg-black/20 rounded-lg p-2 text-center border border-white/5 flex flex-col justify-between min-h-[3.25rem]">
+                    <div className="text-[#8b5cf6] font-bold" style={{ fontSize: '0.72rem' }}>{getSelectedGenresLabelMobile(artistProfile)}</div>
+                    <div className="text-gray-500" style={{ fontSize: '0.55rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Genres</div>
+                  </div>
+                  {artistProfile.apify_world_rank ? (
+                    <div className="bg-black/20 rounded-lg p-2 text-center border border-white/5 flex flex-col justify-between min-h-[3.25rem]">
+                      <div className="text-[#f59e0b] font-bold" style={{ fontSize: '0.9rem' }}>#{artistProfile.apify_world_rank.toLocaleString()}</div>
+                      <div className="text-gray-500" style={{ fontSize: '0.55rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>World Rank</div>
+                    </div>
+                  ) : null}
+                </div>
+
+                {/* Top Cities (mobile) */}
+                {artistProfile.apify_top_cities && artistProfile.apify_top_cities.length > 0 && (
+                  <div className="px-4 pb-2 pt-1">
+                    <div className="bg-black/15 rounded-lg p-3 border border-white/5">
+                      <div className="text-gray-400 text-center mb-2" style={{ fontSize: '0.65rem', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 600 }}>Your Top Cities</div>
+                      <div className="flex gap-2 flex-wrap justify-center">
+                        {artistProfile.apify_top_cities.slice(0, 3).map((city: any, i: number) => {
+                          const pinColors = ['#8b5cf6', '#14c0ff', '#59e3a5'];
+                          return (
+                            <span key={i} className="flex items-center gap-1 bg-black/20 rounded-md px-2.5 py-1 border border-white/5">
+                              <svg className="w-2.5 h-2.5 flex-shrink-0" viewBox="0 0 24 24" fill={pinColors[i]}><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></svg>
+                              <span className="text-white" style={{ fontSize: '0.8rem' }}>{city.city}</span>
+                              <span className="text-gray-400" style={{ fontSize: '0.5rem' }}>•</span>
+                              <span className="text-gray-500" style={{ fontSize: '0.55rem' }}>{formatStatCount(city.listeners)}</span>
+                            </span>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Top Tracks carousel */}
+                <div className="px-4 pb-4 pt-2">
+                  <div className="bg-black/15 rounded-lg p-3 border border-white/5">
+                  <h5 className="text-sm font-semibold text-white text-center mb-2">Your Top Tracks</h5>
                   {artistTracksLoading ? (
                     <div className="text-center text-gray-400 text-sm">Loading tracks...</div>
                   ) : (
                     <div className="relative">
-                      {/* Left Arrow - positioned outside the masked area */}
                       <button
-                        onClick={() => {
-                          const container = document.getElementById('mobile-tracks-container');
-                          if (container) {
-                            container.scrollBy({ left: -150, behavior: 'smooth' });
-                          }
-                        }}
+                        onClick={() => { const c = document.getElementById('mobile-tracks-container'); if (c) c.scrollBy({ left: -150, behavior: 'smooth' }); }}
                         className="absolute left-0 top-1/2 transform -translate-y-1/2 z-10 bg-black/50 hover:bg-black/70 text-white p-1.5 rounded-full transition-all duration-300 hover:scale-110"
                         style={{ marginLeft: '-8px' }}
                       >
-                        <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-                        </svg>
+                        <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" /></svg>
                       </button>
-
-                      {/* Right Arrow - positioned outside the masked area */}
                       <button
-                        onClick={() => {
-                          const container = document.getElementById('mobile-tracks-container');
-                          if (container) {
-                            container.scrollBy({ left: 150, behavior: 'smooth' });
-                          }
-                        }}
+                        onClick={() => { const c = document.getElementById('mobile-tracks-container'); if (c) c.scrollBy({ left: 150, behavior: 'smooth' }); }}
                         className="absolute right-0 top-1/2 transform -translate-y-1/2 z-10 bg-black/50 hover:bg-black/70 text-white p-1.5 rounded-full transition-all duration-300 hover:scale-110"
                         style={{ marginRight: '-8px' }}
                       >
-                        <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                        </svg>
+                        <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
                       </button>
-
-                      {/* Tracks Container with fade mask applied to entire container */}
                       <div
                         id="mobile-tracks-container"
                         className="flex gap-3 overflow-x-auto mobile-tracks-scrollbar pb-2"
-                        style={{ 
-                          scrollbarWidth: 'thin', 
-                          scrollbarColor: '#10b981 transparent',
-                          maskImage: 'linear-gradient(to right, transparent 0%, black 8%, black 92%, transparent 100%)',
-                          WebkitMaskImage: 'linear-gradient(to right, transparent 0%, black 8%, black 92%, transparent 100%)'
-                        }}
+                        style={{ scrollbarWidth: 'thin', scrollbarColor: '#10b981 transparent', maskImage: 'linear-gradient(to right, transparent 0%, black 8%, black 92%, transparent 100%)', WebkitMaskImage: 'linear-gradient(to right, transparent 0%, black 8%, black 92%, transparent 100%)' }}
                       >
                         {artistTracks.map((track, index) => (
                           <div key={index} className="flex-shrink-0 w-32 bg-gray-800/30 rounded-lg p-3 hover:bg-gray-800/50 transition-colors">
-                            <div className="w-20 h-20 rounded-lg overflow-hidden mb-2 mx-auto">
-                              <img 
-                                src={track.imageUrl || '/default-track.jpg'} 
-                                alt={track.name}
-                                className="w-full h-full object-cover"
-                              />
+                            <div className="w-20 h-20 rounded-lg overflow-hidden mb-2 mx-auto bg-gray-700/50 flex items-center justify-center relative">
+                              {track.imageUrl ? (
+                                <img src={track.imageUrl} alt={track.name} className="w-full h-full object-cover" />
+                              ) : (
+                                <svg className="w-8 h-8 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3" /></svg>
+                              )}
+                              {track.streamCount > 0 && (
+                                <div className="absolute bottom-0.5 right-0.5 bg-black/70 backdrop-blur-sm px-1 py-0.5 rounded text-[9px] text-green-400 font-medium">
+                                  {formatStatCount(track.streamCount)} Streams
+                                </div>
+                              )}
                             </div>
                             <div className="text-center">
-                              <div className="text-white text-xs font-medium mb-1 truncate" title={track.name}>
-                                {track.name}
-                              </div>
-                              <button
-                                onClick={() => handlePromoteTrack(track)}
-                                className="bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white px-2 py-1 rounded text-xs font-medium transition-all duration-300 transform hover:scale-105 w-full"
-                              >
-                                Promote
-                              </button>
+                              <div className="text-white text-xs font-medium mb-1 truncate" title={track.name}>{track.name}</div>
+                              <button onClick={() => handlePromoteTrack(track)} className="bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white px-2 py-1 rounded text-xs font-medium transition-all duration-300 transform hover:scale-105 w-full">Promote</button>
                             </div>
                           </div>
                         ))}
                       </div>
                     </div>
                   )}
+                  </div>
                 </div>
               </div>
             ) : (
-              <div className="flex flex-col items-center justify-center h-40 text-center">
+              <div className="flex flex-col items-center justify-center py-10 px-4 text-center">
                 <div className="w-12 h-12 bg-purple-500/20 rounded-full flex items-center justify-center mb-3">
-                  <svg className="w-6 h-6 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                  </svg>
+                  <svg className="w-6 h-6 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>
                 </div>
                 <div className="text-gray-400 mb-2 font-medium text-sm">No Artist Profile Found</div>
-                <div className="text-gray-500 text-xs mb-3 max-w-xs">
-                  Your artist profile will be automatically set when you create your first campaign.
-                </div>
-                <button
-                  onClick={() => setShowArtistProfileEditor(true)}
-                  className="bg-gradient-to-r from-purple-500 to-pink-600 hover:from-purple-600 hover:to-pink-700 text-white px-4 py-2 rounded-lg font-semibold transition-all duration-300 transform hover:scale-105 text-sm"
-                >
-                  Set Artist Profile
-                </button>
+                <div className="text-gray-500 text-xs mb-3 max-w-xs">Your artist profile will be automatically set when you create your first campaign.</div>
+                <button onClick={() => setShowArtistProfileEditor(true)} className="bg-gradient-to-r from-purple-500 to-pink-600 hover:from-purple-600 hover:to-pink-700 text-white px-4 py-2 rounded-lg font-semibold transition-all duration-300 transform hover:scale-105 text-sm">Set Artist Profile</button>
               </div>
             )}
 
-            {/* Artist Profile Editor */}
+            {/* Mobile Artist Profile Editor */}
             {showArtistProfileEditor && (
               <div className="absolute inset-0 bg-black/80 backdrop-blur-sm rounded-2xl p-4 z-20">
                 <div className="space-y-4">
                   <div className="flex items-center justify-between">
                     <h4 className="text-base font-semibold text-white">Set Artist Profile</h4>
-                    <button
-                      onClick={() => setShowArtistProfileEditor(false)}
-                      className="text-gray-400 hover:text-white"
-                    >
-                      ✕
-                    </button>
+                    <button onClick={() => setShowArtistProfileEditor(false)} className="text-gray-400 hover:text-white">✕</button>
                   </div>
-                  
                   <div className="space-y-3">
-                    <input
-                      type="text"
-                      placeholder="Search artist name or paste Spotify artist URL"
-                      value={artistSearchQuery}
-                      onChange={(e) => setArtistSearchQuery(e.target.value)}
-                      className="w-full px-3 py-2.5 bg-gray-800/50 border border-gray-700 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-purple-500 text-sm"
-                    />
-                    
-                    {artistSearchLoading && (
-                      <div className="text-center text-gray-400 text-sm">Searching...</div>
-                    )}
-                    
+                    <input type="text" placeholder="Search artist name or paste Spotify URL" value={artistSearchQuery} onChange={(e) => setArtistSearchQuery(e.target.value)} className="w-full px-3 py-2.5 bg-gray-800/50 border border-gray-700 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-purple-500 text-sm" />
+                    {artistSearchLoading && <div className="text-center text-gray-400 text-sm">Searching...</div>}
                     {artistSearchResults.length > 0 && (
                       <div className="space-y-2 max-h-32 overflow-y-auto">
                         {artistSearchResults.map((artist, index) => (
                           <div key={index} className="flex items-center gap-2 p-2 bg-gray-800/30 rounded-lg hover:bg-gray-800/50 transition-colors">
-                            <img 
-                              src={artist.imageUrl || '/default-artist.jpg'} 
-                              alt={artist.name}
-                              className="w-8 h-8 rounded-full object-cover"
-                            />
+                            {artist.imageUrl ? (
+                              <img src={artist.imageUrl} alt={artist.name} className="w-8 h-8 rounded-full object-cover" />
+                            ) : (
+                              <div className="w-8 h-8 rounded-full bg-gray-700/50 flex items-center justify-center flex-shrink-0">
+                                <svg className="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>
+                              </div>
+                            )}
                             <div className="flex-1 min-w-0">
                               <div className="text-white font-medium text-xs truncate">{artist.name}</div>
-                              <div className="text-gray-400 text-xs">{artist.followersCount?.toLocaleString()} followers</div>
                             </div>
-                            <button
-                              onClick={() => saveArtistProfile(artist)}
-                              className="bg-gradient-to-r from-purple-500 to-pink-600 hover:from-purple-600 hover:to-pink-700 text-white px-3 py-1.5 rounded text-xs font-semibold transition-all duration-300"
-                            >
-                              Save
-                            </button>
+                            <button onClick={() => saveArtistProfile(artist)} className="bg-gradient-to-r from-purple-500 to-pink-600 hover:from-purple-600 hover:to-pink-700 text-white px-3 py-1.5 rounded text-xs font-semibold transition-all duration-300">Save</button>
                           </div>
                         ))}
                       </div>
@@ -1946,30 +2106,22 @@ export default function Dashboard({ user }: DashboardProps) {
                   {fashokenLedger[0]?.order_number && (
                     <p className="text-white/30 text-[10px]">Order #{fashokenLedger[0].order_number}</p>
                   )}
-                  <div className="mt-1 text-right">
-                    <button 
-                      onClick={() => changeTab('fashokens')}
-                      className="text-[#59e3a5]/70 hover:text-[#59e3a5] text-[10px] transition-colors"
-                    >
-                      View all changes →
-                    </button>
-                  </div>
                 </div>
               )}
 
-              {/* Bottom Row: Description + Button */}
-              <div className="flex items-end justify-between gap-3 mt-3 flex-shrink-0">
-                <div className="flex items-start space-x-2 text-white/50 text-[10px] leading-tight flex-1">
+              {/* Bottom Row: Description + View Changes Button */}
+              <div className="flex items-center justify-between gap-3 mt-3 flex-shrink-0">
+                <div className="flex items-start space-x-2 text-white/50 text-[10px] leading-tight flex-1 min-w-0">
                   <svg className="w-3.5 h-3.5 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                   </svg>
                   <span>Earn FSHKS with every dollar you spend, then use them towards your next campaign!</span>
                 </div>
                 <button
-                  onClick={() => router.push('/?spendTokens=true#start-campaign')}
-                  className="px-3 py-1 bg-[#59e3a5] text-black font-semibold rounded-lg hover:bg-[#4ade80] transition-colors text-[10px] whitespace-nowrap"
+                  onClick={() => changeTab('fashokens')}
+                  className="flex-shrink-0 px-3 py-1 bg-[#59e3a5] text-black font-semibold rounded-lg hover:bg-[#4ade80] transition-colors text-[10px] whitespace-nowrap"
                 >
-                  Spend Tokens
+                  View Changes
                 </button>
               </div>
             </div>
@@ -1977,93 +2129,166 @@ export default function Dashboard({ user }: DashboardProps) {
         </div>
 
         {/* Artist Profile Section - Stretches to match left column */}
-        <div data-tour="artist-profile" className="bg-gradient-to-br from-purple-900/20 via-pink-900/20 to-orange-900/20 backdrop-blur-sm rounded-2xl p-6 border border-gray-800/30 relative z-10 overflow-hidden h-full">
-          {/* Background gradient overlay */}
+        <div data-tour="artist-profile" className="bg-gradient-to-br from-purple-900/20 via-pink-900/20 to-orange-900/20 backdrop-blur-sm rounded-2xl border border-gray-800/30 relative z-10 overflow-hidden h-full flex flex-col">
           <div className="absolute inset-0 bg-gradient-to-br from-purple-600/5 via-pink-600/5 to-orange-600/5 animate-pulse"></div>
           
-          <div className="relative z-10">
-            {/* Header with title and change button */}
-            <div className="flex items-center justify-between mb-6">
-              <h3 className="text-xl font-semibold text-white">Your Artist Profile</h3>
-              {artistProfile ? (
-                <button
-                  onClick={() => setShowArtistProfileEditor(!showArtistProfileEditor)}
-                  className="text-xs text-gray-400 hover:text-white transition-colors"
-                >
-                  Change Artist Profile
-                </button>
-              ) : (
-                <button
-                  onClick={() => setShowArtistProfileEditor(!showArtistProfileEditor)}
-                  className="text-xs text-gray-400 hover:text-white transition-colors"
-                >
-                  Change Artist Profile
-                </button>
-              )}
-            </div>
-
-            {artistProfileLoading ? (
-              <div className="flex items-center justify-center h-64">
-                <div className="text-gray-400">Loading artist profile...</div>
+          <div className="relative z-10 flex flex-col h-full overflow-hidden">
+            {shouldShowArtistProfileLoader ? (
+              <div className="flex-1 flex flex-col items-center justify-center p-6 relative">
+                <div className="absolute inset-0 pointer-events-none" style={{ overflow: 'hidden' }}>
+                  <div className="dap-star dap-star-1" style={{ left: '15%', top: '30%' }}></div>
+                  <div className="dap-star dap-star-2" style={{ left: '10%', top: '50%' }}></div>
+                  <div className="dap-star dap-star-3" style={{ left: '20%', top: '65%' }}></div>
+                  <div className="dap-star dap-star-4" style={{ left: '25%', top: '20%' }}></div>
+                  <div className="dap-star dap-star-5" style={{ right: '15%', top: '25%' }}></div>
+                  <div className="dap-star dap-star-6" style={{ right: '10%', top: '55%' }}></div>
+                  <div className="dap-star dap-star-7" style={{ right: '22%', top: '70%' }}></div>
+                  <div className="dap-star dap-star-8" style={{ right: '18%', top: '15%' }}></div>
+                  <div className="dap-star dap-star-9" style={{ left: '35%', top: '15%' }}></div>
+                  <div className="dap-star dap-star-10" style={{ right: '35%', top: '80%' }}></div>
+                </div>
+                <div className="relative mb-5">
+                  <div className="dap-glow-ring"></div>
+                  <div className="relative w-16 h-16 rounded-2xl bg-gradient-to-br from-[#8b5cf6]/20 to-[#14c0ff]/20 border border-white/10 flex items-center justify-center backdrop-blur-sm" style={{ zIndex: 2 }}>
+                    <svg className="w-8 h-8" viewBox="0 0 24 24" fill="none">
+                      <path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2" stroke="url(#dap-rg)" strokeWidth="1.5" strokeLinecap="round"/>
+                      <rect x="9" y="3" width="6" height="4" rx="1" stroke="url(#dap-rg)" strokeWidth="1.5"/>
+                      <path d="M9 12h6M9 16h4" stroke="url(#dap-rg)" strokeWidth="1.5" strokeLinecap="round"/>
+                      <circle cx="16.5" cy="17.5" r="2.5" fill="url(#dap-rg2)" opacity="0.8"/>
+                      <path d="M15.5 17.5l0.7 0.7 1.3-1.4" stroke="#23272f" strokeWidth="1" strokeLinecap="round" strokeLinejoin="round"/>
+                      <defs>
+                        <linearGradient id="dap-rg" x1="5" y1="3" x2="19" y2="21" gradientUnits="userSpaceOnUse">
+                          <stop stopColor="#59e3a5"/><stop offset="0.5" stopColor="#14c0ff"/><stop offset="1" stopColor="#8b5cf6"/>
+                        </linearGradient>
+                        <linearGradient id="dap-rg2" x1="14" y1="15" x2="19" y2="20" gradientUnits="userSpaceOnUse">
+                          <stop stopColor="#59e3a5"/><stop offset="1" stopColor="#14c0ff"/>
+                        </linearGradient>
+                      </defs>
+                    </svg>
+                  </div>
+                </div>
+                <p className="text-transparent bg-clip-text bg-gradient-to-r from-[#59e3a5] via-[#14c0ff] to-[#8b5cf6] font-semibold" style={{ fontSize: '0.95rem' }}>
+                  Our AI is generating your profile card...
+                </p>
+                <div className="mt-3 w-32 h-1 rounded-full overflow-hidden bg-white/5">
+                  <div className="h-full bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] rounded-full transition-all duration-700 ease-out" style={{ width: `${apifyLoadProgress}%` }}></div>
+                </div>
+                <div className="mt-1.5 text-gray-500" style={{ fontSize: '0.6rem' }}>{apifyLoadProgress}%</div>
+                <style jsx>{`
+                  .dap-glow-ring { position: absolute; inset: -8px; border-radius: 20px; background: conic-gradient(from 0deg, #59e3a5, #14c0ff, #8b5cf6, #59e3a5); opacity: 0.25; animation: dap-spin 4s linear infinite; filter: blur(8px); z-index: 1; }
+                  @keyframes dap-spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+                  
+                  .dap-star { position: absolute; width: 3px; height: 3px; border-radius: 50%; }
+                  .dap-star::before { content: ''; position: absolute; width: 100%; height: 100%; border-radius: 50%; background: inherit; box-shadow: 0 0 4px 1px currentColor; }
+                  .dap-star-1 { background: #59e3a5; color: #59e3a5; animation: dap-b-tl 2.4s ease-out infinite; }
+                  .dap-star-2 { background: #14c0ff; color: #14c0ff; animation: dap-b-l 2.8s ease-out 0.3s infinite; width: 2px; height: 2px; }
+                  .dap-star-3 { background: #8b5cf6; color: #8b5cf6; animation: dap-b-bl 2.1s ease-out 0.6s infinite; }
+                  .dap-star-4 { background: #14c0ff; color: #14c0ff; animation: dap-b-tl 3.0s ease-out 0.2s infinite; width: 2px; height: 2px; }
+                  .dap-star-5 { background: #59e3a5; color: #59e3a5; animation: dap-b-tr 2.6s ease-out 0.1s infinite; }
+                  .dap-star-6 { background: #8b5cf6; color: #8b5cf6; animation: dap-b-r 2.3s ease-out 0.5s infinite; width: 2px; height: 2px; }
+                  .dap-star-7 { background: #14c0ff; color: #14c0ff; animation: dap-b-br 2.7s ease-out 0.4s infinite; }
+                  .dap-star-8 { background: #59e3a5; color: #59e3a5; animation: dap-b-tr 2.0s ease-out 0.7s infinite; width: 2px; height: 2px; }
+                  .dap-star-9 { background: #59e3a5; color: #59e3a5; animation: dap-b-tl 3.1s ease-out 0.55s infinite; width: 2px; height: 2px; }
+                  .dap-star-10 { background: #14c0ff; color: #14c0ff; animation: dap-b-br 2.2s ease-out 1.1s infinite; width: 2px; height: 2px; }
+                  @keyframes dap-b-tl { 0% { opacity: 0; transform: translate(0,0) scale(0); } 15% { opacity: 1; transform: translate(-3px,-2px) scale(1.2); } 60% { opacity: 0.6; transform: translate(-12px,-14px) scale(0.8); } 100% { opacity: 0; transform: translate(-20px,-24px) scale(0); } }
+                  @keyframes dap-b-tr { 0% { opacity: 0; transform: translate(0,0) scale(0); } 15% { opacity: 1; transform: translate(3px,-2px) scale(1.2); } 60% { opacity: 0.6; transform: translate(12px,-14px) scale(0.8); } 100% { opacity: 0; transform: translate(20px,-24px) scale(0); } }
+                  @keyframes dap-b-l { 0% { opacity: 0; transform: translate(0,0) scale(0); } 15% { opacity: 1; transform: translate(-2px,0) scale(1.1); } 60% { opacity: 0.5; transform: translate(-16px,-4px) scale(0.7); } 100% { opacity: 0; transform: translate(-26px,-8px) scale(0); } }
+                  @keyframes dap-b-r { 0% { opacity: 0; transform: translate(0,0) scale(0); } 15% { opacity: 1; transform: translate(2px,0) scale(1.1); } 60% { opacity: 0.5; transform: translate(16px,-4px) scale(0.7); } 100% { opacity: 0; transform: translate(26px,-8px) scale(0); } }
+                  @keyframes dap-b-bl { 0% { opacity: 0; transform: translate(0,0) scale(0); } 15% { opacity: 1; transform: translate(-3px,2px) scale(1.2); } 60% { opacity: 0.6; transform: translate(-10px,10px) scale(0.6); } 100% { opacity: 0; transform: translate(-18px,18px) scale(0); } }
+                  @keyframes dap-b-br { 0% { opacity: 0; transform: translate(0,0) scale(0); } 15% { opacity: 1; transform: translate(3px,2px) scale(1.2); } 60% { opacity: 0.6; transform: translate(10px,10px) scale(0.6); } 100% { opacity: 0; transform: translate(18px,18px) scale(0); } }
+                `}</style>
               </div>
             ) : artistProfile ? (
-              <div className="space-y-6">
-                {/* Artist Info */}
-                <div className="flex flex-col items-center text-center">
-                  <div className="w-24 h-24 rounded-full overflow-hidden mb-4 border-2 border-gray-700">
-                    <img 
-                      src={artistProfile.artist_image_url || '/default-artist.jpg'} 
-                      alt={artistProfile.artist_name}
-                      className="w-full h-full object-cover"
-                    />
+              <div className="flex flex-col h-full">
+                {/* Hero Header: Artist Photo + Name + Change Button */}
+                <div className="flex items-center gap-4 p-4 pb-3 border-b border-white/5">
+                  <div className="w-14 h-14 rounded-full overflow-hidden border-2 border-purple-500/40 flex-shrink-0">
+                    <img src={artistProfile.artist_image_url || '/default-artist.jpg'} alt={artistProfile.artist_name} className="w-full h-full object-cover" />
                   </div>
-                  <h4 className="text-2xl font-bold text-white mb-2">{artistProfile.artist_name}</h4>
-                  <p className="text-sm text-gray-400">{artistProfile.followers_count?.toLocaleString()} followers</p>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2">
+                      <h4 className="text-white font-bold truncate" style={{ fontSize: '1.15rem' }}>{artistProfile.artist_name}</h4>
+                      {artistProfile.apify_verified && (
+                        <svg className="w-4 h-4 flex-shrink-0 text-blue-400" viewBox="0 0 24 24" fill="currentColor"><path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                      )}
+                    </div>
+                    <p className="text-gray-400" style={{ fontSize: '0.75rem' }}>{artistProfile.followers_count?.toLocaleString()} followers</p>
+                  </div>
+                  <button onClick={() => setShowArtistProfileEditor(!showArtistProfileEditor)} className="text-[10px] text-gray-500 hover:text-white transition-colors whitespace-nowrap">
+                    Change
+                  </button>
                 </div>
 
-                {/* Artist Tracks */}
-                <div className="space-y-4">
-                  <h5 className="text-lg font-semibold text-white">Your Top Tracks</h5>
+                {/* Stats Grid */}
+                <div className={`grid ${artistProfile.apify_world_rank ? 'grid-cols-4' : 'grid-cols-3'} gap-2 px-4 pt-3 pb-2`}>
+                  <div className="bg-black/20 rounded-lg p-2.5 text-center border border-white/5 flex flex-col justify-between min-h-[3.5rem]">
+                    <div className="text-[#59e3a5] font-bold" style={{ fontSize: '1.05rem' }}>{formatStatCount(artistProfile.followers_count || 0)}</div>
+                    <div className="text-gray-500" style={{ fontSize: '0.6rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Followers</div>
+                  </div>
+                  <div className="bg-black/20 rounded-lg p-2.5 text-center border border-white/5 flex flex-col justify-between min-h-[3.5rem]">
+                    <div className="text-[#14c0ff] font-bold" style={{ fontSize: '1.05rem' }}>{formatStatCount(artistProfile.apify_monthly_listeners || 0)}</div>
+                    <div className="text-gray-500" style={{ fontSize: '0.6rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Mo. Listeners</div>
+                  </div>
+                  <div className="bg-black/20 rounded-lg p-2.5 text-center border border-white/5 flex flex-col justify-between min-h-[3.5rem]">
+                    <div className="text-[#8b5cf6] font-bold" style={{ fontSize: '0.85rem' }}>{getSelectedGenresLabel(artistProfile)}</div>
+                    <div className="text-gray-500" style={{ fontSize: '0.6rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Genres</div>
+                  </div>
+                  {artistProfile.apify_world_rank ? (
+                    <div className="bg-black/20 rounded-lg p-2.5 text-center border border-white/5 flex flex-col justify-between min-h-[3.5rem]">
+                      <div className="text-[#f59e0b] font-bold" style={{ fontSize: '1.05rem' }}>#{artistProfile.apify_world_rank.toLocaleString()}</div>
+                      <div className="text-gray-500" style={{ fontSize: '0.6rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>World Rank</div>
+                    </div>
+                  ) : null}
+                </div>
+
+                {/* Top Cities */}
+                {artistProfile.apify_top_cities && artistProfile.apify_top_cities.length > 0 && (
+                  <div className="px-4 pb-2">
+                    <div className="bg-black/15 rounded-lg p-3 border border-white/5">
+                      <div className="text-gray-400 text-center mb-2" style={{ fontSize: '0.65rem', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 600 }}>Your Top Cities</div>
+                      <div className="flex gap-2 justify-center">
+                        {artistProfile.apify_top_cities.slice(0, 3).map((city: any, i: number) => {
+                          const pinColors = ['#8b5cf6', '#14c0ff', '#59e3a5'];
+                          return (
+                            <div key={i} className="flex items-center gap-1.5 bg-black/20 rounded-md px-3 py-1.5 border border-white/5">
+                              <svg className="w-3 h-3 flex-shrink-0" viewBox="0 0 24 24" fill={pinColors[i]}><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></svg>
+                              <span className="text-white" style={{ fontSize: '0.9rem' }}>{city.city}</span>
+                              <span className="text-gray-400" style={{ fontSize: '0.6rem' }}>•</span>
+                              <span className="text-gray-500" style={{ fontSize: '0.65rem' }}>{formatStatCount(city.listeners)}</span>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Your Top Tracks */}
+                <div className="flex-1 min-h-0 px-4 pb-3 flex flex-col">
+                  <div className="bg-black/15 rounded-lg p-3 border border-white/5 flex-1 min-h-0 flex flex-col">
+                  <h5 className="text-white font-semibold mb-2 text-center" style={{ fontSize: '0.85rem' }}>Your Top Tracks</h5>
                   {artistTracksLoading ? (
-                    <div className="text-center text-gray-400">Loading tracks...</div>
+                    <div className="text-center text-gray-400" style={{ fontSize: '0.8rem' }}>Loading tracks...</div>
                   ) : (
-                    <div className="relative">
-                      {/* Left Arrow - positioned outside the masked area */}
+                    <div className="relative flex-1 min-h-0">
                       <button
-                        onClick={() => {
-                          const container = document.getElementById('tracks-container');
-                          if (container) {
-                            container.scrollBy({ left: -200, behavior: 'smooth' });
-                          }
-                        }}
+                        onClick={() => { const c = document.getElementById('tracks-container'); if (c) c.scrollBy({ left: -200, behavior: 'smooth' }); }}
                         className="absolute left-0 top-1/2 transform -translate-y-1/2 z-10 bg-black/50 hover:bg-black/70 text-white p-2 rounded-full transition-all duration-300 hover:scale-110"
                         style={{ marginLeft: '-12px' }}
                       >
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-                        </svg>
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" /></svg>
                       </button>
-
-                      {/* Right Arrow - positioned outside the masked area */}
                       <button
-                        onClick={() => {
-                          const container = document.getElementById('tracks-container');
-                          if (container) {
-                            container.scrollBy({ left: 200, behavior: 'smooth' });
-                          }
-                        }}
+                        onClick={() => { const c = document.getElementById('tracks-container'); if (c) c.scrollBy({ left: 200, behavior: 'smooth' }); }}
                         className="absolute right-0 top-1/2 transform -translate-y-1/2 z-10 bg-black/50 hover:bg-black/70 text-white p-2 rounded-full transition-all duration-300 hover:scale-110"
                         style={{ marginRight: '-12px' }}
                       >
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                        </svg>
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
                       </button>
 
-                      {/* Horizontal Scrolling Container with fade mask applied to entire container */}
                       <div 
                         id="tracks-container"
-                        className="flex gap-3 overflow-x-auto pb-2 px-2"
+                        className="flex gap-3 overflow-x-auto pb-2 px-2 h-full"
                         style={{
                           scrollbarWidth: 'thin',
                           scrollbarColor: '#6B7280 #1F2937',
@@ -2072,47 +2297,34 @@ export default function Dashboard({ user }: DashboardProps) {
                         }}
                       >
                         <style jsx>{`
-                          #tracks-container::-webkit-scrollbar {
-                            height: 6px;
-                          }
-                          #tracks-container::-webkit-scrollbar-track {
-                            background: #1F2937;
-                            border-radius: 3px;
-                          }
-                          #tracks-container::-webkit-scrollbar-thumb {
-                            background: #6B7280;
-                            border-radius: 3px;
-                          }
-                          #tracks-container::-webkit-scrollbar-thumb:hover {
-                            background: #9CA3AF;
-                          }
+                          #tracks-container::-webkit-scrollbar { height: 6px; }
+                          #tracks-container::-webkit-scrollbar-track { background: #1F2937; border-radius: 3px; }
+                          #tracks-container::-webkit-scrollbar-thumb { background: #6B7280; border-radius: 3px; }
+                          #tracks-container::-webkit-scrollbar-thumb:hover { background: #9CA3AF; }
                         `}</style>
                         
                         {artistTracks.map((track, index) => (
-                          <div 
-                            key={index} 
-                            className="flex-shrink-0 w-40 h-56 bg-black/20 rounded-lg hover:bg-black/30 transition-colors p-3 flex flex-col justify-between"
-                          >
-                            {/* Track Image */}
-                            <div className="w-full h-32 rounded-md overflow-hidden mb-3">
-                              <img 
-                                src={track.imageUrl || '/default-track.jpg'} 
-                                alt={track.name}
-                                className="w-full h-full object-cover"
-                              />
+                          <div key={index} className="flex-shrink-0 w-36 bg-black/20 rounded-lg hover:bg-black/30 transition-colors p-2.5 flex flex-col justify-between">
+                            <div className="w-full aspect-square rounded-md overflow-hidden mb-2 bg-gray-700/30 flex items-center justify-center relative">
+                              {track.imageUrl ? (
+                                <img src={track.imageUrl} alt={track.name} className="w-full h-full object-cover" />
+                              ) : (
+                                <svg className="w-10 h-10 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3" />
+                                </svg>
+                              )}
+                              {track.streamCount > 0 && (
+                                <div className="absolute bottom-1 right-1 bg-black/70 backdrop-blur-sm px-1.5 py-0.5 rounded text-[10px] text-green-400 font-medium border border-green-500/20">
+                                  {formatStatCount(track.streamCount)} Streams
+                                </div>
+                              )}
                             </div>
-                            
-                            {/* Track Info */}
                             <div className="flex-1 flex flex-col justify-between">
-                              <div className="mb-3">
-                                <div className="text-white font-medium text-sm truncate mb-1">{track.name}</div>
-                                <div className="text-gray-400 text-xs truncate">{artistProfile.artist_name}</div>
-                              </div>
-                              
-                              {/* Promote Button */}
+                              <div className="text-white font-medium truncate mb-2" style={{ fontSize: '0.75rem' }} title={track.name}>{track.name}</div>
                               <button
                                 onClick={() => handlePromoteTrack(track)}
-                                className="w-full bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white py-2 rounded-lg text-xs font-semibold transition-all duration-300 transform hover:scale-105"
+                                className="w-full bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white py-1.5 rounded-lg font-semibold transition-all duration-300 transform hover:scale-105"
+                                style={{ fontSize: '0.7rem' }}
                               >
                                 Promote
                               </button>
@@ -2122,10 +2334,11 @@ export default function Dashboard({ user }: DashboardProps) {
                       </div>
                     </div>
                   )}
+                  </div>
                 </div>
               </div>
             ) : (
-              <div className="flex flex-col items-center justify-center h-64 text-center">
+              <div className="flex-1 flex flex-col items-center justify-center p-6 text-center">
                 <div className="w-16 h-16 bg-purple-500/20 rounded-full flex items-center justify-center mb-4">
                   <svg className="w-8 h-8 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
@@ -2150,14 +2363,8 @@ export default function Dashboard({ user }: DashboardProps) {
                 <div className="space-y-4">
                   <div className="flex items-center justify-between">
                     <h4 className="text-lg font-semibold text-white">Set Artist Profile</h4>
-                    <button
-                      onClick={() => setShowArtistProfileEditor(false)}
-                      className="text-gray-400 hover:text-white"
-                    >
-                      ✕
-                    </button>
+                    <button onClick={() => setShowArtistProfileEditor(false)} className="text-gray-400 hover:text-white">✕</button>
                   </div>
-                  
                   <div className="space-y-4">
                     <input
                       type="text"
@@ -2166,23 +2373,20 @@ export default function Dashboard({ user }: DashboardProps) {
                       onChange={(e) => setArtistSearchQuery(e.target.value)}
                       className="w-full px-4 py-3 bg-gray-800/50 border border-gray-700 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-purple-500"
                     />
-                    
-                    {artistSearchLoading && (
-                      <div className="text-center text-gray-400">Searching...</div>
-                    )}
-                    
+                    {artistSearchLoading && <div className="text-center text-gray-400">Searching...</div>}
                     {artistSearchResults.length > 0 && (
                       <div className="space-y-2 max-h-48 overflow-y-auto">
                         {artistSearchResults.map((artist, index) => (
                           <div key={index} className="flex items-center gap-3 p-3 bg-gray-800/30 rounded-lg hover:bg-gray-800/50 transition-colors">
-                            <img 
-                              src={artist.imageUrl || '/default-artist.jpg'} 
-                              alt={artist.name}
-                              className="w-12 h-12 rounded-full object-cover"
-                            />
+                            {artist.imageUrl ? (
+                              <img src={artist.imageUrl} alt={artist.name} className="w-12 h-12 rounded-full object-cover" />
+                            ) : (
+                              <div className="w-12 h-12 rounded-full bg-gray-700/50 flex items-center justify-center flex-shrink-0">
+                                <svg className="w-6 h-6 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>
+                              </div>
+                            )}
                             <div className="flex-1">
                               <div className="text-white font-medium text-sm">{artist.name}</div>
-                              <div className="text-gray-400 text-xs">{artist.followersCount?.toLocaleString()} followers</div>
                             </div>
                             <button
                               onClick={() => saveArtistProfile(artist)}
@@ -3298,7 +3502,7 @@ export default function Dashboard({ user }: DashboardProps) {
           </p>
           {artistProfile && (
             <p className="text-green-400 text-xs truncate">
-              {artistProfile.name}
+              {artistProfile.artist_name}
             </p>
           )}
         </div>
@@ -3317,7 +3521,7 @@ export default function Dashboard({ user }: DashboardProps) {
                 <p className="text-gray-400 text-xs truncate">{user.email}</p>
                 {artistProfile && (
                   <p className="text-green-400 text-xs truncate">
-                    {artistProfile.name}
+                    {artistProfile.artist_name}
                   </p>
                 )}
               </div>

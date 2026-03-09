@@ -178,6 +178,8 @@ const DashboardTour: React.FC<DashboardTourProps> = ({
   const [tourStarted, setTourStarted] = useState(false);
   const hasInitialized = useRef(false);
   const tourCompletedRef = useRef(false);
+  const fetchingTourStatus = useRef(false);
+  const tourStatusCached = useRef<boolean | null>(null);
   const supabase = createClient();
   
   // Track activeTab in a ref to avoid stale closures in callbacks
@@ -218,10 +220,14 @@ const DashboardTour: React.FC<DashboardTourProps> = ({
    * Fetch tour status from database
    */
   const fetchTourStatus = useCallback(async (): Promise<boolean> => {
+    if (tourStatusCached.current !== null) return tourStatusCached.current;
+    if (fetchingTourStatus.current) return false;
+    fetchingTourStatus.current = true;
     try {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session?.access_token) {
         console.log('[DashboardTour] No session, defaulting to not seen');
+        tourStatusCached.current = false;
         return false;
       }
 
@@ -235,14 +241,19 @@ const DashboardTour: React.FC<DashboardTourProps> = ({
 
       if (!response.ok) {
         console.warn('[DashboardTour] Failed to fetch tour status, defaulting to not seen');
+        tourStatusCached.current = false;
         return false;
       }
 
       const data = await response.json();
-      return data.hasSeenTour ?? false;
+      const result = data.hasSeenTour ?? false;
+      tourStatusCached.current = result;
+      return result;
     } catch (error) {
       console.error('[DashboardTour] Error fetching tour status:', error);
       return false;
+    } finally {
+      fetchingTourStatus.current = false;
     }
   }, [supabase]);
 

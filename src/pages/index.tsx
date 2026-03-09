@@ -407,6 +407,8 @@ export default function Home() {
   const [isSearching, setIsSearching] = useState(false);
   const [hasSearched, setHasSearched] = useState(false);
   const [searchTimeout, setSearchTimeout] = useState<NodeJS.Timeout | null>(null);
+  const [apifyLoading, setApifyLoading] = useState(false);
+  const [apifyArtistData, setApifyArtistData] = useState<any>(null);
   const [showPricingMessage, setShowPricingMessage] = useState(false);
   const [showSearchHighlight, setShowSearchHighlight] = useState(false);
   const pricingMessageTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -1044,6 +1046,9 @@ export default function Home() {
     setFocused(false);
     setValidationError(null);
     setError(null);
+    if (selectedTrack.artistProfileUrl) {
+      fetchApifyArtistStats(selectedTrack.artistProfileUrl);
+    }
     analytics.track("song_selected", {
       spotify_track_id: selectedTrack.id,
       track_name: selectedTrack.title,
@@ -1065,6 +1070,8 @@ export default function Home() {
       setValidationError(null);
       setError(null);
       setPreviewTrack(null);
+      setApifyArtistData(null);
+      setApifyLoading(false);
       setSearchResults([]);
       setShowSearchResults(false);
       setHasSearched(false);
@@ -1137,6 +1144,9 @@ export default function Home() {
       if (data.track) {
         setPreviewTrack(data.track);
         setValidationError(null);
+        if (data.track.artistProfileUrl) {
+          fetchApifyArtistStats(data.track.artistProfileUrl);
+        }
       }
     } catch (error: any) {
       console.error('Error fetching track:', error);
@@ -1149,6 +1159,26 @@ export default function Home() {
       setPreviewTrack(null);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchApifyArtistStats = async (artistUrl: string) => {
+    setApifyLoading(true);
+    setApifyArtistData(null);
+    try {
+      const response = await fetch('/api/apify/artist-stats', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ artistUrl }),
+      });
+      const data = await response.json();
+      if (data.success && data.artistStats) {
+        setApifyArtistData(data.artistStats);
+      }
+    } catch (err) {
+      console.error('Failed to fetch Apify artist stats:', err);
+    } finally {
+      setApifyLoading(false);
     }
   };
 
@@ -1921,7 +1951,7 @@ export default function Home() {
                           {/* Launch Campaign Button - Always normal color, pulse when filled */}
                           <div className="relative">
                             {/* Pulsing Glow Background - Only when Artist Insights are showing */}
-                            {previewTrack && previewTrack.artistInsights && (
+                            {previewTrack && (previewTrack.artistInsights || apifyArtistData || apifyLoading) && (
                               <div 
                                 className="absolute inset-0 bg-gradient-to-r from-[#59e3a5] via-[#14c0ff] to-[#8b5cf6] rounded-2xl blur-md opacity-60 animate-pulse-glow"
                                 style={{ zIndex: 100 }}
@@ -1987,10 +2017,21 @@ export default function Home() {
                         </div>
                       )}
 
-                      {/* Artist Insights Card - shown below song preview when artist data is available */}
-                      {previewTrack && previewTrack.artistInsights && isSpotifyUrlCheck(url) && (
+                      {/* Artist Insights Card - shown when artist data is available or loading */}
+                      {previewTrack && (previewTrack.artistInsights || apifyArtistData || apifyLoading) && (
                         <ArtistInsightsCard 
-                          artistData={previewTrack.artistInsights}
+                          artistData={{
+                            name: apifyArtistData?.name || previewTrack.artistInsights?.name || previewTrack.artist || '',
+                            imageUrl: (apifyArtistData?.coverArt?.[0]?.url) || previewTrack.artistInsights?.imageUrl || previewTrack.imageUrl || '',
+                            followersCount: apifyArtistData?.followers || previewTrack.artistInsights?.followersCount || 0,
+                            genres: previewTrack.artistInsights?.genres || [],
+                            monthlyListeners: apifyArtistData?.monthlyListeners,
+                            worldRank: apifyArtistData?.worldRank,
+                            topCities: apifyArtistData?.topCities,
+                            topTracks: apifyArtistData?.topTracks?.map((t: any) => ({ name: t.name, streamCount: t.streamCount })),
+                            verified: apifyArtistData?.verified,
+                          }}
+                          isLoading={apifyLoading && !apifyArtistData}
                           isMobile={isMobile}
                         />
                       )}

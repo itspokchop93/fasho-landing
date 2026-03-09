@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 // Types
@@ -633,6 +633,8 @@ const PlaylistPurchasesNeeded: React.FC = () => {
   
   // Refresh state for the refresh button
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [refreshDebugLog, setRefreshDebugLog] = useState<string[]>([]);
+  const debugLogRef = useRef<HTMLDivElement>(null);
   
   const [confirmationModal, setConfirmationModal] = useState<{
     isOpen: boolean;
@@ -1027,6 +1029,13 @@ const PlaylistPurchasesNeeded: React.FC = () => {
     console.log('📋 PLAYLIST-PURCHASES: Saved data to localStorage', playlistPurchases);
   }, [hasHydratedLocalState, playlistPurchases]);
 
+  // Auto-scroll debug log
+  useEffect(() => {
+    if (debugLogRef.current) {
+      debugLogRef.current.scrollTop = debugLogRef.current.scrollHeight;
+    }
+  }, [refreshDebugLog]);
+
   // Save campaign tracker to localStorage
   useEffect(() => {
     if (!hasHydratedLocalState) {
@@ -1036,18 +1045,44 @@ const PlaylistPurchasesNeeded: React.FC = () => {
     console.log('📋 PLAYLIST-PURCHASES: Saved campaign tracker to localStorage', campaignTracker);
   }, [campaignTracker, hasHydratedLocalState]);
 
-  // Fetch playlist network data (with optional force refresh from Spotify API)
-  const fetchPlaylistNetwork = async (forceRefresh: boolean = false) => {
+  const updateNetworkFromPlaylist = (playlist: any) => {
+    setPlaylistNetwork(prev => ({
+      ...prev,
+      [playlist.id]: {
+        name: playlist.playlistName,
+        link: playlist.playlistLink,
+        imageUrl: playlist.imageUrl,
+        genre: playlist.genre,
+        saves: playlist.saves || 0
+      }
+    }));
+
+    setPlaylistPurchases(current =>
+      current.map(item => {
+        if (item.id === playlist.id) {
+          return {
+            ...item,
+            playlistName: playlist.playlistName || item.playlistName,
+            playlistLink: playlist.playlistLink || item.playlistLink,
+            imageUrl: playlist.imageUrl || item.imageUrl,
+            genre: playlist.genre || item.genre,
+            currentSaves: playlist.saves || 0
+          };
+        }
+        return item;
+      })
+    );
+  };
+
+  // Fetch cached playlist network data from DB (no external API calls)
+  const fetchPlaylistNetwork = async () => {
     try {
-      console.log(`📋 PLAYLIST-PURCHASES: Fetching playlist network data${forceRefresh ? ' (FORCE REFRESH)' : ''}...`);
-      const url = forceRefresh 
-        ? '/api/marketing-manager/system-settings/playlists?refresh=true'
-        : '/api/marketing-manager/system-settings/playlists';
-      
-      const response = await fetch(url);
+      console.log('📋 PLAYLIST-PURCHASES: Fetching cached playlist network data...');
+      const response = await fetch('/api/marketing-manager/system-settings/playlists');
       if (response.ok) {
         const playlists = await response.json();
-        const networkMap = playlists.reduce((acc: any, playlist: any) => {
+        const list = Array.isArray(playlists) ? playlists : (playlists.playlists || []);
+        const networkMap = list.reduce((acc: any, playlist: any) => {
           acc[playlist.id] = {
             name: playlist.playlistName,
             link: playlist.playlistLink,
@@ -1058,10 +1093,8 @@ const PlaylistPurchasesNeeded: React.FC = () => {
           return acc;
         }, {});
         setPlaylistNetwork(networkMap);
-        console.log('📋 PLAYLIST-PURCHASES: Loaded playlist network data', networkMap);
-        
-        // Update existing purchases with latest network data including saves
-        setPlaylistPurchases(current => 
+
+        setPlaylistPurchases(current =>
           current.map(item => {
             const networkData = networkMap[item.id];
             if (networkData) {
@@ -1077,30 +1110,68 @@ const PlaylistPurchasesNeeded: React.FC = () => {
             return item;
           })
         );
-        
-        if (forceRefresh) {
-          console.log('✅ PLAYLIST-PURCHASES: Force refresh completed successfully');
-        }
-      } else {
-        console.error('📋 PLAYLIST-PURCHASES: Failed to fetch playlist network:', response.status);
       }
     } catch (error) {
       console.error('📋 PLAYLIST-PURCHASES: Error fetching playlist network:', error);
     }
   };
 
-  // Handle refresh button click - force refresh from Spotify API
+  const startTargetedRefresh = () => {
+    // Only refresh playlists currently in the purchases list
+    const ids = playlistPurchases.map(p => p.id).filter(Boolean);
+    if (ids.length === 0) {
+      setIsRefreshing(false);
+      setRefreshDebugLog(prev => [...prev, '⚠️ No playlists to refresh']);
+      return;
+    }
+
+    const url = `/api/marketing-manager/system-settings/playlists-refresh-targeted?ids=${ids.join(',')}`;
+    const eventSource = new EventSource(url);
+
+    eventSource.addEventListener('log', (e) => {
+      const data = JSON.parse(e.data);
+      setRefreshDebugLog(prev => [...prev, data.message]);
+    });
+
+    eventSource.addEventListener('playlist', (e) => {
+      const playlist = JSON.parse(e.data);
+      updateNetworkFromPlaylist(playlist);
+    });
+
+    eventSource.addEventListener('complete', () => {
+      setIsRefreshing(false);
+      eventSource.close();
+    });
+
+    eventSource.addEventListener('error', (e) => {
+      if (eventSource.readyState === EventSource.CLOSED) {
+        setIsRefreshing(false);
+        return;
+      }
+      setRefreshDebugLog(prev => [...prev, '❌ Connection error']);
+      setIsRefreshing(false);
+      eventSource.close();
+    });
+
+    eventSource.onerror = () => {
+      if (eventSource.readyState === EventSource.CLOSED) {
+        setIsRefreshing(false);
+        return;
+      }
+      setRefreshDebugLog(prev => [...prev, '❌ Stream disconnected']);
+      setIsRefreshing(false);
+      eventSource.close();
+    };
+  };
+
+  // Handle refresh button click - targeted refresh for playlists in this section only
   const handleRefreshClick = async () => {
     if (isRefreshing) return;
-    
+
     setIsRefreshing(true);
-    console.log('📋 PLAYLIST-PURCHASES: 🔄 Manual refresh initiated by admin');
-    
-    try {
-      await fetchPlaylistNetwork(true);
-    } finally {
-      setIsRefreshing(false);
-    }
+    setRefreshDebugLog(['🔄 Starting targeted refresh for Purchases Needed playlists...']);
+    console.log('📋 PLAYLIST-PURCHASES: 🔄 Targeted refresh initiated by admin');
+    startTargetedRefresh();
   };
 
   // Add playlists from a campaign that was just confirmed
@@ -1439,7 +1510,32 @@ const PlaylistPurchasesNeeded: React.FC = () => {
     <div className="bg-white rounded-xl p-6 shadow-lg border border-gray-100">
       {/* Inject custom animation styles */}
       <style dangerouslySetInnerHTML={{ __html: animationStyles }} />
-      
+
+      {/* Refresh Debug Log */}
+      {refreshDebugLog.length > 0 && (
+        <div className="bg-gray-900 rounded-xl p-4 shadow-lg border border-gray-700 mb-4">
+          <div className="flex items-center justify-between mb-2">
+            <h3 className="text-sm font-bold text-green-400 font-mono">Purchases Refresh Log</h3>
+            <button
+              onClick={() => setRefreshDebugLog([])}
+              className="text-xs text-gray-500 hover:text-gray-300 transition-colors"
+            >
+              Clear
+            </button>
+          </div>
+          <div ref={debugLogRef} className="max-h-48 overflow-y-auto space-y-0.5 font-mono text-xs">
+            {refreshDebugLog.map((line, i) => (
+              <div key={i} className={`${line.startsWith('❌') ? 'text-red-400' : line.startsWith('✅') ? 'text-green-400' : line.startsWith('⚠️') ? 'text-yellow-400' : line.startsWith('🔮') ? 'text-purple-400' : 'text-gray-300'}`}>
+                {line}
+              </div>
+            ))}
+            {isRefreshing && (
+              <div className="text-blue-400 animate-pulse">⏳ Processing...</div>
+            )}
+          </div>
+        </div>
+      )}
+
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-3">
           {/* Small refresh button in top left corner */}
@@ -1572,6 +1668,11 @@ const PlaylistPurchasesNeeded: React.FC = () => {
                             className="h-10 w-10 rounded-lg object-cover border border-gray-100 shadow-sm" 
                             src={item.imageUrl} 
                             alt={item.playlistName}
+                            onError={(e) => {
+                              const target = e.target as HTMLImageElement;
+                              target.style.display = 'none';
+                              target.parentElement!.innerHTML = '<div class="h-10 w-10 rounded-lg bg-red-100 border border-red-300 flex items-center justify-center"><svg class="h-6 w-6 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" /></svg></div>';
+                            }}
                           />
                         ) : (
                           <div className="h-10 w-10 rounded-lg bg-gray-100 flex items-center justify-center border border-gray-200 text-gray-400">
