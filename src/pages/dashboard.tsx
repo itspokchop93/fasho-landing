@@ -1801,9 +1801,9 @@ export default function Dashboard({ user }: DashboardProps) {
                         {artistProfile.apify_top_cities.slice(0, 3).map((city: any, i: number) => {
                           const pinColors = ['#8b5cf6', '#14c0ff', '#59e3a5'];
                           return (
-                            <span key={i} className="flex items-center gap-1 bg-black/20 rounded-md px-2.5 py-1 border border-white/5">
+                            <span key={i} className="flex items-center gap-1 bg-black/20 rounded-md px-2.5 py-1 border border-white/5 flex-shrink-0">
                               <svg className="w-2.5 h-2.5 flex-shrink-0" viewBox="0 0 24 24" fill={pinColors[i]}><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></svg>
-                              <span className="text-white" style={{ fontSize: '0.8rem' }}>{city.city}</span>
+                              <span className="text-white whitespace-nowrap" style={{ fontSize: '0.68rem' }}>{city.city}</span>
                               <span className="text-gray-400" style={{ fontSize: '0.5rem' }}>•</span>
                               <span className="text-gray-500" style={{ fontSize: '0.55rem' }}>{formatStatCount(city.listeners)}</span>
                             </span>
@@ -2246,13 +2246,13 @@ export default function Dashboard({ user }: DashboardProps) {
                   <div className="px-4 pb-2">
                     <div className="bg-black/15 rounded-lg p-3 border border-white/5">
                       <div className="text-gray-400 text-center mb-2" style={{ fontSize: '0.65rem', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 600 }}>Your Top Cities</div>
-                      <div className="flex gap-2 justify-center">
+                      <div className="flex gap-2 flex-wrap justify-center">
                         {artistProfile.apify_top_cities.slice(0, 3).map((city: any, i: number) => {
                           const pinColors = ['#8b5cf6', '#14c0ff', '#59e3a5'];
                           return (
-                            <div key={i} className="flex items-center gap-1.5 bg-black/20 rounded-md px-3 py-1.5 border border-white/5">
+                            <div key={i} className="flex items-center gap-1.5 bg-black/20 rounded-md px-3 py-1.5 border border-white/5 flex-shrink-0">
                               <svg className="w-3 h-3 flex-shrink-0" viewBox="0 0 24 24" fill={pinColors[i]}><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></svg>
-                              <span className="text-white" style={{ fontSize: '0.9rem' }}>{city.city}</span>
+                              <span className="text-white whitespace-nowrap" style={{ fontSize: '0.77rem' }}>{city.city}</span>
                               <span className="text-gray-400" style={{ fontSize: '0.6rem' }}>•</span>
                               <span className="text-gray-500" style={{ fontSize: '0.65rem' }}>{formatStatCount(city.listeners)}</span>
                             </div>
