@@ -3,6 +3,7 @@ import { createAdminClient } from '../../../../utils/supabase/server';
 import { verifyAdminToken } from '../../../../utils/admin/auth';
 import { getSpotifyPlaylistDataWithHealth } from '../../../../utils/spotify-api';
 import { scrapeSpotifyPlaylistData } from '../../../../utils/apify-spotify-playlist';
+import { propagatePlaylistNameChange } from '../../../../utils/playlist-name-sync';
 
 export const config = {
   api: {
@@ -95,12 +96,18 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           let healthLastChecked = playlist.health_last_checked;
           let healthErrorMessage = playlist.health_error_message;
 
+          let detectedName = playlist.playlist_name;
+
           try {
             const playlistData = await getSpotifyPlaylistDataWithHealth(playlist.playlist_link);
             if (playlistData) {
               songCount = playlistData.trackCount;
               imageUrl = playlistData.imageUrl || imageUrl;
               saves = playlistData.followers || 0;
+
+              if (playlistData.name && playlistData.name !== 'Unknown' && playlistData.name !== 'Unknown Playlist') {
+                detectedName = playlistData.name;
+              }
 
               if (playlistData.healthStatus) {
                 healthStatus = playlistData.healthStatus.status;
@@ -115,27 +122,40 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           }
 
           const needsApify = songCount === 0 && healthStatus !== 'removed' && healthStatus !== 'error';
+          const nameChanged = detectedName !== playlist.playlist_name;
 
-          send('log', { message: `📊 [${playlist.playlist_name}] Spotify: songs=${songCount}, saves=${saves}, health=${healthStatus}${needsApify ? ' → queued for Apify' : healthStatus === 'removed' ? ' → skipping Apify (removed)' : ''}` });
+          send('log', { message: `📊 [${playlist.playlist_name}] Spotify: songs=${songCount}, saves=${saves}, health=${healthStatus}${nameChanged ? ` → NAME CHANGED to "${detectedName}"` : ''}${needsApify ? ' → queued for Apify' : healthStatus === 'removed' ? ' → skipping Apify (removed)' : ''}` });
 
-          // Save Spotify data immediately
+          const updatePayload: Record<string, any> = {
+            cached_song_count: songCount,
+            cached_image_url: imageUrl,
+            cached_saves: saves,
+            last_scraped_at: new Date().toISOString(),
+            health_status: healthStatus,
+            health_last_checked: healthLastChecked,
+            health_error_message: healthErrorMessage,
+            ...(healthStatus === 'active' ? { last_known_public: true } : {}),
+          };
+
+          if (nameChanged) {
+            updatePayload.playlist_name = detectedName;
+          }
+
           await supabase
             .from('playlist_network')
-            .update({
-              cached_song_count: songCount,
-              cached_image_url: imageUrl,
-              cached_saves: saves,
-              last_scraped_at: new Date().toISOString(),
-              health_status: healthStatus,
-              health_last_checked: healthLastChecked,
-              health_error_message: healthErrorMessage,
-              ...(healthStatus === 'active' ? { last_known_public: true } : {}),
-            })
+            .update(updatePayload)
             .eq('id', playlist.id);
+
+          if (nameChanged) {
+            const updated = await propagatePlaylistNameChange(supabase, playlist.id, detectedName);
+            if (updated > 0) {
+              send('log', { message: `🔄 [${detectedName}] Updated name in ${updated} campaign assignment(s)` });
+            }
+          }
 
           const result: PlaylistResult = {
             id: playlist.id,
-            playlistName: playlist.playlist_name,
+            playlistName: nameChanged ? detectedName : playlist.playlist_name,
             genre: playlist.genre,
             accountEmail: playlist.account_email,
             playlistLink: playlist.playlist_link,
@@ -184,18 +204,33 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
               playlist.imageUrl = apifyData.imageUrl;
             }
 
-            // Save to DB
+            const apifyNameChanged = apifyData.name && apifyData.name !== 'Unknown Playlist' && apifyData.name !== playlist.playlistName;
+
+            const apifyUpdatePayload: Record<string, any> = {
+              cached_song_count: playlist.songCount,
+              cached_saves: playlist.saves,
+              cached_image_url: playlist.imageUrl,
+              last_scraped_at: new Date().toISOString(),
+            };
+
+            if (apifyNameChanged) {
+              apifyUpdatePayload.playlist_name = apifyData.name;
+              playlist.playlistName = apifyData.name;
+            }
+
             await supabase
               .from('playlist_network')
-              .update({
-                cached_song_count: playlist.songCount,
-                cached_saves: playlist.saves,
-                cached_image_url: playlist.imageUrl,
-                last_scraped_at: new Date().toISOString(),
-              })
+              .update(apifyUpdatePayload)
               .eq('id', playlist.id);
 
-            send('log', { message: `✅ [${playlist.playlistName}] Apify: songs=${playlist.songCount}${playlist.saves ? `, saves=${playlist.saves}` : ''}` });
+            if (apifyNameChanged) {
+              const updated = await propagatePlaylistNameChange(supabase, playlist.id, apifyData.name);
+              if (updated > 0) {
+                send('log', { message: `🔄 [${apifyData.name}] Apify detected name change → updated ${updated} campaign assignment(s)` });
+              }
+            }
+
+            send('log', { message: `✅ [${playlist.playlistName}] Apify: songs=${playlist.songCount}${playlist.saves ? `, saves=${playlist.saves}` : ''}${apifyNameChanged ? ' (name updated)' : ''}` });
           } else {
             send('log', { message: `⚠️ [${playlist.playlistName}] Apify returned no data` });
           }

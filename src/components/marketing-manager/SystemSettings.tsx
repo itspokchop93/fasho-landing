@@ -936,7 +936,7 @@ const getDefaultNewPlaylistForm = (): NewPlaylistForm => ({
   genres: [],
   accountEmail: '',
   playlistLink: '',
-  maxSongs: 35
+  maxSongs: 100
 });
 
 const SystemSettings: React.FC<SystemSettingsProps> = ({ onlyPlaylistNetwork = false }) => {
@@ -969,6 +969,11 @@ const SystemSettings: React.FC<SystemSettingsProps> = ({ onlyPlaylistNetwork = f
     direction: 'asc' | 'desc';
   } | null>(null);
   const [playlistSearchQuery, setPlaylistSearchQuery] = useState('');
+  const [savedEmails, setSavedEmails] = useState<string[]>([]);
+  const [deleteEmailConfirm, setDeleteEmailConfirm] = useState<{
+    email: string;
+    position: { top: number; left: number };
+  } | null>(null);
   const [copiedPlaylistId, setCopiedPlaylistId] = useState<string | null>(null);
   const [deleteConfirmation, setDeleteConfirmation] = useState<{
     isOpen: boolean;
@@ -1013,6 +1018,33 @@ const SystemSettings: React.FC<SystemSettingsProps> = ({ onlyPlaylistNetwork = f
     intervalMinutes: 1440,
     serviceId: ''
   });
+
+  useEffect(() => {
+    try {
+      const stored = localStorage.getItem('playlist_saved_emails');
+      if (stored) setSavedEmails(JSON.parse(stored));
+    } catch {}
+  }, []);
+
+  const addSavedEmail = (email: string) => {
+    const trimmed = email.trim().toLowerCase();
+    if (!trimmed) return;
+    setSavedEmails((prev) => {
+      if (prev.includes(trimmed)) return prev;
+      const next = [trimmed, ...prev];
+      localStorage.setItem('playlist_saved_emails', JSON.stringify(next));
+      return next;
+    });
+  };
+
+  const removeSavedEmail = (email: string) => {
+    setSavedEmails((prev) => {
+      const next = prev.filter((e) => e !== email);
+      localStorage.setItem('playlist_saved_emails', JSON.stringify(next));
+      return next;
+    });
+    setDeleteEmailConfirm(null);
+  };
 
   useEffect(() => {
     fetchPlaylists();
@@ -1270,13 +1302,13 @@ const SystemSettings: React.FC<SystemSettingsProps> = ({ onlyPlaylistNetwork = f
       });
 
       if (response.ok) {
-        // Keep the add form open and preserve reusable values for rapid bulk entry.
+        addSavedEmail(newPlaylist.accountEmail);
         setNewPlaylist((prev) => ({
           ...prev,
           playlistLink: ''
         }));
         fetchPlaylists();
-        fetchStreamPurchases(); // Also refresh stream purchases to update dropdown
+        fetchStreamPurchases();
         showSuccessBannerWithMessage('Playlist added successfully');
         window.setTimeout(() => {
           playlistLinkInputRef.current?.focus();
@@ -2075,28 +2107,62 @@ const SystemSettings: React.FC<SystemSettingsProps> = ({ onlyPlaylistNetwork = f
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     Account Email *
                   </label>
-                  <input
-                    type="email"
-                    required
-                    value={newPlaylist.accountEmail}
-                    onChange={(e) => handleInputChange('accountEmail', e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-                    placeholder="owner@example.com"
-                  />
+                  <div className="relative">
+                    <input
+                      type="email"
+                      required
+                      value={newPlaylist.accountEmail}
+                      onChange={(e) => handleInputChange('accountEmail', e.target.value)}
+                      className="w-full px-3 py-2 pr-16 border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                      placeholder="owner@example.com"
+                    />
+                    {newPlaylist.accountEmail.trim() && !savedEmails.includes(newPlaylist.accountEmail.trim().toLowerCase()) && (
+                      <button
+                        type="button"
+                        onClick={() => addSavedEmail(newPlaylist.accountEmail)}
+                        className="absolute right-1.5 top-1/2 -translate-y-1/2 flex items-center gap-1 px-2 py-1 rounded bg-indigo-500 text-white hover:bg-indigo-600 transition-colors"
+                        style={{ opacity: 0.7, fontSize: '0.6rem' }}
+                      >
+                        <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                        </svg>
+                        Save
+                      </button>
+                    )}
+                  </div>
+                  {savedEmails.length > 0 && (
+                    <div className="flex flex-wrap gap-1.5 mt-1.5">
+                      {savedEmails.map((email) => (
+                        <div
+                          key={email}
+                          className="relative group inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-gray-100 hover:bg-indigo-50 border border-gray-200 hover:border-indigo-300 cursor-pointer transition-colors"
+                          onClick={() => handleInputChange('accountEmail', email)}
+                        >
+                          <span className="text-gray-600 group-hover:text-indigo-700 select-none" style={{ fontSize: '0.65rem' }}>
+                            {email}
+                          </span>
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              const rect = e.currentTarget.getBoundingClientRect();
+                              setDeleteEmailConfirm({
+                                email,
+                                position: { top: rect.top - 60, left: rect.left - 40 },
+                              });
+                            }}
+                            className="ml-0.5 text-gray-300 hover:text-red-500 transition-colors"
+                          >
+                            <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Max Songs
-                  </label>
-                  <input
-                    type="number"
-                    min="1"
-                    max="10000"
-                    value={newPlaylist.maxSongs}
-                    onChange={(e) => handleInputChange('maxSongs', parseInt(e.target.value) || 35)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-                  />
-                </div>
+                
               </div>
               <div className="flex justify-end space-x-3">
                 <button
@@ -2825,6 +2891,43 @@ const SystemSettings: React.FC<SystemSettingsProps> = ({ onlyPlaylistNetwork = f
         onCancel={handleDeleteCancel}
         position={confirmationModal.position}
       />
+
+      {/* Saved Email Delete Confirmation */}
+      {deleteEmailConfirm && (
+        <>
+          <div className="fixed inset-0 z-[998]" onClick={() => setDeleteEmailConfirm(null)} />
+          <div
+            className="fixed z-[999] bg-white border border-gray-200 rounded-lg shadow-xl p-2.5"
+            style={{
+              top: deleteEmailConfirm.position.top,
+              left: deleteEmailConfirm.position.left,
+              minWidth: '160px',
+            }}
+          >
+            <p className="text-gray-700 mb-2" style={{ fontSize: '0.65rem' }}>
+              Remove <strong>{deleteEmailConfirm.email}</strong>?
+            </p>
+            <div className="flex gap-1.5">
+              <button
+                type="button"
+                onClick={() => setDeleteEmailConfirm(null)}
+                className="flex-1 rounded bg-gray-100 px-2 py-1 font-medium text-gray-600 transition-colors hover:bg-gray-200"
+                style={{ fontSize: '0.625rem' }}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={() => removeSavedEmail(deleteEmailConfirm.email)}
+                className="flex-1 rounded bg-red-600 px-2 py-1 font-medium text-white transition-colors hover:bg-red-700"
+                style={{ fontSize: '0.625rem' }}
+              >
+                Remove
+              </button>
+            </div>
+          </div>
+        </>
+      )}
     </div>
   );
 };

@@ -318,7 +318,7 @@ const PlaylistSelector: React.FC<PlaylistSelectorProps> = ({
                 )}
               </div>
               {p.genre && (
-                <span className={`text-[0.6rem] uppercase font-black tracking-tighter ${currentValue === p.id ? 'text-indigo-200' : 'text-gray-400 group-hover:text-indigo-400'}`}>
+                <span className={`text-[0.6rem] uppercase font-black tracking-tighter truncate w-full block ${currentValue === p.id ? 'text-indigo-200' : 'text-gray-400 group-hover:text-indigo-400'}`}>
                   {p.genre}
                 </span>
               )}

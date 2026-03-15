@@ -3,6 +3,7 @@ import { createAdminClient } from '../../../../utils/supabase/server';
 import { verifyAdminToken } from '../../../../utils/admin/auth';
 import { getSpotifyPlaylistData } from '../../../../utils/spotify-api';
 import { scrapeSpotifyPlaylistData } from '../../../../utils/apify-spotify-playlist';
+import { propagatePlaylistNameChange } from '../../../../utils/playlist-name-sync';
 
 export const config = {
   api: {
@@ -75,7 +76,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       let imageUrl = playlist.cached_image_url || '';
       let saves = playlist.cached_saves || 0;
 
-      send('log', { message: `⚡ [${i + 1}/${playlists.length}] [${playlist.playlist_name}] Fetching from Spotify...` });
+      let currentName = playlist.playlist_name;
+
+      send('log', { message: `⚡ [${i + 1}/${playlists.length}] [${currentName}] Fetching from Spotify...` });
 
       try {
         const spotifyData = await getSpotifyPlaylistData(playlist.playlist_link);
@@ -83,53 +86,75 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           imageUrl = spotifyData.imageUrl || imageUrl;
           saves = spotifyData.followers || saves;
           songCount = spotifyData.trackCount || songCount;
-          send('log', { message: `📊 [${playlist.playlist_name}] Spotify: songs=${spotifyData.trackCount}, saves=${spotifyData.followers}, image=${spotifyData.imageUrl ? 'Yes' : 'No'}` });
+
+          if (spotifyData.name && spotifyData.name !== 'Unknown' && spotifyData.name !== 'Unknown Playlist' && spotifyData.name !== currentName) {
+            send('log', { message: `📛 [${currentName}] Name changed to "${spotifyData.name}"` });
+            currentName = spotifyData.name;
+          }
+
+          send('log', { message: `📊 [${currentName}] Spotify: songs=${spotifyData.trackCount}, saves=${spotifyData.followers}, image=${spotifyData.imageUrl ? 'Yes' : 'No'}` });
         }
       } catch (err) {
-        send('log', { message: `⚠️ [${playlist.playlist_name}] Spotify error: ${err instanceof Error ? err.message : 'Unknown'}` });
+        send('log', { message: `⚠️ [${currentName}] Spotify error: ${err instanceof Error ? err.message : 'Unknown'}` });
       }
 
-      // Apify for song count (and saves/image if missing)
       const needsApify = songCount === 0 || saves === 0 || !imageUrl;
       if (needsApify && playlist.health_status !== 'removed') {
-        send('log', { message: `🔮 [${playlist.playlist_name}] Calling Apify for missing data...` });
+        send('log', { message: `🔮 [${currentName}] Calling Apify for missing data...` });
         try {
           const apifyData = await scrapeSpotifyPlaylistData(playlist.playlist_link, false);
           if (apifyData) {
             if (songCount === 0 && apifyData.trackCount > 0) songCount = apifyData.trackCount;
             if (saves === 0 && apifyData.followers > 0) saves = apifyData.followers;
             if (!imageUrl && apifyData.imageUrl) imageUrl = apifyData.imageUrl;
-            send('log', { message: `✅ [${playlist.playlist_name}] Apify: songs=${apifyData.trackCount}, saves=${apifyData.followers}, image=${apifyData.imageUrl ? 'Yes' : 'No'}` });
+
+            if (apifyData.name && apifyData.name !== 'Unknown Playlist' && apifyData.name !== currentName) {
+              send('log', { message: `📛 [${currentName}] Apify detected name change to "${apifyData.name}"` });
+              currentName = apifyData.name;
+            }
+
+            send('log', { message: `✅ [${currentName}] Apify: songs=${apifyData.trackCount}, saves=${apifyData.followers}, image=${apifyData.imageUrl ? 'Yes' : 'No'}` });
           } else {
-            send('log', { message: `⚠️ [${playlist.playlist_name}] Apify returned no data` });
+            send('log', { message: `⚠️ [${currentName}] Apify returned no data` });
           }
         } catch (err) {
-          send('log', { message: `❌ [${playlist.playlist_name}] Apify error: ${err instanceof Error ? err.message : 'Unknown'}` });
+          send('log', { message: `❌ [${currentName}] Apify error: ${err instanceof Error ? err.message : 'Unknown'}` });
         }
 
-        // Delay between Apify calls
         if (i < playlists.length - 1) {
           await new Promise(resolve => setTimeout(resolve, 2000));
         }
       }
 
-      // Save to DB
+      const nameChanged = currentName !== playlist.playlist_name;
+      const updatePayload: Record<string, any> = {
+        cached_song_count: songCount,
+        cached_image_url: imageUrl,
+        cached_saves: saves,
+        last_scraped_at: new Date().toISOString(),
+      };
+
+      if (nameChanged) {
+        updatePayload.playlist_name = currentName;
+      }
+
       await supabase
         .from('playlist_network')
-        .update({
-          cached_song_count: songCount,
-          cached_image_url: imageUrl,
-          cached_saves: saves,
-          last_scraped_at: new Date().toISOString(),
-        })
+        .update(updatePayload)
         .eq('id', playlist.id);
 
-      send('log', { message: `💾 [${playlist.playlist_name}] Saved: songs=${songCount}, saves=${saves}, image=${imageUrl ? 'Yes' : 'No'}` });
+      if (nameChanged) {
+        const updated = await propagatePlaylistNameChange(supabase, playlist.id, currentName);
+        if (updated > 0) {
+          send('log', { message: `🔄 [${currentName}] Updated name in ${updated} campaign assignment(s)` });
+        }
+      }
 
-      // Send updated playlist to frontend
+      send('log', { message: `💾 [${currentName}] Saved: songs=${songCount}, saves=${saves}, image=${imageUrl ? 'Yes' : 'No'}${nameChanged ? ' (name updated)' : ''}` });
+
       send('playlist', {
         id: playlist.id,
-        playlistName: playlist.playlist_name,
+        playlistName: currentName,
         playlistLink: playlist.playlist_link,
         imageUrl,
         saves,

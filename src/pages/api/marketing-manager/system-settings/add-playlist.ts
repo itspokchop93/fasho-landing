@@ -22,7 +22,7 @@ async function handler(req: NextApiRequest, res: NextApiResponse, adminUser: Adm
   const parsedGenres = parsePlaylistGenres(Array.isArray(genres) ? genres : genre);
   const trimmedPlaylistLink = typeof playlistLink === 'string' ? playlistLink.trim() : '';
   const trimmedAccountEmail = typeof accountEmail === 'string' ? accountEmail.trim().toLowerCase() : '';
-  const sanitizedMaxSongs = Math.max(1, Number(maxSongs) || 35);
+  const sanitizedMaxSongs = Math.max(1, Number(maxSongs) || 100);
 
   // Validate required fields (playlist name will be fetched automatically)
   if (parsedGenres.length === 0 || !trimmedAccountEmail || !trimmedPlaylistLink) {
