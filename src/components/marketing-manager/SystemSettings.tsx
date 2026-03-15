@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useLayoutEffect, useMemo, useCallback } from 'react';
 import CampaignTotals from './CampaignTotals';
 import {
   PLAYLIST_GENRE_OPTIONS,
@@ -100,6 +100,14 @@ const DeleteConfirmationModal: React.FC<DeleteConfirmationModalProps> = ({
 
 type PlaylistFormValue = string | number | boolean | string[];
 
+interface GenreSet {
+  id: string;
+  name: string;
+  genres: string;
+  created_at: string;
+  updated_at: string;
+}
+
 interface GenreMultiSelectProps {
   selectedGenres: string[];
   onChange: (genres: string[]) => void;
@@ -114,12 +122,23 @@ const GenreMultiSelect: React.FC<GenreMultiSelectProps> = ({
   disabled = false,
 }) => {
   const [isOpen, setIsOpen] = useState(false);
+  const [mode, setMode] = useState<'list' | 'set'>('list');
+  const [genreSets, setGenreSets] = useState<GenreSet[]>([]);
+  const [genreSetsLoaded, setGenreSetsLoaded] = useState(false);
+  const [setFormView, setSetFormView] = useState<'none' | 'create' | 'edit'>('none');
+  const [setFormName, setSetFormName] = useState('');
+  const [setFormGenres, setSetFormGenres] = useState<string[]>([]);
+  const [editingSetId, setEditingSetId] = useState<string | null>(null);
+  const [setFormSaving, setSetFormSaving] = useState(false);
+  const [deletingSetId, setDeletingSetId] = useState<string | null>(null);
+  const [confirmDeleteSetId, setConfirmDeleteSetId] = useState<string | null>(null);
+  const [confirmDeletePos, setConfirmDeletePos] = useState<{ top: number; left: number } | null>(null);
   const containerRef = React.useRef<HTMLDivElement | null>(null);
+  const listScrollRef = React.useRef<HTMLDivElement | null>(null);
+  const savedScrollTop = React.useRef<number | null>(null);
 
   useEffect(() => {
-    if (!isOpen) {
-      return;
-    }
+    if (!isOpen) return;
 
     const handleClickOutside = (event: MouseEvent) => {
       if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
@@ -129,7 +148,11 @@ const GenreMultiSelect: React.FC<GenreMultiSelectProps> = ({
 
     const handleEscape = (event: KeyboardEvent) => {
       if (event.key === 'Escape') {
-        setIsOpen(false);
+        if (setFormView !== 'none') {
+          setSetFormView('none');
+        } else {
+          setIsOpen(false);
+        }
       }
     };
 
@@ -140,7 +163,27 @@ const GenreMultiSelect: React.FC<GenreMultiSelectProps> = ({
       document.removeEventListener('mousedown', handleClickOutside);
       document.removeEventListener('keydown', handleEscape);
     };
-  }, [isOpen]);
+  }, [isOpen, setFormView]);
+
+  const fetchGenreSets = async () => {
+    try {
+      const res = await fetch('/api/marketing-manager/genre-sets');
+      if (res.ok) {
+        const data = await res.json();
+        setGenreSets(data);
+      }
+    } catch {
+      // silent fail
+    } finally {
+      setGenreSetsLoaded(true);
+    }
+  };
+
+  useEffect(() => {
+    if (isOpen && !genreSetsLoaded) {
+      fetchGenreSets();
+    }
+  }, [isOpen, genreSetsLoaded]);
 
   const availableGenres = useMemo(() => {
     const mergedGenres: string[] = [];
@@ -148,15 +191,9 @@ const GenreMultiSelect: React.FC<GenreMultiSelectProps> = ({
 
     [...selectedGenres, ...PLAYLIST_GENRE_OPTIONS].forEach((genre) => {
       const trimmedGenre = genre.trim();
-      if (!trimmedGenre) {
-        return;
-      }
-
+      if (!trimmedGenre) return;
       const normalizedGenre = trimmedGenre.toLowerCase();
-      if (seenGenres.has(normalizedGenre)) {
-        return;
-      }
-
+      if (seenGenres.has(normalizedGenre)) return;
       seenGenres.add(normalizedGenre);
       mergedGenres.push(trimmedGenre);
     });
@@ -168,22 +205,323 @@ const GenreMultiSelect: React.FC<GenreMultiSelectProps> = ({
     ? formatPlaylistGenres(selectedGenres)
     : placeholder;
 
-  const handleToggleGenre = (genre: string) => {
-    const isSelected = selectedGenres.some(
-      (selectedGenre) => selectedGenre.toLowerCase() === genre.toLowerCase()
-    );
-
-    if (isSelected) {
-      onChange(
-        selectedGenres.filter(
-          (selectedGenre) => selectedGenre.toLowerCase() !== genre.toLowerCase()
-        )
-      );
-      return;
+  useLayoutEffect(() => {
+    if (savedScrollTop.current !== null && listScrollRef.current) {
+      listScrollRef.current.scrollTop = savedScrollTop.current;
+      savedScrollTop.current = null;
     }
+  }, [selectedGenres]);
 
-    onChange([...selectedGenres, genre]);
+  const handleToggleGenre = useCallback((genre: string) => {
+    if (listScrollRef.current) {
+      savedScrollTop.current = listScrollRef.current.scrollTop;
+    }
+    const isSelected = selectedGenres.some(
+      (sg) => sg.toLowerCase() === genre.toLowerCase()
+    );
+    if (isSelected) {
+      onChange(selectedGenres.filter((sg) => sg.toLowerCase() !== genre.toLowerCase()));
+    } else {
+      onChange([...selectedGenres, genre]);
+    }
+  }, [selectedGenres, onChange]);
+
+  const handleApplySet = (genreSet: GenreSet) => {
+    const setGenresList = genreSet.genres.split(',').map((g) => g.trim()).filter(Boolean);
+    const merged = [...selectedGenres];
+    const existing = new Set(merged.map((g) => g.toLowerCase()));
+    for (const g of setGenresList) {
+      if (!existing.has(g.toLowerCase())) {
+        merged.push(g);
+        existing.add(g.toLowerCase());
+      }
+    }
+    onChange(merged);
   };
+
+  const handleOpenCreateSet = () => {
+    setSetFormView('create');
+    setSetFormName('');
+    setSetFormGenres([]);
+    setEditingSetId(null);
+  };
+
+  const handleOpenEditSet = (genreSet: GenreSet) => {
+    setSetFormView('edit');
+    setSetFormName(genreSet.name);
+    setSetFormGenres(genreSet.genres.split(',').map((g) => g.trim()).filter(Boolean));
+    setEditingSetId(genreSet.id);
+  };
+
+  const handleSetFormToggleGenre = (genre: string) => {
+    const isSelected = setFormGenres.some((sg) => sg.toLowerCase() === genre.toLowerCase());
+    if (isSelected) {
+      setSetFormGenres(setFormGenres.filter((sg) => sg.toLowerCase() !== genre.toLowerCase()));
+    } else {
+      setSetFormGenres([...setFormGenres, genre]);
+    }
+  };
+
+  const handleSaveSet = async () => {
+    if (!setFormName.trim() || setFormGenres.length === 0) return;
+    setSetFormSaving(true);
+    try {
+      const payload = {
+        name: setFormName.trim(),
+        genres: setFormGenres.join(', '),
+        ...(setFormView === 'edit' && editingSetId ? { id: editingSetId } : {}),
+      };
+      const res = await fetch('/api/marketing-manager/genre-sets', {
+        method: setFormView === 'edit' ? 'PUT' : 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+      if (res.ok) {
+        await fetchGenreSets();
+        setSetFormView('none');
+      }
+    } catch {
+      // silent fail
+    } finally {
+      setSetFormSaving(false);
+    }
+  };
+
+  const handleDeleteSet = async (id: string) => {
+    setDeletingSetId(id);
+    setConfirmDeleteSetId(null);
+    try {
+      const res = await fetch('/api/marketing-manager/genre-sets', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id }),
+      });
+      if (res.ok) {
+        await fetchGenreSets();
+      }
+    } catch {
+      // silent fail
+    } finally {
+      setDeletingSetId(null);
+    }
+  };
+
+  const renderListMode = () => (
+    <div
+      ref={listScrollRef}
+      className="max-h-64 overflow-y-auto py-2"
+      role="listbox"
+      aria-multiselectable="true"
+    >
+      {availableGenres.map((genre) => {
+        const isChecked = selectedGenres.some(
+          (sg) => sg.toLowerCase() === genre.toLowerCase()
+        );
+        return (
+          <label
+            key={genre}
+            className="flex cursor-pointer items-center justify-between px-3 py-2 transition-colors hover:bg-indigo-50"
+          >
+            <div className="flex items-center gap-3">
+              <input
+                type="checkbox"
+                checked={isChecked}
+                onChange={() => handleToggleGenre(genre)}
+                className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+              />
+              <span className="text-gray-900" style={{ fontSize: '0.875rem' }}>
+                {genre}
+              </span>
+            </div>
+          </label>
+        );
+      })}
+    </div>
+  );
+
+  const setIconColors = [
+    { bg: '#fee2e2', text: '#dc2626' },
+    { bg: '#fef3c7', text: '#d97706' },
+    { bg: '#d1fae5', text: '#059669' },
+    { bg: '#dbeafe', text: '#2563eb' },
+    { bg: '#ede9fe', text: '#7c3aed' },
+    { bg: '#fce7f3', text: '#db2777' },
+    { bg: '#ccfbf1', text: '#0d9488' },
+    { bg: '#fff7ed', text: '#ea580c' },
+  ];
+
+  const getSetIcon = (name: string, index: number) => {
+    const color = setIconColors[index % setIconColors.length];
+    const letter = name.charAt(0).toUpperCase();
+    return (
+      <span
+        className="inline-flex flex-shrink-0 items-center justify-center rounded-full font-bold"
+        style={{
+          width: '1.125rem',
+          height: '1.125rem',
+          fontSize: '0.5625rem',
+          backgroundColor: color.bg,
+          color: color.text,
+        }}
+      >
+        {letter}
+      </span>
+    );
+  };
+
+  const renderSetMode = () => (
+    <div className="max-h-64 overflow-y-auto py-2">
+      {genreSets.length === 0 ? (
+        <div className="px-3 py-4 text-center text-gray-400" style={{ fontSize: '0.8125rem' }}>
+          No genre sets yet. Create one to get started.
+        </div>
+      ) : (
+        genreSets.map((gs, idx) => {
+          const setGenresList = gs.genres.split(',').map((g) => g.trim()).filter(Boolean);
+          const allApplied = setGenresList.every((g) =>
+            selectedGenres.some((sg) => sg.toLowerCase() === g.toLowerCase())
+          );
+          return (
+            <div
+              key={gs.id}
+              className={`group flex items-center justify-between px-3 py-2 transition-colors hover:bg-indigo-50 ${
+                allApplied ? 'bg-indigo-50/60' : ''
+              }`}
+            >
+              <button
+                type="button"
+                onClick={() => handleApplySet(gs)}
+                className="flex min-w-0 flex-1 items-center gap-2.5 text-left"
+              >
+                {getSetIcon(gs.name, idx)}
+                <div className="flex min-w-0 flex-1 flex-col">
+                  <div className="flex items-center gap-2">
+                    {allApplied && (
+                      <svg className="h-3.5 w-3.5 flex-shrink-0 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
+                      </svg>
+                    )}
+                    <span className="font-medium text-gray-900" style={{ fontSize: '0.8125rem' }}>
+                      {gs.name}
+                    </span>
+                  </div>
+                  <span className="mt-0.5 truncate text-gray-500" style={{ fontSize: '0.6875rem', maxWidth: '100%' }}>
+                    {gs.genres}
+                  </span>
+                </div>
+              </button>
+              <div className="ml-2 flex flex-shrink-0 items-center gap-1 opacity-0 transition-opacity group-hover:opacity-100">
+                <button
+                  type="button"
+                  onClick={(e) => { e.stopPropagation(); handleOpenEditSet(gs); }}
+                  className="rounded p-1 text-gray-400 transition-colors hover:bg-gray-200 hover:text-gray-700"
+                  title="Edit set"
+                >
+                  <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                  </svg>
+                </button>
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    const rect = (e.currentTarget as HTMLButtonElement).getBoundingClientRect();
+                    setConfirmDeletePos({ top: rect.top, left: rect.right });
+                    setConfirmDeleteSetId(gs.id);
+                  }}
+                  disabled={deletingSetId === gs.id}
+                  className="rounded p-1 text-gray-400 transition-colors hover:bg-red-100 hover:text-red-600 disabled:opacity-50"
+                  title="Delete set"
+                >
+                  <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                  </svg>
+                </button>
+              </div>
+            </div>
+          );
+        })
+      )}
+      <div className="border-t border-gray-100 px-3 py-2">
+        <button
+          type="button"
+          onClick={handleOpenCreateSet}
+          className="flex w-full items-center justify-center gap-1.5 rounded-md border border-dashed border-gray-300 py-1.5 text-gray-500 transition-colors hover:border-indigo-400 hover:text-indigo-600"
+          style={{ fontSize: '0.75rem' }}
+        >
+          <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+          </svg>
+          Add Genre Set
+        </button>
+      </div>
+    </div>
+  );
+
+  const renderSetForm = () => (
+    <div className="py-2">
+      <div className="px-3 pb-2">
+        <input
+          type="text"
+          value={setFormName}
+          onChange={(e) => setSetFormName(e.target.value)}
+          placeholder="Set name (e.g. Chill R&B)"
+          className="w-full rounded-md border border-gray-300 px-2.5 py-1.5 shadow-sm transition-colors focus:border-indigo-400 focus:outline-none focus:ring-1 focus:ring-indigo-400"
+          style={{ fontSize: '0.8125rem' }}
+          autoFocus
+        />
+      </div>
+      <div className="max-h-48 overflow-y-auto border-t border-gray-100 py-1">
+        {PLAYLIST_GENRE_OPTIONS.map((genre) => {
+          const isChecked = setFormGenres.some(
+            (sg) => sg.toLowerCase() === genre.toLowerCase()
+          );
+          return (
+            <label
+              key={genre}
+              className="flex cursor-pointer items-center px-3 py-1.5 transition-colors hover:bg-indigo-50"
+            >
+              <div className="flex items-center gap-2.5">
+                <input
+                  type="checkbox"
+                  checked={isChecked}
+                  onChange={() => handleSetFormToggleGenre(genre)}
+                  className="h-3.5 w-3.5 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                />
+                <span className="text-gray-900" style={{ fontSize: '0.8125rem' }}>
+                  {genre}
+                </span>
+              </div>
+            </label>
+          );
+        })}
+      </div>
+      <div className="flex items-center justify-between border-t border-gray-100 px-3 py-2">
+        <span className="text-gray-500" style={{ fontSize: '0.6875rem' }}>
+          {setFormGenres.length} genre{setFormGenres.length !== 1 ? 's' : ''} in set
+        </span>
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => setSetFormView('none')}
+            className="rounded px-2 py-1 text-gray-500 transition-colors hover:bg-gray-100 hover:text-gray-700"
+            style={{ fontSize: '0.75rem' }}
+          >
+            Cancel
+          </button>
+          <button
+            type="button"
+            onClick={handleSaveSet}
+            disabled={setFormSaving || !setFormName.trim() || setFormGenres.length === 0}
+            className="rounded bg-indigo-600 px-2.5 py-1 font-medium text-white transition-colors hover:bg-indigo-700 disabled:opacity-50"
+            style={{ fontSize: '0.75rem' }}
+          >
+            {setFormSaving ? 'Saving...' : setFormView === 'edit' ? 'Update Set' : 'Save Set'}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
 
   return (
     <div ref={containerRef} className="relative">
@@ -223,51 +561,112 @@ const GenreMultiSelect: React.FC<GenreMultiSelectProps> = ({
 
       {isOpen && (
         <div className="absolute z-30 mt-2 w-full overflow-hidden rounded-lg border border-gray-200 bg-white shadow-xl">
-          <div
-            className="max-h-64 overflow-y-auto py-2"
-            role="listbox"
-            aria-multiselectable="true"
-          >
-            {availableGenres.map((genre) => {
-              const isChecked = selectedGenres.some(
-                (selectedGenre) => selectedGenre.toLowerCase() === genre.toLowerCase()
-              );
-
-              return (
-                <label
-                  key={genre}
-                  className="flex cursor-pointer items-center justify-between px-3 py-2 transition-colors hover:bg-indigo-50"
-                >
-                  <div className="flex items-center gap-3">
-                    <input
-                      type="checkbox"
-                      checked={isChecked}
-                      onChange={() => handleToggleGenre(genre)}
-                      className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
-                    />
-                    <span className="text-gray-900" style={{ fontSize: '0.875rem' }}>
-                      {genre}
-                    </span>
-                  </div>
-                </label>
-              );
-            })}
+          {/* Mode Toggle */}
+          <div className="flex items-center border-b border-gray-100 px-3 py-2">
+            <div className="flex rounded-md bg-gray-100 p-0.5" style={{ fontSize: '0.75rem' }}>
+              <button
+                type="button"
+                onClick={() => { setMode('list'); setSetFormView('none'); }}
+                className={`rounded px-3 py-1 font-medium transition-all ${
+                  mode === 'list'
+                    ? 'bg-white text-gray-900 shadow-sm'
+                    : 'text-gray-500 hover:text-gray-700'
+                }`}
+              >
+                List
+              </button>
+              <button
+                type="button"
+                onClick={() => { setMode('set'); setSetFormView('none'); }}
+                className={`rounded px-3 py-1 font-medium transition-all ${
+                  mode === 'set'
+                    ? 'bg-white text-gray-900 shadow-sm'
+                    : 'text-gray-500 hover:text-gray-700'
+                }`}
+              >
+                Sets
+              </button>
+            </div>
           </div>
 
-          <div className="flex items-center justify-between border-t border-gray-100 px-3 py-2">
-            <span className="text-gray-500" style={{ fontSize: '0.75rem' }}>
-              {selectedGenres.length} selected
-            </span>
-            <button
-              type="button"
-              onClick={() => onChange([])}
-              className="font-medium text-indigo-600 transition-colors hover:text-indigo-800"
-              style={{ fontSize: '0.75rem' }}
-            >
-              Clear all
-            </button>
-          </div>
+          {/* Content */}
+          {setFormView !== 'none'
+            ? renderSetForm()
+            : mode === 'list'
+              ? renderListMode()
+              : renderSetMode()
+          }
+
+          {/* Footer */}
+          {setFormView === 'none' && (
+            <div className="flex items-center justify-between border-t border-gray-100 px-3 py-2">
+              <span className="text-gray-500" style={{ fontSize: '0.75rem' }}>
+                {selectedGenres.length} selected
+              </span>
+              <button
+                type="button"
+                onClick={() => onChange([])}
+                className="font-medium text-indigo-600 transition-colors hover:text-indigo-800"
+                style={{ fontSize: '0.75rem' }}
+              >
+                Clear all
+              </button>
+            </div>
+          )}
         </div>
+      )}
+
+      {confirmDeleteSetId && confirmDeletePos && (
+        <>
+          <div
+            className="fixed inset-0"
+            style={{ zIndex: 99999 }}
+            onClick={() => { setConfirmDeleteSetId(null); setConfirmDeletePos(null); }}
+          />
+          <div
+            className="fixed rounded-lg border border-gray-200 bg-white shadow-2xl"
+            style={{
+              zIndex: 100000,
+              width: '180px',
+              top: confirmDeletePos.top - 90,
+              left: confirmDeletePos.left - 186,
+            }}
+          >
+            <div
+              className="absolute top-full right-2"
+              style={{
+                width: 0,
+                height: 0,
+                borderLeft: '7px solid transparent',
+                borderRight: '7px solid transparent',
+                borderTop: '7px solid #e5e7eb',
+              }}
+            />
+            <div className="p-2.5">
+              <p className="mb-2 font-medium leading-tight text-gray-800" style={{ fontSize: '0.6875rem' }}>
+                Delete this genre set?
+              </p>
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={() => handleDeleteSet(confirmDeleteSetId)}
+                  className="flex-1 rounded bg-red-600 px-2 py-1 font-medium text-white transition-colors hover:bg-red-700"
+                  style={{ fontSize: '0.6875rem' }}
+                >
+                  Delete
+                </button>
+                <button
+                  type="button"
+                  onClick={() => { setConfirmDeleteSetId(null); setConfirmDeletePos(null); }}
+                  className="flex-1 rounded bg-gray-100 px-2 py-1 font-medium text-gray-700 transition-colors hover:bg-gray-200"
+                  style={{ fontSize: '0.6875rem' }}
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          </div>
+        </>
       )}
     </div>
   );
@@ -569,6 +968,7 @@ const SystemSettings: React.FC<SystemSettingsProps> = ({ onlyPlaylistNetwork = f
     key: string;
     direction: 'asc' | 'desc';
   } | null>(null);
+  const [playlistSearchQuery, setPlaylistSearchQuery] = useState('');
   const [copiedPlaylistId, setCopiedPlaylistId] = useState<string | null>(null);
   const [deleteConfirmation, setDeleteConfirmation] = useState<{
     isOpen: boolean;
@@ -1078,17 +1478,33 @@ const SystemSettings: React.FC<SystemSettingsProps> = ({ onlyPlaylistNetwork = f
   };
 
   const sortedPlaylists = useMemo(() => {
-    let sortableItems = [...playlists];
-    
+    let items = [...playlists];
+
+    // Search filter
+    if (playlistSearchQuery.trim()) {
+      const q = playlistSearchQuery.trim().toLowerCase();
+      items = items.filter(
+        (p) =>
+          p.playlistName.toLowerCase().includes(q) ||
+          p.genre.toLowerCase().includes(q) ||
+          p.accountEmail.toLowerCase().includes(q) ||
+          p.playlistLink.toLowerCase().includes(q)
+      );
+    }
+
     if (sortConfig !== null) {
-      sortableItems.sort((a, b) => {
+      items.sort((a, b) => {
         let aValue: any;
         let bValue: any;
-        
+
         switch (sortConfig.key) {
           case 'playlistName':
             aValue = a.playlistName.toLowerCase();
             bValue = b.playlistName.toLowerCase();
+            break;
+          case 'genre':
+            aValue = a.genre.toLowerCase();
+            bValue = b.genre.toLowerCase();
             break;
           case 'accountEmail':
             aValue = a.accountEmail.toLowerCase();
@@ -1098,26 +1514,34 @@ const SystemSettings: React.FC<SystemSettingsProps> = ({ onlyPlaylistNetwork = f
             aValue = a.songCount || 0;
             bValue = b.songCount || 0;
             break;
+          case 'placements':
+            aValue = (currentPlacements[a.id] || []).length;
+            bValue = (currentPlacements[b.id] || []).length;
+            break;
           case 'saves':
             aValue = a.saves || 0;
             bValue = b.saves || 0;
             break;
+          case 'status':
+            aValue = a.isActive ? 1 : 0;
+            bValue = b.isActive ? 1 : 0;
+            break;
+          case 'createdAt':
+            aValue = new Date(a.createdAt).getTime();
+            bValue = new Date(b.createdAt).getTime();
+            break;
           default:
             return 0;
         }
-        
-        if (aValue < bValue) {
-          return sortConfig.direction === 'asc' ? -1 : 1;
-        }
-        if (aValue > bValue) {
-          return sortConfig.direction === 'asc' ? 1 : -1;
-        }
+
+        if (aValue < bValue) return sortConfig.direction === 'asc' ? -1 : 1;
+        if (aValue > bValue) return sortConfig.direction === 'asc' ? 1 : -1;
         return 0;
       });
     }
-    
-    return sortableItems;
-  }, [playlists, sortConfig]);
+
+    return items;
+  }, [playlists, sortConfig, playlistSearchQuery, currentPlacements]);
 
   const showDeleteConfirmation = (purchaseId: string, event: React.MouseEvent) => {
     const button = event.currentTarget as HTMLButtonElement;
@@ -1827,6 +2251,69 @@ const SystemSettings: React.FC<SystemSettingsProps> = ({ onlyPlaylistNetwork = f
           </div>
         </div>
 
+        {/* Search bar + Sort-by-Newest above table */}
+        {playlists.length > 0 && (
+          <div className="flex items-center gap-3 mb-2">
+            <div className="relative flex-1 max-w-xs">
+              <svg className="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+              </svg>
+              <input
+                type="text"
+                value={playlistSearchQuery}
+                onChange={(e) => setPlaylistSearchQuery(e.target.value)}
+                placeholder="Search playlists..."
+                className="w-full pl-8 pr-3 py-1.5 border border-gray-300 rounded-md text-xs focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                style={{ fontSize: '0.75rem' }}
+              />
+              {playlistSearchQuery && (
+                <button
+                  onClick={() => setPlaylistSearchQuery('')}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                >
+                  <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              )}
+            </div>
+            <button
+              onClick={() => {
+                if (sortConfig?.key === 'createdAt') {
+                  setSortConfig({ key: 'createdAt', direction: sortConfig.direction === 'desc' ? 'asc' : 'desc' });
+                } else {
+                  setSortConfig({ key: 'createdAt', direction: 'desc' });
+                }
+              }}
+              className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-md border text-xs font-medium transition-colors ${
+                sortConfig?.key === 'createdAt'
+                  ? 'bg-indigo-50 border-indigo-300 text-indigo-700'
+                  : 'bg-white border-gray-300 text-gray-600 hover:bg-gray-50'
+              }`}
+              style={{ fontSize: '0.7rem' }}
+            >
+              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              {sortConfig?.key === 'createdAt' && sortConfig.direction === 'asc' ? 'Oldest First' : 'Newest First'}
+            </button>
+            {sortConfig && (
+              <button
+                onClick={() => setSortConfig(null)}
+                className="text-xs text-gray-400 hover:text-gray-600 underline"
+                style={{ fontSize: '0.65rem' }}
+              >
+                Clear Sort
+              </button>
+            )}
+            {playlistSearchQuery.trim() && (
+              <span className="text-xs text-gray-400" style={{ fontSize: '0.65rem' }}>
+                {sortedPlaylists.length} result{sortedPlaylists.length !== 1 ? 's' : ''}
+              </span>
+            )}
+          </div>
+        )}
+
         {/* Playlists Table */}
         {playlists.length === 0 ? (
           <div className="text-center py-12">
@@ -1843,12 +2330,12 @@ const SystemSettings: React.FC<SystemSettingsProps> = ({ onlyPlaylistNetwork = f
                 <thead className="bg-gray-50 sticky top-0 z-10 border-b border-black/20 shadow-md">
               <tr>
                     <th className="px-2 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-8 bg-gray-50">
-                  
+
                 </th>
                     <th className="px-2 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-12 bg-gray-50">
                   Image
                 </th>
-                <th 
+                <th
                       className="px-2 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 select-none w-40 bg-gray-50"
                   onClick={() => handleSort('playlistName')}
                 >
@@ -1857,10 +2344,16 @@ const SystemSettings: React.FC<SystemSettingsProps> = ({ onlyPlaylistNetwork = f
                     {getSortIcon('playlistName')}
                   </div>
                 </th>
-                    <th className="px-2 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-20 bg-gray-50">
-                  Genre
+                <th
+                      className="px-2 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 select-none w-20 bg-gray-50"
+                  onClick={() => handleSort('genre')}
+                >
+                  <div className="flex items-center space-x-1">
+                    <span>Genre</span>
+                    {getSortIcon('genre')}
+                  </div>
                 </th>
-                <th 
+                <th
                       className="px-2 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 select-none w-32 bg-gray-50"
                   onClick={() => handleSort('accountEmail')}
                 >
@@ -1869,7 +2362,7 @@ const SystemSettings: React.FC<SystemSettingsProps> = ({ onlyPlaylistNetwork = f
                     {getSortIcon('accountEmail')}
                   </div>
                 </th>
-                <th 
+                <th
                       className="px-2 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 select-none w-16 bg-gray-50"
                   onClick={() => handleSort('songCount')}
                 >
@@ -1878,10 +2371,16 @@ const SystemSettings: React.FC<SystemSettingsProps> = ({ onlyPlaylistNetwork = f
                     {getSortIcon('songCount')}
                   </div>
                 </th>
-                    <th className="px-2 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider w-16 bg-gray-50">
-                      Placements
-                    </th>
-                <th 
+                <th
+                      className="px-2 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 select-none w-16 bg-gray-50"
+                  onClick={() => handleSort('placements')}
+                >
+                  <div className="flex items-center justify-center space-x-1">
+                    <span>Placements</span>
+                    {getSortIcon('placements')}
+                  </div>
+                </th>
+                <th
                       className="px-2 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 select-none w-20 bg-gray-50"
                   onClick={() => handleSort('saves')}
                 >
@@ -1893,8 +2392,14 @@ const SystemSettings: React.FC<SystemSettingsProps> = ({ onlyPlaylistNetwork = f
                     <th className="px-2 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider w-20 bg-gray-50">
                   Edit
                 </th>
-                    <th className="px-2 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider w-16 bg-gray-50">
-                  Status
+                <th
+                      className="px-2 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 select-none w-16 bg-gray-50"
+                  onClick={() => handleSort('status')}
+                >
+                  <div className="flex items-center justify-center space-x-1">
+                    <span>Status</span>
+                    {getSortIcon('status')}
+                  </div>
                 </th>
                     <th className="px-2 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider w-28 bg-gray-50">
                   Actions

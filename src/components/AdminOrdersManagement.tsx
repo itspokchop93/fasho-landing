@@ -15,6 +15,7 @@ interface Order {
   createdAt: string
   updatedAt: string
   isNewOrder: boolean
+  customerOrderCount: number
   firstViewedAt: string | null
   firstSavedAt: string | null
   viewedByAdmin: string | null
@@ -237,17 +238,26 @@ export default function AdminOrdersManagement() {
                   onClick={() => handleOrderClick(order.id)}
                   className={`md:hidden p-4 active:bg-gray-100 cursor-pointer transition-colors ${getStatusMobileBg(order.status)} border-l-4 ${getStatusMobileBorder(order.status)}`}
                 >
-                  {/* Top Row: Order # + Status Badge + NEW Badge */}
+                  {/* Top Row: Order # + Order Count Badge */}
                   <div className="flex items-center justify-between mb-3">
                     <div className="flex items-center gap-2">
                       <span className="font-bold text-gray-900" style={{ fontSize: '1rem' }}>
                         #{order.orderNumber}
                       </span>
-                      {order.isNewOrder && (
-                        <span className="px-1.5 py-0.5 rounded text-xs font-semibold bg-green-500 text-white">
-                          NEW
-                        </span>
-                      )}
+                      <span style={{ opacity: 0.55 }}>
+                        {order.customerOrderCount === 1 ? (
+                          <span className="px-1.5 py-0.5 rounded-full text-xs font-bold bg-red-500 text-white whitespace-nowrap">
+                            First Order!
+                          </span>
+                        ) : (
+                          <span
+                            className="inline-flex items-center justify-center rounded-full bg-green-500 text-white font-bold"
+                            style={{ width: '1.25rem', height: '1.25rem', fontSize: '0.625rem' }}
+                          >
+                            {order.customerOrderCount}
+                          </span>
+                        )}
+                      </span>
                     </div>
                     <div className="flex items-center gap-1.5">
                       <div className={`w-2 h-2 rounded-full animate-pulse ${getStatusBgClass(order.status)}`}></div>
@@ -320,14 +330,21 @@ export default function AdminOrdersManagement() {
                   onClick={() => handleOrderClick(order.id)}
                   className="hidden md:block relative p-6 hover:bg-gray-50 cursor-pointer transition-colors"
                 >
-                  {/* NEW ORDER Badge - Overlay top-left */}
-                  {order.isNewOrder && (
-                    <div className="absolute top-2 left-2 z-10">
-                      <span className="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-green-100 text-green-700 opacity-60">
-                        NEW
+                  {/* Customer Order Count Badge - Overlay top-left */}
+                  <div className="absolute top-2 left-2 z-10" style={{ opacity: 0.55 }}>
+                    {order.customerOrderCount === 1 ? (
+                      <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-bold bg-red-500 text-white whitespace-nowrap" style={{ fontSize: '0.625rem' }}>
+                        First Order!
                       </span>
-                    </div>
-                  )}
+                    ) : (
+                      <span
+                        className="inline-flex items-center justify-center rounded-full bg-green-500 text-white font-bold shadow-sm"
+                        style={{ width: '1.35rem', height: '1.35rem', fontSize: '0.65rem' }}
+                      >
+                        {order.customerOrderCount}
+                      </span>
+                    )}
+                  </div>
                   
                   {/* Main Content Grid */}
                   <div className="grid grid-cols-13 gap-4 items-center">

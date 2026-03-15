@@ -565,6 +565,7 @@ const ActiveCampaigns: React.FC = () => {
     isOpen: boolean;
     userId: string | null;
     campaignId: string;
+    customerName: string;
     position: { top: number; left: number };
     loading: boolean;
     orders: OrderHistoryItem[];
@@ -572,6 +573,7 @@ const ActiveCampaigns: React.FC = () => {
     isOpen: false,
     userId: null,
     campaignId: '',
+    customerName: '',
     position: { top: 0, left: 0 },
     loading: false,
     orders: []
@@ -845,6 +847,7 @@ const ActiveCampaigns: React.FC = () => {
       isOpen: true,
       userId: campaign.userId,
       campaignId: campaign.id,
+      customerName: campaign.customerName,
       position: { top: rect.bottom + 5, left: rect.left - 150 },
       loading: true,
       orders: []
@@ -2771,7 +2774,7 @@ const ActiveCampaigns: React.FC = () => {
           onMouseLeave={handleDropdownLeave}
         >
           <div className="px-3 py-2 bg-gray-800 rounded-t-lg">
-            <span className="text-[0.7rem] font-bold text-white uppercase tracking-wide">Customer Order History</span>
+            <span className="text-[0.7rem] font-bold text-white tracking-wide">{orderHistoryHover.customerName} History</span>
           </div>
           
           {orderHistoryHover.loading ? (

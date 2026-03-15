@@ -89,10 +89,25 @@ async function handler(req: NextApiRequest, res: NextApiResponse, adminUser: Adm
       console.error('🔍 ADMIN-ORDERS: Error counting orders:', countError);
     }
 
+    // Gather unique customer emails and count total orders per customer
+    const uniqueEmails = [...new Set((orders || []).map((o: any) => o.customer_email).filter(Boolean))];
+    const customerOrderCounts: Record<string, number> = {};
+
+    if (uniqueEmails.length > 0) {
+      const { data: countRows } = await supabase
+        .from('orders')
+        .select('customer_email')
+        .in('customer_email', uniqueEmails);
+
+      if (countRows) {
+        for (const row of countRows) {
+          customerOrderCounts[row.customer_email] = (customerOrderCounts[row.customer_email] || 0) + 1;
+        }
+      }
+    }
+
     // Format the response
     const formattedOrders = orders?.map((order: any) => {
-      // Determine if order is "new" (not saved by admin yet)
-      // An order is considered "new" if it hasn't been saved by admin yet
       const isNewOrder = !order.first_saved_at;
 
       return {
@@ -108,6 +123,7 @@ async function handler(req: NextApiRequest, res: NextApiResponse, adminUser: Adm
         createdAt: order.created_at,
         updatedAt: order.updated_at,
         isNewOrder,
+        customerOrderCount: customerOrderCounts[order.customer_email] || 1,
         firstViewedAt: order.first_viewed_at,
         firstSavedAt: order.first_saved_at,
         viewedByAdmin: order.viewed_by_admin,
