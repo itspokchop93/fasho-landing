@@ -57,7 +57,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       .select(`
         id, playlist_name, genre, account_email, playlist_link,
         spotify_playlist_id, max_songs, cached_song_count, cached_image_url,
-        cached_saves, health_status, is_active
+        cached_saves, health_status, is_active, last_scraped_at
       `)
       .in('id', playlistIds);
 
@@ -67,18 +67,60 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     }
 
     const playlists = playlistsData || [];
-    send('log', { message: `🔄 Refreshing ${playlists.length} playlists from Purchases Needed...` });
+    const CACHE_TTL_MS = 8 * 60 * 60 * 1000; // 8 hours
+    const now = Date.now();
 
-    // Process each playlist: Spotify first, then Apify if needed — one at a time
-    for (let i = 0; i < playlists.length; i++) {
-      const playlist = playlists[i];
+    const freshPlaylists = playlists.filter(p => {
+      if (!p.last_scraped_at) return false;
+      return (now - new Date(p.last_scraped_at).getTime()) < CACHE_TTL_MS;
+    });
+    const stalePlaylists = playlists.filter(p => {
+      if (!p.last_scraped_at) return true;
+      return (now - new Date(p.last_scraped_at).getTime()) >= CACHE_TTL_MS;
+    });
+
+    send('log', { message: `🔄 Refreshing ${playlists.length} playlists from Purchases Needed...` });
+    if (freshPlaylists.length > 0) {
+      send('log', { message: `⏩ ${freshPlaylists.length} playlist(s) refreshed within last 8hrs — using cached data` });
+    }
+    if (stalePlaylists.length > 0) {
+      send('log', { message: `🔄 ${stalePlaylists.length} playlist(s) need fresh data from Spotify/Apify` });
+    }
+
+    let processedCount = 0;
+
+    // Emit cached playlists immediately (no API calls)
+    for (const playlist of freshPlaylists) {
+      processedCount++;
+      const ageMinutes = Math.round((now - new Date(playlist.last_scraped_at).getTime()) / 60000);
+      const ageLabel = ageMinutes < 60
+        ? `${ageMinutes}m ago`
+        : `${Math.floor(ageMinutes / 60)}h ${ageMinutes % 60}m ago`;
+
+      send('log', { message: `⏩ [${processedCount}/${playlists.length}] [${playlist.playlist_name}] Using cached data (last refreshed ${ageLabel})` });
+
+      send('playlist', {
+        id: playlist.id,
+        playlistName: playlist.playlist_name,
+        playlistLink: playlist.playlist_link,
+        imageUrl: playlist.cached_image_url || '',
+        saves: playlist.cached_saves || 0,
+        songCount: playlist.cached_song_count || 0,
+        genre: playlist.genre,
+      });
+    }
+
+    // Fetch fresh data only for stale playlists
+    for (let i = 0; i < stalePlaylists.length; i++) {
+      processedCount++;
+      const playlist = stalePlaylists[i];
       let songCount = playlist.cached_song_count || 0;
       let imageUrl = playlist.cached_image_url || '';
       let saves = playlist.cached_saves || 0;
 
       let currentName = playlist.playlist_name;
 
-      send('log', { message: `⚡ [${i + 1}/${playlists.length}] [${currentName}] Fetching from Spotify...` });
+      send('log', { message: `⚡ [${processedCount}/${playlists.length}] [${currentName}] Fetching from Spotify...` });
 
       try {
         const spotifyData = await getSpotifyPlaylistData(playlist.playlist_link);
@@ -121,7 +163,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           send('log', { message: `❌ [${currentName}] Apify error: ${err instanceof Error ? err.message : 'Unknown'}` });
         }
 
-        if (i < playlists.length - 1) {
+        if (i < stalePlaylists.length - 1) {
           await new Promise(resolve => setTimeout(resolve, 2000));
         }
       }
@@ -163,7 +205,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       });
     }
 
-    send('log', { message: `✅ Targeted refresh complete! ${playlists.length} playlists updated.` });
+    send('log', { message: `✅ Targeted refresh complete! ${playlists.length} playlists processed (${freshPlaylists.length} cached, ${stalePlaylists.length} refreshed).` });
     send('complete', { total: playlists.length });
   } catch (error) {
     send('error', { message: `Fatal error: ${error instanceof Error ? error.message : 'Unknown'}` });
