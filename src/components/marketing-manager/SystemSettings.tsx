@@ -1183,7 +1183,9 @@ const SystemSettings: React.FC<SystemSettingsProps> = ({ onlyPlaylistNetwork = f
     setIsRefreshing(true);
     setRefreshDebugLog(['🔄 Connecting to streaming refresh...']);
 
+    const startTime = Date.now();
     const eventSource = new EventSource('/api/marketing-manager/system-settings/playlists-refresh-stream');
+    let errorHandled = false;
 
     eventSource.addEventListener('log', (e) => {
       const data = JSON.parse(e.data);
@@ -1213,26 +1215,21 @@ const SystemSettings: React.FC<SystemSettingsProps> = ({ onlyPlaylistNetwork = f
       eventSource.close();
     });
 
-    eventSource.addEventListener('error', (e) => {
-      // SSE 'error' event fires on connection close too
+    const handleConnectionError = () => {
+      if (errorHandled) return;
+      errorHandled = true;
       if (eventSource.readyState === EventSource.CLOSED) {
         setIsRefreshing(false);
         return;
       }
-      setRefreshDebugLog(prev => [...prev, `❌ Connection error`]);
-      setIsRefreshing(false);
-      eventSource.close();
-    });
-
-    eventSource.onerror = () => {
-      if (eventSource.readyState === EventSource.CLOSED) {
-        setIsRefreshing(false);
-        return;
-      }
-      setRefreshDebugLog(prev => [...prev, `❌ Stream disconnected`]);
+      const elapsed = Math.round((Date.now() - startTime) / 1000);
+      setRefreshDebugLog(prev => [...prev, `❌ Connection lost after ${elapsed}s — server may have timed out. Please try again.`]);
       setIsRefreshing(false);
       eventSource.close();
     };
+
+    eventSource.addEventListener('error', handleConnectionError);
+    eventSource.onerror = handleConnectionError;
   };
 
   const handleRefresh = () => {

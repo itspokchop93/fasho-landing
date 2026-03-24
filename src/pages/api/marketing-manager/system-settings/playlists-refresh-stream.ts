@@ -9,6 +9,7 @@ export const config = {
   api: {
     responseLimit: false,
   },
+  maxDuration: 300,
 };
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
@@ -36,6 +37,11 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   const send = (event: string, data: any) => {
     res.write(`event: ${event}\ndata: ${JSON.stringify(data)}\n\n`);
   };
+
+  // Heartbeat keeps the SSE connection alive during long Apify calls
+  const heartbeatInterval = setInterval(() => {
+    res.write(`: heartbeat\n\n`);
+  }, 10000);
 
   try {
     const supabase = createAdminClient();
@@ -130,11 +136,12 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             cached_song_count: songCount,
             cached_image_url: imageUrl,
             cached_saves: saves,
-            last_scraped_at: new Date().toISOString(),
             health_status: healthStatus,
             health_last_checked: healthLastChecked,
             health_error_message: healthErrorMessage,
             ...(healthStatus === 'active' ? { last_known_public: true } : {}),
+            // Only mark as scraped if data is complete (no Apify needed)
+            ...(!needsApify ? { last_scraped_at: new Date().toISOString() } : {}),
           };
 
           if (nameChanged) {
@@ -252,6 +259,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     send('complete', { total: spotifyResults.length, apifySuccessCount: apifyQueue.filter(p => p.songCount > 0).length });
   } catch (error) {
     send('error', { message: `Fatal error: ${error instanceof Error ? error.message : 'Unknown'}` });
+  } finally {
+    clearInterval(heartbeatInterval);
   }
 
   res.end();

@@ -9,6 +9,7 @@ export const config = {
   api: {
     responseLimit: false,
   },
+  maxDuration: 300,
 };
 
 // Targeted SSE refresh for a specific set of playlist IDs
@@ -49,6 +50,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     res.write(`event: ${event}\ndata: ${JSON.stringify(data)}\n\n`);
   };
 
+  const heartbeatInterval = setInterval(() => {
+    res.write(`: heartbeat\n\n`);
+  }, 10000);
+
   try {
     const supabase = createAdminClient();
 
@@ -70,12 +75,19 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const CACHE_TTL_MS = 8 * 60 * 60 * 1000; // 8 hours
     const now = Date.now();
 
+    const isDataComplete = (p: typeof playlists[0]) => {
+      if (p.health_status === 'removed' || p.health_status === 'error') return true;
+      return (p.cached_song_count || 0) > 0;
+    };
+
     const freshPlaylists = playlists.filter(p => {
       if (!p.last_scraped_at) return false;
+      if (!isDataComplete(p)) return false;
       return (now - new Date(p.last_scraped_at).getTime()) < CACHE_TTL_MS;
     });
     const stalePlaylists = playlists.filter(p => {
       if (!p.last_scraped_at) return true;
+      if (!isDataComplete(p)) return true;
       return (now - new Date(p.last_scraped_at).getTime()) >= CACHE_TTL_MS;
     });
 
@@ -141,6 +153,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       }
 
       const needsApify = songCount === 0 || saves === 0 || !imageUrl;
+      let dataComplete = !needsApify || playlist.health_status === 'removed';
+
       if (needsApify && playlist.health_status !== 'removed') {
         send('log', { message: `🔮 [${currentName}] Calling Apify for missing data...` });
         try {
@@ -155,12 +169,13 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
               currentName = apifyData.name;
             }
 
+            dataComplete = true;
             send('log', { message: `✅ [${currentName}] Apify: songs=${apifyData.trackCount}, saves=${apifyData.followers}, image=${apifyData.imageUrl ? 'Yes' : 'No'}` });
           } else {
-            send('log', { message: `⚠️ [${currentName}] Apify returned no data` });
+            send('log', { message: `⚠️ [${currentName}] Apify returned no data — will retry on next refresh` });
           }
         } catch (err) {
-          send('log', { message: `❌ [${currentName}] Apify error: ${err instanceof Error ? err.message : 'Unknown'}` });
+          send('log', { message: `❌ [${currentName}] Apify error: ${err instanceof Error ? err.message : 'Unknown'} — will retry on next refresh` });
         }
 
         if (i < stalePlaylists.length - 1) {
@@ -173,7 +188,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         cached_song_count: songCount,
         cached_image_url: imageUrl,
         cached_saves: saves,
-        last_scraped_at: new Date().toISOString(),
+        // Only mark as fully scraped when data is complete
+        ...(dataComplete ? { last_scraped_at: new Date().toISOString() } : {}),
       };
 
       if (nameChanged) {
@@ -192,7 +208,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         }
       }
 
-      send('log', { message: `💾 [${currentName}] Saved: songs=${songCount}, saves=${saves}, image=${imageUrl ? 'Yes' : 'No'}${nameChanged ? ' (name updated)' : ''}` });
+      send('log', { message: `💾 [${currentName}] Saved: songs=${songCount}, saves=${saves}, image=${imageUrl ? 'Yes' : 'No'}${nameChanged ? ' (name updated)' : ''}${!dataComplete ? ' ⚠️ (incomplete — not marked as refreshed)' : ''}` });
 
       send('playlist', {
         id: playlist.id,
@@ -209,6 +225,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     send('complete', { total: playlists.length });
   } catch (error) {
     send('error', { message: `Fatal error: ${error instanceof Error ? error.message : 'Unknown'}` });
+  } finally {
+    clearInterval(heartbeatInterval);
   }
 
   res.end();

@@ -1,7 +1,13 @@
 {
   "functions": {
+    "src/pages/api/marketing-manager/system-settings/playlists-refresh-stream.ts": {
+      "maxDuration": 300
+    },
+    "src/pages/api/marketing-manager/system-settings/playlists-refresh-targeted.ts": {
+      "maxDuration": 300
+    },
     "src/pages/api/**/*.ts": {
-      "maxDuration": 30
+      "maxDuration": 60
     }
   },
   "build": {

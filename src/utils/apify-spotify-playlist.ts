@@ -13,6 +13,8 @@ const client = new ApifyClient({
 // Actor ID for the Spotify Playlists scraper
 const SPOTIFY_PLAYLISTS_ACTOR_ID = 'augeas~spotify-playlists';
 
+const APIFY_REQUEST_TIMEOUT = 90000; // 90 seconds (actor runs typically take 10-15s)
+
 export interface SpotifyPlaylistData {
   name: string;
   description: string;
@@ -106,13 +108,22 @@ export async function scrapeSpotifyPlaylistData(playlistUrl: string, useCache: b
     const apiUrl = `https://api.apify.com/v2/acts/${SPOTIFY_PLAYLISTS_ACTOR_ID}/run-sync-get-dataset-items?token=${apiToken}`;
     console.log('🎵 APIFY: Calling:', apiUrl.replace(apiToken, '***'));
 
-    const response = await fetch(apiUrl, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(input),
-    });
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort('Apify playlist request timed out'), APIFY_REQUEST_TIMEOUT);
+
+    let response: Response;
+    try {
+      response = await fetch(apiUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(input),
+        signal: controller.signal,
+      });
+    } finally {
+      clearTimeout(timeoutId);
+    }
 
     if (!response.ok) {
       const errBody = await response.text().catch(() => '');
@@ -192,7 +203,11 @@ export async function scrapeSpotifyPlaylistData(playlistUrl: string, useCache: b
     return transformedData;
 
   } catch (error) {
-    console.error('Error scraping Spotify playlist data:', error);
+    if (error instanceof Error && error.name === 'AbortError') {
+      console.error('🎵 APIFY: Request timed out after', APIFY_REQUEST_TIMEOUT, 'ms for:', playlistUrl);
+    } else {
+      console.error('Error scraping Spotify playlist data:', error);
+    }
     return null;
   }
 }
