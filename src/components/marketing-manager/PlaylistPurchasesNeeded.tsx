@@ -587,11 +587,16 @@ const PlaylistPurchasesNeeded: React.FC = () => {
   const [playlistNetwork, setPlaylistNetwork] = useState<{[id: string]: any}>({});
   const [campaignTracker, setCampaignTracker] = useState<{[campaignId: string]: string[]}>({});
   const [copiedPlaylistId, setCopiedPlaylistId] = useState<string | null>(null);
-  // Track the absolute last playlist that was copied
   const [lastCopiedId, setLastCopiedId] = useState<string | null>(null);
-  // Animation state for re-copy feedback
   const [copyAnimating, setCopyAnimating] = useState<string | null>(null);
   const [hasHydratedLocalState, setHasHydratedLocalState] = useState(false);
+
+  // Refs to hold latest state values for event handlers (avoids stale closures)
+  const campaignTrackerRef = useRef(campaignTracker);
+  const playlistNetworkRef = useRef(playlistNetwork);
+  // Refs to hold latest callback functions (called by stable event listeners)
+  const addPlaylistsFromCampaignRef = useRef<(data: any) => void>(() => {});
+  const updatePlaylistAssignmentsRef = useRef<(data: any) => void>(() => {});
   
   // Playlist order sets (fetched from smm_order_sets with PLAYLIST_FOLLOWERS / PLAYLIST_STREAMS)
   const [playlistOrderSets, setPlaylistOrderSets] = useState<PlaylistOrderSet[]>([]);
@@ -952,6 +957,10 @@ const PlaylistPurchasesNeeded: React.FC = () => {
     });
   };
 
+  // Keep refs in sync so event handlers always see latest state
+  useEffect(() => { campaignTrackerRef.current = campaignTracker; }, [campaignTracker]);
+  useEffect(() => { playlistNetworkRef.current = playlistNetwork; }, [playlistNetwork]);
+
   // Load data from localStorage on component mount
   useEffect(() => {
     const savedData = localStorage.getItem('playlistPurchasesNeeded');
@@ -972,6 +981,7 @@ const PlaylistPurchasesNeeded: React.FC = () => {
       try {
         const parsed = JSON.parse(savedCampaignTracker);
         setCampaignTracker(parsed);
+        campaignTrackerRef.current = parsed;
         console.log('📋 PLAYLIST-PURCHASES: Loaded campaign tracker from localStorage', parsed);
       } catch (error) {
         console.error('Error parsing saved campaign tracker data:', error);
@@ -979,43 +989,26 @@ const PlaylistPurchasesNeeded: React.FC = () => {
       }
     }
 
-    // Fetch playlist network data to populate images and links
     fetchPlaylistNetwork();
-    
-    // Fetch playlist order sets and balance
     fetchPlaylistOrderSetsAndBalance();
 
-    // Listen for "Added to Playlists" events from ActiveCampaigns
+    // Use stable refs so handlers always access latest state (no stale closures)
     const handlePlaylistsAdded = (event: CustomEvent) => {
       console.log('📋 PLAYLIST-PURCHASES: Received playlistsAdded event', event.detail);
-      addPlaylistsFromCampaign(event.detail);
+      addPlaylistsFromCampaignRef.current(event.detail);
     };
 
-    // Listen for playlist assignment updates
     const handlePlaylistAssignmentUpdate = (event: CustomEvent) => {
-      console.log('📋 PLAYLIST-PURCHASES: 🎯 EVENT LISTENER TRIGGERED - Received playlistAssignmentUpdated event', event.detail);
-      updatePlaylistAssignments(event.detail);
+      console.log('📋 PLAYLIST-PURCHASES: Received playlistAssignmentUpdated event', event.detail);
+      updatePlaylistAssignmentsRef.current(event.detail);
     };
 
     window.addEventListener('playlistsAdded', handlePlaylistsAdded as EventListener);
     window.addEventListener('playlistAssignmentUpdated', handlePlaylistAssignmentUpdate as EventListener);
 
-    console.log('📋 PLAYLIST-PURCHASES: 🎧 EVENT LISTENERS REGISTERED - Component mounted and listening for events');
-    console.log('📋 PLAYLIST-PURCHASES: 🎧 DEBUG - Current campaign tracker on mount:', campaignTracker);
-    console.log('📋 PLAYLIST-PURCHASES: 🎧 DEBUG - Current playlist purchases on mount:', playlistPurchases);
-    console.log('📋 PLAYLIST-PURCHASES: 🎧 DEBUG - localStorage campaign tracker:', localStorage.getItem('playlistPurchasesCampaignTracker'));
-    console.log('📋 PLAYLIST-PURCHASES: 🎧 DEBUG - localStorage playlist purchases:', localStorage.getItem('playlistPurchasesNeeded'));
     setHasHydratedLocalState(true);
-    
-    // TEST: Add a simple test event listener to verify the system is working
-    const testListener = (event: CustomEvent) => {
-      console.log('📋 PLAYLIST-PURCHASES: 🧪 TEST LISTENER - Received any custom event:', event.type, event.detail);
-    };
-    window.addEventListener('playlistAssignmentUpdated', testListener as EventListener);
-    console.log('📋 PLAYLIST-PURCHASES: 🧪 TEST LISTENER - Added additional test listener for debugging');
 
     return () => {
-      console.log('📋 PLAYLIST-PURCHASES: 🎧 EVENT LISTENERS REMOVED - Component unmounting');
       window.removeEventListener('playlistsAdded', handlePlaylistsAdded as EventListener);
       window.removeEventListener('playlistAssignmentUpdated', handlePlaylistAssignmentUpdate as EventListener);
     };
@@ -1218,31 +1211,37 @@ const PlaylistPurchasesNeeded: React.FC = () => {
       return;
     }
 
-    const sessionDate = new Date().toISOString();
     const campaignId = campaignData.campaignId;
-    
-    // Track which playlists this campaign is assigned to (maintain the same index structure)
+
+    // Dedup: skip if this campaign was already processed
+    if (campaignTrackerRef.current[campaignId]) {
+      console.log(`📋 PLAYLIST-PURCHASES: ⏩ Campaign ${campaignId} already tracked, skipping duplicate`);
+      return;
+    }
+
+    const sessionDate = new Date().toISOString();
     const playlistAssignmentMapping = campaignData.playlistAssignments.map((assignment: any) => assignment.id);
     
-    setCampaignTracker(prev => ({
-      ...prev,
-      [campaignId]: playlistAssignmentMapping
-    }));
+    setCampaignTracker(prev => {
+      const updated = { ...prev, [campaignId]: playlistAssignmentMapping };
+      campaignTrackerRef.current = updated;
+      return updated;
+    });
     
     console.log(`📋 PLAYLIST-PURCHASES: 🎯 CAMPAIGN TRACKER - Added campaign ${campaignId} with playlist mapping:`, playlistAssignmentMapping);
     
+    const network = playlistNetworkRef.current;
+
     setPlaylistPurchases(prevPurchases => {
       const newPurchases = [...prevPurchases];
       
       campaignData.playlistAssignments.forEach((assignment: any) => {
-        // Skip "removed" assignments
         if (!assignment.id || assignment.id === 'removed') {
           return;
         }
 
         const existingIndex = newPurchases.findIndex(item => item.id === assignment.id);
-        // Use the freshest network data if available
-        const networkData = playlistNetwork[assignment.id] || {};
+        const networkData = network[assignment.id] || {};
         const playlistName = networkData.name || assignment.name;
         const playlistLink = networkData.link || assignment.link || '';
         const imageUrl = networkData.imageUrl || assignment.imageUrl || '';
@@ -1250,20 +1249,17 @@ const PlaylistPurchasesNeeded: React.FC = () => {
         const saves = networkData.saves || 0;
         
         if (existingIndex >= 0) {
-          // Increase count for existing playlist
           newPurchases[existingIndex] = {
             ...newPurchases[existingIndex],
             songsAdded: newPurchases[existingIndex].songsAdded + 1,
             sessionDate: sessionDate,
             recentlyAdded: true,
-            // Update with latest network data
             playlistLink: playlistLink || newPurchases[existingIndex].playlistLink,
             imageUrl: imageUrl || newPurchases[existingIndex].imageUrl,
             currentSaves: saves
           };
           console.log(`📋 PLAYLIST-PURCHASES: Increased count for ${assignment.name} to ${newPurchases[existingIndex].songsAdded}`);
         } else {
-          // Add new playlist
           newPurchases.push({
             id: assignment.id,
             playlistName: playlistName,
@@ -1279,7 +1275,6 @@ const PlaylistPurchasesNeeded: React.FC = () => {
         }
       });
 
-      // Clear recentlyAdded flag after highlighting period
       setTimeout(() => {
         setPlaylistPurchases(current => 
           current.map(item => ({ ...item, recentlyAdded: false }))
@@ -1292,29 +1287,29 @@ const PlaylistPurchasesNeeded: React.FC = () => {
 
   // Update playlist assignments when changes are made in ActiveCampaigns
   const updatePlaylistAssignments = (updateData: any) => {
+    const tracker = campaignTrackerRef.current;
     console.log('📋 PLAYLIST-PURCHASES: 🔥 RECEIVED PLAYLIST ASSIGNMENT UPDATE EVENT', updateData);
-    console.log('📋 PLAYLIST-PURCHASES: 🔥 CURRENT CAMPAIGN TRACKER STATE:', campaignTracker);
+    console.log('📋 PLAYLIST-PURCHASES: 🔥 CURRENT CAMPAIGN TRACKER STATE:', tracker);
     
     const { campaignId, playlistIndex, newPlaylistId } = updateData;
     
-    // Only handle updates for campaigns we're tracking (i.e., campaigns that have been confirmed with "Added to Playlists")
-    if (!campaignTracker[campaignId]) {
+    if (!tracker[campaignId]) {
       console.log('📋 PLAYLIST-PURCHASES: ❌ Campaign not tracked (not yet confirmed), ignoring update', {
         campaignId,
-        trackedCampaigns: Object.keys(campaignTracker),
+        trackedCampaigns: Object.keys(tracker),
         reason: 'Campaign not in tracker - probably not confirmed with Added to Playlists yet'
       });
       return;
     }
     
-    const oldPlaylistId = campaignTracker[campaignId][playlistIndex];
+    const oldPlaylistId = tracker[campaignId][playlistIndex];
     console.log('📋 PLAYLIST-PURCHASES: ✅ Smart playlist assignment update detected', { 
       campaignId, 
       playlistIndex, 
       oldPlaylistId, 
       newPlaylistId,
       action: 'admin_changed_mind',
-      currentTracking: campaignTracker[campaignId]
+      currentTracking: tracker[campaignId]
     });
     
     setPlaylistPurchases(prevPurchases => {
@@ -1344,7 +1339,7 @@ const PlaylistPurchasesNeeded: React.FC = () => {
       // Handle new playlist (increase count or add new) - but only if it's not "removed"
       if (newPlaylistId && newPlaylistId !== 'removed') {
         const existingIndex = newPurchases.findIndex(item => item.id === newPlaylistId);
-        const networkData = playlistNetwork[newPlaylistId] || {};
+        const networkData = playlistNetworkRef.current[newPlaylistId] || {};
         const playlistName = networkData.name || `Playlist ${newPlaylistId}`;
         const playlistLink = networkData.link || '';
         const imageUrl = networkData.imageUrl || '';
@@ -1396,12 +1391,18 @@ const PlaylistPurchasesNeeded: React.FC = () => {
     setCampaignTracker(prev => {
       const newTracker = { ...prev };
       if (newTracker[campaignId]) {
+        newTracker[campaignId] = [...newTracker[campaignId]];
         newTracker[campaignId][playlistIndex] = newPlaylistId;
         console.log(`📋 PLAYLIST-PURCHASES: 🎯 SMART UPDATE - Updated campaign tracker for ${campaignId}`, newTracker[campaignId]);
       }
+      campaignTrackerRef.current = newTracker;
       return newTracker;
     });
   };
+
+  // Keep function refs updated so event listeners always call latest version
+  addPlaylistsFromCampaignRef.current = addPlaylistsFromCampaign;
+  updatePlaylistAssignmentsRef.current = updatePlaylistAssignments;
 
   // Copy playlist link to clipboard
   const handleCopyLink = async (playlistId: string, playlistLink: string, event?: React.MouseEvent) => {
@@ -1506,15 +1507,18 @@ const PlaylistPurchasesNeeded: React.FC = () => {
   // Handle confirmation actions
   const handleConfirmAction = () => {
     if (confirmationModal.action === 'purchased' && confirmationModal.playlistId) {
-      // Remove specific playlist
-      setPlaylistPurchases(prev => 
-        prev.filter(item => item.id !== confirmationModal.playlistId)
+      const removedId = confirmationModal.playlistId;
+      setPlaylistPurchases(prev =>
+        prev.filter(item => item.id !== removedId)
       );
-      console.log(`📋 PLAYLIST-PURCHASES: Marked playlist ${confirmationModal.playlistId} as purchased and removed`);
+      console.log(`📋 PLAYLIST-PURCHASES: Marked playlist ${removedId} as purchased and removed`);
     } else if (confirmationModal.action === 'clear') {
-      // Clear all playlists
       setPlaylistPurchases([]);
-      console.log('📋 PLAYLIST-PURCHASES: Cleared all playlist purchases');
+      setCampaignTracker({});
+      campaignTrackerRef.current = {};
+      localStorage.removeItem('playlistPurchasesNeeded');
+      localStorage.removeItem('playlistPurchasesCampaignTracker');
+      console.log('📋 PLAYLIST-PURCHASES: Cleared all playlist purchases and campaign tracker');
     }
     
     setConfirmationModal({
