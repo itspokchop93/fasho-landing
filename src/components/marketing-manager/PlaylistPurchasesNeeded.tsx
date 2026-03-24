@@ -632,6 +632,7 @@ const PlaylistPurchasesNeeded: React.FC = () => {
   console.log('📋 PLAYLIST-PURCHASES: 🚀 STATE INITIALIZED - All state variables created');
   
   // Refresh state for the refresh button
+  const PURCHASES_REFRESH_KEY = 'fasho_purchases_refresh';
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [refreshDebugLog, setRefreshDebugLog] = useState<string[]>([]);
   const debugLogRef = useRef<HTMLDivElement>(null);
@@ -1029,6 +1030,41 @@ const PlaylistPurchasesNeeded: React.FC = () => {
     console.log('📋 PLAYLIST-PURCHASES: Saved data to localStorage', playlistPurchases);
   }, [hasHydratedLocalState, playlistPurchases]);
 
+  // Restore refresh state from sessionStorage on mount (survives page reload)
+  useEffect(() => {
+    try {
+      const stored = sessionStorage.getItem(PURCHASES_REFRESH_KEY);
+      if (stored) {
+        const data = JSON.parse(stored);
+        if (data.active && Date.now() - data.startedAt < 45 * 60 * 1000) {
+          setRefreshDebugLog([
+            ...(data.logs || []),
+            '',
+            '⚠️ Page was reloaded while refresh was running.',
+            '⏳ Server may still be processing in the background.',
+            '💡 Click the refresh button to restart.',
+          ]);
+        }
+        sessionStorage.removeItem(PURCHASES_REFRESH_KEY);
+      }
+    } catch {}
+  }, []);
+
+  // Persist refresh logs to sessionStorage while active
+  useEffect(() => {
+    if (isRefreshing && refreshDebugLog.length > 0) {
+      try {
+        const existing = sessionStorage.getItem(PURCHASES_REFRESH_KEY);
+        const startedAt = existing ? JSON.parse(existing).startedAt : Date.now();
+        sessionStorage.setItem(PURCHASES_REFRESH_KEY, JSON.stringify({
+          active: true,
+          startedAt,
+          logs: refreshDebugLog,
+        }));
+      } catch {}
+    }
+  }, [refreshDebugLog, isRefreshing]);
+
   // Auto-scroll debug log
   useEffect(() => {
     if (debugLogRef.current) {
@@ -1125,8 +1161,10 @@ const PlaylistPurchasesNeeded: React.FC = () => {
       return;
     }
 
+    const startTime = Date.now();
     const url = `/api/marketing-manager/system-settings/playlists-refresh-targeted?ids=${ids.join(',')}`;
     const eventSource = new EventSource(url);
+    let errorHandled = false;
 
     eventSource.addEventListener('log', (e) => {
       const data = JSON.parse(e.data);
@@ -1140,28 +1178,27 @@ const PlaylistPurchasesNeeded: React.FC = () => {
 
     eventSource.addEventListener('complete', () => {
       setIsRefreshing(false);
+      sessionStorage.removeItem(PURCHASES_REFRESH_KEY);
       eventSource.close();
     });
 
-    eventSource.addEventListener('error', (e) => {
+    const handleConnectionError = () => {
+      if (errorHandled) return;
+      errorHandled = true;
       if (eventSource.readyState === EventSource.CLOSED) {
         setIsRefreshing(false);
+        sessionStorage.removeItem(PURCHASES_REFRESH_KEY);
         return;
       }
-      setRefreshDebugLog(prev => [...prev, '❌ Connection error']);
+      const elapsed = Math.round((Date.now() - startTime) / 1000);
+      setRefreshDebugLog(prev => [...prev, `❌ Connection lost after ${elapsed}s — server may have timed out. Please try again.`]);
       setIsRefreshing(false);
-      eventSource.close();
-    });
-
-    eventSource.onerror = () => {
-      if (eventSource.readyState === EventSource.CLOSED) {
-        setIsRefreshing(false);
-        return;
-      }
-      setRefreshDebugLog(prev => [...prev, '❌ Stream disconnected']);
-      setIsRefreshing(false);
+      sessionStorage.removeItem(PURCHASES_REFRESH_KEY);
       eventSource.close();
     };
+
+    eventSource.addEventListener('error', handleConnectionError);
+    eventSource.onerror = handleConnectionError;
   };
 
   // Handle refresh button click - targeted refresh for playlists in this section only
@@ -1517,7 +1554,7 @@ const PlaylistPurchasesNeeded: React.FC = () => {
           <div className="flex items-center justify-between mb-2">
             <h3 className="text-sm font-bold text-green-400 font-mono">Purchases Refresh Log</h3>
             <button
-              onClick={() => setRefreshDebugLog([])}
+              onClick={() => { setRefreshDebugLog([]); sessionStorage.removeItem(PURCHASES_REFRESH_KEY); }}
               className="text-xs text-gray-500 hover:text-gray-300 transition-colors"
             >
               Clear
@@ -1525,7 +1562,7 @@ const PlaylistPurchasesNeeded: React.FC = () => {
           </div>
           <div ref={debugLogRef} className="max-h-48 overflow-y-auto space-y-0.5 font-mono text-xs">
             {refreshDebugLog.map((line, i) => (
-              <div key={i} className={`${line.startsWith('❌') ? 'text-red-400' : line.startsWith('✅') ? 'text-green-400' : line.startsWith('⚠️') ? 'text-yellow-400' : line.startsWith('🔮') ? 'text-purple-400' : 'text-gray-300'}`}>
+              <div key={i} className={`${line.startsWith('❌') ? 'text-red-400' : line.startsWith('✅') ? 'text-green-400' : line.startsWith('⚠️') ? 'text-yellow-400' : line.startsWith('🔮') ? 'text-purple-400' : line.startsWith('💡') ? 'text-cyan-400' : 'text-gray-300'}`}>
                 {line}
               </div>
             ))}

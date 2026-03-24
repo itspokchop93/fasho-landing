@@ -1001,6 +1001,7 @@ const SystemSettings: React.FC<SystemSettingsProps> = ({ onlyPlaylistNetwork = f
     remainingCampaigns: 0,
     isProcessing: false
   });
+  const NETWORK_REFRESH_KEY = 'fasho_network_refresh';
   const [newPlaylist, setNewPlaylist] = useState<NewPlaylistForm>(getDefaultNewPlaylistForm);
   const [refreshDebugLog, setRefreshDebugLog] = useState<string[]>([]);
   const [editPlaylistForm, setEditPlaylistForm] = useState<EditPlaylistForm>({
@@ -1045,6 +1046,41 @@ const SystemSettings: React.FC<SystemSettingsProps> = ({ onlyPlaylistNetwork = f
     });
     setDeleteEmailConfirm(null);
   };
+
+  // Restore refresh state from sessionStorage on mount (survives page reload)
+  useEffect(() => {
+    try {
+      const stored = sessionStorage.getItem(NETWORK_REFRESH_KEY);
+      if (stored) {
+        const data = JSON.parse(stored);
+        if (data.active && Date.now() - data.startedAt < 45 * 60 * 1000) {
+          setRefreshDebugLog([
+            ...(data.logs || []),
+            '',
+            '⚠️ Page was reloaded while refresh was running.',
+            '⏳ Server may still be processing in the background.',
+            '💡 Click Refresh to restart.',
+          ]);
+        }
+        sessionStorage.removeItem(NETWORK_REFRESH_KEY);
+      }
+    } catch {}
+  }, []);
+
+  // Persist refresh logs to sessionStorage while active
+  useEffect(() => {
+    if (isRefreshing && refreshDebugLog.length > 0) {
+      try {
+        const existing = sessionStorage.getItem(NETWORK_REFRESH_KEY);
+        const startedAt = existing ? JSON.parse(existing).startedAt : Date.now();
+        sessionStorage.setItem(NETWORK_REFRESH_KEY, JSON.stringify({
+          active: true,
+          startedAt,
+          logs: refreshDebugLog,
+        }));
+      } catch {}
+    }
+  }, [refreshDebugLog, isRefreshing]);
 
   useEffect(() => {
     fetchPlaylists();
@@ -1212,6 +1248,7 @@ const SystemSettings: React.FC<SystemSettingsProps> = ({ onlyPlaylistNetwork = f
 
     eventSource.addEventListener('complete', () => {
       setIsRefreshing(false);
+      sessionStorage.removeItem(NETWORK_REFRESH_KEY);
       eventSource.close();
     });
 
@@ -1220,11 +1257,13 @@ const SystemSettings: React.FC<SystemSettingsProps> = ({ onlyPlaylistNetwork = f
       errorHandled = true;
       if (eventSource.readyState === EventSource.CLOSED) {
         setIsRefreshing(false);
+        sessionStorage.removeItem(NETWORK_REFRESH_KEY);
         return;
       }
       const elapsed = Math.round((Date.now() - startTime) / 1000);
       setRefreshDebugLog(prev => [...prev, `❌ Connection lost after ${elapsed}s — server may have timed out. Please try again.`]);
       setIsRefreshing(false);
+      sessionStorage.removeItem(NETWORK_REFRESH_KEY);
       eventSource.close();
     };
 
@@ -1857,7 +1896,7 @@ const SystemSettings: React.FC<SystemSettingsProps> = ({ onlyPlaylistNetwork = f
           <div className="flex items-center justify-between mb-2">
             <h3 className="text-sm font-bold text-green-400 font-mono">Refresh Log</h3>
             <button
-              onClick={() => setRefreshDebugLog([])}
+              onClick={() => { setRefreshDebugLog([]); sessionStorage.removeItem(NETWORK_REFRESH_KEY); }}
               className="text-xs text-gray-500 hover:text-gray-300 transition-colors"
             >
               Clear
@@ -1865,7 +1904,7 @@ const SystemSettings: React.FC<SystemSettingsProps> = ({ onlyPlaylistNetwork = f
           </div>
           <div className="max-h-48 overflow-y-auto space-y-0.5 font-mono text-xs">
             {refreshDebugLog.map((line, i) => (
-              <div key={i} className={`${line.startsWith('❌') ? 'text-red-400' : line.startsWith('✅') ? 'text-green-400' : line.startsWith('⚠️') ? 'text-yellow-400' : line.startsWith('🔮') ? 'text-purple-400' : 'text-gray-300'}`}>
+              <div key={i} className={`${line.startsWith('❌') ? 'text-red-400' : line.startsWith('✅') ? 'text-green-400' : line.startsWith('⚠️') ? 'text-yellow-400' : line.startsWith('🔮') ? 'text-purple-400' : line.startsWith('💡') ? 'text-cyan-400' : 'text-gray-300'}`}>
                 {line}
               </div>
             ))}

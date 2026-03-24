@@ -194,7 +194,10 @@ const PlaylistSelector: React.FC<PlaylistSelectorProps> = ({
 }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [sortBy, setSortBy] = useState<'name' | 'genre'>('name');
+  const [highlightedIndex, setHighlightedIndex] = useState(0);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const listRef = useRef<HTMLDivElement>(null);
+  const itemRefs = useRef<Map<number, HTMLButtonElement>>(new Map());
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -219,17 +222,56 @@ const PlaylistSelector: React.FC<PlaylistSelectorProps> = ({
     )
     .sort((a, b) => {
       if (sortBy === 'genre') {
-        // Put empty genres at the bottom
         if (!a.genre && b.genre) return 1;
         if (a.genre && !b.genre) return -1;
         if (a.genre < b.genre) return -1;
         if (a.genre > b.genre) return 1;
       }
-      // Default to name sorting
       if (a.name < b.name) return -1;
       if (a.name > b.name) return 1;
       return 0;
     });
+
+  // Reset highlight to first item when search/sort changes
+  useEffect(() => {
+    setHighlightedIndex(0);
+    listRef.current?.scrollTo(0, 0);
+  }, [searchTerm, sortBy]);
+
+  // Scroll highlighted item into view
+  useEffect(() => {
+    const el = itemRefs.current.get(highlightedIndex);
+    if (el) {
+      el.scrollIntoView({ block: 'nearest' });
+    }
+  }, [highlightedIndex]);
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (isUpdating) return;
+    const count = filteredPlaylists.length;
+    if (count === 0) return;
+
+    switch (e.key) {
+      case 'ArrowDown':
+        e.preventDefault();
+        setHighlightedIndex(prev => (prev + 1) % count);
+        break;
+      case 'ArrowUp':
+        e.preventDefault();
+        setHighlightedIndex(prev => (prev - 1 + count) % count);
+        break;
+      case 'Enter':
+        e.preventDefault();
+        if (highlightedIndex >= 0 && highlightedIndex < count) {
+          onSelect(filteredPlaylists[highlightedIndex].id);
+        }
+        break;
+      case 'Escape':
+        e.preventDefault();
+        onCancel();
+        break;
+    }
+  };
 
   return (
     <div 
@@ -268,6 +310,7 @@ const PlaylistSelector: React.FC<PlaylistSelectorProps> = ({
             placeholder="Search playlists..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
+            onKeyDown={handleKeyDown}
             className="w-full pl-8 pr-3 py-1.5 text-[0.7rem] font-bold border-2 border-gray-200 rounded-md focus:border-indigo-500 outline-none transition-all bg-white"
           />
         </div>
@@ -290,40 +333,48 @@ const PlaylistSelector: React.FC<PlaylistSelectorProps> = ({
         </div>
       </div>
 
-      <div className="max-h-[300px] overflow-y-auto p-1 bg-white custom-scrollbar">
+      <div ref={listRef} className="max-h-[300px] overflow-y-auto p-1 bg-white custom-scrollbar">
         {isUpdating ? (
           <div className="py-20 flex flex-col items-center justify-center space-y-3">
             <div className="w-8 h-8 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin"></div>
             <span className="text-[0.7rem] font-black text-indigo-900 uppercase animate-pulse">Updating Assignment...</span>
           </div>
         ) : filteredPlaylists.length > 0 ? (
-          filteredPlaylists.map((p) => (
-            <button
-              key={p.id}
-              onClick={() => onSelect(p.id)}
-              className={`w-full text-left px-3 py-2 rounded-md transition-all flex flex-col gap-0.5 mb-1 group ${
-                currentValue === p.id 
-                  ? 'bg-indigo-600 text-white shadow-lg scale-[0.98]' 
-                  : 'hover:bg-indigo-50 text-gray-700 hover:translate-x-1'
-              }`}
-            >
-              <div className="flex items-center justify-between w-full">
-                <span className={`text-[0.75rem] font-black ${currentValue === p.id ? 'text-white' : 'text-indigo-900 group-hover:text-indigo-600'}`}>
-                  {p.name}
-                </span>
-                {currentValue === p.id && (
-                  <svg className="w-3.5 h-3.5 text-white animate-in zoom-in-50 duration-300" fill="currentColor" viewBox="0 0 20 20">
-                    <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                  </svg>
+          filteredPlaylists.map((p, idx) => {
+            const isHighlighted = idx === highlightedIndex;
+            const isSelected = currentValue === p.id;
+            return (
+              <button
+                key={p.id}
+                ref={(el) => { if (el) itemRefs.current.set(idx, el); else itemRefs.current.delete(idx); }}
+                onClick={() => onSelect(p.id)}
+                onMouseEnter={() => setHighlightedIndex(idx)}
+                className={`w-full text-left px-3 py-2 rounded-md transition-all flex flex-col gap-0.5 mb-1 group ${
+                  isSelected
+                    ? 'bg-indigo-600 text-white shadow-lg scale-[0.98]' 
+                    : isHighlighted
+                      ? 'bg-indigo-100 text-gray-700 ring-2 ring-indigo-400'
+                      : 'hover:bg-indigo-50 text-gray-700 hover:translate-x-1'
+                }`}
+              >
+                <div className="flex items-center justify-between w-full">
+                  <span className={`text-[0.75rem] font-black ${isSelected ? 'text-white' : isHighlighted ? 'text-indigo-700' : 'text-indigo-900 group-hover:text-indigo-600'}`}>
+                    {p.name}
+                  </span>
+                  {isSelected && (
+                    <svg className="w-3.5 h-3.5 text-white animate-in zoom-in-50 duration-300" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                    </svg>
+                  )}
+                </div>
+                {p.genre && (
+                  <span className={`text-[0.6rem] uppercase font-black tracking-tighter truncate w-full block ${isSelected ? 'text-indigo-200' : isHighlighted ? 'text-indigo-500' : 'text-gray-400 group-hover:text-indigo-400'}`}>
+                    {p.genre}
+                  </span>
                 )}
-              </div>
-              {p.genre && (
-                <span className={`text-[0.6rem] uppercase font-black tracking-tighter truncate w-full block ${currentValue === p.id ? 'text-indigo-200' : 'text-gray-400 group-hover:text-indigo-400'}`}>
-                  {p.genre}
-                </span>
-              )}
-            </button>
-          ))
+              </button>
+            );
+          })
         ) : (
           <div className="py-12 flex flex-col items-center justify-center text-gray-400 bg-gray-50/30 rounded-lg border-2 border-dashed border-gray-100 m-2">
             <svg className="w-8 h-8 mb-2 opacity-20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1514,8 +1565,11 @@ const ActiveCampaigns: React.FC = () => {
   };
 
   const updatePlaylistAssignment = async (campaignId: string, playlistIndex: number, newPlaylistId: string) => {
+    // Close the dropdown immediately so admin can keep working
+    setEditingPlaylist(null);
+    setUpdatingPlaylistId({ campaignId, index: playlistIndex });
+
     try {
-      setUpdatingPlaylistId({ campaignId, index: playlistIndex });
       const response = await fetch('/api/marketing-manager/update-playlist-assignment', {
         method: 'POST',
         headers: {
@@ -1525,16 +1579,11 @@ const ActiveCampaigns: React.FC = () => {
       });
 
       if (response.ok) {
-        // Refresh campaigns data
         await fetchCampaigns();
         
-        // Show success feedback
         const updateKey = `${campaignId}-${playlistIndex}`;
         setRecentlyUpdated(prev => ({ ...prev, [updateKey]: true }));
         
-        setEditingPlaylist(null);
-        
-        // Revert feedback after 3 seconds
         setTimeout(() => {
           setRecentlyUpdated(prev => {
             const newState = { ...prev };
@@ -1543,7 +1592,6 @@ const ActiveCampaigns: React.FC = () => {
           });
         }, 3000);
         
-        // Dispatch event to notify SystemSettings to refresh current placements
         const event = new CustomEvent('playlistAssignmentUpdated', {
           detail: { campaignId, playlistIndex, newPlaylistId }
         });
@@ -2039,8 +2087,11 @@ const ActiveCampaigns: React.FC = () => {
                                   ) : (
                                   <button
                                     onClick={() => setEditingPlaylist({ campaignId: campaign.id, playlistIndex: index })}
+                                    disabled={updatingPlaylistId?.campaignId === campaign.id && updatingPlaylistId?.index === index}
                                     className={`text-[0.72rem] font-bold px-2.5 py-1.5 rounded-md truncate w-full text-left transition-all border-2 ${
-                                      recentlyUpdated[`${campaign.id}-${index}`]
+                                      updatingPlaylistId?.campaignId === campaign.id && updatingPlaylistId?.index === index
+                                        ? 'text-indigo-400 bg-indigo-50 border-indigo-200'
+                                        : recentlyUpdated[`${campaign.id}-${index}`]
                                         ? 'text-green-700 bg-green-100 border-green-400 scale-[1.02] shadow-sm'
                                         : playlist.id === 'removed' 
                                         ? 'text-green-700 bg-green-50 border-green-50 hover:border-green-200'
@@ -2052,7 +2103,9 @@ const ActiveCampaigns: React.FC = () => {
                                       <span className="truncate">
                                         {playlist.id === 'removed' ? '✅ Removed' : playlist.name}
                                       </span>
-                                      {recentlyUpdated[`${campaign.id}-${index}`] ? (
+                                      {updatingPlaylistId?.campaignId === campaign.id && updatingPlaylistId?.index === index ? (
+                                        <div className="w-3 h-3 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin ml-1.5 flex-shrink-0"></div>
+                                      ) : recentlyUpdated[`${campaign.id}-${index}`] ? (
                                         <svg className="w-3.5 h-3.5 text-green-600 animate-in zoom-in-50 duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
                                         </svg>
@@ -2089,6 +2142,11 @@ const ActiveCampaigns: React.FC = () => {
                                     )}
                                     Add Playlist
                                   </div>
+                                </div>
+                              ) : updatingPlaylistId?.campaignId === campaign.id && updatingPlaylistId?.index === 0 ? (
+                                <div className="text-[0.72rem] font-black px-3 py-2 rounded-md bg-indigo-500 text-white shadow flex items-center justify-center gap-1.5 w-full uppercase tracking-wider">
+                                  <div className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                                  Adding...
                                 </div>
                               ) : (
                                 <button
