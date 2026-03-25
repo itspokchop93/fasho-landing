@@ -395,9 +395,10 @@ export default function AdminOrdersManagement() {
             return (
               <div key={order.id}>
                 {/* Mobile Card View */}
-                <div
-                  onClick={() => handleOrderClick(order.id)}
-                  className={`md:hidden p-4 active:bg-gray-100 cursor-pointer transition-colors ${getStatusMobileBg(order.status)} border-l-4 ${getStatusMobileBorder(order.status)}`}
+                <a
+                  href={`/admin/order/${order.id}`}
+                  onClick={(e) => { e.preventDefault(); handleOrderClick(order.id); }}
+                  className={`md:hidden block p-4 active:bg-gray-100 cursor-pointer transition-colors ${getStatusMobileBg(order.status)} border-l-4 ${getStatusMobileBorder(order.status)}`}
                 >
                   {/* Top Row: Order # + Order Count Badge */}
                   <div className="flex items-center justify-between mb-3">
@@ -484,12 +485,13 @@ export default function AdminOrdersManagement() {
                       </svg>
                     </div>
                   </div>
-                </div>
+                </a>
 
                 {/* Desktop Grid View */}
-                <div
-                  onClick={() => handleOrderClick(order.id)}
-                  className="hidden md:block relative p-6 hover:bg-gray-50 cursor-pointer transition-colors"
+                <a
+                  href={`/admin/order/${order.id}`}
+                  onClick={(e) => { e.preventDefault(); handleOrderClick(order.id); }}
+                  className="hidden md:block relative p-6 hover:bg-gray-50 cursor-pointer transition-colors no-underline text-inherit"
                 >
                   {/* Customer Order Count Badge - Overlay top-left */}
                   <div className="absolute top-2 left-2 z-10" style={{ opacity: 0.55 }}>
@@ -583,13 +585,13 @@ export default function AdminOrdersManagement() {
                     {/* Action Button - Column 7 */}
                     <div className="col-span-1">
                       <div className="flex justify-start">
-                        <button className="bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-1.5 rounded-md text-xs font-medium transition-colors">
+                        <span className="bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-1.5 rounded-md text-xs font-medium transition-colors inline-block">
                           OPEN
-                        </button>
+                        </span>
                       </div>
                     </div>
                   </div>
-                </div>
+                </a>
               </div>
             )
           })

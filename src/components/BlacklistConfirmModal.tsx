@@ -27,7 +27,7 @@ export default function BlacklistConfirmModal({
   customerData,
   isLoading = false,
 }: BlacklistConfirmModalProps) {
-  const [reason, setReason] = useState('');
+  const [reason, setReason] = useState(mode === 'blacklist' ? 'Chargeback' : '');
 
   if (!isOpen) return null;
 
@@ -136,15 +136,30 @@ export default function BlacklistConfirmModal({
           <label className="block text-white/60 text-xs uppercase tracking-wide mb-1.5">
             Reason {isBlacklist ? 'for blacklisting' : 'for removal'} *
           </label>
-          <input
-            type="text"
-            value={reason}
-            onChange={(e) => setReason(e.target.value)}
-            placeholder={reasonPlaceholder}
-            className="w-full bg-white/10 border border-white/20 rounded-lg py-2.5 px-3 text-white placeholder-white/30 text-sm focus:outline-none focus:border-white/40"
-            disabled={isLoading}
-            autoFocus
-          />
+          {isBlacklist ? (
+            <select
+              value={reason}
+              onChange={(e) => setReason(e.target.value)}
+              className="w-full bg-white/10 border border-white/20 rounded-lg py-2.5 px-3 text-white text-sm focus:outline-none focus:border-white/40 appearance-none"
+              disabled={isLoading}
+              style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23ffffff80' d='M6 8L1 3h10z'/%3E%3C/svg%3E")`, backgroundRepeat: 'no-repeat', backgroundPosition: 'right 12px center' }}
+            >
+              <option value="Chargeback" className="bg-[#1a1a2e] text-white">Chargeback</option>
+              <option value="Fraud" className="bg-[#1a1a2e] text-white">Fraud</option>
+              <option value="Frequent Refunds" className="bg-[#1a1a2e] text-white">Frequent Refunds</option>
+              <option value="Other" className="bg-[#1a1a2e] text-white">Other</option>
+            </select>
+          ) : (
+            <input
+              type="text"
+              value={reason}
+              onChange={(e) => setReason(e.target.value)}
+              placeholder={reasonPlaceholder}
+              className="w-full bg-white/10 border border-white/20 rounded-lg py-2.5 px-3 text-white placeholder-white/30 text-sm focus:outline-none focus:border-white/40"
+              disabled={isLoading}
+              autoFocus
+            />
+          )}
         </div>
 
         {/* Warning */}
