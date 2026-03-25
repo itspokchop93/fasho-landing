@@ -79,6 +79,30 @@ export default function AdminOrdersManagement() {
     hasMore: false
   })
 
+  // Advanced search fields
+  const [showAdvanced, setShowAdvanced] = useState(false)
+  const [cardLast4, setCardLast4] = useState('')
+  const [amount, setAmount] = useState('')
+  const [transactionId, setTransactionId] = useState('')
+  const [authCode, setAuthCode] = useState('')
+  const [firstName, setFirstName] = useState('')
+  const [lastName, setLastName] = useState('')
+  const [dateFrom, setDateFrom] = useState('')
+  const [dateTo, setDateTo] = useState('')
+
+  const hasAdvancedFilters = cardLast4 || amount || transactionId || authCode || firstName || lastName || dateFrom || dateTo
+
+  const clearAdvancedFilters = () => {
+    setCardLast4('')
+    setAmount('')
+    setTransactionId('')
+    setAuthCode('')
+    setFirstName('')
+    setLastName('')
+    setDateFrom('')
+    setDateTo('')
+  }
+
   const fetchOrders = async () => {
     setLoading(true)
     try {
@@ -90,6 +114,15 @@ export default function AdminOrdersManagement() {
         limit: pagination.limit.toString(),
         offset: pagination.offset.toString()
       })
+
+      if (cardLast4) params.set('cardLast4', cardLast4)
+      if (amount) params.set('amount', amount)
+      if (transactionId) params.set('transactionId', transactionId)
+      if (authCode) params.set('authCode', authCode)
+      if (firstName) params.set('firstName', firstName)
+      if (lastName) params.set('lastName', lastName)
+      if (dateFrom) params.set('dateFrom', dateFrom)
+      if (dateTo) params.set('dateTo', dateTo)
 
       const res = await fetch(`/api/admin/orders?${params}`)
       const data = await res.json()
@@ -109,7 +142,7 @@ export default function AdminOrdersManagement() {
 
   useEffect(() => {
     fetchOrders()
-  }, [searchTerm, statusFilter, sortBy, sortOrder, pagination.offset])
+  }, [searchTerm, statusFilter, sortBy, sortOrder, pagination.offset, cardLast4, amount, transactionId, authCode, firstName, lastName, dateFrom, dateTo])
 
   const handleOrderClick = (orderId: string) => {
     router.push(`/admin/order/${orderId}`)
@@ -152,7 +185,7 @@ export default function AdminOrdersManagement() {
           <div className="flex-1">
             <input
               type="text"
-              placeholder="Search orders..."
+              placeholder="Search by order #, name, or email..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="w-full px-4 py-3 md:py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
@@ -201,6 +234,134 @@ export default function AdminOrdersManagement() {
             </div>
           </div>
         </div>
+
+        {/* Advanced Search Toggle */}
+        <div className="mt-3 flex items-center gap-2">
+          <button
+            onClick={() => setShowAdvanced(!showAdvanced)}
+            className="text-indigo-600 hover:text-indigo-800 text-xs font-medium flex items-center gap-1 transition-colors"
+          >
+            <svg className={`w-3 h-3 transition-transform ${showAdvanced ? 'rotate-90' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+            </svg>
+            Advanced Search
+          </button>
+          {hasAdvancedFilters && (
+            <button
+              onClick={clearAdvancedFilters}
+              className="text-red-500 hover:text-red-700 text-xs font-medium"
+            >
+              Clear Filters
+            </button>
+          )}
+          {hasAdvancedFilters && (
+            <span className="text-xs text-gray-500">
+              ({[cardLast4 && 'Card', amount && 'Amount', transactionId && 'Trans ID', authCode && 'Auth Code', firstName && 'First Name', lastName && 'Last Name', dateFrom && 'From Date', dateTo && 'To Date'].filter(Boolean).join(', ')})
+            </span>
+          )}
+        </div>
+
+        {/* Advanced Search Panel */}
+        {showAdvanced && (
+          <div className="mt-3 p-4 bg-gray-50 rounded-lg border border-gray-200 space-y-3">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+              {/* Card Last 4 */}
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1">Card Last 4</label>
+                <input
+                  type="text"
+                  maxLength={4}
+                  placeholder="1234"
+                  value={cardLast4}
+                  onChange={(e) => setCardLast4(e.target.value.replace(/\D/g, '').slice(0, 4))}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 font-mono"
+                />
+              </div>
+
+              {/* Payment Amount */}
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1">Payment Amount ($)</label>
+                <input
+                  type="text"
+                  placeholder="149.00"
+                  value={amount}
+                  onChange={(e) => setAmount(e.target.value.replace(/[^0-9.]/g, ''))}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 font-mono"
+                />
+              </div>
+
+              {/* Transaction ID */}
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1">Transaction ID</label>
+                <input
+                  type="text"
+                  placeholder="Enter transaction ID..."
+                  value={transactionId}
+                  onChange={(e) => setTransactionId(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 font-mono"
+                />
+              </div>
+
+              {/* Authorization Code */}
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1">Auth Code</label>
+                <input
+                  type="text"
+                  placeholder="Enter auth code..."
+                  value={authCode}
+                  onChange={(e) => setAuthCode(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 font-mono"
+                />
+              </div>
+
+              {/* First Name */}
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1">First Name</label>
+                <input
+                  type="text"
+                  placeholder="John"
+                  value={firstName}
+                  onChange={(e) => setFirstName(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                />
+              </div>
+
+              {/* Last Name */}
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1">Last Name</label>
+                <input
+                  type="text"
+                  placeholder="Doe"
+                  value={lastName}
+                  onChange={(e) => setLastName(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                />
+              </div>
+
+              {/* Date From */}
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1">From Date</label>
+                <input
+                  type="date"
+                  value={dateFrom}
+                  onChange={(e) => setDateFrom(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                />
+              </div>
+
+              {/* Date To */}
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1">To Date</label>
+                <input
+                  type="date"
+                  value={dateTo}
+                  onChange={(e) => setDateTo(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                />
+              </div>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Desktop Column Headers - Hidden on Mobile */}

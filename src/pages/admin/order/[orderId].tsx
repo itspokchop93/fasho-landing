@@ -5,6 +5,7 @@ import { GetServerSideProps } from 'next';
 import { verifyAdminToken, getAdminTokenFromRequest } from '../../../utils/admin/auth';
 import AdminAccessDenied from '../../../components/AdminAccessDenied';
 import { calculateDeadline } from '../../../utils/deadlineUtils';
+import BlacklistConfirmModal from '../../../components/BlacklistConfirmModal';
 
 interface OrderItem {
   id: string;
@@ -136,6 +137,10 @@ export default function OrderDetailPage({ adminSession, accessDenied }: OrderDet
   
   // FASHOKENS balance state
   const [customerFashokenBalance, setCustomerFashokenBalance] = useState<number | null>(null);
+
+  // Blacklist
+  const [showBlacklistModal, setShowBlacklistModal] = useState(false);
+  const [blacklisting, setBlacklisting] = useState(false);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -832,6 +837,13 @@ export default function OrderDetailPage({ adminSession, accessDenied }: OrderDet
               style={{ fontSize: '1rem' }}
               placeholder="Add internal notes..."
             />
+            <button
+              onClick={() => setShowBlacklistModal(true)}
+              className="w-full text-left text-red-400 hover:text-red-300 text-sm py-2 px-1 transition-colors"
+              style={{ fontSize: '0.8125rem' }}
+            >
+              Blacklist Customer
+            </button>
           </div>
 
           {/* Billing Info - Collapsible on mobile */}
@@ -1130,6 +1142,13 @@ export default function OrderDetailPage({ adminSession, accessDenied }: OrderDet
             <div className="bg-white/5 rounded-xl p-6 border border-white/20">
               <h2 className="text-xl font-semibold text-white mb-4">Admin Notes</h2>
               <textarea value={adminNotes} onChange={(e) => setAdminNotes(e.target.value)} rows={6} className="w-full bg-white/10 border border-white/20 rounded-lg py-2 px-3 text-white placeholder-white/50 focus:outline-none focus:border-[#59e3a5] resize-none" placeholder="Add internal notes..." />
+              <button
+                onClick={() => setShowBlacklistModal(true)}
+                className="w-full text-left text-red-400 hover:text-red-300 text-sm py-2 px-1 transition-colors"
+                style={{ fontSize: '0.8125rem' }}
+              >
+                Blacklist Customer
+              </button>
             </div>
 
             <button onClick={handleSave} disabled={saving} className="w-full bg-gradient-to-r from-[#59e3a5] to-[#14c0ff] text-black font-semibold py-3 px-6 rounded-lg hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed">
@@ -1138,6 +1157,86 @@ export default function OrderDetailPage({ adminSession, accessDenied }: OrderDet
           </div>
         </div>
       </div>
+
+      {/* Blacklist Confirm Modal */}
+      {showBlacklistModal && order && (
+        <BlacklistConfirmModal
+          isOpen={showBlacklistModal}
+          onClose={() => setShowBlacklistModal(false)}
+          onConfirm={async (reason) => {
+            setBlacklisting(true);
+            try {
+              const allArtistUrls = Object.values(artistProfileUrls).filter(Boolean);
+              const billingFormatted = order.billing_info
+                ? `${order.billing_info.address || ''}, ${order.billing_info.city || ''}, ${order.billing_info.state || ''} ${order.billing_info.zip || ''}, ${order.billing_info.country || ''}`
+                : undefined;
+
+              const res = await fetch('/api/admin/blacklist', {
+                method: 'POST',
+                credentials: 'include',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  customer_name: order.customer_name,
+                  customer_email: order.customer_email,
+                  reason,
+                  source_order_id: order.id,
+                  associated_order_numbers: customerHistory.map((h: any) => h.order_number),
+                  metadata: {
+                    billingAddress: billingFormatted,
+                    phoneNumber: order.billing_info?.phoneNumber,
+                    spotifyArtistUrls: allArtistUrls,
+                    spotifyTrackUrls: order.items.map((i: OrderItem) => i.track_url).filter(Boolean),
+                    cardInfo: order.payment_data ? `${order.payment_data.accountType || ''}:${order.payment_data.accountNumber || ''}` : undefined,
+                    userId: order.user_id,
+                  },
+                  raw_identifiers: {
+                    email: order.customer_email,
+                    phone: order.billing_info?.phoneNumber,
+                    billingInfo: order.billing_info ? {
+                      address: order.billing_info.address || '',
+                      city: order.billing_info.city || '',
+                      state: order.billing_info.state || '',
+                      zip: order.billing_info.zip || '',
+                      country: order.billing_info.country || '',
+                    } : undefined,
+                    userId: order.user_id,
+                    spotifyArtistUrls: allArtistUrls,
+                    spotifyTrackUrls: order.items.map((i: OrderItem) => i.track_url).filter(Boolean),
+                  },
+                }),
+              });
+
+              const data = await res.json();
+              if (res.ok) {
+                setSuccess('Customer has been blacklisted successfully.');
+                setShowBlacklistModal(false);
+              } else {
+                setError(data.error || 'Failed to blacklist customer');
+              }
+            } catch (err) {
+              console.error('Blacklist error:', err);
+              setError('An error occurred while blacklisting');
+            } finally {
+              setBlacklisting(false);
+            }
+          }}
+          mode="blacklist"
+          customerData={{
+            customerName: order.customer_name || '',
+            customerEmail: order.customer_email || '',
+            billingAddress: order.billing_info
+              ? `${order.billing_info.address || ''}, ${order.billing_info.city || ''}, ${order.billing_info.state || ''} ${order.billing_info.zip || ''}, ${order.billing_info.country || ''}`
+              : undefined,
+            orderNumbers: customerHistory.map((h: any) => h.order_number),
+            spotifyArtistUrls: Object.values(artistProfileUrls).filter(Boolean) as string[],
+            spotifyTrackUrls: order.items.map((i: OrderItem) => i.track_url).filter(Boolean),
+            cardInfo: order.payment_data ? `${order.payment_data.accountType || ''}:${order.payment_data.accountNumber || ''}` : undefined,
+            userId: order.user_id || undefined,
+            phoneNumber: order.billing_info?.phoneNumber,
+          }}
+          isLoading={blacklisting}
+        />
+      )}
 
       {/* Add Item Modal */}
       {showAddItemModal && (

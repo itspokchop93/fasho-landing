@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/router'
 import AdminOrdersManagement from './AdminOrdersManagement'
 import AdminCustomersManagement from './AdminCustomersManagement'
+import AdminBlacklistedManagement from './AdminBlacklistedManagement'
 
 export default function AdminOrdersWithSubTabs() {
   const router = useRouter()
@@ -13,18 +14,17 @@ export default function AdminOrdersWithSubTabs() {
       const urlParams = new URLSearchParams(window.location.search)
       const page = urlParams.get('p')
       
-      // Check if we're on the orders tab and have a sub-tab specified
       if (page === 'orders-customers') {
         setActiveSubTab('customers')
+      } else if (page === 'orders-blacklisted') {
+        setActiveSubTab('blacklisted')
       } else if (page === 'orders-management' || page === 'orders') {
         setActiveSubTab('order-management')
       }
     }
 
-    // Check route on initial load
     handleRouteChange()
 
-    // Listen for route changes
     const handlePopState = () => handleRouteChange()
     window.addEventListener('popstate', handlePopState)
 
@@ -36,9 +36,10 @@ export default function AdminOrdersWithSubTabs() {
   const handleSubTabChange = (subTab: string) => {
     setActiveSubTab(subTab)
     
-    // Update URL query parameter to reflect sub-tab
     if (subTab === 'customers') {
       router.replace('/admin?p=orders-customers', undefined, { shallow: true })
+    } else if (subTab === 'blacklisted') {
+      router.replace('/admin?p=orders-blacklisted', undefined, { shallow: true })
     } else {
       router.replace('/admin?p=orders-management', undefined, { shallow: true })
     }
@@ -70,6 +71,16 @@ export default function AdminOrdersWithSubTabs() {
             >
               Customers
             </button>
+            <button
+              onClick={() => handleSubTabChange('blacklisted')}
+              className={`py-4 px-1 border-b-2 font-medium text-sm transition-colors ${
+                activeSubTab === 'blacklisted'
+                  ? 'border-red-500 text-red-600'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+              }`}
+            >
+              Blacklisted
+            </button>
           </nav>
         </div>
       </div>
@@ -78,8 +89,10 @@ export default function AdminOrdersWithSubTabs() {
       <div className="min-h-[500px]">
         {activeSubTab === 'order-management' ? (
           <AdminOrdersManagement />
-        ) : (
+        ) : activeSubTab === 'customers' ? (
           <AdminCustomersManagement />
+        ) : (
+          <AdminBlacklistedManagement />
         )}
       </div>
     </div>

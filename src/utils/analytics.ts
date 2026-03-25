@@ -20,6 +20,7 @@ export type AnalyticsEventName =
   | "checkout_viewed"
   | "payment_method_selected"
   | "checkout_submitted"
+  | "checkout_blacklist_blocked"
   | "checkout_payment_succeeded"
   | "checkout_payment_failed"
   | "thank_you_viewed"

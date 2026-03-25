@@ -95,7 +95,7 @@ export default function AdminDashboard({ adminUser, authError }: AdminDashboardP
     
     // Determine expected tab based on page parameter
     let expectedTab: string
-    if (page === 'orders' || page === 'orders-management' || page === 'orders-customers') {
+    if (page === 'orders' || page === 'orders-management' || page === 'orders-customers' || page === 'orders-blacklisted') {
       expectedTab = 'orders'
     } else if (page === 'emails') {
       expectedTab = 'emails'

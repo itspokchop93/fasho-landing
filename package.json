@@ -12,6 +12,7 @@
   },
   "dependencies": {
     "@alloc/quick-lru": "^5.2.0",
+    "@fingerprintjs/fingerprintjs": "^5.1.0",
     "@gsap/react": "^2.1.2",
     "@microsoft/clarity": "^1.0.0",
     "@portabletext/react": "^6.0.2",

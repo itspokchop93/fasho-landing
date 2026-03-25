@@ -211,6 +211,26 @@ export default function CheckoutPage() {
     musicGenre: ''
   });
 
+  // Flag to prevent autofill from overwriting manual edits within the same session
+  const billingManuallyEdited = useRef(false);
+
+  // Blacklist: device fingerprint
+  const [deviceFingerprint, setDeviceFingerprint] = useState<string>('');
+
+  useEffect(() => {
+    const initFingerprint = async () => {
+      try {
+        const FingerprintJS = await import('@fingerprintjs/fingerprintjs');
+        const fp = await FingerprintJS.load();
+        const result = await fp.get();
+        setDeviceFingerprint(result.visitorId);
+      } catch (error) {
+        console.error('Fingerprint init error:', error);
+      }
+    };
+    initFingerprint();
+  }, []);
+
   // Pre-fill genre from the VIBE step (sessionStorage), with legacy migration
   useEffect(() => {
     const savedVibes = sessionStorage.getItem('selectedVibes');
@@ -845,6 +865,8 @@ export default function CheckoutPage() {
     let value = e.target.value;
     const fieldName = e.target.name;
     
+    billingManuallyEdited.current = true;
+
     // Defensive: Only allow 2-letter codes for country
     if (fieldName === 'country' && value.length > 2) {
       value = value.slice(0, 2).toUpperCase();
@@ -1112,6 +1134,51 @@ export default function CheckoutPage() {
       return;
     }
 
+    // === BLACKLIST CHECK ===
+    try {
+      const spotifyArtistUrls = orderItems
+        .map(item => item.track.artistProfileUrl)
+        .filter(Boolean) as string[];
+      const spotifyTrackIds = orderItems
+        .map(item => item.track.id)
+        .filter(Boolean);
+
+      const blacklistResponse = await fetch('/api/check-blacklist', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: currentUser?.email || formData.email,
+          phone: billingData.phoneNumber,
+          billingAddress: {
+            address: billingData.address,
+            city: billingData.city,
+            state: billingData.state,
+            zip: billingData.zip,
+            country: billingData.country,
+          },
+          spotifyArtistUrls,
+          spotifyTrackIds,
+          userId: currentUser?.id || undefined,
+          deviceFingerprint: deviceFingerprint || undefined,
+        }),
+      });
+
+      const blacklistResult = await blacklistResponse.json();
+
+      if (blacklistResult.blocked) {
+        setFormError(blacklistResult.message || 'You are not allowed to make purchases.');
+        setIsLoading(false);
+        analytics.track('checkout_blacklist_blocked', {
+          email: currentUser?.email || formData.email,
+        });
+        return;
+      }
+    } catch (blacklistError) {
+      console.error('Blacklist check error:', blacklistError);
+      // Fail open: allow checkout to proceed if blacklist check fails
+    }
+    // === END BLACKLIST CHECK ===
+
     // Process payment directly
     console.log('🚀 CHECKOUT: About to call handlePaymentSubmit...');
     analytics.track("checkout_submitted", {
@@ -1126,6 +1193,11 @@ export default function CheckoutPage() {
 
   // Function to fetch user profile and autofill billing data
   const autofillUserProfile = async (userId: string) => {
+    if (billingManuallyEdited.current) {
+      console.log('🔐 CHECKOUT: Skipping autofill — user has manually edited billing fields');
+      return;
+    }
+
     try {
       console.log('🔐 CHECKOUT: Fetching user profile for autofill...');
       const response = await fetch('/api/user-profile');
@@ -1137,6 +1209,11 @@ export default function CheckoutPage() {
         if (data.profile) {
           const profile = data.profile;
           
+          if (billingManuallyEdited.current) {
+            console.log('🔐 CHECKOUT: Skipping autofill — user edited billing fields while fetching');
+            return;
+          }
+
           // Autofill billing data from user profile
           setBillingData(prev => ({
             ...prev,
@@ -2598,19 +2675,22 @@ export default function CheckoutPage() {
                       billingData.city || billingData.state || billingData.zip || billingData.phoneNumber) && (
                       <button
                         type="button"
-                        onClick={() => setBillingData(prev => ({
-                          firstName: '',
-                          lastName: '',
-                          address: '',
-                          address2: '',
-                          city: '',
-                          state: '',
-                          zip: '',
-                          country: 'US',
-                          countryCode: '+1',
-                          phoneNumber: '',
-                          musicGenre: prev.musicGenre
-                        }))}
+                        onClick={() => {
+                          billingManuallyEdited.current = true;
+                          setBillingData(prev => ({
+                            firstName: '',
+                            lastName: '',
+                            address: '',
+                            address2: '',
+                            city: '',
+                            state: '',
+                            zip: '',
+                            country: 'US',
+                            countryCode: '+1',
+                            phoneNumber: '',
+                            musicGenre: prev.musicGenre
+                          }));
+                        }}
                         className="text-red-400 hover:text-red-300 text-sm transition-colors"
                       >
                         Clear billing form

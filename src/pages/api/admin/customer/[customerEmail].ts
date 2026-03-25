@@ -9,7 +9,8 @@ export interface CustomerDetailData {
     date_joined: string;
     total_purchases: number;
     total_spend: number;
-    billing_info?: any; // From most recent order
+    billing_info?: any;
+    user_id?: string;
   };
   orders: {
     id: string;
@@ -87,7 +88,8 @@ async function handler(req: NextApiRequest, res: NextApiResponse, adminUser: Adm
         date_joined: dateJoined,
         total_purchases: totalPurchases,
         total_spend: totalSpend,
-        billing_info: billingInfo
+        billing_info: billingInfo,
+        user_id: mostRecentOrder.user_id || undefined,
       },
       orders: formattedOrders
     };

@@ -17,17 +17,97 @@ async function handler(req: NextApiRequest, res: NextApiResponse, adminUser: Adm
       sortBy = 'created_at', 
       sortOrder = 'desc',
       limit = '50',
-      offset = '0'
+      offset = '0',
+      // Advanced search fields
+      cardLast4 = '',
+      amount = '',
+      transactionId = '',
+      authCode = '',
+      firstName = '',
+      lastName = '',
+      dateFrom = '',
+      dateTo = '',
     } = req.query;
 
     console.log('🔍 ADMIN-ORDERS: Fetching orders with filters:', {
-      search,
-      status,
-      sortBy,
-      sortOrder,
-      limit,
-      offset
+      search, status, sortBy, sortOrder, limit, offset,
+      cardLast4, amount, transactionId, authCode, firstName, lastName, dateFrom, dateTo,
     });
+
+    // Helper to safely get a string param
+    const str = (v: string | string[] | undefined) => (typeof v === 'string' ? v.trim() : '');
+
+    const searchVal = str(search);
+    const statusVal = str(status);
+    const cardLast4Val = str(cardLast4);
+    const amountVal = str(amount);
+    const transactionIdVal = str(transactionId);
+    const authCodeVal = str(authCode);
+    const firstNameVal = str(firstName);
+    const lastNameVal = str(lastName);
+    const dateFromVal = str(dateFrom);
+    const dateToVal = str(dateTo);
+
+    const hasAdvancedFilters = cardLast4Val || amountVal || transactionIdVal || authCodeVal || firstNameVal || lastNameVal || dateFromVal || dateToVal;
+
+    // Build a function to apply filters to any query (for both data and count queries)
+    function applyFilters(q: any) {
+      // Basic text search across order_number, customer_name, customer_email
+      if (searchVal) {
+        q = q.or(`order_number.ilike.%${searchVal}%,customer_name.ilike.%${searchVal}%,customer_email.ilike.%${searchVal}%`);
+      }
+
+      if (statusVal) {
+        q = q.eq('status', statusVal);
+      }
+
+      // Amount (exact match or range with tolerance for cents)
+      if (amountVal) {
+        const amt = parseFloat(amountVal);
+        if (!isNaN(amt)) {
+          q = q.gte('total', amt - 0.01).lte('total', amt + 0.01);
+        }
+      }
+
+      // Date range
+      if (dateFromVal) {
+        q = q.gte('created_at', new Date(dateFromVal).toISOString());
+      }
+      if (dateToVal) {
+        // End of the selected day
+        const endDate = new Date(dateToVal);
+        endDate.setHours(23, 59, 59, 999);
+        q = q.lte('created_at', endDate.toISOString());
+      }
+
+      // JSONB filters — uses PostgREST arrow operators via .filter()
+      // Card last 4 — payment_data->>'accountNumber' contains the last 4 digits (e.g., "XXXX1234")
+      if (cardLast4Val) {
+        q = q.filter('payment_data->>accountNumber', 'like', `%${cardLast4Val}`);
+      }
+
+      // Transaction ID — payment_data->>'transactionId'
+      if (transactionIdVal) {
+        q = q.filter('payment_data->>transactionId', 'like', `%${transactionIdVal}%`);
+      }
+
+      // Auth Code — payment_data->>'authorization'
+      if (authCodeVal) {
+        q = q.filter('payment_data->>authorization', 'like', `%${authCodeVal}%`);
+      }
+
+      // First name — billing_info->>'firstName'
+      if (firstNameVal) {
+        q = q.filter('billing_info->>firstName', 'ilike', `%${firstNameVal}%`);
+      }
+
+      // Last name — billing_info->>'lastName'
+      if (lastNameVal) {
+        q = q.filter('billing_info->>lastName', 'ilike', `%${lastNameVal}%`);
+      }
+
+      return q;
+    }
 
     let query = supabase
       .from('orders')
@@ -37,16 +117,7 @@ async function handler(req: NextApiRequest, res: NextApiResponse, adminUser: Adm
         add_on_items (*)
       `);
 
-    // Apply search filter
-    if (search && typeof search === 'string' && search.trim()) {
-      const searchTerm = search.trim();
-      query = query.or(`order_number.ilike.%${searchTerm}%,customer_name.ilike.%${searchTerm}%,customer_email.ilike.%${searchTerm}%`);
-    }
-
-    // Apply status filter
-    if (status && typeof status === 'string' && status.trim()) {
-      query = query.eq('status', status.trim());
-    }
+    query = applyFilters(query);
 
     // Apply sorting
     const validSortColumns = ['created_at', 'order_number', 'status', 'total', 'customer_name'];
@@ -56,7 +127,7 @@ async function handler(req: NextApiRequest, res: NextApiResponse, adminUser: Adm
     query = query.order(sortColumn, sortDirection);
 
     // Apply pagination
-    const limitNum = Math.min(parseInt(limit as string, 10) || 50, 100); // Max 100 orders per request
+    const limitNum = Math.min(parseInt(limit as string, 10) || 50, 100);
     const offsetNum = parseInt(offset as string, 10) || 0;
     
     query = query.range(offsetNum, offsetNum + limitNum - 1);
@@ -68,20 +139,12 @@ async function handler(req: NextApiRequest, res: NextApiResponse, adminUser: Adm
       return res.status(500).json({ success: false, message: 'Failed to fetch orders' });
     }
 
-    // Get total count for pagination (separate query for performance)
+    // Get total count for pagination
     let countQuery = supabase
       .from('orders')
       .select('*', { count: 'exact', head: true });
 
-    // Apply same filters to count query
-    if (search && typeof search === 'string' && search.trim()) {
-      const searchTerm = search.trim();
-      countQuery = countQuery.or(`order_number.ilike.%${searchTerm}%,customer_name.ilike.%${searchTerm}%,customer_email.ilike.%${searchTerm}%`);
-    }
-
-    if (status && typeof status === 'string' && status.trim()) {
-      countQuery = countQuery.eq('status', status.trim());
-    }
+    countQuery = applyFilters(countQuery);
 
     const { count, error: countError } = await countQuery;
 

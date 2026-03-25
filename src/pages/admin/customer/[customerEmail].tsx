@@ -5,6 +5,7 @@ import { GetServerSideProps } from 'next';
 import Head from 'next/head';
 import { verifyAdminToken, getAdminTokenFromRequest } from '../../../utils/admin/auth';
 import AdminAccessDenied from '../../../components/AdminAccessDenied';
+import BlacklistConfirmModal from '../../../components/BlacklistConfirmModal';
 import type { CustomerDetailData } from '../../api/admin/customer/[customerEmail]';
 import type { CustomerPlacementHistoryResponse, SongPlacementHistory } from '../../api/admin/customer/playlist-placement-history';
 
@@ -32,6 +33,12 @@ export default function CustomerDetailPage({ adminSession, accessDenied }: Custo
   const [placementLoading, setPlacementLoading] = useState(true);
   const [expandedSongs, setExpandedSongs] = useState<Set<string>>(new Set());
   const [expandedPlaylists, setExpandedPlaylists] = useState<Set<string>>(new Set());
+
+  // Blacklist state
+  const [showBlacklistModal, setShowBlacklistModal] = useState(false);
+  const [blacklisting, setBlacklisting] = useState(false);
+  const [blacklistOrderData, setBlacklistOrderData] = useState<any>(null);
+  const [loadingBlacklistData, setLoadingBlacklistData] = useState(false);
 
   useEffect(() => {
     if (customerEmail && typeof customerEmail === 'string') {
@@ -328,6 +335,34 @@ export default function CustomerDetailPage({ adminSession, accessDenied }: Custo
                       </div>
                     </>
                   )}
+
+                  {/* Blacklist Customer */}
+                  <div className="border-t border-gray-200 pt-4 mt-6">
+                    <button
+                      onClick={async () => {
+                        if (customer.orders.length > 0) {
+                          setLoadingBlacklistData(true);
+                          try {
+                            const firstOrderId = customer.orders[0].id;
+                            const res = await fetch(`/api/admin/order/${firstOrderId}`, { credentials: 'include' });
+                            if (res.ok) {
+                              const data = await res.json();
+                              setBlacklistOrderData(data.order || data);
+                            }
+                          } catch (err) {
+                            console.error('Failed to fetch order data for blacklist:', err);
+                          } finally {
+                            setLoadingBlacklistData(false);
+                          }
+                        }
+                        setShowBlacklistModal(true);
+                      }}
+                      disabled={loadingBlacklistData}
+                      className="text-red-600 hover:text-red-800 text-sm font-medium transition-colors"
+                    >
+                      {loadingBlacklistData ? 'Loading...' : 'Blacklist Customer'}
+                    </button>
+                  </div>
                 </div>
               </div>
             </div>
@@ -750,6 +785,95 @@ export default function CustomerDetailPage({ adminSession, accessDenied }: Custo
           )}
         </div>
       </div>
+
+      {/* Blacklist Confirm Modal */}
+      {showBlacklistModal && customer && (
+        <BlacklistConfirmModal
+          isOpen={showBlacklistModal}
+          onClose={() => { setShowBlacklistModal(false); setBlacklistOrderData(null); }}
+          onConfirm={async (reason) => {
+            setBlacklisting(true);
+            try {
+              const bi = customer.customer_info.billing_info;
+              const billingFormatted = bi
+                ? `${bi.address || ''}, ${bi.city || ''}, ${bi.state || ''} ${bi.zip || ''}, ${bi.country || ''}`
+                : undefined;
+
+              const trackUrls = blacklistOrderData?.items?.map((i: any) => i.track_url).filter(Boolean) || [];
+              const artistUrls: string[] = [];
+              if (blacklistOrderData?.items) {
+                for (const item of blacklistOrderData.items) {
+                  if (item.track_artist_profile_url) artistUrls.push(item.track_artist_profile_url);
+                }
+              }
+
+              const res = await fetch('/api/admin/blacklist', {
+                method: 'POST',
+                credentials: 'include',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  customer_name: customer.customer_info.customer_name,
+                  customer_email: customer.customer_info.customer_email,
+                  reason,
+                  source_order_id: customer.orders[0]?.id || null,
+                  associated_order_numbers: customer.orders.map((o: any) => o.order_number),
+                  metadata: {
+                    billingAddress: billingFormatted,
+                    phoneNumber: bi?.phoneNumber,
+                    spotifyArtistUrls: artistUrls,
+                    spotifyTrackUrls: trackUrls,
+                    cardInfo: blacklistOrderData?.payment_data
+                      ? `${blacklistOrderData.payment_data.accountType || ''}:${blacklistOrderData.payment_data.accountNumber || ''}`
+                      : undefined,
+                    userId: customer.customer_info.user_id,
+                  },
+                  raw_identifiers: {
+                    email: customer.customer_info.customer_email,
+                    phone: bi?.phoneNumber,
+                    billingInfo: bi ? {
+                      address: bi.address || '',
+                      city: bi.city || '',
+                      state: bi.state || '',
+                      zip: bi.zip || '',
+                      country: bi.country || '',
+                    } : undefined,
+                    userId: customer.customer_info.user_id,
+                    spotifyArtistUrls: artistUrls,
+                    spotifyTrackUrls: trackUrls,
+                  },
+                }),
+              });
+
+              const data = await res.json();
+              if (res.ok) {
+                alert('Customer has been blacklisted successfully.');
+                setShowBlacklistModal(false);
+                setBlacklistOrderData(null);
+              } else {
+                alert(data.error || 'Failed to blacklist customer');
+              }
+            } catch (err) {
+              console.error('Blacklist error:', err);
+              alert('An error occurred while blacklisting');
+            } finally {
+              setBlacklisting(false);
+            }
+          }}
+          mode="blacklist"
+          customerData={{
+            customerName: customer.customer_info.customer_name || '',
+            customerEmail: customer.customer_info.customer_email || '',
+            billingAddress: customer.customer_info.billing_info
+              ? `${customer.customer_info.billing_info.address || ''}, ${customer.customer_info.billing_info.city || ''}, ${customer.customer_info.billing_info.state || ''} ${customer.customer_info.billing_info.zip || ''}, ${customer.customer_info.billing_info.country || ''}`
+              : undefined,
+            orderNumbers: customer.orders.map((o: any) => o.order_number),
+            spotifyTrackUrls: blacklistOrderData?.items?.map((i: any) => i.track_url).filter(Boolean) || [],
+            phoneNumber: customer.customer_info.billing_info?.phoneNumber,
+            userId: customer.customer_info.user_id,
+          }}
+          isLoading={blacklisting}
+        />
+      )}
     </>
   );
 }

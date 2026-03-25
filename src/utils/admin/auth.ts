@@ -279,10 +279,11 @@ export function clearRateLimit(email: string): void {
  */
 export function getClientIP(req: NextApiRequest): string {
   const forwarded = req.headers['x-forwarded-for'];
-  const ip = typeof forwarded === 'string' 
-    ? forwarded.split(',')[0] 
-    : req.connection?.remoteAddress || 'unknown';
-  return ip;
+  const realIp = req.headers['x-real-ip'];
+
+  if (typeof forwarded === 'string') return forwarded.split(',')[0].trim();
+  if (typeof realIp === 'string') return realIp.trim();
+  return req.connection?.remoteAddress || req.socket?.remoteAddress || 'unknown';
 }
 
 /**
