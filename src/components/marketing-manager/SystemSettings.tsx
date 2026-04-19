@@ -1004,6 +1004,43 @@ const SystemSettings: React.FC<SystemSettingsProps> = ({ onlyPlaylistNetwork = f
   const NETWORK_REFRESH_KEY = 'fasho_network_refresh';
   const [newPlaylist, setNewPlaylist] = useState<NewPlaylistForm>(getDefaultNewPlaylistForm);
   const [refreshDebugLog, setRefreshDebugLog] = useState<string[]>([]);
+
+  // Lightweight playlist preview (Spotify oEmbed - no API key required)
+  // Shown above the "Add New Playlist" link input so the admin can confirm
+  // which playlist they're about to add at a glance.
+  type PlaylistPreviewData = { id: string; name: string; thumbnailUrl: string | null };
+  const [playlistPreview, setPlaylistPreview] = useState<PlaylistPreviewData | null>(null);
+  const [playlistPreviewLoading, setPlaylistPreviewLoading] = useState(false);
+  const [playlistPreviewError, setPlaylistPreviewError] = useState<string | null>(null);
+  const [playlistPreviewParsedId, setPlaylistPreviewParsedId] = useState<string | null>(null);
+
+  // Spotify API health check (separate from Apify playlist refresh)
+  type SpotifyApiCheckResult = {
+    success: boolean;
+    message: string;
+    durationMs: number;
+    details: {
+      envVars: { hasClientId: boolean; hasClientSecret: boolean; maskedClientId: string | null };
+      tokenFetch: { attempted: boolean; ok: boolean; status?: number; durationMs?: number; tokenType?: string; expiresIn?: number; error?: string };
+      apiCall: {
+        attempted: boolean;
+        ok: boolean;
+        status?: number;
+        durationMs?: number;
+        endpoint?: string;
+        mode?: 'playlist' | 'search' | 'none';
+        testedPlaylistName?: string | null;
+        testedPlaylistId?: string | null;
+        sample?: { type: string; name: string; artist?: string } | null;
+        error?: string;
+        hint?: string;
+      };
+    };
+    checkedAt: string;
+  };
+  const [spotifyApiChecking, setSpotifyApiChecking] = useState(false);
+  const [spotifyApiResult, setSpotifyApiResult] = useState<SpotifyApiCheckResult | null>(null);
+  const [spotifyApiError, setSpotifyApiError] = useState<string | null>(null);
   const [editPlaylistForm, setEditPlaylistForm] = useState<EditPlaylistForm>({
     playlistName: '',
     genres: [],
@@ -1305,10 +1342,104 @@ const SystemSettings: React.FC<SystemSettingsProps> = ({ onlyPlaylistNetwork = f
 
   const handleClearNewPlaylistForm = () => {
     setNewPlaylist(getDefaultNewPlaylistForm());
+    setPlaylistPreview(null);
+    setPlaylistPreviewError(null);
+    setPlaylistPreviewParsedId(null);
     window.setTimeout(() => {
       playlistLinkInputRef.current?.focus();
     }, 0);
   };
+
+  // Strict ID extraction for the live preview — only returns an ID when the
+  // input clearly looks like a Spotify playlist URL/URI. (The looser
+  // extractSpotifyPlaylistId above falls back to "strip non-alphanumerics"
+  // which would otherwise trigger preview fetches on garbage input.)
+  const parsePlaylistIdStrict = useCallback((raw: string): string | null => {
+    if (!raw) return null;
+    const trimmed = raw.trim();
+    const patterns = [
+      /spotify:playlist:([a-zA-Z0-9]{16,})/i,
+      /open\.spotify\.com\/(?:embed\/)?playlist\/([a-zA-Z0-9]{16,})/i,
+      /spotify\.com\/(?:embed\/)?playlist\/([a-zA-Z0-9]{16,})/i,
+    ];
+    for (const p of patterns) {
+      const m = trimmed.match(p);
+      if (m && m[1]) return m[1];
+    }
+    return null;
+  }, []);
+
+  // Debounced playlist preview fetcher.
+  // Watches newPlaylist.playlistLink and, when it parses to a real Spotify
+  // playlist ID, asks our /playlist-preview endpoint (which proxies Spotify
+  // oEmbed) for the title + thumbnail. Cancels in-flight requests when the
+  // input changes again.
+  useEffect(() => {
+    const link = newPlaylist.playlistLink;
+    const parsedId = parsePlaylistIdStrict(link);
+
+    // Empty / unparseable input — clear preview state.
+    if (!parsedId) {
+      setPlaylistPreview(null);
+      setPlaylistPreviewError(null);
+      setPlaylistPreviewLoading(false);
+      setPlaylistPreviewParsedId(null);
+      return;
+    }
+
+    // If we already have a preview for this exact ID, don't refetch.
+    if (playlistPreview && playlistPreview.id === parsedId) {
+      setPlaylistPreviewParsedId(parsedId);
+      return;
+    }
+
+    setPlaylistPreviewParsedId(parsedId);
+    setPlaylistPreviewError(null);
+    setPlaylistPreviewLoading(true);
+
+    const controller = new AbortController();
+    const timer = window.setTimeout(async () => {
+      try {
+        const resp = await fetch(
+          `/api/marketing-manager/system-settings/playlist-preview?id=${encodeURIComponent(parsedId)}`,
+          { credentials: 'include', signal: controller.signal },
+        );
+        const data = await resp.json().catch(() => null);
+
+        if (controller.signal.aborted) return;
+
+        if (data && data.ok) {
+          setPlaylistPreview({
+            id: data.id,
+            name: data.name,
+            thumbnailUrl: data.thumbnailUrl ?? null,
+          });
+          setPlaylistPreviewError(null);
+        } else {
+          setPlaylistPreview(null);
+          setPlaylistPreviewError(
+            (data && typeof data.error === 'string' ? data.error : null) ||
+              `Couldn't load preview (HTTP ${resp.status}).`,
+          );
+        }
+      } catch (err: any) {
+        if (err?.name === 'AbortError') return;
+        setPlaylistPreview(null);
+        setPlaylistPreviewError(err?.message || 'Failed to load preview.');
+      } finally {
+        if (!controller.signal.aborted) {
+          setPlaylistPreviewLoading(false);
+        }
+      }
+    }, 400); // debounce so we don't spam during typing
+
+    return () => {
+      controller.abort();
+      window.clearTimeout(timer);
+    };
+    // playlistPreview intentionally excluded — we only want to react to link changes.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [newPlaylist.playlistLink, parsePlaylistIdStrict]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -1343,6 +1474,9 @@ const SystemSettings: React.FC<SystemSettingsProps> = ({ onlyPlaylistNetwork = f
           ...prev,
           playlistLink: ''
         }));
+        setPlaylistPreview(null);
+        setPlaylistPreviewError(null);
+        setPlaylistPreviewParsedId(null);
         fetchPlaylists();
         fetchStreamPurchases();
         showSuccessBannerWithMessage('Playlist added successfully');
@@ -1885,6 +2019,30 @@ const SystemSettings: React.FC<SystemSettingsProps> = ({ onlyPlaylistNetwork = f
     );
   }
 
+  const runSpotifyApiCheck = async () => {
+    if (spotifyApiChecking) return;
+    setSpotifyApiChecking(true);
+    setSpotifyApiError(null);
+    setSpotifyApiResult(null);
+    try {
+      const response = await fetch('/api/marketing-manager/system-settings/spotify-api-check', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+      });
+      if (!response.ok) {
+        let body = '';
+        try { body = await response.text(); } catch { /* ignore */ }
+        throw new Error(`Request failed (HTTP ${response.status})${body ? `: ${body.slice(0, 200)}` : ''}`);
+      }
+      const data: SpotifyApiCheckResult = await response.json();
+      setSpotifyApiResult(data);
+    } catch (err: any) {
+      setSpotifyApiError(err?.message || 'Unable to reach the Spotify API check endpoint.');
+    } finally {
+      setSpotifyApiChecking(false);
+    }
+  };
+
   return (
     <div className="space-y-6">
       {/* Campaign Totals Section - only show in System Settings */}
@@ -1904,7 +2062,7 @@ const SystemSettings: React.FC<SystemSettingsProps> = ({ onlyPlaylistNetwork = f
           </div>
           <div className="max-h-48 overflow-y-auto space-y-0.5 font-mono text-xs">
             {refreshDebugLog.map((line, i) => (
-              <div key={i} className={`${line.startsWith('❌') ? 'text-red-400' : line.startsWith('✅') ? 'text-green-400' : line.startsWith('⚠️') ? 'text-yellow-400' : line.startsWith('🔮') ? 'text-purple-400' : line.startsWith('💡') ? 'text-cyan-400' : 'text-gray-300'}`}>
+              <div key={i} className={`${line.startsWith('❌') ? 'text-red-400' : line.startsWith('✅') ? 'text-green-400' : line.startsWith('⚠️') || line.startsWith('⏭️') ? 'text-yellow-400' : line.startsWith('🔮') ? 'text-purple-400' : line.startsWith('💡') ? 'text-cyan-400' : 'text-gray-300'}`}>
                 {line}
               </div>
             ))}
@@ -2115,6 +2273,89 @@ const SystemSettings: React.FC<SystemSettingsProps> = ({ onlyPlaylistNetwork = f
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   Playlist Link *
                 </label>
+
+                {/* Live preview card — appears as soon as a Spotify playlist
+                    URL/URI is detected in the input. Uses the public oEmbed
+                    endpoint (no API key) so it's instant and free. */}
+                {(playlistPreviewParsedId || playlistPreview || playlistPreviewLoading || playlistPreviewError) && (
+                  <div className="mb-3 flex items-center gap-3 rounded-lg border border-gray-200 bg-white p-3 shadow-sm">
+                    {/* Artwork / placeholder */}
+                    <div className="relative h-16 w-16 shrink-0 overflow-hidden rounded-md bg-gradient-to-br from-gray-100 to-gray-200">
+                      {playlistPreview?.thumbnailUrl ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img
+                          src={playlistPreview.thumbnailUrl}
+                          alt={playlistPreview.name}
+                          className="h-full w-full object-cover"
+                          referrerPolicy="no-referrer"
+                        />
+                      ) : (
+                        <div className="flex h-full w-full items-center justify-center">
+                          {playlistPreviewLoading ? (
+                            <svg className="h-5 w-5 animate-spin text-gray-400" viewBox="0 0 24 24" fill="none">
+                              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path>
+                            </svg>
+                          ) : (
+                            <svg className="h-6 w-6 text-gray-400" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                              <path d="M12 3v10.55A4 4 0 1014 17V7h4V3h-6z" />
+                            </svg>
+                          )}
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Text */}
+                    <div className="min-w-0 flex-1">
+                      {playlistPreview ? (
+                        <>
+                          <div className="truncate text-sm font-semibold text-gray-900" title={playlistPreview.name}>
+                            {playlistPreview.name}
+                          </div>
+                          <div className="mt-0.5 flex items-center gap-2 text-xs text-gray-500">
+                            <span className="inline-flex items-center gap-1 rounded-full bg-green-50 px-2 py-0.5 text-green-700 ring-1 ring-inset ring-green-200">
+                              <span className="h-1.5 w-1.5 rounded-full bg-green-500" />
+                              Detected
+                            </span>
+                            <span className="truncate font-mono" title={playlistPreview.id}>
+                              {playlistPreview.id}
+                            </span>
+                          </div>
+                        </>
+                      ) : playlistPreviewLoading ? (
+                        <>
+                          <div className="h-3.5 w-2/3 animate-pulse rounded bg-gray-200" />
+                          <div className="mt-2 h-3 w-1/3 animate-pulse rounded bg-gray-100" />
+                        </>
+                      ) : playlistPreviewError ? (
+                        <>
+                          <div className="text-sm font-medium text-amber-700">
+                            Couldn&apos;t load preview
+                          </div>
+                          <div className="mt-0.5 text-xs text-gray-500">
+                            {playlistPreviewError}
+                          </div>
+                        </>
+                      ) : (
+                        <div className="text-sm text-gray-500">Loading preview…</div>
+                      )}
+                    </div>
+
+                    {/* Open on Spotify (only when we have a parsed ID) */}
+                    {playlistPreviewParsedId && (
+                      <a
+                        href={`https://open.spotify.com/playlist/${playlistPreviewParsedId}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="shrink-0 rounded-md border border-gray-200 px-2.5 py-1 text-xs font-medium text-gray-600 transition hover:bg-gray-50 hover:text-gray-900"
+                        title="Open on Spotify"
+                      >
+                        Open ↗
+                      </a>
+                    )}
+                  </div>
+                )}
+
                 <input
                   ref={playlistLinkInputRef}
                   type="url"
@@ -2910,7 +3151,204 @@ const SystemSettings: React.FC<SystemSettingsProps> = ({ onlyPlaylistNetwork = f
           </div>
         )}
       </div>
-      
+
+      {/* Spotify API Status Section */}
+      <div className="bg-white rounded-xl p-6 shadow-lg border border-gray-100">
+        <div className="flex items-start justify-between mb-4 gap-4 flex-wrap">
+          <div>
+            <div className="flex items-center gap-2">
+              <svg className="w-6 h-6 text-green-500" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                <path d="M12 0C5.4 0 0 5.4 0 12s5.4 12 12 12 12-5.4 12-12S18.66 0 12 0zm5.521 17.34a.748.748 0 0 1-1.029.247c-2.82-1.722-6.371-2.111-10.553-1.157a.748.748 0 1 1-.333-1.46c4.575-1.044 8.502-.595 11.665 1.341.354.217.464.679.25 1.029zm1.473-3.272a.937.937 0 0 1-1.287.308c-3.226-1.984-8.147-2.557-11.964-1.397a.937.937 0 1 1-.546-1.79c4.366-1.327 9.789-.687 13.495 1.59a.937.937 0 0 1 .302 1.289zm.127-3.404C15.244 8.397 8.745 8.182 5.118 9.286a1.124 1.124 0 1 1-.654-2.151c4.165-1.266 11.343-1.013 15.812 1.642a1.124 1.124 0 1 1-1.155 1.927z"/>
+              </svg>
+              <h2 className="text-2xl font-bold text-purple-800">Spotify API Status</h2>
+            </div>
+            <p className="text-sm text-gray-500 mt-1">
+              Verify that the Spotify Web API integration is alive and authenticated. Forces a fresh token fetch (no cache) and runs a live API call.
+            </p>
+          </div>
+          <button
+            onClick={runSpotifyApiCheck}
+            disabled={spotifyApiChecking}
+            className="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md shadow-sm text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {spotifyApiChecking ? (
+              <>
+                <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-gray-700" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                Checking...
+              </>
+            ) : (
+              <>
+                <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+                </svg>
+                Run Check
+              </>
+            )}
+          </button>
+        </div>
+
+        {/* Idle / instructions */}
+        {!spotifyApiChecking && !spotifyApiResult && !spotifyApiError && (
+          <div className="rounded-lg border border-dashed border-gray-300 bg-gray-50 p-4 text-sm text-gray-600">
+            <p className="mb-2"><strong>What this checks:</strong></p>
+            <ul className="list-disc list-inside space-y-1 text-gray-600">
+              <li>Both <code className="bg-white px-1 rounded text-xs">SPOTIFY_CLIENT_ID</code> and <code className="bg-white px-1 rounded text-xs">SPOTIFY_CLIENT_SECRET</code> are present on the server.</li>
+              <li>Spotify accepts the credentials and issues a <strong>fresh</strong> access token (no cache) — catches revoked / suspended dev apps immediately.</li>
+              <li>The token works on the <strong>exact endpoint the app uses in production</strong> — <code className="bg-white px-1 rounded text-xs">GET /v1/playlists/&#123;id&#125;</code> against a real playlist from your Playlist Network. (Falls back to <code className="bg-white px-1 rounded text-xs">/v1/search</code> if the network is empty.)</li>
+            </ul>
+            <p className="mt-3 text-xs text-gray-500">
+              Click <strong>Run Check</strong> to test now. Uses zero Apify quota and only a tiny amount of Spotify quota.
+            </p>
+            <div className="mt-3 rounded-md bg-amber-50 border border-amber-200 p-3 text-xs text-amber-900">
+              <p className="font-semibold mb-1">Heads up — Spotify Web API changes (Feb 11, 2026):</p>
+              <ul className="list-disc list-inside space-y-0.5">
+                <li>Development Mode apps now <strong>require the app owner to have active Spotify Premium</strong>. If Premium lapses, the dev app stops working entirely until you resubscribe.</li>
+                <li>Several endpoints were removed for Dev Mode apps (e.g. <code className="bg-white px-1 rounded">/browse/new-releases</code>, <code className="bg-white px-1 rounded">/browse/categories</code>, <code className="bg-white px-1 rounded">/users/&#123;id&#125;</code>, batch <code className="bg-white px-1 rounded">/tracks?ids=</code>). This checker only uses still-supported endpoints.</li>
+              </ul>
+            </div>
+          </div>
+        )}
+
+        {/* Error reaching the endpoint itself (network / auth) */}
+        {spotifyApiError && (
+          <div className="rounded-lg border border-red-300 bg-red-50 p-4 text-sm text-red-800">
+            <div className="flex items-start gap-2">
+              <svg className="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+              </svg>
+              <div>
+                <p className="font-semibold">Could not run the check</p>
+                <p className="mt-1">{spotifyApiError}</p>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Result */}
+        {spotifyApiResult && (
+          <div className={`rounded-lg border p-4 ${spotifyApiResult.success ? 'border-green-300 bg-green-50' : 'border-red-300 bg-red-50'}`}>
+            <div className="flex items-start gap-3">
+              {spotifyApiResult.success ? (
+                <svg className="w-6 h-6 text-green-600 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                </svg>
+              ) : (
+                <svg className="w-6 h-6 text-red-600 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                </svg>
+              )}
+              <div className="flex-1 min-w-0">
+                <p className={`font-semibold text-base ${spotifyApiResult.success ? 'text-green-800' : 'text-red-800'}`}>
+                  {spotifyApiResult.success ? 'Spotify API is operational' : 'Spotify API check FAILED'}
+                </p>
+                <p className={`mt-1 text-sm ${spotifyApiResult.success ? 'text-green-700' : 'text-red-700'}`}>
+                  {spotifyApiResult.message}
+                </p>
+                <p className="mt-1 text-xs text-gray-500">
+                  Total time: {spotifyApiResult.durationMs} ms · Checked at {new Date(spotifyApiResult.checkedAt).toLocaleString()}
+                </p>
+
+                {/* Detail breakdown */}
+                <div className="mt-4 grid grid-cols-1 md:grid-cols-3 gap-3 text-xs">
+                  {/* Env vars */}
+                  <div className="bg-white border border-gray-200 rounded-md p-3">
+                    <p className="font-semibold text-gray-700 mb-1">1. Environment</p>
+                    <ul className="space-y-1 text-gray-600">
+                      <li className={spotifyApiResult.details.envVars.hasClientId ? 'text-green-700' : 'text-red-700'}>
+                        {spotifyApiResult.details.envVars.hasClientId ? '✓' : '✗'} SPOTIFY_CLIENT_ID
+                        {spotifyApiResult.details.envVars.maskedClientId && (
+                          <span className="text-gray-500"> ({spotifyApiResult.details.envVars.maskedClientId})</span>
+                        )}
+                      </li>
+                      <li className={spotifyApiResult.details.envVars.hasClientSecret ? 'text-green-700' : 'text-red-700'}>
+                        {spotifyApiResult.details.envVars.hasClientSecret ? '✓' : '✗'} SPOTIFY_CLIENT_SECRET
+                      </li>
+                    </ul>
+                  </div>
+                  {/* Token fetch */}
+                  <div className="bg-white border border-gray-200 rounded-md p-3">
+                    <p className="font-semibold text-gray-700 mb-1">2. Auth (fresh token)</p>
+                    {spotifyApiResult.details.tokenFetch.attempted ? (
+                      <ul className="space-y-1 text-gray-600">
+                        <li className={spotifyApiResult.details.tokenFetch.ok ? 'text-green-700' : 'text-red-700'}>
+                          {spotifyApiResult.details.tokenFetch.ok ? '✓' : '✗'} HTTP {spotifyApiResult.details.tokenFetch.status ?? '?'} ({spotifyApiResult.details.tokenFetch.durationMs ?? '?'} ms)
+                        </li>
+                        {spotifyApiResult.details.tokenFetch.tokenType && (
+                          <li className="text-gray-500">Type: {spotifyApiResult.details.tokenFetch.tokenType}</li>
+                        )}
+                        {typeof spotifyApiResult.details.tokenFetch.expiresIn === 'number' && (
+                          <li className="text-gray-500">Expires in: {spotifyApiResult.details.tokenFetch.expiresIn}s</li>
+                        )}
+                        {spotifyApiResult.details.tokenFetch.error && (
+                          <li className="text-red-600 break-words">Error: {spotifyApiResult.details.tokenFetch.error}</li>
+                        )}
+                      </ul>
+                    ) : (
+                      <p className="text-gray-400 italic">Skipped</p>
+                    )}
+                  </div>
+                  {/* API call */}
+                  <div className="bg-white border border-gray-200 rounded-md p-3">
+                    <p className="font-semibold text-gray-700 mb-1">3. Web API call</p>
+                    {spotifyApiResult.details.apiCall.attempted ? (
+                      <ul className="space-y-1 text-gray-600">
+                        <li className={spotifyApiResult.details.apiCall.ok ? 'text-green-700' : 'text-red-700'}>
+                          {spotifyApiResult.details.apiCall.ok ? '✓' : '✗'} HTTP {spotifyApiResult.details.apiCall.status ?? '?'} ({spotifyApiResult.details.apiCall.durationMs ?? '?'} ms)
+                        </li>
+                        {spotifyApiResult.details.apiCall.mode && (
+                          <li className="text-gray-500">
+                            Mode: <span className="font-medium">{spotifyApiResult.details.apiCall.mode === 'playlist' ? 'live playlist (production endpoint)' : spotifyApiResult.details.apiCall.mode === 'search' ? 'search fallback' : 'none'}</span>
+                          </li>
+                        )}
+                        {spotifyApiResult.details.apiCall.endpoint && (
+                          <li className="text-gray-500 break-all">Endpoint: <code className="text-[10px]">{spotifyApiResult.details.apiCall.endpoint}</code></li>
+                        )}
+                        {spotifyApiResult.details.apiCall.testedPlaylistName && (
+                          <li className="text-gray-700">
+                            Tested playlist: <span className="font-medium">{spotifyApiResult.details.apiCall.testedPlaylistName}</span>
+                          </li>
+                        )}
+                        {spotifyApiResult.details.apiCall.sample && (
+                          <li className="text-gray-700">
+                            Sample: <span className="font-medium">{spotifyApiResult.details.apiCall.sample.name}</span>
+                            {spotifyApiResult.details.apiCall.sample.artist && (
+                              <span className="text-gray-500"> — {spotifyApiResult.details.apiCall.sample.artist}</span>
+                            )}
+                          </li>
+                        )}
+                        {spotifyApiResult.details.apiCall.error && (
+                          <li className="text-red-600 break-words">Error: {spotifyApiResult.details.apiCall.error}</li>
+                        )}
+                        {spotifyApiResult.details.apiCall.hint && (
+                          <li className="text-amber-700 break-words bg-amber-50 border border-amber-200 rounded px-2 py-1 mt-1">
+                            <strong>Hint:</strong> {spotifyApiResult.details.apiCall.hint}
+                          </li>
+                        )}
+                      </ul>
+                    ) : (
+                      <p className="text-gray-400 italic">Not attempted (auth failed first)</p>
+                    )}
+                  </div>
+                </div>
+
+                {/* Honest disclosure about what this verifies */}
+                <div className="mt-4 text-xs text-gray-500 space-y-1">
+                  <p className="italic">
+                    Note: this check uses the Client Credentials flow. A green check means credentials are valid <strong>and</strong> the production endpoint (<code>/v1/playlists/&#123;id&#125;</code>) returned data — which strongly implies the dev-app owner&apos;s Premium is active (Spotify rejects Dev Mode app calls when Premium lapses, per the Feb 2026 changes).
+                  </p>
+                  <p className="italic">
+                    It does <strong>not</strong> validate end-user (customer) Premium status, and it doesn&apos;t test the Apify integration (separate API).
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+
       <PlaylistEditModal
         isOpen={editingPlaylistId !== null}
         formData={editPlaylistForm}
